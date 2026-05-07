@@ -1,16 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
-import { Sparkles, History, User, Home as HomeIcon, ScanLine, Loader2, AlertCircle } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Sparkles, History, User, Home as HomeIcon, ScanLine, Loader2, AlertCircle, MapPin } from "lucide-react";
 import { ScannerHero } from "@/components/ScannerHero";
 import { ProductCard, type Product } from "@/components/ProductCard";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
-import { lookupProduct } from "@/lib/product-lookup";
+import { lookupAndCacheProduct } from "@/server/products.functions";
+import { distanceKm, getCurrentLocation, type Coords } from "@/lib/geo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Skanr — Ürün tara, fiyat & sağlık puanı al" },
-      { name: "description", content: "Barkod veya görsel ile ürünü tarayın. En uygun market fiyatını, mesafeyi ve NOVA + Nutri-Score sağlık puanını anında öğrenin." },
+      { name: "description", content: "Barkod ile ürünü tarayın. En yakın ve en uygun fiyatlı marketi, NOVA + Nutri-Score sağlık puanını anında öğrenin." },
     ],
   }),
   component: Index,
@@ -39,32 +40,93 @@ const sampleProduct: Product = {
   ],
 };
 
+const fmt = (n: number | null, unit = "g") =>
+  n == null ? "—" : `${n < 10 ? n.toFixed(1) : Math.round(n)} ${unit}`;
+const lvl = (v: number | null, low: number, high: number): "low" | "med" | "high" => {
+  if (v == null) return "low";
+  if (v <= low) return "low";
+  if (v >= high) return "high";
+  return "med";
+};
+
 function Index() {
   const [scannerOpen, setScannerOpen] = useState(false);
   const [product, setProduct] = useState<Product>(sampleProduct);
   const [loading, setLoading] = useState(false);
   const [lastCode, setLastCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [coords, setCoords] = useState<Coords | null>(null);
+  const [locStatus, setLocStatus] = useState<"idle" | "asking" | "ok" | "denied">("idle");
 
-  const handleDetected = useCallback(async (code: string) => {
-    setScannerOpen(false);
-    setLastCode(code);
-    setLoading(true);
-    setError(null);
-    try {
-      const found = await lookupProduct(code);
-      if (found) {
-        setProduct(found);
-      } else {
-        setError(`Barkod ${code} için ürün bulunamadı.`);
-      }
-    } catch (e) {
-      console.error(e);
-      setError("Ürün bilgisi alınamadı. Bağlantınızı kontrol edin.");
-    } finally {
-      setLoading(false);
-    }
+  // Ask location on mount (non-blocking)
+  useEffect(() => {
+    setLocStatus("asking");
+    getCurrentLocation()
+      .then((c) => {
+        setCoords(c);
+        setLocStatus("ok");
+      })
+      .catch(() => setLocStatus("denied"));
   }, []);
+
+  const handleDetected = useCallback(
+    async (code: string) => {
+      setScannerOpen(false);
+      setLastCode(code);
+      setLoading(true);
+      setError(null);
+      try {
+        const { product: p, prices } = await lookupAndCacheProduct({ data: { barcode: code } });
+        if (!p) {
+          setError(`Barkod ${code} için ürün bulunamadı.`);
+          setLoading(false);
+          return;
+        }
+
+        const ref = coords ?? { latitude: 40.978, longitude: 29.05 }; // İstanbul fallback
+        const marketRows = (prices as any[])
+          .map((row) => {
+            const m = row.markets;
+            return {
+              name: `${m.chain} • ${m.name}`,
+              price: Number(row.price),
+              distance: distanceKm(ref.latitude, ref.longitude, m.latitude, m.longitude),
+            };
+          })
+          .sort((a, b) => a.distance - b.distance);
+
+        const bestPrice = Math.min(...marketRows.map((m) => m.price));
+        const markets = marketRows.map((m) => ({ ...m, isBest: m.price === bestPrice }));
+
+        const nutri = (p.nutri_score ?? "C") as Product["nutriScore"];
+        const nova = (p.nova_group ?? 3) as Product["novaGroup"];
+
+        setProduct({
+          name: p.name,
+          brand: p.brand ?? "—",
+          image: p.image_url ?? sampleProduct.image,
+          bestPrice,
+          currency: "₺",
+          novaGroup: nova,
+          nutriScore: nutri,
+          healthScore: p.health_score ?? 50,
+          markets,
+          nutrients: [
+            { label: "Enerji", value: fmt(p.energy_kcal, "kcal"), level: lvl(p.energy_kcal, 150, 350) },
+            { label: "Yağ", value: fmt(p.fat_g), level: lvl(p.fat_g, 3, 17) },
+            { label: "Şeker", value: fmt(p.sugars_g), level: lvl(p.sugars_g, 5, 22) },
+            { label: "Tuz", value: fmt(p.salt_g), level: lvl(p.salt_g, 0.3, 1.5) },
+          ],
+        });
+      } catch (e) {
+        console.error(e);
+        setError("Ürün bilgisi alınamadı. Bağlantınızı kontrol edin.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [coords],
+  );
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -78,6 +140,18 @@ function Index() {
             <User className="size-5" />
           </div>
         </header>
+
+        {/* Location chip */}
+        <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/70 border border-border/60 text-xs">
+          <MapPin className="size-3.5 text-primary" />
+          {locStatus === "ok" && <span className="text-foreground">Konum aktif • mesafeler güncel</span>}
+          {locStatus === "asking" && <span className="text-muted-foreground">Konum alınıyor…</span>}
+          {locStatus === "denied" && (
+            <button onClick={() => { setLocStatus("asking"); getCurrentLocation().then((c) => { setCoords(c); setLocStatus("ok"); }).catch(() => setLocStatus("denied")); }} className="text-primary font-medium">
+              Konum izni ver
+            </button>
+          )}
+        </div>
 
         <ScannerHero onScan={() => setScannerOpen(true)} />
 
@@ -112,7 +186,7 @@ function Index() {
         <div className="mt-6 p-4 rounded-2xl bg-secondary/70 border border-border/60">
           <p className="text-xs font-semibold uppercase tracking-wider text-primary">İpucu</p>
           <p className="text-sm text-foreground/80 mt-1 leading-relaxed">
-            Gerçek bir gıda ürününün barkodunu kameraya gösterin. Ürün bilgileri Open Food Facts veritabanından gelir; market fiyatları örneklenir.
+            Telefondan açıp arka kamerayla bir ürünün barkodunu tarayın. Ürün bilgileri Open Food Facts'ten gelir, market fiyatları Lovable Cloud veritabanında saklanır ve konumunuza göre sıralanır.
           </p>
         </div>
       </div>
