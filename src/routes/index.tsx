@@ -188,9 +188,9 @@ function Index() {
         )}
 
         <div className="mt-6 p-4 rounded-2xl bg-secondary/70 border border-border/60">
-          <p className="text-xs font-semibold uppercase tracking-wider text-primary">İpucu</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Veri kaynakları</p>
           <p className="text-sm text-foreground/80 mt-1 leading-relaxed">
-            Telefondan açıp arka kamerayla bir ürünün barkodunu tarayın. Ürün bilgileri Open Food Facts'ten gelir, market fiyatları Lovable Cloud veritabanında saklanır ve konumunuza göre sıralanır.
+            Ürün bilgileri <strong>Open Food Facts</strong>'ten, canlı market fiyatları T.C. Ticaret Bakanlığı destekli <strong>marketfiyati.org.tr</strong> açık veri platformundan gelir. BİM, A101, Migros, ŞOK, CarrefourSA, Hakmar — Türkiye geneli şube bazlı.
           </p>
         </div>
       </div>
