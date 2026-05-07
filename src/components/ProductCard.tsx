@@ -131,7 +131,7 @@ export function ProductCard({ product }: { product: Product }) {
 
             {/* Nutrient breakdown */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Besin değerleri (100g)</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{t("card.nutrients")}</p>
               <div className="grid grid-cols-2 gap-2">
                 {product.nutrients.map((n) => (
                   <div key={n.label} className="p-3 rounded-xl bg-secondary/60">
@@ -154,7 +154,7 @@ export function ProductCard({ product }: { product: Product }) {
 
             <button className="w-full py-3 rounded-xl bg-foreground text-background font-medium text-sm flex items-center justify-center gap-2">
               <MapPin className="size-4" />
-              {best.name} yol tarifi
+              {best.name} • {t("card.directions")}
             </button>
           </div>
         </div>
