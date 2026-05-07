@@ -1,17 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Sparkles, History, User, Home as HomeIcon, ScanLine, Loader2, AlertCircle, MapPin } from "lucide-react";
 import { ScannerHero } from "@/components/ScannerHero";
 import { ProductCard, type Product } from "@/components/ProductCard";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { HealthWarning } from "@/components/HealthWarning";
 import { lookupAndCacheProduct } from "@/server/products.functions";
 import { distanceKm, getCurrentLocation, type Coords } from "@/lib/geo";
+import { useI18n } from "@/lib/i18n";
+import { useHealthProfile, evaluateRisk, normalizeAllergens, vibrateWarning, type RiskResult } from "@/lib/health-profile";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Skanr — Ürün tara, fiyat & sağlık puanı al" },
-      { name: "description", content: "Barkod ile ürünü tarayın. En yakın ve en uygun fiyatlı marketi, NOVA + Nutri-Score sağlık puanını anında öğrenin." },
+      { title: "Skanr — Scan, compare prices & health" },
+      { name: "description", content: "Scan a barcode to get the cheapest nearby market and a personalized health score with allergen + chronic-condition warnings." },
     ],
   }),
   component: Index,
@@ -33,10 +36,10 @@ const sampleProduct: Product = {
     { name: "ŞOK Fener", price: 25.95, distance: 1.6 },
   ],
   nutrients: [
-    { label: "Enerji", value: "238 kcal", level: "low" },
-    { label: "Yağ", value: "1.8 g", level: "low" },
-    { label: "Şeker", value: "2.1 g", level: "low" },
-    { label: "Tuz", value: "1.1 g", level: "med" },
+    { label: "Energy", value: "238 kcal", level: "low" },
+    { label: "Fat", value: "1.8 g", level: "low" },
+    { label: "Sugar", value: "2.1 g", level: "low" },
+    { label: "Salt", value: "1.1 g", level: "med" },
   ],
 };
 
@@ -50,6 +53,8 @@ const lvl = (v: number | null, low: number, high: number): "low" | "med" | "high
 };
 
 function Index() {
+  const { t, dir } = useI18n();
+  const { profile } = useHealthProfile();
   const [scannerOpen, setScannerOpen] = useState(false);
   const [product, setProduct] = useState<Product>(sampleProduct);
   const [loading, setLoading] = useState(false);
@@ -57,17 +62,22 @@ function Index() {
   const [error, setError] = useState<string | null>(null);
   const [coords, setCoords] = useState<Coords | null>(null);
   const [locStatus, setLocStatus] = useState<"idle" | "asking" | "ok" | "denied">("idle");
+  const [risk, setRisk] = useState<RiskResult | null>(null);
 
-  // Ask location on mount (non-blocking)
   useEffect(() => {
     setLocStatus("asking");
     getCurrentLocation()
-      .then((c) => {
-        setCoords(c);
-        setLocStatus("ok");
-      })
+      .then((c) => { setCoords(c); setLocStatus("ok"); })
       .catch(() => setLocStatus("denied"));
   }, []);
+
+  // Localized nutrient labels for the sample / loaded product
+  const localizedNutrients = (energy: number | null, fat: number | null, sugar: number | null, salt: number | null) => [
+    { label: t("nutri.energy"), value: fmt(energy, "kcal"), level: lvl(energy, 150, 350) },
+    { label: t("nutri.fat"), value: fmt(fat), level: lvl(fat, 3, 17) },
+    { label: t("nutri.sugar"), value: fmt(sugar), level: lvl(sugar, 5, 22) },
+    { label: t("nutri.salt"), value: fmt(salt), level: lvl(salt, 0.3, 1.5) },
+  ];
 
   const handleDetected = useCallback(
     async (code: string) => {
@@ -75,18 +85,14 @@ function Index() {
       setLastCode(code);
       setLoading(true);
       setError(null);
+      setRisk(null);
       try {
-        const ref = coords ?? { latitude: 39.9255, longitude: 32.8663 }; // Ankara fallback (Türkiye merkezi)
+        const ref = coords ?? { latitude: 39.9255, longitude: 32.8663 };
         const { product: p, prices } = await lookupAndCacheProduct({
-          data: {
-            barcode: code,
-            latitude: ref.latitude,
-            longitude: ref.longitude,
-            distanceKm: 25,
-          },
+          data: { barcode: code, latitude: ref.latitude, longitude: ref.longitude, distanceKm: 25 },
         });
         if (!p) {
-          setError(`Barkod ${code} için ürün bulunamadı.`);
+          setError(t("result.notFound"));
           setLoading(false);
           return;
         }
@@ -115,44 +121,57 @@ function Index() {
           nutriScore: nutri,
           healthScore: p.health_score ?? 50,
           markets,
-          nutrients: [
-            { label: "Enerji", value: fmt(p.energy_kcal, "kcal"), level: lvl(p.energy_kcal, 150, 350) },
-            { label: "Yağ", value: fmt(p.fat_g), level: lvl(p.fat_g, 3, 17) },
-            { label: "Şeker", value: fmt(p.sugars_g), level: lvl(p.sugars_g, 5, 22) },
-            { label: "Tuz", value: fmt(p.salt_g), level: lvl(p.salt_g, 0.3, 1.5) },
-          ],
+          nutrients: localizedNutrients(p.energy_kcal, p.fat_g, p.sugars_g, p.salt_g),
         });
+
+        // Health risk evaluation
+        const productAllergens = normalizeAllergens(p.allergens);
+        const r = evaluateRisk(profile, productAllergens, {
+          sugars_g: p.sugars_g,
+          salt_g: p.salt_g,
+          fat_g: p.fat_g,
+          energy_kcal: p.energy_kcal,
+          novaGroup: nova,
+        });
+        setRisk(r);
+        if (r.hasRisk) vibrateWarning();
       } catch (e) {
         console.error(e);
-        setError("Ürün bilgisi alınamadı. Bağlantınızı kontrol edin.");
+        setError(t("result.error"));
       } finally {
         setLoading(false);
       }
     },
-    [coords],
+    [coords, profile, t],
   );
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24" dir={dir}>
       <div className="mx-auto max-w-md px-5 pt-6">
         <header className="flex items-center justify-between mb-6">
           <div>
-            <p className="text-xs text-muted-foreground">Merhaba 👋</p>
-            <h1 className="font-display font-bold text-xl">Bugün ne tarıyorsun?</h1>
+            <p className="text-xs text-muted-foreground">{t("app.greeting")}</p>
+            <h1 className="font-display font-bold text-xl">{t("app.tagline")}</h1>
           </div>
-          <div className="size-11 rounded-full bg-secondary flex items-center justify-center ring-1 ring-border">
+          <Link
+            to="/profile"
+            className="size-11 rounded-full bg-secondary flex items-center justify-center ring-1 ring-border hover:bg-accent transition"
+            aria-label={t("nav.profile")}
+          >
             <User className="size-5" />
-          </div>
+          </Link>
         </header>
 
-        {/* Location chip */}
         <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/70 border border-border/60 text-xs">
           <MapPin className="size-3.5 text-primary" />
-          {locStatus === "ok" && <span className="text-foreground">Konum aktif • mesafeler güncel</span>}
-          {locStatus === "asking" && <span className="text-muted-foreground">Konum alınıyor…</span>}
+          {locStatus === "ok" && <span className="text-foreground">{t("loc.active")}</span>}
+          {locStatus === "asking" && <span className="text-muted-foreground">{t("loc.asking")}</span>}
           {locStatus === "denied" && (
-            <button onClick={() => { setLocStatus("asking"); getCurrentLocation().then((c) => { setCoords(c); setLocStatus("ok"); }).catch(() => setLocStatus("denied")); }} className="text-primary font-medium">
-              Konum izni ver
+            <button
+              onClick={() => { setLocStatus("asking"); getCurrentLocation().then((c) => { setCoords(c); setLocStatus("ok"); }).catch(() => setLocStatus("denied")); }}
+              className="text-primary font-medium"
+            >
+              {t("loc.allow")}
             </button>
           )}
         </div>
@@ -162,19 +181,21 @@ function Index() {
         <div className="flex items-center gap-2 mt-8 mb-3">
           <Sparkles className="size-4 text-primary" />
           <h2 className="font-display font-semibold text-sm uppercase tracking-wider text-muted-foreground">
-            {lastCode ? "Tarama sonucu" : "Örnek ürün"}
+            {lastCode ? t("result.title") : t("result.sample")}
           </h2>
           {lastCode && (
-            <span className="ml-auto text-[10px] font-mono text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+            <span className="ms-auto text-[10px] font-mono text-muted-foreground bg-secondary px-2 py-0.5 rounded">
               {lastCode}
             </span>
           )}
         </div>
 
+        {risk && <HealthWarning risk={risk} onDismiss={() => setRisk(null)} />}
+
         {loading ? (
           <div className="rounded-3xl bg-card border border-border/50 p-10 flex flex-col items-center justify-center gap-3 shadow-[var(--shadow-card)]">
             <Loader2 className="size-6 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Ürün aranıyor…</p>
+            <p className="text-sm text-muted-foreground">{t("result.loading")}</p>
           </div>
         ) : (
           <ProductCard product={product} />
@@ -188,28 +209,29 @@ function Index() {
         )}
 
         <div className="mt-6 p-4 rounded-2xl bg-secondary/70 border border-border/60">
-          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Veri kaynakları</p>
-          <p className="text-sm text-foreground/80 mt-1 leading-relaxed">
-            Ürün bilgileri <strong>Open Food Facts</strong>'ten, canlı market fiyatları T.C. Ticaret Bakanlığı destekli <strong>marketfiyati.org.tr</strong> açık veri platformundan gelir. BİM, A101, Migros, ŞOK, CarrefourSA, Hakmar — Türkiye geneli şube bazlı.
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">{t("src.title")}</p>
+          <p className="text-sm text-foreground/80 mt-1 leading-relaxed">{t("src.body")}</p>
         </div>
       </div>
 
       <nav className="fixed bottom-0 inset-x-0 z-20">
         <div className="mx-auto max-w-md px-5 pb-5">
           <div className="rounded-full bg-card/95 backdrop-blur-xl shadow-[var(--shadow-elevated)] border border-border/60 flex items-center justify-around py-3 px-2">
-            <NavItem icon={<HomeIcon className="size-5" />} label="Ana" active />
-            <NavItem icon={<History className="size-5" />} label="Geçmiş" />
+            <NavItem icon={<HomeIcon className="size-5" />} label={t("nav.home")} active />
+            <NavItem icon={<History className="size-5" />} label={t("nav.history")} />
             <button
               onClick={() => setScannerOpen(true)}
               className="-mt-8 size-14 rounded-full text-primary-foreground flex items-center justify-center shadow-[var(--shadow-glow)]"
               style={{ background: "var(--gradient-scan)" }}
-              aria-label="Tara"
+              aria-label={t("scan.start")}
             >
               <ScanLine className="size-6" />
             </button>
-            <NavItem icon={<Sparkles className="size-5" />} label="Keşfet" />
-            <NavItem icon={<User className="size-5" />} label="Profil" />
+            <NavItem icon={<Sparkles className="size-5" />} label={t("nav.discover")} />
+            <Link to="/profile" className="flex flex-col items-center gap-0.5 px-2 text-muted-foreground hover:text-foreground transition">
+              <User className="size-5" />
+              <span className="text-[10px] font-medium">{t("nav.profile")}</span>
+            </Link>
           </div>
         </div>
       </nav>
