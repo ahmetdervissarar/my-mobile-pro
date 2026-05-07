@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, MapPin, TrendingDown, Leaf, Store, Navigation } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 type Market = { name: string; price: number; distance: number; isBest?: boolean };
 
@@ -25,16 +26,11 @@ const nutriColors: Record<Product["nutriScore"], string> = {
   E: "bg-[oklch(0.65_0.22_27)]",
 };
 
-const novaLabel: Record<Product["novaGroup"], string> = {
-  1: "İşlenmemiş",
-  2: "Mutfak bileşeni",
-  3: "İşlenmiş",
-  4: "Ultra işlenmiş",
-};
-
 export function ProductCard({ product }: { product: Product }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const best = product.markets.find((m) => m.isBest) ?? product.markets[0];
+  const novaText = t(`nova.${product.novaGroup}`);
 
   return (
     <div className="rounded-3xl bg-card shadow-[var(--shadow-card)] overflow-hidden border border-border/50">
@@ -46,7 +42,7 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="flex-1 min-w-0">
           <p className="text-xs text-muted-foreground uppercase tracking-wider">{product.brand}</p>
           <h3 className="font-display font-semibold text-base leading-tight truncate">{product.name}</h3>
-          <p className="text-xs text-muted-foreground mt-1">{novaLabel[product.novaGroup]} • NOVA {product.novaGroup}</p>
+          <p className="text-xs text-muted-foreground mt-1">{novaText} • NOVA {product.novaGroup}</p>
         </div>
       </div>
 
@@ -59,7 +55,7 @@ export function ProductCard({ product }: { product: Product }) {
         >
           <div className="flex items-center gap-1.5 text-xs opacity-90">
             <TrendingDown className="size-3.5" />
-            <span>En uygun</span>
+            <span>{t("card.bestPrice")}</span>
           </div>
           <p className="font-display font-bold text-2xl mt-1 leading-none">
             {product.bestPrice.toFixed(2)}
@@ -75,7 +71,7 @@ export function ProductCard({ product }: { product: Product }) {
         >
           <div className="flex items-center gap-1.5 text-xs opacity-90">
             <Leaf className="size-3.5" />
-            <span>Sağlık skoru</span>
+            <span>{t("card.healthScore")}</span>
           </div>
           <div className="flex items-end gap-2 mt-1">
             <p className="font-display font-bold text-2xl leading-none">{product.healthScore}</p>
@@ -95,7 +91,7 @@ export function ProductCard({ product }: { product: Product }) {
         onClick={() => setOpen((v) => !v)}
         className="w-full px-5 py-3 border-t border-border/60 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
-        {open ? "Daha az göster" : "Detayları gör"}
+        {open ? t("card.collapse") : t("card.expand")}
         <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
       </button>
 
@@ -105,7 +101,7 @@ export function ProductCard({ product }: { product: Product }) {
           <div className="px-5 pb-5 space-y-5">
             {/* Markets list */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Yakındaki marketler</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{t("card.markets")}</p>
               <div className="space-y-2">
                 {product.markets.map((m) => (
                   <div
@@ -135,7 +131,7 @@ export function ProductCard({ product }: { product: Product }) {
 
             {/* Nutrient breakdown */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Besin değerleri (100g)</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{t("card.nutrients")}</p>
               <div className="grid grid-cols-2 gap-2">
                 {product.nutrients.map((n) => (
                   <div key={n.label} className="p-3 rounded-xl bg-secondary/60">
@@ -158,7 +154,7 @@ export function ProductCard({ product }: { product: Product }) {
 
             <button className="w-full py-3 rounded-xl bg-foreground text-background font-medium text-sm flex items-center justify-center gap-2">
               <MapPin className="size-4" />
-              {best.name} yol tarifi
+              {best.name} • {t("card.directions")}
             </button>
           </div>
         </div>
