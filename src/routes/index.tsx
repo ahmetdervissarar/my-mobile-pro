@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Sparkles, History, User, Home as HomeIcon, ScanLine } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Sparkles, History, User, Home as HomeIcon, ScanLine, Loader2, AlertCircle } from "lucide-react";
 import { ScannerHero } from "@/components/ScannerHero";
 import { ProductCard, type Product } from "@/components/ProductCard";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { lookupProduct } from "@/lib/product-lookup";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,12 +40,35 @@ const sampleProduct: Product = {
 };
 
 function Index() {
-  const [scanned, setScanned] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [product, setProduct] = useState<Product>(sampleProduct);
+  const [loading, setLoading] = useState(false);
+  const [lastCode, setLastCode] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDetected = useCallback(async (code: string) => {
+    setScannerOpen(false);
+    setLastCode(code);
+    setLoading(true);
+    setError(null);
+    try {
+      const found = await lookupProduct(code);
+      if (found) {
+        setProduct(found);
+      } else {
+        setError(`Barkod ${code} için ürün bulunamadı.`);
+      }
+    } catch (e) {
+      console.error(e);
+      setError("Ürün bilgisi alınamadı. Bağlantınızı kontrol edin.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="mx-auto max-w-md px-5 pt-6">
-        {/* Top bar */}
         <header className="flex items-center justify-between mb-6">
           <div>
             <p className="text-xs text-muted-foreground">Merhaba 👋</p>
@@ -54,36 +79,51 @@ function Index() {
           </div>
         </header>
 
-        {/* Scanner */}
-        <ScannerHero onScan={() => setScanned(true)} />
+        <ScannerHero onScan={() => setScannerOpen(true)} />
 
-        {/* Section title */}
         <div className="flex items-center gap-2 mt-8 mb-3">
           <Sparkles className="size-4 text-primary" />
           <h2 className="font-display font-semibold text-sm uppercase tracking-wider text-muted-foreground">
-            {scanned ? "Tarama sonucu" : "Son taramalar"}
+            {lastCode ? "Tarama sonucu" : "Örnek ürün"}
           </h2>
+          {lastCode && (
+            <span className="ml-auto text-[10px] font-mono text-muted-foreground bg-secondary px-2 py-0.5 rounded">
+              {lastCode}
+            </span>
+          )}
         </div>
 
-        {/* Result card */}
-        <ProductCard product={sampleProduct} />
+        {loading ? (
+          <div className="rounded-3xl bg-card border border-border/50 p-10 flex flex-col items-center justify-center gap-3 shadow-[var(--shadow-card)]">
+            <Loader2 className="size-6 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Ürün aranıyor…</p>
+          </div>
+        ) : (
+          <ProductCard product={product} />
+        )}
 
-        {/* Tip */}
+        {error && (
+          <div className="mt-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/30 flex gap-3">
+            <AlertCircle className="size-5 text-destructive shrink-0" />
+            <p className="text-sm text-foreground/90">{error}</p>
+          </div>
+        )}
+
         <div className="mt-6 p-4 rounded-2xl bg-secondary/70 border border-border/60">
           <p className="text-xs font-semibold uppercase tracking-wider text-primary">İpucu</p>
           <p className="text-sm text-foreground/80 mt-1 leading-relaxed">
-            Karta dokunarak market listesini, mesafeleri ve detaylı besin değerlerini görebilirsin.
+            Gerçek bir gıda ürününün barkodunu kameraya gösterin. Ürün bilgileri Open Food Facts veritabanından gelir; market fiyatları örneklenir.
           </p>
         </div>
       </div>
 
-      {/* Bottom nav */}
       <nav className="fixed bottom-0 inset-x-0 z-20">
         <div className="mx-auto max-w-md px-5 pb-5">
           <div className="rounded-full bg-card/95 backdrop-blur-xl shadow-[var(--shadow-elevated)] border border-border/60 flex items-center justify-around py-3 px-2">
             <NavItem icon={<HomeIcon className="size-5" />} label="Ana" active />
             <NavItem icon={<History className="size-5" />} label="Geçmiş" />
             <button
+              onClick={() => setScannerOpen(true)}
               className="-mt-8 size-14 rounded-full text-primary-foreground flex items-center justify-center shadow-[var(--shadow-glow)]"
               style={{ background: "var(--gradient-scan)" }}
               aria-label="Tara"
@@ -95,6 +135,12 @@ function Index() {
           </div>
         </div>
       </nav>
+
+      <BarcodeScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onDetected={handleDetected}
+      />
     </div>
   );
 }
