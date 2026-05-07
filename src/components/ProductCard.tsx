@@ -42,7 +42,7 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="flex-1 min-w-0">
           <p className="text-xs text-muted-foreground uppercase tracking-wider">{product.brand}</p>
           <h3 className="font-display font-semibold text-base leading-tight truncate">{product.name}</h3>
-          <p className="text-xs text-muted-foreground mt-1">{novaLabel[product.novaGroup]} • NOVA {product.novaGroup}</p>
+          <p className="text-xs text-muted-foreground mt-1">{novaText} • NOVA {product.novaGroup}</p>
         </div>
       </div>
 
@@ -55,7 +55,7 @@ export function ProductCard({ product }: { product: Product }) {
         >
           <div className="flex items-center gap-1.5 text-xs opacity-90">
             <TrendingDown className="size-3.5" />
-            <span>En uygun</span>
+            <span>{t("card.bestPrice")}</span>
           </div>
           <p className="font-display font-bold text-2xl mt-1 leading-none">
             {product.bestPrice.toFixed(2)}
@@ -71,7 +71,7 @@ export function ProductCard({ product }: { product: Product }) {
         >
           <div className="flex items-center gap-1.5 text-xs opacity-90">
             <Leaf className="size-3.5" />
-            <span>Sağlık skoru</span>
+            <span>{t("card.healthScore")}</span>
           </div>
           <div className="flex items-end gap-2 mt-1">
             <p className="font-display font-bold text-2xl leading-none">{product.healthScore}</p>
@@ -91,7 +91,7 @@ export function ProductCard({ product }: { product: Product }) {
         onClick={() => setOpen((v) => !v)}
         className="w-full px-5 py-3 border-t border-border/60 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
-        {open ? "Daha az göster" : "Detayları gör"}
+        {open ? t("card.collapse") : t("card.expand")}
         <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
       </button>
 
@@ -101,7 +101,7 @@ export function ProductCard({ product }: { product: Product }) {
           <div className="px-5 pb-5 space-y-5">
             {/* Markets list */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Yakındaki marketler</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{t("card.markets")}</p>
               <div className="space-y-2">
                 {product.markets.map((m) => (
                   <div
