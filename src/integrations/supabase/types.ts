@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       products: {
         Row: {
+          allergens: string[] | null
           barcode: string
           brand: string | null
           created_at: string
@@ -23,6 +24,7 @@ export type Database = {
           fat_g: number | null
           health_score: number | null
           image_url: string | null
+          ingredients_text: string | null
           name: string
           nova_group: number | null
           nutri_score: string | null
@@ -31,6 +33,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allergens?: string[] | null
           barcode: string
           brand?: string | null
           created_at?: string
@@ -38,6 +41,7 @@ export type Database = {
           fat_g?: number | null
           health_score?: number | null
           image_url?: string | null
+          ingredients_text?: string | null
           name: string
           nova_group?: number | null
           nutri_score?: string | null
@@ -46,6 +50,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allergens?: string[] | null
           barcode?: string
           brand?: string | null
           created_at?: string
@@ -53,6 +58,7 @@ export type Database = {
           fat_g?: number | null
           health_score?: number | null
           image_url?: string | null
+          ingredients_text?: string | null
           name?: string
           nova_group?: number | null
           nutri_score?: string | null
