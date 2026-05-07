@@ -1,6 +1,8 @@
 import { ScanLine, Camera } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export function ScannerHero({ onScan }: { onScan: () => void }) {
+  const { t } = useI18n();
   return (
     <div
       className="relative rounded-3xl overflow-hidden p-6 text-primary-foreground"
@@ -30,7 +32,7 @@ export function ScannerHero({ onScan }: { onScan: () => void }) {
           className="mt-5 w-full py-4 rounded-2xl bg-white text-foreground font-display font-semibold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
         >
           <ScanLine className="size-5" />
-          Taramayı başlat
+          {t("scan.start")}
         </button>
       </div>
 
