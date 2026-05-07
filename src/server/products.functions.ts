@@ -4,6 +4,9 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const Input = z.object({
   barcode: z.string().min(4).max(32).regex(/^[0-9A-Za-z]+$/),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  distanceKm: z.number().min(1).max(50).optional(),
 });
 
 type OFFProduct = {
@@ -58,12 +61,107 @@ async function fetchFromOFF(barcode: string) {
   };
 }
 
+// ============================================================
+// Marketfiyatı (T.C. Ticaret Bakanlığı destekli açık veri)
+// ============================================================
+const MF_BASE = "https://api.marketfiyati.org.tr";
+const MF_HEADERS = {
+  "Content-Type": "application/json",
+  Accept: "application/json",
+  Origin: "https://marketfiyati.org.tr",
+  Referer: "https://marketfiyati.org.tr/",
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+};
+
+type MFDepotInfo = {
+  depotId: string;
+  depotName: string;
+  price: number;
+  unitPrice?: string;
+  marketAdi: string;
+  longitude: number;
+  latitude: number;
+  indexTime?: string;
+};
+type MFProduct = {
+  id: string;
+  title: string;
+  brand?: string;
+  imageUrl?: string;
+  productDepotInfoList: MFDepotInfo[];
+};
+type MFSearchResponse = {
+  numberOfFound: number;
+  content: MFProduct[];
+};
+
+async function mfSearch(keywords: string, latitude: number, longitude: number, distance: number) {
+  try {
+    const res = await fetch(`${MF_BASE}/api/v2/search`, {
+      method: "POST",
+      headers: MF_HEADERS,
+      body: JSON.stringify({
+        keywords,
+        pages: 0,
+        size: 24,
+        latitude,
+        longitude,
+        distance,
+      }),
+    });
+    if (!res.ok) {
+      console.error(`Marketfiyati API ${res.status} for "${keywords}"`);
+      return null;
+    }
+    return (await res.json()) as MFSearchResponse;
+  } catch (e) {
+    console.error("Marketfiyati fetch error:", e);
+    return null;
+  }
+}
+
+type PriceRow = {
+  marketChain: string;
+  marketName: string;
+  price: number;
+  unitPrice?: string;
+  latitude: number;
+  longitude: number;
+  productTitle?: string;
+  productImage?: string;
+};
+
+function flattenPrices(resp: MFSearchResponse | null): PriceRow[] {
+  if (!resp || !resp.content?.length) return [];
+  const rows: PriceRow[] = [];
+  for (const p of resp.content) {
+    for (const d of p.productDepotInfoList ?? []) {
+      rows.push({
+        marketChain: d.marketAdi,
+        marketName: d.depotName,
+        price: d.price,
+        unitPrice: d.unitPrice,
+        latitude: d.latitude,
+        longitude: d.longitude,
+        productTitle: p.title,
+        productImage: p.imageUrl,
+      });
+    }
+  }
+  return rows;
+}
+
 export const lookupAndCacheProduct = createServerFn({ method: "POST" })
   .inputValidator((input) => Input.parse(input))
   .handler(async ({ data }) => {
     const { barcode } = data;
+    // Default: Ankara center, 25km — works for any Turkish city
+    const lat = data.latitude ?? 39.9255;
+    const lon = data.longitude ?? 32.8663;
+    const dist = data.distanceKm ?? 25;
 
-    // 1. Try cache
+    // 1. Try product cache (Open Food Facts data)
     const { data: cached } = await supabaseAdmin
       .from("products")
       .select("*")
@@ -75,7 +173,7 @@ export const lookupAndCacheProduct = createServerFn({ method: "POST" })
     // 2. Fallback to OpenFoodFacts + cache
     if (!product) {
       const off = await fetchFromOFF(barcode);
-      if (!off) return { product: null, prices: [] as any[] };
+      if (!off) return { product: null, prices: [] as PriceRow[], source: "none" as const };
 
       const { data: inserted } = await supabaseAdmin
         .from("products")
@@ -83,27 +181,27 @@ export const lookupAndCacheProduct = createServerFn({ method: "POST" })
         .select()
         .single();
       product = inserted;
-
-      // Seed deterministic prices for all markets
-      const { data: markets } = await supabaseAdmin.from("markets").select("id");
-      if (markets?.length) {
-        const hash = [...barcode].reduce((a, c) => a + c.charCodeAt(0), 0);
-        const basePrice = 8 + (hash % 60);
-        const rows = markets.map((m, i) => ({
-          barcode,
-          market_id: m.id,
-          price: +(basePrice * (1 + ((((hash * (i + 1)) % 23) - 11) / 100))).toFixed(2),
-          currency: "TRY",
-        }));
-        await supabaseAdmin.from("product_prices").upsert(rows, { onConflict: "barcode,market_id" });
-      }
     }
 
-    // 3. Get prices joined with markets
-    const { data: prices } = await supabaseAdmin
-      .from("product_prices")
-      .select("price, currency, markets(id, chain, name, latitude, longitude)")
-      .eq("barcode", barcode);
+    // 3. Live price lookup from Marketfiyatı.org.tr
+    // Try barcode first (rarely indexed), then product name + brand
+    let prices: PriceRow[] = [];
+    let resp = await mfSearch(barcode, lat, lon, dist);
+    prices = flattenPrices(resp);
 
-    return { product, prices: prices ?? [] };
+    if (prices.length === 0 && product?.name) {
+      const query = product.brand
+        ? `${product.brand} ${product.name}`.slice(0, 80)
+        : product.name.slice(0, 80);
+      resp = await mfSearch(query, lat, lon, dist);
+      prices = flattenPrices(resp);
+    }
+
+    // Fallback: try just the product name without brand
+    if (prices.length === 0 && product?.name) {
+      resp = await mfSearch(product.name.split(" ").slice(0, 3).join(" "), lat, lon, dist);
+      prices = flattenPrices(resp);
+    }
+
+    return { product, prices, source: prices.length > 0 ? ("live" as const) : ("none" as const) };
   });
