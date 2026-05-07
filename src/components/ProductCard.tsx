@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, MapPin, TrendingDown, Leaf, Store, Navigation } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 type Market = { name: string; price: number; distance: number; isBest?: boolean };
 
@@ -25,16 +26,11 @@ const nutriColors: Record<Product["nutriScore"], string> = {
   E: "bg-[oklch(0.65_0.22_27)]",
 };
 
-const novaLabel: Record<Product["novaGroup"], string> = {
-  1: "İşlenmemiş",
-  2: "Mutfak bileşeni",
-  3: "İşlenmiş",
-  4: "Ultra işlenmiş",
-};
-
 export function ProductCard({ product }: { product: Product }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const best = product.markets.find((m) => m.isBest) ?? product.markets[0];
+  const novaText = t(`nova.${product.novaGroup}`);
 
   return (
     <div className="rounded-3xl bg-card shadow-[var(--shadow-card)] overflow-hidden border border-border/50">
