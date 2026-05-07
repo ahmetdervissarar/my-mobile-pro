@@ -18,6 +18,9 @@ type OFFProduct = {
   nova_group?: number;
   nutriscore_grade?: string;
   nutriments?: Record<string, number>;
+  allergens_tags?: string[];
+  ingredients_text?: string;
+  ingredients_text_tr?: string;
 };
 
 const novaClamp = (n?: number) => Math.min(4, Math.max(1, Math.round(n ?? 3)));
@@ -33,7 +36,7 @@ const scoreFrom = (nutri: string, nova: number) => {
 
 async function fetchFromOFF(barcode: string) {
   const res = await fetch(
-    `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=product_name,product_name_tr,brands,image_front_url,image_url,nova_group,nutriscore_grade,nutriments`,
+    `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=product_name,product_name_tr,brands,image_front_url,image_url,nova_group,nutriscore_grade,nutriments,allergens_tags,ingredients_text,ingredients_text_tr`,
   );
   if (!res.ok) return null;
   const json = (await res.json()) as { status: number; product?: OFFProduct };
@@ -58,6 +61,8 @@ async function fetchFromOFF(barcode: string) {
     fat_g: n.fat_100g ?? null,
     sugars_g: n.sugars_100g ?? null,
     salt_g: n.salt_100g ?? null,
+    allergens: p.allergens_tags ?? [],
+    ingredients_text: p.ingredients_text_tr || p.ingredients_text || null,
   };
 }
 
