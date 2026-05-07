@@ -14,7 +14,129 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      markets: {
+        Row: {
+          chain: string
+          city: string | null
+          created_at: string
+          district: string | null
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+        }
+        Insert: {
+          chain: string
+          city?: string | null
+          created_at?: string
+          district?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+        }
+        Update: {
+          chain?: string
+          city?: string | null
+          created_at?: string
+          district?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      product_prices: {
+        Row: {
+          barcode: string
+          currency: string
+          id: string
+          market_id: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          barcode: string
+          currency?: string
+          id?: string
+          market_id: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          barcode?: string
+          currency?: string
+          id?: string
+          market_id?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_prices_barcode_fkey"
+            columns: ["barcode"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["barcode"]
+          },
+          {
+            foreignKeyName: "product_prices_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          barcode: string
+          brand: string | null
+          created_at: string
+          energy_kcal: number | null
+          fat_g: number | null
+          health_score: number | null
+          image_url: string | null
+          name: string
+          nova_group: number | null
+          nutri_score: string | null
+          salt_g: number | null
+          sugars_g: number | null
+          updated_at: string
+        }
+        Insert: {
+          barcode: string
+          brand?: string | null
+          created_at?: string
+          energy_kcal?: number | null
+          fat_g?: number | null
+          health_score?: number | null
+          image_url?: string | null
+          name: string
+          nova_group?: number | null
+          nutri_score?: string | null
+          salt_g?: number | null
+          sugars_g?: number | null
+          updated_at?: string
+        }
+        Update: {
+          barcode?: string
+          brand?: string | null
+          created_at?: string
+          energy_kcal?: number | null
+          fat_g?: number | null
+          health_score?: number | null
+          image_url?: string | null
+          name?: string
+          nova_group?: number | null
+          nutri_score?: string | null
+          salt_g?: number | null
+          sugars_g?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
