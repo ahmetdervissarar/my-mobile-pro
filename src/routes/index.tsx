@@ -76,26 +76,30 @@ function Index() {
       setLoading(true);
       setError(null);
       try {
-        const { product: p, prices } = await lookupAndCacheProduct({ data: { barcode: code } });
+        const ref = coords ?? { latitude: 39.9255, longitude: 32.8663 }; // Ankara fallback (Türkiye merkezi)
+        const { product: p, prices } = await lookupAndCacheProduct({
+          data: {
+            barcode: code,
+            latitude: ref.latitude,
+            longitude: ref.longitude,
+            distanceKm: 25,
+          },
+        });
         if (!p) {
           setError(`Barkod ${code} için ürün bulunamadı.`);
           setLoading(false);
           return;
         }
 
-        const ref = coords ?? { latitude: 40.978, longitude: 29.05 }; // İstanbul fallback
-        const marketRows = (prices as any[])
-          .map((row) => {
-            const m = row.markets;
-            return {
-              name: `${m.chain} • ${m.name}`,
-              price: Number(row.price),
-              distance: distanceKm(ref.latitude, ref.longitude, m.latitude, m.longitude),
-            };
-          })
+        const marketRows = prices
+          .map((row) => ({
+            name: `${row.marketChain.toUpperCase()} • ${row.marketName}`,
+            price: row.price,
+            distance: distanceKm(ref.latitude, ref.longitude, row.latitude, row.longitude),
+          }))
           .sort((a, b) => a.distance - b.distance);
 
-        const bestPrice = Math.min(...marketRows.map((m) => m.price));
+        const bestPrice = marketRows.length ? Math.min(...marketRows.map((m) => m.price)) : 0;
         const markets = marketRows.map((m) => ({ ...m, isBest: m.price === bestPrice }));
 
         const nutri = (p.nutri_score ?? "C") as Product["nutriScore"];
