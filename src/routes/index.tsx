@@ -276,6 +276,7 @@ function Index() {
         open={scannerOpen}
         onClose={() => setScannerOpen(false)}
         onDetected={handleDetected}
+        onPhotoCaptured={handlePhotoCaptured}
       />
     </div>
   );
