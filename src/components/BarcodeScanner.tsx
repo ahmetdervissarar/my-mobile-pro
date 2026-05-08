@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { X, Loader2, Camera as CameraIcon } from "lucide-react";
+import { BarcodeFormat, DecodeHintType } from "@zxing/library";
+import { X, Loader2, Camera as CameraIcon, Sparkles } from "lucide-react";
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onDetected: (code: string) => void;
+  onPhotoCaptured?: (imageBase64: string, mimeType: string) => void;
 };
 
-export function BarcodeScanner({ open, onClose, onDetected }: Props) {
+export function BarcodeScanner({ open, onClose, onDetected, onPhotoCaptured }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [capturing, setCapturing] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -20,12 +23,25 @@ export function BarcodeScanner({ open, onClose, onDetected }: Props) {
     setError(null);
     setStarting(true);
 
-    const reader = new BrowserMultiFormatReader();
+    // Restrict to common product barcode formats — speeds detection and
+    // eliminates noisy QR/Aztec/DataMatrix attempts that flood the console.
+    const hints = new Map();
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+      BarcodeFormat.EAN_13,
+      BarcodeFormat.EAN_8,
+      BarcodeFormat.UPC_A,
+      BarcodeFormat.UPC_E,
+      BarcodeFormat.CODE_128,
+      BarcodeFormat.CODE_39,
+      BarcodeFormat.ITF,
+    ]);
+    hints.set(DecodeHintType.TRY_HARDER, true);
+
+    const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 120 });
 
     (async () => {
       try {
         const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-        // Prefer back/environment camera
         const back = devices.find((d) => /back|rear|environment/i.test(d.label)) ?? devices[devices.length - 1];
         const deviceId = back?.deviceId;
 
@@ -64,6 +80,33 @@ export function BarcodeScanner({ open, onClose, onDetected }: Props) {
     };
   }, [open, onDetected]);
 
+  const handleCapture = async () => {
+    if (!videoRef.current || !onPhotoCaptured || capturing) return;
+    setCapturing(true);
+    try {
+      const v = videoRef.current;
+      const w = v.videoWidth || 1280;
+      const h = v.videoHeight || 720;
+      const canvas = document.createElement("canvas");
+      // Cap to 1280px on long edge to keep payload small
+      const scale = Math.min(1, 1280 / Math.max(w, h));
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("canvas");
+      ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      const base64 = dataUrl.split(",")[1];
+      controlsRef.current?.stop();
+      onPhotoCaptured(base64, "image/jpeg");
+    } catch (e) {
+      console.error(e);
+      setError("Fotoğraf alınamadı.");
+    } finally {
+      setCapturing(false);
+    }
+  };
+
   if (!open) return null;
 
   return (
@@ -101,7 +144,7 @@ export function BarcodeScanner({ open, onClose, onDetected }: Props) {
       </div>
 
       {(starting || error) && (
-        <div className="absolute inset-x-0 bottom-24 flex justify-center px-6">
+        <div className="absolute inset-x-0 bottom-32 flex justify-center px-6">
           <div className="bg-white/10 backdrop-blur-xl text-white rounded-2xl px-5 py-3 flex items-center gap-3 max-w-sm">
             {starting && !error ? (
               <>
@@ -115,6 +158,21 @@ export function BarcodeScanner({ open, onClose, onDetected }: Props) {
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Photo recognition CTA */}
+      {onPhotoCaptured && !error && (
+        <div className="absolute inset-x-0 bottom-0 z-10 p-6 bg-gradient-to-t from-black/80 to-transparent flex flex-col items-center gap-2">
+          <button
+            onClick={handleCapture}
+            disabled={capturing || starting}
+            className="rounded-full bg-white text-black font-semibold px-6 py-3 flex items-center gap-2 shadow-xl disabled:opacity-60"
+          >
+            {capturing ? <Loader2 className="size-5 animate-spin" /> : <Sparkles className="size-5" />}
+            <span>Fotoğraftan tanı</span>
+          </button>
+          <p className="text-white/70 text-xs">Barkod yoksa ürünü AI ile tanıyalım</p>
         </div>
       )}
 

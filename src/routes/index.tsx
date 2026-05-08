@@ -6,6 +6,7 @@ import { ProductCard, type Product } from "@/components/ProductCard";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { HealthWarning } from "@/components/HealthWarning";
 import { lookupAndCacheProduct } from "@/server/products.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { distanceKm, getCurrentLocation, type Coords } from "@/lib/geo";
 import { useI18n } from "@/lib/i18n";
 import { useHealthProfile, evaluateRisk, normalizeAllergens, vibrateWarning, type RiskResult } from "@/lib/health-profile";
@@ -79,17 +80,21 @@ function Index() {
     { label: t("nutri.salt"), value: fmt(salt), level: lvl(salt, 0.3, 1.5) },
   ];
 
-  const handleDetected = useCallback(
-    async (code: string) => {
-      setScannerOpen(false);
-      setLastCode(code);
+  const runLookup = useCallback(
+    async (args: { barcode?: string; query?: string; label?: string }) => {
       setLoading(true);
       setError(null);
       setRisk(null);
       try {
         const ref = coords ?? { latitude: 39.9255, longitude: 32.8663 };
         const { product: p, prices } = await lookupAndCacheProduct({
-          data: { barcode: code, latitude: ref.latitude, longitude: ref.longitude, distanceKm: 25 },
+          data: {
+            barcode: args.barcode,
+            query: args.query,
+            latitude: ref.latitude,
+            longitude: ref.longitude,
+            distanceKm: 25,
+          },
         });
         if (!p) {
           setError(t("result.notFound"));
@@ -124,7 +129,6 @@ function Index() {
           nutrients: localizedNutrients(p.energy_kcal, p.fat_g, p.sugars_g, p.salt_g),
         });
 
-        // Health risk evaluation
         const productAllergens = normalizeAllergens(p.allergens);
         const r = evaluateRisk(profile, productAllergens, {
           sugars_g: p.sugars_g,
@@ -143,6 +147,38 @@ function Index() {
       }
     },
     [coords, profile, t],
+  );
+
+  const handleDetected = useCallback(
+    async (code: string) => {
+      setScannerOpen(false);
+      setLastCode(code);
+      await runLookup({ barcode: code });
+    },
+    [runLookup],
+  );
+
+  const handlePhotoCaptured = useCallback(
+    async (imageBase64: string, mimeType: string) => {
+      setScannerOpen(false);
+      setLoading(true);
+      setError(null);
+      try {
+        const { data, error: fnErr } = await supabase.functions.invoke("recognize-product", {
+          body: { imageBase64, mimeType },
+        });
+        if (fnErr || !data) throw fnErr ?? new Error("recognize failed");
+        const barcode: string | undefined = data.barcode && /^[0-9]{6,}$/.test(data.barcode) ? data.barcode : undefined;
+        const query: string | undefined = data.searchQuery || [data.brand, data.productName].filter(Boolean).join(" ");
+        setLastCode(barcode ?? `📷 ${data.productName ?? query ?? ""}`);
+        await runLookup({ barcode, query });
+      } catch (e) {
+        console.error(e);
+        setError(t("result.error"));
+        setLoading(false);
+      }
+    },
+    [runLookup, t],
   );
 
   return (
@@ -240,6 +276,7 @@ function Index() {
         open={scannerOpen}
         onClose={() => setScannerOpen(false)}
         onDetected={handleDetected}
+        onPhotoCaptured={handlePhotoCaptured}
       />
     </div>
   );
