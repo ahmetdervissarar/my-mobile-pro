@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { BarcodeFormat, DecodeHintType } from "@zxing/library";
+import ZXing from "@zxing/library";
+const { BarcodeFormat, DecodeHintType } = ZXing;
 import { X, Loader2, Camera as CameraIcon, Sparkles } from "lucide-react";
 
 type Props = {
