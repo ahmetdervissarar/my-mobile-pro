@@ -3,11 +3,12 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const Input = z.object({
-  barcode: z.string().min(4).max(32).regex(/^[0-9A-Za-z]+$/),
+  barcode: z.string().min(4).max(32).regex(/^[0-9A-Za-z]+$/).optional(),
+  query: z.string().min(2).max(120).optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   distanceKm: z.number().min(1).max(50).optional(),
-});
+}).refine((v) => v.barcode || v.query, { message: "barcode or query required" });
 
 type OFFProduct = {
   product_name?: string;
