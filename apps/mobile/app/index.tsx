@@ -48,6 +48,19 @@ export default function HomeScreen() {
         >
           <Text style={{ fontSize: 17, fontWeight: '600', color: '#111827' }}>Ürün ara</Text>
         </Pressable>
+
+        <Pressable
+          style={{
+            alignItems: 'center',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#111827',
+            backgroundColor: '#fff',
+            paddingVertical: 14,
+          }}
+        >
+          <Text style={{ fontSize: 17, fontWeight: '600', color: '#111827' }}>Fotoğrafla ara</Text>
+        </Pressable>
       </View>
     </View>
   );
