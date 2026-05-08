@@ -161,53 +161,85 @@ function flattenPrices(resp: MFSearchResponse | null): PriceRow[] {
 export const lookupAndCacheProduct = createServerFn({ method: "POST" })
   .inputValidator((input) => Input.parse(input))
   .handler(async ({ data }) => {
-    const { barcode } = data;
+    const { barcode, query } = data;
     // Default: Ankara center, 25km — works for any Turkish city
     const lat = data.latitude ?? 39.9255;
     const lon = data.longitude ?? 32.8663;
     const dist = data.distanceKm ?? 25;
 
-    // 1. Try product cache (Open Food Facts data)
-    const { data: cached } = await supabaseAdmin
-      .from("products")
-      .select("*")
-      .eq("barcode", barcode)
-      .maybeSingle();
+    let product: any = null;
 
-    let product = cached;
-
-    // 2. Fallback to OpenFoodFacts + cache
-    if (!product) {
-      const off = await fetchFromOFF(barcode);
-      if (!off) return { product: null, prices: [] as PriceRow[], source: "none" as const };
-
-      const { data: inserted } = await supabaseAdmin
+    if (barcode) {
+      // 1. Try product cache (Open Food Facts data)
+      const { data: cached } = await supabaseAdmin
         .from("products")
-        .upsert({ barcode, ...off, updated_at: new Date().toISOString() })
-        .select()
-        .single();
-      product = inserted;
+        .select("*")
+        .eq("barcode", barcode)
+        .maybeSingle();
+
+      product = cached;
+
+      // 2. Fallback to OpenFoodFacts + cache
+      if (!product) {
+        const off = await fetchFromOFF(barcode);
+        if (off) {
+          const { data: inserted } = await supabaseAdmin
+            .from("products")
+            .upsert({ barcode, ...off, updated_at: new Date().toISOString() })
+            .select()
+            .single();
+          product = inserted;
+        }
+      }
     }
 
     // 3. Live price lookup from Marketfiyatı.org.tr
-    // Try barcode first (rarely indexed), then product name + brand
     let prices: PriceRow[] = [];
-    let resp = await mfSearch(barcode, lat, lon, dist);
-    prices = flattenPrices(resp);
+
+    if (barcode) {
+      const resp = await mfSearch(barcode, lat, lon, dist);
+      prices = flattenPrices(resp);
+    }
 
     if (prices.length === 0 && product?.name) {
-      const query = product.brand
+      const q = product.brand
         ? `${product.brand} ${product.name}`.slice(0, 80)
         : product.name.slice(0, 80);
-      resp = await mfSearch(query, lat, lon, dist);
+      const resp = await mfSearch(q, lat, lon, dist);
       prices = flattenPrices(resp);
     }
 
-    // Fallback: try just the product name without brand
-    if (prices.length === 0 && product?.name) {
-      resp = await mfSearch(product.name.split(" ").slice(0, 3).join(" "), lat, lon, dist);
+    if (prices.length === 0 && query) {
+      const resp = await mfSearch(query.slice(0, 80), lat, lon, dist);
       prices = flattenPrices(resp);
     }
+
+    if (prices.length === 0 && product?.name) {
+      const resp = await mfSearch(product.name.split(" ").slice(0, 3).join(" "), lat, lon, dist);
+      prices = flattenPrices(resp);
+    }
+
+    // Build a synthetic product from price-row metadata when OFF lookup failed
+    if (!product && prices.length > 0) {
+      const first = prices[0];
+      product = {
+        barcode: barcode ?? null,
+        name: first.productTitle ?? query ?? "Tanınan ürün",
+        brand: null,
+        image_url: first.productImage ?? null,
+        nova_group: null,
+        nutri_score: null,
+        health_score: null,
+        energy_kcal: null,
+        fat_g: null,
+        sugars_g: null,
+        salt_g: null,
+        allergens: [],
+        ingredients_text: null,
+      };
+    }
+
+    return { product, prices, source: prices.length > 0 ? ("live" as const) : ("none" as const) };
 
     return { product, prices, source: prices.length > 0 ? ("live" as const) : ("none" as const) };
   });
