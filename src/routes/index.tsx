@@ -6,6 +6,7 @@ import { ProductCard, type Product } from "@/components/ProductCard";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { HealthWarning } from "@/components/HealthWarning";
 import { lookupAndCacheProduct } from "@/server/products.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { distanceKm, getCurrentLocation, type Coords } from "@/lib/geo";
 import { useI18n } from "@/lib/i18n";
 import { useHealthProfile, evaluateRisk, normalizeAllergens, vibrateWarning, type RiskResult } from "@/lib/health-profile";
