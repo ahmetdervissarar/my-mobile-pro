@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
 import {
-  BarcodeType,
   CameraView,
   type BarcodeScanningResult,
   useCameraPermissions,
@@ -41,7 +40,7 @@ export default function BarcodeScanScreen() {
         <CameraView
           style={StyleSheet.absoluteFill}
           barcodeScannerSettings={{
-            barcodeTypes: [BarcodeType.ean13, BarcodeType.ean8, BarcodeType.upc_a, BarcodeType.upc_e],
+            barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e"],
           }}
           onBarcodeScanned={scannedBarcode ? undefined : handleBarcodeScanned}
         />
