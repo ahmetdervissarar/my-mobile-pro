@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 export default function HomeScreen() {
@@ -35,6 +36,7 @@ export default function HomeScreen() {
         </Pressable>
 
         <Pressable
+          onPress={() => router.push('/search')}
           style={{
             alignItems: 'center',
             borderRadius: 12,
