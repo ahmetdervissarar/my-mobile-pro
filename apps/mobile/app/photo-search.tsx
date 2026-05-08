@@ -6,7 +6,7 @@ export default function PhotoSearchScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView | null>(null);
   const [isTakingPhoto, setIsTakingPhoto] = useState(false);
-  const [lastPhotoUri, setLastPhotoUri] = useState<string | null>(null);
+  const [isPhotoTaken, setIsPhotoTaken] = useState(false);
 
   useEffect(() => {
     if (!permission) {
@@ -25,9 +25,8 @@ export default function PhotoSearchScreen() {
 
     try {
       setIsTakingPhoto(true);
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
-      setLastPhotoUri(photo?.uri ?? null);
-      Alert.alert('Başarılı', 'Fotoğraf çekildi.');
+      await cameraRef.current.takePictureAsync({ quality: 0.8 });
+      setIsPhotoTaken(true);
     } catch {
       Alert.alert('Hata', 'Fotoğraf çekilirken bir sorun oluştu.');
     } finally {
@@ -61,7 +60,7 @@ export default function PhotoSearchScreen() {
       <View style={styles.buttonContainer}>
         <Button title={isTakingPhoto ? 'Çekiliyor...' : 'Fotoğraf çek'} onPress={handleTakePhoto} disabled={isTakingPhoto} />
       </View>
-      {lastPhotoUri ? <Text style={styles.infoText}>Son fotoğraf hazır: {lastPhotoUri}</Text> : null}
+      {isPhotoTaken ? <Text style={styles.infoText}>Fotoğraf başarıyla çekildi.</Text> : null}
     </View>
   );
 }
