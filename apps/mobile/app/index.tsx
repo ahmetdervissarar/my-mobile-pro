@@ -25,6 +25,7 @@ export default function HomeScreen() {
 
       <View style={{ width: '100%', maxWidth: 320, gap: 12 }}>
         <Pressable
+          onPress={() => router.push('/barcode-scan')}
           style={{
             alignItems: 'center',
             borderRadius: 12,
