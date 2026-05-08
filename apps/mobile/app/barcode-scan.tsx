@@ -5,12 +5,19 @@ import { CameraView, type BarcodeScanningResult, useCameraPermissions } from 'ex
 export default function BarcodeScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scannedBarcode, setScannedBarcode] = useState<string | null>(null);
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
 
   const handleBarcodeScanned = (result: BarcodeScanningResult) => {
     if (scannedBarcode) {
       return;
     }
 
+    if (result.type === 'qr') {
+      setScanMessage('Lütfen ürün barkodu okutun.');
+      return;
+    }
+
+    setScanMessage(null);
     setScannedBarcode(result.data);
   };
 
@@ -36,30 +43,24 @@ export default function BarcodeScanScreen() {
         <CameraView
           style={StyleSheet.absoluteFill}
           barcodeScannerSettings={{
-            barcodeTypes: [
-              'ean13',
-              'ean8',
-              'upc_a',
-              'upc_e',
-              'code39',
-              'code93',
-              'code128',
-              'itf14',
-              'codabar',
-              'qr',
-              'pdf417',
-              'aztec',
-              'datamatrix',
-            ],
+            barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'],
           }}
           onBarcodeScanned={scannedBarcode ? undefined : handleBarcodeScanned}
         />
       </View>
 
+      {scanMessage ? <Text style={styles.warningText}>{scanMessage}</Text> : null}
+
       <Text style={styles.resultLabel}>Okutulan Barkod:</Text>
       <Text style={styles.resultValue}>{scannedBarcode ?? '-'}</Text>
 
-      <Button title="Tekrar okut" onPress={() => setScannedBarcode(null)} />
+      <Button
+        title="Tekrar okut"
+        onPress={() => {
+          setScannedBarcode(null);
+          setScanMessage(null);
+        }}
+      />
     </View>
   );
 }
@@ -98,5 +99,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#111827',
+  },
+  warningText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#B91C1C',
+    textAlign: 'center',
   },
 });
