@@ -1,4 +1,4 @@
+project_id = "yhsqgloohosakftjnmzr"
+
 [functions.recognize-product]
 verify_jwt = false
-
-project_id = "yhsqgloohosakftjnmzr"
