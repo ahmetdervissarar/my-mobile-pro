@@ -50,6 +50,7 @@ export default function HomeScreen() {
         </Pressable>
 
         <Pressable
+          onPress={() => router.push('/photo-search')}
           style={{
             alignItems: 'center',
             borderRadius: 12,
