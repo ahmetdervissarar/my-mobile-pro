@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { getMockProductResult } from '../src/services/productService';
+import { getProductResult } from '../src/services/productService';
 
 export default function ProductResultScreen() {
   const { barcode, productName, searchType } = useLocalSearchParams<{
@@ -21,7 +21,7 @@ export default function ProductResultScreen() {
 
   const result = useMemo(
     () =>
-      getMockProductResult({
+      getProductResult({
         barcode,
         productName,
         photoSource: searchType === 'photo' ? 'camera' : undefined,
