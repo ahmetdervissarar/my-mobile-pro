@@ -1,9 +1,23 @@
+import * as Location from 'expo-location';
+
 export async function getUserLocationForPricing(): Promise<{
   latitude: number;
   longitude: number;
 } | null> {
-  // TODO: İleride expo-location ile izin istenecek.
-  // TODO: İleride latitude ve longitude alınacak.
-  // TODO: İleride market fiyatı sorgusunda kullanılacak.
-  return null;
+  try {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+
+    if (status !== 'granted') {
+      return null;
+    }
+
+    const position = await Location.getCurrentPositionAsync({});
+
+    return {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+    };
+  } catch {
+    return null;
+  }
 }
