@@ -132,6 +132,11 @@ export default function ProductResultScreen() {
         </Pressable>
         {isContentOpen ? (
           <>
+            <Text style={styles.helperText}>
+              Alerjen ve katkı bilgileri ürün etiketine göre değişebilir. Son karar için ambalaj üzerindeki
+              bilgileri kontrol edin.
+            </Text>
+
             <View style={styles.row}>
               <Text style={styles.label}>Alerjenler</Text>
               <Text style={styles.value}>
