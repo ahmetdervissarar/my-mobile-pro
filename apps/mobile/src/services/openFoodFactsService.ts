@@ -9,12 +9,28 @@ export type OpenFoodFactsProductInfo = {
 };
 
 function parseNutriScoreGrade(value: string | undefined): string | null {
-  const normalized = value?.trim().toLowerCase();
-  return normalized ? normalized : null;
+  const normalized = value?.trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  const lowered = normalized.toLowerCase();
+
+  if (lowered === 'unknown' || lowered === 'null' || lowered === 'undefined') {
+    return null;
+  }
+
+  const upper = lowered.toUpperCase();
+  return ['A', 'B', 'C', 'D', 'E'].includes(upper) ? upper : null;
 }
 
 function parseNovaGroup(value: number | undefined): number | null {
-  return typeof value === 'number' ? value : null;
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return null;
+  }
+
+  return [1, 2, 3, 4].includes(value) ? value : null;
 }
 
 type OpenFoodFactsApiResponse = {
