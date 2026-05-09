@@ -100,6 +100,13 @@ export default function ProductResultScreen() {
         </View>
 
         <View style={styles.row}>
+          <Text style={styles.label}>Alerjenler</Text>
+          <Text style={styles.value}>
+            {result.allergens.length > 0 ? result.allergens.join(', ') : 'Bilinmiyor'}
+          </Text>
+        </View>
+
+        <View style={styles.row}>
           <Text style={styles.label}>Uyarılar</Text>
           <Text style={styles.value}>{result.warnings.join(', ')}</Text>
         </View>
