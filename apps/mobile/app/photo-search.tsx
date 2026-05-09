@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Button, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
 export default function PhotoSearchScreen() {
@@ -7,6 +8,7 @@ export default function PhotoSearchScreen() {
   const cameraRef = useRef<CameraView | null>(null);
   const [isTakingPhoto, setIsTakingPhoto] = useState(false);
   const [isPhotoTaken, setIsPhotoTaken] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     if (!permission) {
@@ -27,6 +29,10 @@ export default function PhotoSearchScreen() {
       setIsTakingPhoto(true);
       await cameraRef.current.takePictureAsync({ quality: 0.8 });
       setIsPhotoTaken(true);
+      router.push({
+        pathname: '/product-result',
+        params: { searchType: 'photo' },
+      });
     } catch {
       Alert.alert('Hata', 'Fotoğraf çekilirken bir sorun oluştu.');
     } finally {
