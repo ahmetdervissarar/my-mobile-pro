@@ -17,7 +17,14 @@ export default function BarcodeScanScreen() {
     }
 
     setScannedBarcode(result.data);
-    router.push({ pathname: '/product-result', params: { barcode: result.data } });
+    router.replace({
+      pathname: '/product-result',
+      params: {
+        barcode: result.data,
+        productName: undefined,
+        searchType: 'barcode',
+      },
+    });
   };
 
   if (!permission) {

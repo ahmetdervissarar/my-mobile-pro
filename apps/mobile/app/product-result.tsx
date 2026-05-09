@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { getMockProductResult, getProductResult } from '../src/services/productService';
@@ -19,22 +19,32 @@ export default function ProductResultScreen() {
     photo: 'Fotoğrafla arama',
   };
 
-  const [result, setResult] = useState(() =>
-    getMockProductResult({
-      barcode,
-      productName,
+  const normalizedInput = useMemo(() => {
+    const normalizedBarcode = barcode?.trim();
+
+    if (normalizedBarcode) {
+      return {
+        barcode: normalizedBarcode,
+        productName: undefined,
+        photoSource: undefined,
+      };
+    }
+
+    return {
+      barcode: undefined,
+      productName: productName?.trim(),
       photoSource: searchType === 'photo' ? 'camera' : undefined,
-    }),
-  );
+    };
+  }, [barcode, productName, searchType]);
+
+  const [result, setResult] = useState(() => getMockProductResult(normalizedInput));
 
   useEffect(() => {
+    setResult(getMockProductResult(normalizedInput));
+
     let isMounted = true;
 
-    void getProductResult({
-      barcode,
-      productName,
-      photoSource: searchType === 'photo' ? 'camera' : undefined,
-    }).then((nextResult) => {
+    void getProductResult(normalizedInput).then((nextResult) => {
       if (isMounted) {
         setResult(nextResult);
       }
@@ -43,7 +53,7 @@ export default function ProductResultScreen() {
     return () => {
       isMounted = false;
     };
-  }, [barcode, productName, searchType]);
+  }, [normalizedInput]);
 
   return (
     <View style={styles.container}>
