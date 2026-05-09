@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getMockProductResult, getProductResult } from '../src/services/productService';
 import { getUserLocationForPricing } from '../src/services/locationService';
+import { fetchMarketPrices } from '../src/services/marketPriceService';
 
 export default function ProductResultScreen() {
   const { barcode, productName, searchType } = useLocalSearchParams<{
@@ -47,6 +48,7 @@ export default function ProductResultScreen() {
   const [isIngredientsVisible, setIsIngredientsVisible] = useState(false);
   const [locationStatus, setLocationStatus] = useState<string | null>(null);
   const [isLocationLoading, setIsLocationLoading] = useState(false);
+  const [marketPriceText, setMarketPriceText] = useState<string | null>(null);
 
   useEffect(() => {
     setResult(getMockProductResult(normalizedInput));
@@ -56,6 +58,7 @@ export default function ProductResultScreen() {
     setIsPriceOpen(false);
     setIsIngredientsVisible(false);
     setLocationStatus(null);
+    setMarketPriceText(null);
 
     let isMounted = true;
 
@@ -73,17 +76,33 @@ export default function ProductResultScreen() {
   const handleFindPricesByLocation = async () => {
     setIsLocationLoading(true);
     setLocationStatus(null);
+    setMarketPriceText(null);
 
     try {
       const location = await getUserLocationForPricing();
+      const marketPriceResult = await fetchMarketPrices(
+        {
+          productName: result.name,
+          barcode: result.barcode,
+        },
+        location ?? undefined,
+      );
 
       if (location) {
         setLocationStatus('Konum alındı');
       } else {
         setLocationStatus('Konum izni verilmedi');
       }
+
+      if (marketPriceResult.prices.length > 0) {
+        const bestPrice = marketPriceResult.prices[0];
+        setMarketPriceText(`${bestPrice.price} ${bestPrice.currency} (${bestPrice.marketName})`);
+      } else {
+        setMarketPriceText('Yakındaki market fiyatı bulunamadı');
+      }
     } catch {
       setLocationStatus('Konum alınamadı');
+      setMarketPriceText('Yakındaki market fiyatı bulunamadı');
     } finally {
       setIsLocationLoading(false);
     }
@@ -202,7 +221,7 @@ export default function ProductResultScreen() {
         {isPriceOpen ? (
           <View style={styles.row}>
             <Text style={styles.label}>Fiyat bilgisi</Text>
-            <Text style={styles.value}>{result.priceText}</Text>
+            <Text style={styles.value}>{marketPriceText ?? result.priceText}</Text>
 
             <Pressable style={styles.inlineButton} onPress={handleFindPricesByLocation}>
               <Text style={styles.inlineButtonText}>
