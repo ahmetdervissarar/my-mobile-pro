@@ -62,6 +62,7 @@ export default function ProductResultScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>Ürün Sonucu</Text>
 
+        <Text style={styles.sectionTitle}>Temel bilgiler</Text>
         <View style={styles.row}>
           <Text style={styles.label}>Ürün adı</Text>
           <Text style={styles.value}>{result.name}</Text>
@@ -77,14 +78,10 @@ export default function ProductResultScreen() {
           <Text style={styles.value}>{sourceLabelMap[result.searchSource] ?? result.searchSource}</Text>
         </View>
 
+        <Text style={styles.sectionTitle}>Sağlık değerlendirmesi</Text>
         <View style={styles.row}>
           <Text style={styles.label}>Sağlık skoru</Text>
           <Text style={styles.value}>{result.healthScore}/100</Text>
-        </View>
-
-        <View style={styles.row}>
-          <Text style={styles.label}>Fiyat bilgisi</Text>
-          <Text style={styles.value}>{result.priceText}</Text>
         </View>
 
         <View style={styles.row}>
@@ -101,6 +98,7 @@ export default function ProductResultScreen() {
           </Text>
         </View>
 
+        <Text style={styles.sectionTitle}>İçerik ve alerjenler</Text>
         <View style={styles.row}>
           <Text style={styles.label}>Alerjenler</Text>
           <Text style={styles.value}>
@@ -114,7 +112,6 @@ export default function ProductResultScreen() {
             {result.additives.length > 0 ? result.additives.join(', ') : 'Bilinmiyor'}
           </Text>
         </View>
-
 
         <View style={styles.row}>
           <Text style={styles.label}>İçindekiler</Text>
@@ -133,9 +130,10 @@ export default function ProductResultScreen() {
           ) : null}
         </View>
 
+        <Text style={styles.sectionTitle}>Fiyat bilgisi</Text>
         <View style={styles.row}>
-          <Text style={styles.label}>Uyarılar</Text>
-          <Text style={styles.value}>{result.warnings.join(', ')}</Text>
+          <Text style={styles.label}>Fiyat bilgisi</Text>
+          <Text style={styles.value}>{result.priceText}</Text>
         </View>
       </View>
 
@@ -182,6 +180,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginTop: 4,
   },
   row: {
     gap: 6,
