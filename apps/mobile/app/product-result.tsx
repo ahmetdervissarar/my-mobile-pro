@@ -107,6 +107,13 @@ export default function ProductResultScreen() {
         </View>
 
         <View style={styles.row}>
+          <Text style={styles.label}>Katkı maddeleri</Text>
+          <Text style={styles.value}>
+            {result.additives.length > 0 ? result.additives.join(', ') : 'Bilinmiyor'}
+          </Text>
+        </View>
+
+        <View style={styles.row}>
           <Text style={styles.label}>Uyarılar</Text>
           <Text style={styles.value}>{result.warnings.join(', ')}</Text>
         </View>

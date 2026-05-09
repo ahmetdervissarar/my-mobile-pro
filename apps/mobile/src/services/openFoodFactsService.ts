@@ -56,6 +56,17 @@ function parseAllergens(tags: string[] | undefined): string[] {
     .map((tag) => tag.charAt(0).toUpperCase() + tag.slice(1));
 }
 
+function parseAdditives(tags: string[] | undefined): string[] {
+  if (!Array.isArray(tags)) {
+    return [];
+  }
+
+  return tags
+    .map((tag) => tag.replace(/^[a-z]{2}:/i, '').replace(/-/g, ' ').trim())
+    .filter(Boolean)
+    .map((tag) => tag.toUpperCase());
+}
+
 /**
  * Open Food Facts üzerinden barkoda göre ürün bilgisini getirir.
  */
@@ -97,7 +108,7 @@ export async function fetchOpenFoodFactsByBarcode(
       allergens: parseAllergens(data.product.allergens_tags),
       nutriScore: parseNutriScoreGrade(data.product.nutriscore_grade),
       novaGroup: parseNovaGroup(data.product.nova_group),
-      additives: data.product.additives_tags ?? [],
+      additives: parseAdditives(data.product.additives_tags),
     };
   } catch (error) {
     return null;

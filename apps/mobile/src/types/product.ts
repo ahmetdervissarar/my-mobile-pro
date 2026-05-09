@@ -7,6 +7,7 @@ export type ProductResult = {
   priceText: string;
   warnings: string[];
   allergens: string[];
+  additives: string[];
   nutriScore: string | null;
   novaGroup: number | null;
 };
