@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { router } from 'expo-router';
 import { Button, StyleSheet, Text, View } from 'react-native';
 import {
   CameraView,
@@ -16,6 +17,7 @@ export default function BarcodeScanScreen() {
     }
 
     setScannedBarcode(result.data);
+    router.push({ pathname: '/product-result', params: { barcode: result.data } });
   };
 
   if (!permission) {
