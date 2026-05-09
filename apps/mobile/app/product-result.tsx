@@ -182,10 +182,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    marginTop: 4,
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 10,
+    marginBottom: 2,
   },
   row: {
     gap: 6,
