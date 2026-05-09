@@ -8,6 +8,15 @@ export type OpenFoodFactsProductInfo = {
   additives: string[];
 };
 
+function parseNutriScoreGrade(value: string | undefined): string | null {
+  const normalized = value?.trim().toLowerCase();
+  return normalized ? normalized : null;
+}
+
+function parseNovaGroup(value: number | undefined): number | null {
+  return typeof value === 'number' ? value : null;
+}
+
 type OpenFoodFactsApiResponse = {
   status?: number;
   product?: {
@@ -59,8 +68,8 @@ export async function fetchOpenFoodFactsByBarcode(
       productName: data.product.product_name ?? null,
       ingredientsText: data.product.ingredients_text ?? null,
       allergens: data.product.allergens_tags ?? [],
-      nutriScore: data.product.nutriscore_grade ?? null,
-      novaGroup: data.product.nova_group ?? null,
+      nutriScore: parseNutriScoreGrade(data.product.nutriscore_grade),
+      novaGroup: parseNovaGroup(data.product.nova_group),
       additives: data.product.additives_tags ?? [],
     };
   } catch (error) {
