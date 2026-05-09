@@ -1,8 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { getProductResult } from '../src/services/productService';
+import { getMockProductResult, getProductResult } from '../src/services/productService';
 
 export default function ProductResultScreen() {
   const { barcode, productName, searchType } = useLocalSearchParams<{
@@ -19,15 +19,31 @@ export default function ProductResultScreen() {
     photo: 'Fotoğrafla arama',
   };
 
-  const result = useMemo(
-    () =>
-      getProductResult({
-        barcode,
-        productName,
-        photoSource: searchType === 'photo' ? 'camera' : undefined,
-      }),
-    [barcode, productName, searchType],
+  const [result, setResult] = useState(() =>
+    getMockProductResult({
+      barcode,
+      productName,
+      photoSource: searchType === 'photo' ? 'camera' : undefined,
+    }),
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void getProductResult({
+      barcode,
+      productName,
+      photoSource: searchType === 'photo' ? 'camera' : undefined,
+    }).then((nextResult) => {
+      if (isMounted) {
+        setResult(nextResult);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [barcode, productName, searchType]);
 
   return (
     <View style={styles.container}>

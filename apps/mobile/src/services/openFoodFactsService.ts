@@ -8,34 +8,62 @@ export type OpenFoodFactsProductInfo = {
   additives: string[];
 };
 
+type OpenFoodFactsApiResponse = {
+  status?: number;
+  product?: {
+    product_name?: string;
+    nutriscore_grade?: string;
+    nova_group?: number;
+    ingredients_text?: string;
+    allergens_tags?: string[];
+    additives_tags?: string[];
+  };
+};
+
 /**
  * Open Food Facts üzerinden barkoda göre ürün bilgisini getirir.
- *
- * TODO: Open Food Facts API endpoint'ine barkod ile istek atılacak.
- * TODO: Barkod ile ürün adı (product_name) bilgisi alınacak.
- * TODO: Barkod ile içerik (ingredients_text) bilgisi alınacak.
- * TODO: Barkod ile alerjen (allergens_tags / allergens) bilgisi alınacak.
- * TODO: Barkod ile nutriscore (nutriscore_grade) bilgisi alınacak.
- * TODO: Barkod ile nova (nova_group) bilgisi alınacak.
- * TODO: Barkod ile katkı (additives_tags) bilgisi alınacak.
  */
 export async function fetchOpenFoodFactsByBarcode(
   barcode: string,
 ): Promise<OpenFoodFactsProductInfo | null> {
-  // Not: Şimdilik gerçek API çağrısı yapılmıyor.
-  // Not: İleride fetch ile entegrasyon burada eklenecek.
+  const trimmedBarcode = barcode?.trim();
 
-  if (!barcode?.trim()) {
+  if (!trimmedBarcode) {
     return null;
   }
 
-  return {
-    barcode: barcode.trim(),
-    productName: null,
-    ingredientsText: null,
-    allergens: [],
-    nutriScore: null,
-    novaGroup: null,
-    additives: [],
-  };
+  try {
+    const fields = [
+      'product_name',
+      'nutriscore_grade',
+      'nova_group',
+      'ingredients_text',
+      'allergens_tags',
+      'additives_tags',
+    ].join(',');
+    const endpoint = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(trimmedBarcode)}?fields=${encodeURIComponent(fields)}`;
+    const response = await fetch(endpoint);
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json()) as OpenFoodFactsApiResponse;
+
+    if (data.status !== 1 || !data.product) {
+      return null;
+    }
+
+    return {
+      barcode: trimmedBarcode,
+      productName: data.product.product_name ?? null,
+      ingredientsText: data.product.ingredients_text ?? null,
+      allergens: data.product.allergens_tags ?? [],
+      nutriScore: data.product.nutriscore_grade ?? null,
+      novaGroup: data.product.nova_group ?? null,
+      additives: data.product.additives_tags ?? [],
+    };
+  } catch (error) {
+    return null;
+  }
 }
