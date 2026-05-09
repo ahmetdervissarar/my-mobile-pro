@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getMockProductResult, getProductResult } from '../src/services/productService';
 
@@ -38,10 +38,18 @@ export default function ProductResultScreen() {
   }, [barcode, productName, searchType]);
 
   const [result, setResult] = useState(() => getMockProductResult(normalizedInput));
+  const [isBasicInfoOpen, setIsBasicInfoOpen] = useState(true);
+  const [isHealthOpen, setIsHealthOpen] = useState(false);
+  const [isContentOpen, setIsContentOpen] = useState(false);
+  const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [isIngredientsVisible, setIsIngredientsVisible] = useState(false);
 
   useEffect(() => {
     setResult(getMockProductResult(normalizedInput));
+    setIsBasicInfoOpen(true);
+    setIsHealthOpen(false);
+    setIsContentOpen(false);
+    setIsPriceOpen(false);
     setIsIngredientsVisible(false);
 
     let isMounted = true;
@@ -58,83 +66,113 @@ export default function ProductResultScreen() {
   }, [normalizedInput]);
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.card}>
         <Text style={styles.title}>Ürün Sonucu</Text>
 
-        <Text style={styles.sectionTitle}>Temel bilgiler</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Ürün adı</Text>
-          <Text style={styles.value}>{result.name}</Text>
-        </View>
+        <Pressable style={styles.sectionHeader} onPress={() => setIsBasicInfoOpen((current) => !current)}>
+          <Text style={styles.sectionTitle}>Temel bilgiler</Text>
+          <Text style={styles.sectionToggle}>{isBasicInfoOpen ? '−' : '+'}</Text>
+        </Pressable>
+        {isBasicInfoOpen ? (
+          <>
+            <View style={styles.row}>
+              <Text style={styles.label}>Ürün adı</Text>
+              <Text style={styles.value}>{result.name}</Text>
+            </View>
 
-        <View style={styles.row}>
-          <Text style={styles.label}>Barkod numarası</Text>
-          <Text style={styles.value}>{result.barcode}</Text>
-        </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Barkod numarası</Text>
+              <Text style={styles.value}>{result.barcode}</Text>
+            </View>
 
-        <View style={styles.row}>
-          <Text style={styles.label}>Arama kaynağı</Text>
-          <Text style={styles.value}>{sourceLabelMap[result.searchSource] ?? result.searchSource}</Text>
-        </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Arama kaynağı</Text>
+              <Text style={styles.value}>{sourceLabelMap[result.searchSource] ?? result.searchSource}</Text>
+            </View>
+          </>
+        ) : null}
 
-        <Text style={styles.sectionTitle}>Sağlık değerlendirmesi</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Sağlık skoru</Text>
-          <Text style={styles.value}>{result.healthScore}/100</Text>
-        </View>
+        <Pressable style={styles.sectionHeader} onPress={() => setIsHealthOpen((current) => !current)}>
+          <Text style={styles.sectionTitle}>Sağlık değerlendirmesi</Text>
+          <Text style={styles.sectionToggle}>{isHealthOpen ? '−' : '+'}</Text>
+        </Pressable>
+        {isHealthOpen ? (
+          <>
+            <View style={styles.row}>
+              <Text style={styles.label}>Sağlık skoru</Text>
+              <Text style={styles.value}>{result.healthScore}/100</Text>
+            </View>
 
-        <View style={styles.row}>
-          <Text style={styles.label}>Nutri-Score</Text>
-          <Text style={styles.value}>
-            {result.nutriScore ? result.nutriScore.toUpperCase() : 'Bilinmiyor'}
-          </Text>
-        </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Nutri-Score</Text>
+              <Text style={styles.value}>
+                {result.nutriScore ? result.nutriScore.toUpperCase() : 'Bilinmiyor'}
+              </Text>
+            </View>
 
-        <View style={styles.row}>
-          <Text style={styles.label}>NOVA grubu</Text>
-          <Text style={styles.value}>
-            {result.novaGroup != null ? `Grup ${result.novaGroup}` : 'Bilinmiyor'}
-          </Text>
-        </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>NOVA grubu</Text>
+              <Text style={styles.value}>
+                {result.novaGroup != null ? `Grup ${result.novaGroup}` : 'Bilinmiyor'}
+              </Text>
+            </View>
+          </>
+        ) : null}
 
-        <Text style={styles.sectionTitle}>İçerik ve alerjenler</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Alerjenler</Text>
-          <Text style={styles.value}>
-            {result.allergens.length > 0 ? result.allergens.join(', ') : 'Bilinmiyor'}
-          </Text>
-        </View>
+        <Pressable style={styles.sectionHeader} onPress={() => setIsContentOpen((current) => !current)}>
+          <Text style={styles.sectionTitle}>İçerik ve alerjenler</Text>
+          <Text style={styles.sectionToggle}>{isContentOpen ? '−' : '+'}</Text>
+        </Pressable>
+        {isContentOpen ? (
+          <>
+            <View style={styles.row}>
+              <Text style={styles.label}>Alerjenler</Text>
+              <Text style={styles.value}>
+                {result.allergens.length > 0 ? result.allergens.join(', ') : 'Bilinmiyor'}
+              </Text>
+            </View>
 
-        <View style={styles.row}>
-          <Text style={styles.label}>Katkı maddeleri</Text>
-          <Text style={styles.value}>
-            {result.additives.length > 0 ? result.additives.join(', ') : 'Bilinmiyor'}
-          </Text>
-        </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Katkı maddeleri</Text>
+              <Text style={styles.value}>
+                {result.additives.length > 0 ? result.additives.join(', ') : 'Bilinmiyor'}
+              </Text>
+            </View>
 
-        <View style={styles.row}>
-          <Text style={styles.label}>İçindekiler</Text>
-          <Pressable
-            style={styles.inlineButton}
-            onPress={() => setIsIngredientsVisible((current) => !current)}
-          >
-            <Text style={styles.inlineButtonText}>
-              {isIngredientsVisible ? 'İçindekileri gizle' : 'İçindekileri göster'}
-            </Text>
-          </Pressable>
-          {isIngredientsVisible ? (
-            <Text style={styles.value}>
-              {result.ingredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
-            </Text>
-          ) : null}
-        </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>İçindekiler</Text>
+              <Pressable
+                style={styles.inlineButton}
+                onPress={() => setIsIngredientsVisible((current) => !current)}
+              >
+                <Text style={styles.inlineButtonText}>
+                  {isIngredientsVisible ? 'İçindekileri gizle' : 'İçindekileri göster'}
+                </Text>
+              </Pressable>
+              {isIngredientsVisible ? (
+                <Text style={styles.value}>
+                  {result.ingredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
+                </Text>
+              ) : null}
+            </View>
+          </>
+        ) : null}
 
-        <Text style={styles.sectionTitle}>Fiyat bilgisi</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Fiyat bilgisi</Text>
-          <Text style={styles.value}>{result.priceText}</Text>
-        </View>
+        <Pressable style={styles.sectionHeader} onPress={() => setIsPriceOpen((current) => !current)}>
+          <Text style={styles.sectionTitle}>Fiyat bilgisi</Text>
+          <Text style={styles.sectionToggle}>{isPriceOpen ? '−' : '+'}</Text>
+        </Pressable>
+        {isPriceOpen ? (
+          <View style={styles.row}>
+            <Text style={styles.label}>Fiyat bilgisi</Text>
+            <Text style={styles.value}>{result.priceText}</Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.actions}>
@@ -154,7 +192,7 @@ export default function ProductResultScreen() {
           <Text style={styles.secondaryButtonText}>Ana sayfaya dön</Text>
         </Pressable>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -162,6 +200,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F4F6',
+  },
+  contentContainer: {
     paddingHorizontal: 24,
     paddingTop: 48,
     paddingBottom: 32,
@@ -181,12 +221,23 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 4,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+  },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '800',
     color: '#0F172A',
-    marginTop: 10,
     marginBottom: 2,
+  },
+  sectionToggle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#111827',
+    lineHeight: 22,
   },
   row: {
     gap: 6,
