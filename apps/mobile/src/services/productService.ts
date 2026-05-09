@@ -1,4 +1,5 @@
 import type { ProductResult } from '../types/product';
+import { fetchOpenFoodFactsByBarcode } from './openFoodFactsService';
 
 export type ProductSearchInput = {
   barcode?: string;
@@ -107,11 +108,38 @@ export function getMockProductResult(input: ProductSearchInput): ProductResult {
   return fallbackProduct;
 }
 
-export function getProductResult(input: ProductSearchInput): ProductResult {
+function mapOpenFoodFactsToProductResult(
+  barcode: string,
+  productName: string | null,
+): ProductResult {
+  return {
+    id: `off-${barcode}`,
+    name: productName?.trim() || 'Tanınmayan Ürün',
+    barcode,
+    searchSource: 'barcode',
+    healthScore: 50,
+    priceText: 'Demo ürün - fiyat bilgisi yok',
+    warnings: ['Open Food Facts verisi kullanıldı'],
+  };
+}
+
+export async function getProductResult(input: ProductSearchInput): Promise<ProductResult> {
   try {
+    const barcode = input.barcode?.trim();
+
+    if (barcode) {
+      const openFoodFactsResult = await fetchOpenFoodFactsByBarcode(barcode);
+
+      if (openFoodFactsResult) {
+        return mapOpenFoodFactsToProductResult(barcode, openFoodFactsResult.productName);
+      }
+
+      return getMockProductResult(input);
+    }
+
     if (hasProductApiUrl()) {
       // TODO: API URL hazır. Gerçek çağrı burada eklenecek.
-      // Not: Şimdilik güvenli geçiş için mock sonuç dönmeye devam ediyoruz.
+      // Not: Barkod dışı kaynaklarda şimdilik mock sonuç dönmeye devam ediyoruz.
     }
 
     return getMockProductResult(input);
