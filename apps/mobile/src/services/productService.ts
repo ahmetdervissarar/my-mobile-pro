@@ -18,6 +18,8 @@ const MOCK_PRODUCTS: ProductResult[] = [
     healthScore: 74,
     priceText: '36,90 TL (Demo fiyat verisi)',
     warnings: ['Süt ürünü içerir', 'Yüksek protein içerir'],
+    nutriScore: null,
+    novaGroup: null,
   },
   {
     id: 'p-002',
@@ -27,6 +29,8 @@ const MOCK_PRODUCTS: ProductResult[] = [
     healthScore: 81,
     priceText: '89,50 TL (Demo fiyat verisi)',
     warnings: ['Yer fıstığı alerjeni içerir'],
+    nutriScore: null,
+    novaGroup: null,
   },
   {
     id: 'p-003',
@@ -36,6 +40,8 @@ const MOCK_PRODUCTS: ProductResult[] = [
     healthScore: 68,
     priceText: '62,00 TL (Demo fiyat verisi)',
     warnings: ['Gluten içerebilir', 'Ek şeker içerir'],
+    nutriScore: null,
+    novaGroup: null,
   },
 ];
 
@@ -47,6 +53,8 @@ const fallbackProduct: ProductResult = {
   healthScore: 50,
   priceText: 'Demo ürün - fiyat bilgisi yok',
   warnings: ['Detaylı analiz için gerçek API entegrasyonu bekleniyor'],
+  nutriScore: null,
+  novaGroup: null,
 };
 
 function hasProductApiUrl(): boolean {
@@ -111,6 +119,8 @@ export function getMockProductResult(input: ProductSearchInput): ProductResult {
 function mapOpenFoodFactsToProductResult(
   barcode: string,
   productName: string | null,
+  nutriScore: string | null,
+  novaGroup: number | null,
 ): ProductResult {
   return {
     id: `off-${barcode}`,
@@ -120,6 +130,8 @@ function mapOpenFoodFactsToProductResult(
     healthScore: 50,
     priceText: 'Demo ürün - fiyat bilgisi yok',
     warnings: ['Open Food Facts verisi kullanıldı'],
+    nutriScore,
+    novaGroup,
   };
 }
 
@@ -131,7 +143,12 @@ export async function getProductResult(input: ProductSearchInput): Promise<Produ
       const openFoodFactsResult = await fetchOpenFoodFactsByBarcode(barcode);
 
       if (openFoodFactsResult) {
-        return mapOpenFoodFactsToProductResult(barcode, openFoodFactsResult.productName);
+        return mapOpenFoodFactsToProductResult(
+          barcode,
+          openFoodFactsResult.productName,
+          openFoodFactsResult.nutriScore,
+          openFoodFactsResult.novaGroup,
+        );
       }
 
       return getMockProductResult(input);

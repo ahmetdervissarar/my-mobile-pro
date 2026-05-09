@@ -86,6 +86,20 @@ export default function ProductResultScreen() {
         </View>
 
         <View style={styles.row}>
+          <Text style={styles.label}>Nutri-Score</Text>
+          <Text style={styles.value}>
+            {result.nutriScore ? result.nutriScore.toUpperCase() : 'Bilinmiyor'}
+          </Text>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>NOVA grubu</Text>
+          <Text style={styles.value}>
+            {result.novaGroup != null ? `Grup ${result.novaGroup}` : 'Bilinmiyor'}
+          </Text>
+        </View>
+
+        <View style={styles.row}>
           <Text style={styles.label}>Uyarılar</Text>
           <Text style={styles.value}>{result.warnings.join(', ')}</Text>
         </View>
