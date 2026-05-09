@@ -7,10 +7,33 @@ export default function ProductResultScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
+      <View style={styles.card}>
         <Text style={styles.title}>Ürün Sonucu</Text>
-        <Text style={styles.label}>Okutulan Barkod:</Text>
-        <Text style={styles.barcode}>{barcode ?? '-'}</Text>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Ürün adı</Text>
+          <Text style={styles.value}>Henüz ürün bulunmadı</Text>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Barkod numarası</Text>
+          <Text style={styles.value}>{barcode ?? '-'}</Text>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Sağlık skoru</Text>
+          <Text style={styles.value}>Hazırlanıyor</Text>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Fiyat bilgisi</Text>
+          <Text style={styles.value}>Hazırlanıyor</Text>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Uyarılar</Text>
+          <Text style={styles.value}>Henüz değerlendirme yapılmadı</Text>
+        </View>
       </View>
 
       <View style={styles.actions}>
@@ -29,32 +52,44 @@ export default function ProductResultScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: '#F3F4F6',
     paddingHorizontal: 24,
-    paddingTop: 72,
+    paddingTop: 48,
     paddingBottom: 32,
   },
-  content: {
-    alignItems: 'center',
-    gap: 12,
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    gap: 14,
   },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: '700',
     color: '#111827',
+    marginBottom: 4,
+  },
+  row: {
+    gap: 6,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
   },
-  barcode: {
-    fontSize: 24,
+  value: {
+    fontSize: 17,
     fontWeight: '600',
     color: '#111827',
   },
   actions: {
     width: '100%',
+    marginTop: 20,
     gap: 12,
   },
   primaryButton: {
