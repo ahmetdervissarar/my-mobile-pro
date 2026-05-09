@@ -18,6 +18,8 @@ export type ProductResult = {
   warnings: string[];
 };
 
+const PRODUCT_API_URL = process.env.EXPO_PUBLIC_PRODUCT_API_URL?.trim() ?? '';
+
 const MOCK_PRODUCTS: ProductResult[] = [
   {
     id: 'p-001',
@@ -74,6 +76,10 @@ const fallbackProduct: ProductResult = {
   warnings: ['Detaylı analiz için gerçek API entegrasyonu bekleniyor'],
 };
 
+function hasProductApiUrl(): boolean {
+  return PRODUCT_API_URL.length > 0;
+}
+
 export function getMockProductResult(input: ProductSearchInput): ProductResult {
   if (input.photoSource?.trim()) {
     return {
@@ -107,7 +113,10 @@ export function getMockProductResult(input: ProductSearchInput): ProductResult {
 }
 
 export function getProductResult(input: ProductSearchInput): ProductResult {
-  // TODO: Gerçek API entegrasyonu burada yapılacak.
-  // Örn: backend product endpoint çağrısı + response mapping + hata yönetimi.
+  if (hasProductApiUrl()) {
+    // TODO: API URL hazır. Gerçek çağrı burada eklenecek.
+    // Not: Şimdilik güvenli geçiş için mock sonuç dönmeye devam ediyoruz.
+  }
+
   return getMockProductResult(input);
 }
