@@ -46,6 +46,14 @@ export default function ProductResultScreen() {
           <Text style={styles.primaryButtonText}>Yeni barkod okut</Text>
         </Pressable>
 
+        <Pressable style={styles.secondaryButton} onPress={() => router.push('/search')}>
+          <Text style={styles.secondaryButtonText}>Yeni ürün ara</Text>
+        </Pressable>
+
+        <Pressable style={styles.secondaryButton} onPress={() => router.push('/photo-search')}>
+          <Text style={styles.secondaryButtonText}>Yeni fotoğraf çek</Text>
+        </Pressable>
+
         <Pressable style={styles.secondaryButton} onPress={() => router.push('/')}>
           <Text style={styles.secondaryButtonText}>Ana sayfaya dön</Text>
         </Pressable>
