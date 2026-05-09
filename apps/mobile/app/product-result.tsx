@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function ProductResultScreen() {
-  const { barcode } = useLocalSearchParams<{ barcode?: string }>();
+  const { barcode, productName } = useLocalSearchParams<{ barcode?: string; productName?: string }>();
   const router = useRouter();
 
   return (
@@ -12,12 +12,12 @@ export default function ProductResultScreen() {
 
         <View style={styles.row}>
           <Text style={styles.label}>Ürün adı</Text>
-          <Text style={styles.value}>Henüz ürün bulunmadı</Text>
+          <Text style={styles.value}>{productName?.trim() ? productName : 'Henüz ürün bulunmadı'}</Text>
         </View>
 
         <View style={styles.row}>
           <Text style={styles.label}>Barkod numarası</Text>
-          <Text style={styles.value}>{barcode ?? '-'}</Text>
+          <Text style={styles.value}>{barcode ?? 'Arama ile geldi'}</Text>
         </View>
 
         <View style={styles.row}>
