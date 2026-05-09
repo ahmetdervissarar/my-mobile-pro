@@ -36,7 +36,7 @@ export default function ProductResultScreen() {
 
         <View style={styles.row}>
           <Text style={styles.label}>Ürün adı</Text>
-          <Text style={styles.value}>{result.productName}</Text>
+          <Text style={styles.value}>{result.name}</Text>
         </View>
 
         <View style={styles.row}>
@@ -46,7 +46,7 @@ export default function ProductResultScreen() {
 
         <View style={styles.row}>
           <Text style={styles.label}>Arama kaynağı</Text>
-          <Text style={styles.value}>{sourceLabelMap[result.source] ?? result.source}</Text>
+          <Text style={styles.value}>{sourceLabelMap[result.searchSource] ?? result.searchSource}</Text>
         </View>
 
         <View style={styles.row}>
@@ -56,11 +56,7 @@ export default function ProductResultScreen() {
 
         <View style={styles.row}>
           <Text style={styles.label}>Fiyat bilgisi</Text>
-          <Text style={styles.value}>
-            {result.price.amount > 0
-              ? `${result.price.amount.toFixed(2).replace('.', ',')} ${result.price.currency === 'TRY' ? 'TL' : result.price.currency}`
-              : result.price.note}
-          </Text>
+          <Text style={styles.value}>{result.priceText}</Text>
         </View>
 
         <View style={styles.row}>
