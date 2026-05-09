@@ -38,9 +38,11 @@ export default function ProductResultScreen() {
   }, [barcode, productName, searchType]);
 
   const [result, setResult] = useState(() => getMockProductResult(normalizedInput));
+  const [isIngredientsVisible, setIsIngredientsVisible] = useState(false);
 
   useEffect(() => {
     setResult(getMockProductResult(normalizedInput));
+    setIsIngredientsVisible(false);
 
     let isMounted = true;
 
@@ -111,6 +113,24 @@ export default function ProductResultScreen() {
           <Text style={styles.value}>
             {result.additives.length > 0 ? result.additives.join(', ') : 'Bilinmiyor'}
           </Text>
+        </View>
+
+
+        <View style={styles.row}>
+          <Text style={styles.label}>İçindekiler</Text>
+          <Pressable
+            style={styles.inlineButton}
+            onPress={() => setIsIngredientsVisible((current) => !current)}
+          >
+            <Text style={styles.inlineButtonText}>
+              {isIngredientsVisible ? 'İçindekileri gizle' : 'İçindekileri göster'}
+            </Text>
+          </Pressable>
+          {isIngredientsVisible ? (
+            <Text style={styles.value}>
+              {result.ingredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
+            </Text>
+          ) : null}
         </View>
 
         <View style={styles.row}>
@@ -205,6 +225,20 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: '#111827',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  inlineButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#fff',
+  },
+  inlineButtonText: {
+    color: '#111827',
+    fontSize: 14,
     fontWeight: '600',
   },
 });

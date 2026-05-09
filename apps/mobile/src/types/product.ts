@@ -8,6 +8,7 @@ export type ProductResult = {
   warnings: string[];
   allergens: string[];
   additives: string[];
+  ingredients: string | null;
   nutriScore: string | null;
   novaGroup: number | null;
 };

@@ -56,6 +56,13 @@ function parseAllergens(tags: string[] | undefined): string[] {
     .map((tag) => tag.charAt(0).toUpperCase() + tag.slice(1));
 }
 
+
+function parseIngredientsText(value: string | undefined): string | null {
+  const normalized = value?.trim();
+
+  return normalized ? normalized : null;
+}
+
 function parseAdditives(tags: string[] | undefined): string[] {
   if (!Array.isArray(tags)) {
     return [];
@@ -104,7 +111,7 @@ export async function fetchOpenFoodFactsByBarcode(
     return {
       barcode: trimmedBarcode,
       productName: data.product.product_name ?? null,
-      ingredientsText: data.product.ingredients_text ?? null,
+      ingredientsText: parseIngredientsText(data.product.ingredients_text),
       allergens: parseAllergens(data.product.allergens_tags),
       nutriScore: parseNutriScoreGrade(data.product.nutriscore_grade),
       novaGroup: parseNovaGroup(data.product.nova_group),

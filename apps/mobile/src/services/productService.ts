@@ -20,6 +20,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     warnings: ['Süt ürünü içerir', 'Yüksek protein içerir'],
     allergens: ['Süt'],
     additives: [],
+    ingredients: 'Süt proteini, yoğurt tozu, lif karışımı, tatlandırıcı (steviol glikozitleri).',
     nutriScore: null,
     novaGroup: null,
   },
@@ -33,6 +34,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     warnings: ['Yer fıstığı alerjeni içerir'],
     allergens: ['Yer fıstığı'],
     additives: [],
+    ingredients: 'Yer fıstığı (%99,5), deniz tuzu.',
     nutriScore: null,
     novaGroup: null,
   },
@@ -46,6 +48,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     warnings: ['Gluten içerebilir', 'Ek şeker içerir'],
     allergens: ['Gluten'],
     additives: [],
+    ingredients: 'Yulaf, bal, kuru meyve, bitkisel yağ, şeker.',
     nutriScore: null,
     novaGroup: null,
   },
@@ -61,6 +64,7 @@ const fallbackProduct: ProductResult = {
   warnings: ['Detaylı analiz için gerçek API entegrasyonu bekleniyor'],
   allergens: [],
   additives: [],
+  ingredients: null,
   nutriScore: null,
   novaGroup: null,
 };
@@ -129,6 +133,7 @@ function mapOpenFoodFactsToProductResult(
   productName: string | null,
   allergens: string[],
   additives: string[],
+  ingredients: string | null,
   nutriScore: string | null,
   novaGroup: number | null,
 ): ProductResult {
@@ -142,6 +147,7 @@ function mapOpenFoodFactsToProductResult(
     warnings: ['Ürün bilgisi Open Food Facts kaynağından alınmıştır. Eksik veya hatalı olabilir.'],
     allergens,
     additives,
+    ingredients,
     nutriScore,
     novaGroup,
   };
@@ -160,6 +166,7 @@ export async function getProductResult(input: ProductSearchInput): Promise<Produ
           openFoodFactsResult.productName,
           openFoodFactsResult.allergens,
           openFoodFactsResult.additives,
+          openFoodFactsResult.ingredientsText,
           openFoodFactsResult.nutriScore,
           openFoodFactsResult.novaGroup,
         );
