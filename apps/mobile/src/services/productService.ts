@@ -113,10 +113,15 @@ export function getMockProductResult(input: ProductSearchInput): ProductResult {
 }
 
 export function getProductResult(input: ProductSearchInput): ProductResult {
-  if (hasProductApiUrl()) {
-    // TODO: API URL hazır. Gerçek çağrı burada eklenecek.
-    // Not: Şimdilik güvenli geçiş için mock sonuç dönmeye devam ediyoruz.
-  }
+  try {
+    if (hasProductApiUrl()) {
+      // TODO: API URL hazır. Gerçek çağrı burada eklenecek.
+      // Not: Şimdilik güvenli geçiş için mock sonuç dönmeye devam ediyoruz.
+    }
 
-  return getMockProductResult(input);
+    return getMockProductResult(input);
+  } catch (error) {
+    // Gelecekte gerçek API çağrısı hata verirse uygulamanın çökmesini önlemek için güvenli fallback.
+    return getMockProductResult(input);
+  }
 }
