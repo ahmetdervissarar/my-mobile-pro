@@ -1,8 +1,9 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+﻿import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getMockProductResult, getProductResult } from '../src/services/productService';
+import { getUserLocationForPricing } from '../src/services/locationService';
 
 export default function ProductResultScreen() {
   const { barcode, productName, searchType } = useLocalSearchParams<{
@@ -10,6 +11,7 @@ export default function ProductResultScreen() {
     productName?: string;
     searchType?: string;
   }>();
+
   const router = useRouter();
 
   const sourceLabelMap: Record<string, string> = {
@@ -43,6 +45,8 @@ export default function ProductResultScreen() {
   const [isContentOpen, setIsContentOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [isIngredientsVisible, setIsIngredientsVisible] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<string | null>(null);
+  const [isLocationLoading, setIsLocationLoading] = useState(false);
 
   useEffect(() => {
     setResult(getMockProductResult(normalizedInput));
@@ -51,6 +55,7 @@ export default function ProductResultScreen() {
     setIsContentOpen(false);
     setIsPriceOpen(false);
     setIsIngredientsVisible(false);
+    setLocationStatus(null);
 
     let isMounted = true;
 
@@ -65,6 +70,25 @@ export default function ProductResultScreen() {
     };
   }, [normalizedInput]);
 
+  const handleFindPricesByLocation = async () => {
+    setIsLocationLoading(true);
+    setLocationStatus(null);
+
+    try {
+      const location = await getUserLocationForPricing();
+
+      if (location) {
+        setLocationStatus('Konum alındı');
+      } else {
+        setLocationStatus('Konum izni verilmedi');
+      }
+    } catch {
+      setLocationStatus('Konum alınamadı');
+    } finally {
+      setIsLocationLoading(false);
+    }
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -78,6 +102,7 @@ export default function ProductResultScreen() {
           <Text style={styles.sectionTitle}>Temel bilgiler</Text>
           <Text style={styles.sectionToggle}>{isBasicInfoOpen ? '−' : '+'}</Text>
         </Pressable>
+
         {isBasicInfoOpen ? (
           <>
             <View style={styles.row}>
@@ -101,6 +126,7 @@ export default function ProductResultScreen() {
           <Text style={styles.sectionTitle}>Sağlık değerlendirmesi</Text>
           <Text style={styles.sectionToggle}>{isHealthOpen ? '−' : '+'}</Text>
         </Pressable>
+
         {isHealthOpen ? (
           <>
             <View style={styles.row}>
@@ -130,11 +156,11 @@ export default function ProductResultScreen() {
           <Text style={styles.sectionTitle}>İçerik ve alerjenler</Text>
           <Text style={styles.sectionToggle}>{isContentOpen ? '−' : '+'}</Text>
         </Pressable>
+
         {isContentOpen ? (
           <>
             <Text style={styles.helperText}>
-              Alerjen ve katkı bilgileri ürün etiketine göre değişebilir. Son karar için ambalaj üzerindeki
-              bilgileri kontrol edin.
+              Alerjen ve katkı bilgileri ürün etiketine göre değişebilir. Son karar için ambalaj üzerindeki bilgileri kontrol edin.
             </Text>
 
             <View style={styles.row}>
@@ -153,14 +179,12 @@ export default function ProductResultScreen() {
 
             <View style={styles.row}>
               <Text style={styles.label}>İçindekiler</Text>
-              <Pressable
-                style={styles.inlineButton}
-                onPress={() => setIsIngredientsVisible((current) => !current)}
-              >
+              <Pressable style={styles.inlineButton} onPress={() => setIsIngredientsVisible((current) => !current)}>
                 <Text style={styles.inlineButtonText}>
                   {isIngredientsVisible ? 'İçindekileri gizle' : 'İçindekileri göster'}
                 </Text>
               </Pressable>
+
               {isIngredientsVisible ? (
                 <Text style={styles.value}>
                   {result.ingredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
@@ -174,10 +198,19 @@ export default function ProductResultScreen() {
           <Text style={styles.sectionTitle}>Fiyat bilgisi</Text>
           <Text style={styles.sectionToggle}>{isPriceOpen ? '−' : '+'}</Text>
         </Pressable>
+
         {isPriceOpen ? (
           <View style={styles.row}>
             <Text style={styles.label}>Fiyat bilgisi</Text>
             <Text style={styles.value}>{result.priceText}</Text>
+
+            <Pressable style={styles.inlineButton} onPress={handleFindPricesByLocation}>
+              <Text style={styles.inlineButtonText}>
+                {isLocationLoading ? 'Konum alınıyor...' : 'Konumla fiyat ara'}
+              </Text>
+            </Pressable>
+
+            {locationStatus ? <Text style={styles.value}>{locationStatus}</Text> : null}
           </View>
         ) : null}
       </View>
@@ -247,7 +280,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   row: {
-    gap: 6,
+    gap: 8,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
