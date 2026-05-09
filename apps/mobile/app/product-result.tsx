@@ -1,7 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Location from 'expo-location';
 
+import { getUserLocationForPricing } from '../src/services/locationService';
 import { getMockProductResult, getProductResult } from '../src/services/productService';
 
 export default function ProductResultScreen() {
@@ -43,6 +45,7 @@ export default function ProductResultScreen() {
   const [isContentOpen, setIsContentOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [isIngredientsVisible, setIsIngredientsVisible] = useState(false);
+  const [locationStatusMessage, setLocationStatusMessage] = useState('');
 
   useEffect(() => {
     setResult(getMockProductResult(normalizedInput));
@@ -51,6 +54,7 @@ export default function ProductResultScreen() {
     setIsContentOpen(false);
     setIsPriceOpen(false);
     setIsIngredientsVisible(false);
+    setLocationStatusMessage('');
 
     let isMounted = true;
 
@@ -64,6 +68,24 @@ export default function ProductResultScreen() {
       isMounted = false;
     };
   }, [normalizedInput]);
+
+  const handlePricingLocationTest = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+
+    if (status !== 'granted') {
+      setLocationStatusMessage('Konum izni verilmedi');
+      return;
+    }
+
+    const location = await getUserLocationForPricing();
+
+    if (location) {
+      setLocationStatusMessage('Konum alındı');
+      return;
+    }
+
+    setLocationStatusMessage('Konum alınamadı');
+  };
 
   return (
     <ScrollView
@@ -178,6 +200,10 @@ export default function ProductResultScreen() {
           <View style={styles.row}>
             <Text style={styles.label}>Fiyat bilgisi</Text>
             <Text style={styles.value}>{result.priceText}</Text>
+            <Pressable style={styles.inlineButton} onPress={handlePricingLocationTest}>
+              <Text style={styles.inlineButtonText}>Konumla fiyat ara</Text>
+            </Pressable>
+            {locationStatusMessage ? <Text style={styles.helperText}>{locationStatusMessage}</Text> : null}
           </View>
         ) : null}
       </View>
