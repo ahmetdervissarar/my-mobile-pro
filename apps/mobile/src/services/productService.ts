@@ -52,6 +52,19 @@ function hasProductApiUrl(): boolean {
   return PRODUCT_API_URL.length > 0;
 }
 
+export async function fetchProductFromApi(input: ProductSearchInput): Promise<ProductResult | null> {
+  if (!hasProductApiUrl()) {
+    return null;
+  }
+
+  // TODO: API URL .env içinden alınacak.
+  // TODO: barkod / ürün adı / fotoğraf kaynağı API'ye gönderilecek.
+  // TODO: API cevabı ProductResult formatına çevrilecek.
+  void input;
+
+  return null;
+}
+
 export function getMockProductResult(input: ProductSearchInput): ProductResult {
   if (input.photoSource?.trim()) {
     return {
