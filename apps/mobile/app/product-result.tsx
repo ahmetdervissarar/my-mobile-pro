@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getMockProductResult, getProductResult } from '../src/services/productService';
 import { getUserLocationForPricing } from '../src/services/locationService';
+import { fetchMarketPrices } from '../src/services/marketPriceService';
 
 export default function ProductResultScreen() {
   const { barcode, productName, searchType } = useLocalSearchParams<{
@@ -47,6 +48,7 @@ export default function ProductResultScreen() {
   const [isIngredientsVisible, setIsIngredientsVisible] = useState(false);
   const [locationStatus, setLocationStatus] = useState<string | null>(null);
   const [isLocationLoading, setIsLocationLoading] = useState(false);
+  const [marketPriceStatus, setMarketPriceStatus] = useState<string | null>(null);
 
   useEffect(() => {
     setResult(getMockProductResult(normalizedInput));
@@ -56,6 +58,7 @@ export default function ProductResultScreen() {
     setIsPriceOpen(false);
     setIsIngredientsVisible(false);
     setLocationStatus(null);
+    setMarketPriceStatus(null);
 
     let isMounted = true;
 
@@ -73,17 +76,35 @@ export default function ProductResultScreen() {
   const handleFindPricesByLocation = async () => {
     setIsLocationLoading(true);
     setLocationStatus(null);
+    setMarketPriceStatus(null);
 
     try {
       const location = await getUserLocationForPricing();
 
-      if (location) {
-        setLocationStatus('Konum alındı');
+      if (!location) {
+        setLocationStatus("Konum al\u0131nd\u0131");
+        return;
+      }
+
+      setLocationStatus("Konum al\u0131nd\u0131");
+
+      const marketPrices = await fetchMarketPrices(
+        {
+          productName: result.name,
+          barcode: result.barcode !== 'Bilinmiyor' ? result.barcode : undefined,
+        },
+        location,
+      );
+
+      if (marketPrices.prices.length === 0) {
+        setMarketPriceStatus("Yak\u0131ndaki market fiyat\u0131 bulunamad\u0131");
       } else {
-        setLocationStatus('Konum izni verilmedi');
+        const firstPrice = marketPrices.prices[0];
+        setMarketPriceStatus(`${firstPrice.marketName}: ${firstPrice.price} ${firstPrice.currency}`);
       }
     } catch {
-      setLocationStatus('Konum alınamadı');
+      setLocationStatus("Konum al\u0131nd\u0131");
+      setMarketPriceStatus('Market fiyat? sorgulanamad?');
     } finally {
       setIsLocationLoading(false);
     }
@@ -206,11 +227,12 @@ export default function ProductResultScreen() {
 
             <Pressable style={styles.inlineButton} onPress={handleFindPricesByLocation}>
               <Text style={styles.inlineButtonText}>
-                {isLocationLoading ? 'Konum alınıyor...' : 'Konumla fiyat ara'}
+                {isLocationLoading ? 'Konum al\u0131n\u0131yor...' : 'Konumla fiyat ara'}
               </Text>
             </Pressable>
 
             {locationStatus ? <Text style={styles.value}>{locationStatus}</Text> : null}
+            {marketPriceStatus ? <Text style={styles.value}>{marketPriceStatus}</Text> : null}
           </View>
         ) : null}
       </View>
