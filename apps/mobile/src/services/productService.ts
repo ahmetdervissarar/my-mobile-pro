@@ -52,6 +52,16 @@ function hasProductApiUrl(): boolean {
   return PRODUCT_API_URL.length > 0;
 }
 
+export function mapApiResponseToProductResult(apiResponse: unknown): ProductResult {
+  // TODO: API alanları kontrol edilecek.
+  // TODO: Eksik alanlar güvenli varsayılan değerlerle doldurulacak.
+  // TODO: price değeri TL formatına çevrilecek.
+  // TODO: warnings dizisi/metni ekrana uygun hale getirilecek.
+  void apiResponse;
+
+  return fallbackProduct;
+}
+
 export async function fetchProductFromApi(input: ProductSearchInput): Promise<ProductResult | null> {
   if (!hasProductApiUrl()) {
     return null;
