@@ -12,6 +12,13 @@ export default function ProductResultScreen() {
   }>();
   const router = useRouter();
 
+  const sourceLabelMap: Record<string, string> = {
+    barcode: 'Barkod',
+    search: 'Ürün arama',
+    name: 'Ürün arama',
+    photo: 'Fotoğrafla arama',
+  };
+
   const result = useMemo(
     () =>
       getMockProductResult({
@@ -39,7 +46,7 @@ export default function ProductResultScreen() {
 
         <View style={styles.row}>
           <Text style={styles.label}>Arama kaynağı</Text>
-          <Text style={styles.value}>{result.source}</Text>
+          <Text style={styles.value}>{sourceLabelMap[result.source] ?? result.source}</Text>
         </View>
 
         <View style={styles.row}>
