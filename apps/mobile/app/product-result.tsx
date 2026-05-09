@@ -1,5 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { getMockProductResult } from '../src/services/productService';
 
 export default function ProductResultScreen() {
   const { barcode, productName, searchType } = useLocalSearchParams<{
@@ -7,8 +10,17 @@ export default function ProductResultScreen() {
     productName?: string;
     searchType?: string;
   }>();
-  const isPhotoSearch = searchType === 'photo';
   const router = useRouter();
+
+  const result = useMemo(
+    () =>
+      getMockProductResult({
+        barcode,
+        productName,
+        photoSource: searchType === 'photo' ? 'camera' : undefined,
+      }),
+    [barcode, productName, searchType],
+  );
 
   return (
     <View style={styles.container}>
@@ -17,27 +29,34 @@ export default function ProductResultScreen() {
 
         <View style={styles.row}>
           <Text style={styles.label}>Ürün adı</Text>
-          <Text style={styles.value}>{isPhotoSearch ? 'Fotoğraf ile arandı' : productName?.trim() ? productName : 'Henüz ürün bulunmadı'}</Text>
+          <Text style={styles.value}>{result.productName}</Text>
         </View>
 
         <View style={styles.row}>
           <Text style={styles.label}>Barkod numarası</Text>
-          <Text style={styles.value}>{isPhotoSearch ? 'Fotoğraf ile geldi' : barcode ?? 'Arama ile geldi'}</Text>
+          <Text style={styles.value}>{result.barcode}</Text>
+        </View>
+
+        <View style={styles.row}>
+          <Text style={styles.label}>Arama kaynağı</Text>
+          <Text style={styles.value}>{result.source}</Text>
         </View>
 
         <View style={styles.row}>
           <Text style={styles.label}>Sağlık skoru</Text>
-          <Text style={styles.value}>Hazırlanıyor</Text>
+          <Text style={styles.value}>{result.healthScore}/100</Text>
         </View>
 
         <View style={styles.row}>
           <Text style={styles.label}>Fiyat bilgisi</Text>
-          <Text style={styles.value}>Hazırlanıyor</Text>
+          <Text style={styles.value}>
+            {result.price.amount > 0 ? `${result.price.amount.toFixed(2)} ${result.price.currency}` : result.price.note}
+          </Text>
         </View>
 
         <View style={styles.row}>
           <Text style={styles.label}>Uyarılar</Text>
-          <Text style={styles.value}>Henüz değerlendirme yapılmadı</Text>
+          <Text style={styles.value}>{result.warnings.join(', ')}</Text>
         </View>
       </View>
 
