@@ -1,10 +1,13 @@
+export type MarketLocation = {
+  /** locationService üzerinden gelen enlem değeri */
+  latitude: number;
+  /** locationService üzerinden gelen boylam değeri */
+  longitude: number;
+};
+
 export interface MarketPriceQuery {
   productName?: string;
   barcode?: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
 }
 
 export interface MarketPriceResult {
@@ -22,16 +25,18 @@ export interface MarketPriceResult {
 
 export async function fetchMarketPrices(
   query: MarketPriceQuery,
+  location?: MarketLocation,
 ): Promise<MarketPriceResult> {
   // TODO: Integrate with real market price provider API.
   // TODO: Use query.productName and query.barcode for product matching.
-  // TODO: Use query.location to filter nearby markets when location is provided.
+  // TODO: Use location to filter nearby markets when location is provided.
+  // TODO: locationService üzerinden gelen konum market fiyatı sorgusunda kullanılacak.
 
   return {
     prices: [],
     meta: {
       queriedAt: new Date().toISOString(),
-      hasLocation: Boolean(query.location),
+      hasLocation: Boolean(location),
     },
   };
 }
