@@ -113,6 +113,7 @@ export default function ProductResultScreen() {
               <Text style={styles.value}>
                 {result.nutriScore ? result.nutriScore.toUpperCase() : 'Bilinmiyor'}
               </Text>
+              <Text style={styles.helperText}>Besin kalitesini gösterir.</Text>
             </View>
 
             <View style={styles.row}>
@@ -120,6 +121,7 @@ export default function ProductResultScreen() {
               <Text style={styles.value}>
                 {result.novaGroup != null ? `Grup ${result.novaGroup}` : 'Bilinmiyor'}
               </Text>
+              <Text style={styles.helperText}>Ürünün işlenmişlik düzeyini gösterir.</Text>
             </View>
           </>
         ) : null}
@@ -253,6 +255,10 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#111827',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#6B7280',
   },
   actions: {
     width: '100%',
