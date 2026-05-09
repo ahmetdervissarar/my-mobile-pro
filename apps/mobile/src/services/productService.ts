@@ -105,3 +105,9 @@ export function getMockProductResult(input: ProductSearchInput): ProductResult {
 
   return fallbackProduct;
 }
+
+export function getProductResult(input: ProductSearchInput): ProductResult {
+  // TODO: Gerçek API entegrasyonu burada yapılacak.
+  // Örn: backend product endpoint çağrısı + response mapping + hata yönetimi.
+  return getMockProductResult(input);
+}
