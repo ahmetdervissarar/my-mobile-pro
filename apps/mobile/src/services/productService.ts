@@ -129,7 +129,7 @@ function mapOpenFoodFactsToProductResult(
     searchSource: 'barcode',
     healthScore: 50,
     priceText: 'Demo ürün - fiyat bilgisi yok',
-    warnings: ['Open Food Facts verisi kullanıldı'],
+    warnings: ['Ürün bilgisi Open Food Facts kaynağından alınmıştır. Eksik veya hatalı olabilir.'],
     nutriScore,
     novaGroup,
   };
