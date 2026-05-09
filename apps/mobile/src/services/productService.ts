@@ -19,6 +19,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     priceText: '36,90 TL (Demo fiyat verisi)',
     warnings: ['Süt ürünü içerir', 'Yüksek protein içerir'],
     allergens: ['Süt'],
+    additives: [],
     nutriScore: null,
     novaGroup: null,
   },
@@ -31,6 +32,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     priceText: '89,50 TL (Demo fiyat verisi)',
     warnings: ['Yer fıstığı alerjeni içerir'],
     allergens: ['Yer fıstığı'],
+    additives: [],
     nutriScore: null,
     novaGroup: null,
   },
@@ -43,6 +45,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     priceText: '62,00 TL (Demo fiyat verisi)',
     warnings: ['Gluten içerebilir', 'Ek şeker içerir'],
     allergens: ['Gluten'],
+    additives: [],
     nutriScore: null,
     novaGroup: null,
   },
@@ -57,6 +60,7 @@ const fallbackProduct: ProductResult = {
   priceText: 'Demo ürün - fiyat bilgisi yok',
   warnings: ['Detaylı analiz için gerçek API entegrasyonu bekleniyor'],
   allergens: [],
+  additives: [],
   nutriScore: null,
   novaGroup: null,
 };
@@ -124,6 +128,7 @@ function mapOpenFoodFactsToProductResult(
   barcode: string,
   productName: string | null,
   allergens: string[],
+  additives: string[],
   nutriScore: string | null,
   novaGroup: number | null,
 ): ProductResult {
@@ -136,6 +141,7 @@ function mapOpenFoodFactsToProductResult(
     priceText: 'Demo ürün - fiyat bilgisi yok',
     warnings: ['Ürün bilgisi Open Food Facts kaynağından alınmıştır. Eksik veya hatalı olabilir.'],
     allergens,
+    additives,
     nutriScore,
     novaGroup,
   };
@@ -153,6 +159,7 @@ export async function getProductResult(input: ProductSearchInput): Promise<Produ
           barcode,
           openFoodFactsResult.productName,
           openFoodFactsResult.allergens,
+          openFoodFactsResult.additives,
           openFoodFactsResult.nutriScore,
           openFoodFactsResult.novaGroup,
         );
