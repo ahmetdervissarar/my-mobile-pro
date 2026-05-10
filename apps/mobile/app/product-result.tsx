@@ -265,7 +265,7 @@ export default function ProductResultScreen() {
           ) : (
             riskResult.warnings.map((warning) => (
               <View key={warning.code} style={[styles.row, styles.riskRow]}>
-                <Text style={styles.value}>{warning.message}</Text>
+                <Text style={styles.value}>{warning.title}</Text>
                 <Text style={[styles.helperText, getRiskLevelTextStyle(warning.level)]}>
                   {riskLevelLabel[warning.level]}
                 </Text>
