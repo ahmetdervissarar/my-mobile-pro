@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+﻿import { router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 export default function HomeScreen() {
@@ -62,6 +62,20 @@ export default function HomeScreen() {
           }}
         >
           <Text style={{ fontSize: 17, fontWeight: '600', color: '#111827' }}>Fotoğrafla ara</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push('/profile')}
+          style={{
+            alignItems: 'center',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#111827',
+            backgroundColor: '#fff',
+            paddingVertical: 14,
+          }}
+        >
+          <Text style={{ fontSize: 17, fontWeight: '600', color: '#111827' }}>Profilim</Text>
         </Pressable>
       </View>
     </View>
