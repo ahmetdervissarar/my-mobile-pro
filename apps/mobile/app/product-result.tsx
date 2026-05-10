@@ -52,6 +52,7 @@ export default function ProductResultScreen() {
   const [locationStatus, setLocationStatus] = useState<string | null>(null);
   const [isLocationLoading, setIsLocationLoading] = useState(false);
   const [marketPriceStatus, setMarketPriceStatus] = useState<string | null>(null);
+  const [openRiskDetails, setOpenRiskDetails] = useState<Record<string, boolean>>({});
 
   const riskResult: ProductRiskResult = useMemo(
     () =>
@@ -75,6 +76,7 @@ export default function ProductResultScreen() {
     setIsIngredientsVisible(false);
     setLocationStatus(null);
     setMarketPriceStatus(null);
+    setOpenRiskDetails({});
 
     let isMounted = true;
 
@@ -263,14 +265,34 @@ export default function ProductResultScreen() {
               <Text style={styles.value}>{'Bu \u00fcr\u00fcn i\u00e7in belirgin bir risk uyar\u0131s\u0131 olu\u015fturulmad\u0131.'}</Text>
             </View>
           ) : (
-            riskResult.warnings.map((warning) => (
-              <View key={warning.code} style={[styles.row, styles.riskRow]}>
-                <Text style={styles.value}>{warning.title}</Text>
-                <Text style={[styles.helperText, getRiskLevelTextStyle(warning.level)]}>
-                  {riskLevelLabel[warning.level]}
-                </Text>
-              </View>
-            ))
+            riskResult.warnings.map((warning) => {
+              const isDetailOpen = Boolean(openRiskDetails[warning.code]);
+
+              return (
+                <View key={warning.code} style={[styles.row, styles.riskRow]}>
+                  <Text style={styles.value}>{warning.title}</Text>
+                  <Text style={[styles.helperText, getRiskLevelTextStyle(warning.level)]}>
+                    {riskLevelLabel[warning.level]}
+                  </Text>
+
+                  <Pressable
+                    style={styles.inlineButton}
+                    onPress={() =>
+                      setOpenRiskDetails((current) => ({
+                        ...current,
+                        [warning.code]: !current[warning.code],
+                      }))
+                    }
+                  >
+                    <Text style={styles.inlineButtonText}>
+                      {isDetailOpen ? 'Detaylar? gizle' : 'Detaylar? g?ster'}
+                    </Text>
+                  </Pressable>
+
+                  {isDetailOpen ? <Text style={styles.helperText}>{warning.message}</Text> : null}
+                </View>
+              );
+            })
           )
         ) : null}
       </View>
