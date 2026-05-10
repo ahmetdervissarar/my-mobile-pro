@@ -56,6 +56,7 @@ export default function ProductResultScreen() {
   const riskResult: ProductRiskResult = useMemo(
     () =>
       evaluateProductRisks({
+        name: result.name ?? null,
         ingredients: result.ingredients ?? null,
         allergens: result.allergens ?? [],
         additives: result.additives ?? [],
