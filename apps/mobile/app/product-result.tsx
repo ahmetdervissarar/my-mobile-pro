@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getMockProductResult, getProductResult } from '../src/services/productService';
+import { evaluateProductRisks } from '../src/riskEngine/riskEngine';
+import type { ProductRiskResult, RiskLevel } from '../src/riskEngine/riskEngine';
 import { getUserLocationForPricing } from '../src/services/locationService';
 import { fetchMarketPrices } from '../src/services/marketPriceService';
 
@@ -45,10 +47,22 @@ export default function ProductResultScreen() {
   const [isHealthOpen, setIsHealthOpen] = useState(false);
   const [isContentOpen, setIsContentOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
+  const [isRiskOpen, setIsRiskOpen] = useState(false);
   const [isIngredientsVisible, setIsIngredientsVisible] = useState(false);
   const [locationStatus, setLocationStatus] = useState<string | null>(null);
   const [isLocationLoading, setIsLocationLoading] = useState(false);
   const [marketPriceStatus, setMarketPriceStatus] = useState<string | null>(null);
+
+  const riskResult: ProductRiskResult = useMemo(
+    () =>
+      evaluateProductRisks({
+        ingredients: result.ingredients ?? null,
+        allergens: result.allergens ?? [],
+        additives: result.additives ?? [],
+        novaGroup: result.novaGroup ?? null,
+      }),
+    [result],
+  );
 
   useEffect(() => {
     setResult(getMockProductResult(normalizedInput));
@@ -56,6 +70,7 @@ export default function ProductResultScreen() {
     setIsHealthOpen(false);
     setIsContentOpen(false);
     setIsPriceOpen(false);
+    setIsRiskOpen(false);
     setIsIngredientsVisible(false);
     setLocationStatus(null);
     setMarketPriceStatus(null);
@@ -235,6 +250,28 @@ export default function ProductResultScreen() {
             {marketPriceStatus ? <Text style={styles.value}>{marketPriceStatus}</Text> : null}
           </View>
         ) : null}
+
+        <Pressable style={styles.sectionHeader} onPress={() => setIsRiskOpen((current) => !current)}>
+          <Text style={styles.sectionTitle}>{'RafSkoru Uyar\u0131lar\u0131'}</Text>
+          <Text style={styles.sectionToggle}>{isRiskOpen ? '?' : '+'}</Text>
+        </Pressable>
+
+        {isRiskOpen ? (
+          riskResult.warnings.length === 0 ? (
+            <View style={styles.row}>
+              <Text style={styles.value}>Bu ?r?n i?in belirgin bir risk uyar?s? olu?turulmad?.</Text>
+            </View>
+          ) : (
+            riskResult.warnings.map((warning) => (
+              <View key={warning.code} style={[styles.row, styles.riskRow]}>
+                <Text style={styles.value}>{warning.message}</Text>
+                <Text style={[styles.helperText, getRiskLevelTextStyle(warning.level)]}>
+                  {riskLevelLabel[warning.level]}
+                </Text>
+              </View>
+            ))
+          )
+        ) : null}
       </View>
 
       <View style={styles.actions}>
@@ -256,6 +293,24 @@ export default function ProductResultScreen() {
       </View>
     </ScrollView>
   );
+}
+
+const riskLevelLabel: Record<RiskLevel, string> = {
+  low: 'D\u00fc\u015f\u00fck risk',
+  medium: 'Orta risk',
+  high: 'Y\u00fcksek risk',
+  unknown: 'Bilinmiyor',
+};
+
+function getRiskLevelTextStyle(level: RiskLevel) {
+  const color =
+    level === 'high'
+      ? '#DC2626'
+      : level === 'medium'
+        ? '#D97706'
+        : '#16A34A';
+
+  return { fontSize: 12, fontWeight: '500' as const, color };
 }
 
 const styles = StyleSheet.create({
@@ -306,6 +361,9 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
+  },
+  riskRow: {
+    paddingTop: 4,
   },
   label: {
     fontSize: 13,
