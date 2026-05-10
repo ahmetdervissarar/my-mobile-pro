@@ -10,28 +10,38 @@ export default function ProfileScreen() {
     >
       <View style={styles.card}>
         <Text style={styles.title}>Profilim</Text>
+
         <Text style={styles.description}>
-          {'RafSkoru uyar\u0131lar\u0131n\u0131 ki\u015fisel hassasiyetlerinize g\u00f6re \u00f6zelle\u015ftirin.'}
+          RafSkoru uyarılarını kişisel hassasiyetlerinize göre özelleştirin.
         </Text>
 
-        <Pressable style={styles.menuCard}>
+        <Pressable
+          style={styles.menuCard}
+          onPress={() => router.push('/profile-allergens')}
+        >
           <Text style={styles.menuTitle}>Alerjen Profilim</Text>
           <Text style={styles.menuDescription}>
-            {'Yumurta, s\u00fct, gluten, soya, f\u0131st\u0131k ve di\u011fer alerjenleri se\u00e7in.'}
+            Yumurta, süt, gluten, soya, fıstık ve diğer alerjenleri seçin.
           </Text>
         </Pressable>
 
-        <Pressable style={styles.menuCard}>
-          <Text style={styles.menuTitle}>{'Kronik Rahats\u0131zl\u0131k / Hassasiyet Profilim'}</Text>
+        <Pressable
+          style={styles.menuCard}
+          onPress={() => router.push('/profile-chronic')}
+        >
+          <Text style={styles.menuTitle}>Kronik Rahatsızlık / Hassasiyet Profilim</Text>
           <Text style={styles.menuDescription}>
-            {'Kan \u015fekeri, sodyum, kolesterol ve benzeri hassasiyetleri y\u00f6netin.'}
+            Kan şekeri, sodyum, kolesterol ve benzeri hassasiyetleri yönetin.
           </Text>
         </Pressable>
 
-        <Pressable style={styles.menuCard}>
-          <Text style={styles.menuTitle}>{'Sa\u011fl\u0131k Tercihlerim'}</Text>
+        <Pressable
+          style={styles.menuCard}
+          onPress={() => router.push('/profile-health-preferences')}
+        >
+          <Text style={styles.menuTitle}>Sağlık Tercihlerim</Text>
           <Text style={styles.menuDescription}>
-            {'Daha az \u015feker, daha az tuz, temiz i\u00e7erik ve benzeri tercihleri belirleyin.'}
+            Daha az şeker, daha az tuz, temiz içerik ve benzeri tercihleri belirleyin.
           </Text>
         </Pressable>
       </View>
