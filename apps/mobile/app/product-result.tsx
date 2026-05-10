@@ -98,7 +98,7 @@ export default function ProductResultScreen() {
       const location = await getUserLocationForPricing();
 
       if (!location) {
-        setLocationStatus("Konum al\u0131nd\u0131");
+        setLocationStatus("Konum izni verilmedi");
         return;
       }
 
@@ -119,8 +119,8 @@ export default function ProductResultScreen() {
         setMarketPriceStatus(`${firstPrice.marketName}: ${firstPrice.price} ${firstPrice.currency}`);
       }
     } catch {
-      setLocationStatus("Konum al\u0131nd\u0131");
-      setMarketPriceStatus('Market fiyat? sorgulanamad?');
+      setLocationStatus("Konum al\u0131namad\u0131");
+      setMarketPriceStatus("Market fiyat\u0131 sorgulanamad\u0131");
     } finally {
       setIsLocationLoading(false);
     }
@@ -254,13 +254,13 @@ export default function ProductResultScreen() {
 
         <Pressable style={styles.sectionHeader} onPress={() => setIsRiskOpen((current) => !current)}>
           <Text style={styles.sectionTitle}>{'RafSkoru Uyar\u0131lar\u0131'}</Text>
-          <Text style={styles.sectionToggle}>{isRiskOpen ? '?' : '+'}</Text>
+          <Text style={styles.sectionToggle}>{isRiskOpen ? '-' : '+'}</Text>
         </Pressable>
 
         {isRiskOpen ? (
           riskResult.warnings.length === 0 ? (
             <View style={styles.row}>
-              <Text style={styles.value}>Bu ?r?n i?in belirgin bir risk uyar?s? olu?turulmad?.</Text>
+              <Text style={styles.value}>{'Bu \u00fcr\u00fcn i\u00e7in belirgin bir risk uyar\u0131s\u0131 olu\u015fturulmad\u0131.'}</Text>
             </View>
           ) : (
             riskResult.warnings.map((warning) => (
