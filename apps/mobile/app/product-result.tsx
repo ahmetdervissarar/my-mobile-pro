@@ -3,10 +3,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getMockProductResult, getProductResult } from '../src/services/productService';
-import { evaluateProductRisks } from '../src/riskEngine/riskEngine';
-import type { ProductRiskResult, RiskLevel } from '../src/riskEngine/riskEngine';
 import { getUserLocationForPricing } from '../src/services/locationService';
 import { fetchMarketPrices } from '../src/services/marketPriceService';
+import { evaluateProductRisks } from '../src/riskEngine/riskEngine';
+import type { ProductRiskResult, RiskLevel } from '../src/riskEngine/riskEngine';
+import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorage';
+import { emptyUserSensitivityProfile } from '../src/userProfile/userProfileTypes';
+import type { UserSensitivityProfile } from '../src/userProfile/userProfileTypes';
 
 export default function ProductResultScreen() {
   const { barcode, productName, searchType } = useLocalSearchParams<{
@@ -48,11 +51,21 @@ export default function ProductResultScreen() {
   const [isContentOpen, setIsContentOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [isRiskOpen, setIsRiskOpen] = useState(false);
+  const [expandedWarnings, setExpandedWarnings] = useState<Set<string>>(new Set());
   const [isIngredientsVisible, setIsIngredientsVisible] = useState(false);
   const [locationStatus, setLocationStatus] = useState<string | null>(null);
   const [isLocationLoading, setIsLocationLoading] = useState(false);
   const [marketPriceStatus, setMarketPriceStatus] = useState<string | null>(null);
-  const [openRiskDetails, setOpenRiskDetails] = useState<Record<string, boolean>>({});
+  const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(
+    emptyUserSensitivityProfile,
+  );
+
+  // Kullanıcı profilini bir kez yükle; yüklenemezse boş profille devam et
+  useEffect(() => {
+    void loadUserSensitivityProfile()
+      .then(setUserProfile)
+      .catch(() => setUserProfile(emptyUserSensitivityProfile));
+  }, []);
 
   const riskResult: ProductRiskResult = useMemo(
     () =>
@@ -62,8 +75,9 @@ export default function ProductResultScreen() {
         allergens: result.allergens ?? [],
         additives: result.additives ?? [],
         novaGroup: result.novaGroup ?? null,
+        userProfile,
       }),
-    [result],
+    [result, userProfile],
   );
 
   useEffect(() => {
@@ -73,10 +87,10 @@ export default function ProductResultScreen() {
     setIsContentOpen(false);
     setIsPriceOpen(false);
     setIsRiskOpen(false);
+    setExpandedWarnings(new Set());
     setIsIngredientsVisible(false);
     setLocationStatus(null);
     setMarketPriceStatus(null);
-    setOpenRiskDetails({});
 
     let isMounted = true;
 
@@ -104,7 +118,7 @@ export default function ProductResultScreen() {
         return;
       }
 
-      setLocationStatus("Konum al\u0131nd\u0131");
+      setLocationStatus("Konum alındı");
 
       const marketPrices = await fetchMarketPrices(
         {
@@ -115,14 +129,14 @@ export default function ProductResultScreen() {
       );
 
       if (marketPrices.prices.length === 0) {
-        setMarketPriceStatus("Yak\u0131ndaki market fiyat\u0131 bulunamad\u0131");
+        setMarketPriceStatus("Yakındaki market fiyatı bulunamadı");
       } else {
         const firstPrice = marketPrices.prices[0];
         setMarketPriceStatus(`${firstPrice.marketName}: ${firstPrice.price} ${firstPrice.currency}`);
       }
     } catch {
-      setLocationStatus("Konum al\u0131namad\u0131");
-      setMarketPriceStatus("Market fiyat\u0131 sorgulanamad\u0131");
+      setLocationStatus("Konum alınamadı");
+      setMarketPriceStatus('Market fiyatı sorgulanamadı');
     } finally {
       setIsLocationLoading(false);
     }
@@ -245,7 +259,7 @@ export default function ProductResultScreen() {
 
             <Pressable style={styles.inlineButton} onPress={handleFindPricesByLocation}>
               <Text style={styles.inlineButtonText}>
-                {isLocationLoading ? 'Konum al\u0131n\u0131yor...' : 'Konumla fiyat ara'}
+                {isLocationLoading ? 'Konum alınıyor...' : 'Konumla fiyat ara'}
               </Text>
             </Pressable>
 
@@ -254,47 +268,48 @@ export default function ProductResultScreen() {
           </View>
         ) : null}
 
+        {/* ── RafSkoru Uyarıları ─────────────────────────────────────────── */}
         <Pressable style={styles.sectionHeader} onPress={() => setIsRiskOpen((current) => !current)}>
-          <Text style={styles.sectionTitle}>{'RafSkoru Uyar\u0131lar\u0131'}</Text>
-          <Text style={styles.sectionToggle}>{isRiskOpen ? '-' : '+'}</Text>
+          <Text style={styles.sectionTitle}>RafSkoru Uyarıları</Text>
+          <Text style={styles.sectionToggle}>{isRiskOpen ? '−' : '+'}</Text>
         </Pressable>
 
         {isRiskOpen ? (
           riskResult.warnings.length === 0 ? (
             <View style={styles.row}>
-              <Text style={styles.value}>{'Bu \u00fcr\u00fcn i\u00e7in belirgin bir risk uyar\u0131s\u0131 olu\u015fturulmad\u0131.'}</Text>
+              <Text style={styles.value}>Bu ürün için belirgin bir risk uyarısı oluşturulmadı.</Text>
             </View>
           ) : (
             riskResult.warnings.map((warning) => {
-              const isDetailOpen = Boolean(openRiskDetails[warning.code]);
-
+              const isExpanded = expandedWarnings.has(warning.code);
+              const toggleDetail = () =>
+                setExpandedWarnings((prev) => {
+                  const next = new Set(prev);
+                  if (isExpanded) next.delete(warning.code);
+                  else next.add(warning.code);
+                  return next;
+                });
               return (
                 <View key={warning.code} style={[styles.row, styles.riskRow]}>
                   <Text style={styles.value}>{warning.title}</Text>
                   <Text style={[styles.helperText, getRiskLevelTextStyle(warning.level)]}>
                     {riskLevelLabel[warning.level]}
                   </Text>
-
-                  <Pressable
-                    style={styles.inlineButton}
-                    onPress={() =>
-                      setOpenRiskDetails((current) => ({
-                        ...current,
-                        [warning.code]: !current[warning.code],
-                      }))
-                    }
-                  >
+                  <Pressable style={styles.inlineButton} onPress={toggleDetail}>
                     <Text style={styles.inlineButtonText}>
-                      {isDetailOpen ? 'Detaylar? gizle' : 'Detaylar? g?ster'}
+                      {isExpanded ? 'Detayları gizle' : 'Detayları göster'}
                     </Text>
                   </Pressable>
-
-                  {isDetailOpen ? <Text style={styles.helperText}>{warning.message}</Text> : null}
+                  {isExpanded ? (
+                    <Text style={styles.helperText}>{warning.message}</Text>
+                  ) : null}
                 </View>
               );
             })
           )
         ) : null}
+        {/* ─────────────────────────────────────────────────────────────── */}
+
       </View>
 
       <View style={styles.actions}>
@@ -318,10 +333,12 @@ export default function ProductResultScreen() {
   );
 }
 
+// ── Risk seviyesi Türkçe etiketleri ─────────────────────────────────────────
+
 const riskLevelLabel: Record<RiskLevel, string> = {
-  low: 'D\u00fc\u015f\u00fck risk',
+  low: 'Düşük risk',
   medium: 'Orta risk',
-  high: 'Y\u00fcksek risk',
+  high: 'Yüksek risk',
   unknown: 'Bilinmiyor',
 };
 
@@ -335,6 +352,8 @@ function getRiskLevelTextStyle(level: RiskLevel) {
 
   return { fontSize: 12, fontWeight: '500' as const, color };
 }
+
+// ── Stil tanımları ───────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {

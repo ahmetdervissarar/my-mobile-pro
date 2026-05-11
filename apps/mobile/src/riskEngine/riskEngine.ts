@@ -1,115 +1,294 @@
-﻿export type RiskLevel = 'low' | 'medium' | 'high' | 'unknown';
+﻿/**
+ * RafSkoru — Risk Motoru
+ * apps/mobile/src/riskEngine/riskEngine.ts
+ *
+ * Sorumluluk: Ürün bilgilerine göre risk seviyesi ve uyarı listesi üretmek.
+ * Bu dosya saf bir hesaplama katmanıdır — UI'a, API'ye ve fiyat sistemine dokunmaz.
+ */
 
-export type RiskWarning = {
+import type { UserSensitivityProfile } from "../userProfile/userProfileTypes";
+
+// ─── Tipler ───────────────────────────────────────────────────────────────────
+
+/** Desteklenen risk seviyeleri */
+export type RiskLevel = "low" | "medium" | "high" | "unknown";
+
+/** Tek bir risk uyarısı */
+export interface RiskWarning {
+  /** Makine tarafından okunabilir tanımlayıcı */
   code: string;
+  /** Kullanıcıya gösterilecek kısa başlık */
   title: string;
+  /** Kullanıcıya gösterilecek açıklama metni */
   message: string;
+  /** Bu uyarının kendi risk ağırlığı */
   level: RiskLevel;
-};
-
-export type ProductRiskInput = {
-  name?: string | null;
-  ingredients?: string | null;
-  allergens?: string[] | null;
-  additives?: string[] | null;
-  novaGroup?: number | null;
-};
-
-export type ProductRiskResult = {
-  overallRisk: RiskLevel;
-  warnings: RiskWarning[];
-  isEvaluated: boolean;
-};
-
-const riskWeight: Record<RiskLevel, number> = {
-  low: 1,
-  unknown: 2,
-  medium: 3,
-  high: 4,
-};
-
-function getHighestRiskLevel(warnings: RiskWarning[]): RiskLevel {
-  if (warnings.length === 0) {
-    return 'low';
-  }
-
-  return warnings.reduce<RiskLevel>((highest, warning) => {
-    return riskWeight[warning.level] > riskWeight[highest] ? warning.level : highest;
-  }, 'low');
 }
+
+/** evaluateProductRisks fonksiyonunun dönüş değeri */
+export interface ProductRiskResult {
+  /** Tüm uyarılar birlikte değerlendirilerek hesaplanan genel risk seviyesi */
+  overallRisk: RiskLevel;
+  /** Tespit edilen uyarıların listesi */
+  warnings: RiskWarning[];
+  /** Değerlendirme yapılabilmesi için yeterli bilgi var mıydı? */
+  isEvaluated: boolean;
+}
+
+/**
+ * evaluateProductRisks'e aktarılan ürün verisi.
+ * Tüm alanlar opsiyoneldir — motor eksik alanlara göre uyarı üretir.
+ * Eski çağrılarla geriye dönük uyumludur.
+ */
+export interface ProductRiskInput {
+  /** Ürün adı — grup bazlı ihtiyat kuralları için kullanılır */
+  name?: string | null;
+  /** Ürünün içindekiler listesi (ham metin) */
+  ingredients?: string | null;
+  /** Alerjen bilgisi metni (ham string form) */
+  allergenInfo?: string | null;
+  /** Alerjen listesi (dizi form — product-result ekranından gelir) */
+  allergens?: string[];
+  /** Katkı maddesi içerip içermediğini belirten bayrak */
+  hasAdditives?: boolean | null;
+  /** Katkı maddesi listesi (dizi form — product-result ekranından gelir) */
+  additives?: string[];
+  /** NOVA grubu (1–4) — gıda işleme düzeyi sınıflandırması */
+  novaGroup?: number | null;
+  /** Kullanıcı hassasiyet profili — profil bazlı uyarılar için opsiyonel */
+  userProfile?: UserSensitivityProfile;
+}
+
+// ─── Sabitler ─────────────────────────────────────────────────────────────────
+
+/** Risk seviyelerinin sayısal ağırlıkları — genel seviye hesaplamada kullanılır */
+const RISK_WEIGHT: Record<RiskLevel, number> = {
+  unknown: 0,
+  low: 1,
+  medium: 2,
+  high: 3,
+};
+
+// ─── Yardımcı Fonksiyonlar ────────────────────────────────────────────────────
+
+/**
+ * Uyarı listesindeki en yüksek ağırlıklı seviyeyi döndürür.
+ * Hiç uyarı yoksa "low" döner.
+ */
+function resolveOverallRisk(warnings: RiskWarning[]): RiskLevel {
+  if (warnings.length === 0) return "low";
+  return warnings.reduce<RiskLevel>((highest, warning) => {
+    return RISK_WEIGHT[warning.level] > RISK_WEIGHT[highest]
+      ? warning.level
+      : highest;
+  }, "low");
+}
+
+// ─── Ana Fonksiyon ────────────────────────────────────────────────────────────
 
 export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResult {
   const warnings: RiskWarning[] = [];
-  const nameLower = product.name?.toLocaleLowerCase('tr-TR') ?? '';
 
-  if (!product.ingredients || product.ingredients.trim().length === 0) {
+  // ── Kural 1: İçindekiler bilgisi eksikse ──────────────────────────────────
+  const hasIngredients =
+    typeof product.ingredients === "string" &&
+    product.ingredients.trim().length > 0;
+
+  if (!hasIngredients) {
     warnings.push({
-      code: 'MISSING_INGREDIENTS',
-      title: '\u0130\u00e7indekiler bilgisi eksik',
-      level: 'medium',
-      message: '\u0130\u00e7indekiler bilgisi bulunamad\u0131. Ambalaj \u00fczerindeki i\u00e7erik listesi kontrol edilmelidir.',
+      code: "MISSING_INGREDIENTS",
+      title: "İçindekiler bilgisi eksik",
+      message: "İçindekiler bilgisi bulunamadı.",
+      level: "medium",
     });
   }
 
-  if (!product.allergens || product.allergens.length === 0) {
+  // ── Kural 2: Alerjen bilgisi eksikse ─────────────────────────────────────
+  // Hem allergenInfo string hem de allergens dizisi kontrol edilir
+  const hasAllergenInfo =
+    (typeof product.allergenInfo === "string" && product.allergenInfo.trim().length > 0) ||
+    ((product.allergens ?? []).length > 0);
+
+  if (!hasAllergenInfo) {
     warnings.push({
-      code: 'MISSING_ALLERGEN_INFO',
-      title: 'Alerjen bilgisi eksik',
-      level: 'high',
-      message: 'Alerjen bilgisi eksik. Alerjisi veya hassasiyeti olan kullan\u0131c\u0131lar ambalaj \u00fczerindeki alerjen beyan\u0131n\u0131 kontrol etmelidir.',
+      code: "MISSING_ALLERGEN_INFO",
+      title: "Alerjen bilgisi eksik",
+      message: "Alerjen bilgisi eksik. Ambalaj kontrol edilmeli.",
+      level: "high",
     });
   }
 
-  if (product.additives && product.additives.length > 0) {
+  // ── Kural 3: Katkı maddesi varsa ─────────────────────────────────────────
+  // Hem hasAdditives bayrağı hem de additives dizisi kontrol edilir
+  const containsAdditives =
+    product.hasAdditives === true ||
+    ((product.additives ?? []).length > 0);
+
+  if (containsAdditives) {
     warnings.push({
-      code: 'CONTAINS_ADDITIVES',
-      title: 'Katk\u0131 maddesi uyar\u0131s\u0131',
-      level: 'medium',
-      message: 'Bu \u00fcr\u00fcn katk\u0131 maddesi i\u00e7eriyor olabilir. Katk\u0131 maddelerine hassasiyeti olan kullan\u0131c\u0131lar dikkatli olmal\u0131d\u0131r.',
+      code: "CONTAINS_ADDITIVES",
+      title: "Katkı maddesi içeriyor olabilir",
+      message: "Katkı maddesi içeriyor olabilir.",
+      level: "medium",
     });
   }
 
+  // ── Kural 4: NOVA grubu 4 ise ─────────────────────────────────────────────
   if (product.novaGroup === 4) {
     warnings.push({
-      code: 'NOVA_GROUP_4',
-      title: 'Ultra i\u015flenmi\u015f \u00fcr\u00fcn uyar\u0131s\u0131',
-      level: 'high',
-      message: 'Bu \u00fcr\u00fcn ultra i\u015flenmi\u015f \u00fcr\u00fcn grubunda olabilir. D\u00fczenli t\u00fcketim a\u00e7\u0131s\u0131ndan dikkatli de\u011ferlendirilmelidir.',
+      code: "NOVA_GROUP_4",
+      title: "Ultra işlenmiş ürün",
+      message: "Ultra işlenmiş ürün olabilir.",
+      level: "high",
     });
   }
 
-  const processedMeatKeywords = ['salam', 'sosis', 'sucuk', 'jambon', 'f\u00fcme', 'past\u0131rma', 'parizer', '\u015fark\u00fcteri'];
-  if (processedMeatKeywords.some((keyword) => nameLower.includes(keyword))) {
+  // ── Ürün grubu ihtiyat kuralları (ürün adına göre) ────────────────────────
+  const nameLower = (product.name ?? "").toLowerCase();
+
+  const PROCESSED_MEAT_KEYWORDS = [
+    "salam", "sosis", "sucuk", "jambon",
+    "füme", "pastırma", "parizer", "şarküteri",
+  ];
+  const SWEET_SNACK_KEYWORDS = [
+    "çikolata", "cikolata", "gofret", "bisküvi",
+    "biskuvi", "kek", "krema", "bar", "kakaolu",
+  ];
+  const VEGAN_KEYWORDS = [
+    "vegan", "bitkisel", "plant-based",
+    "bitkisel süt", "vegan peynir", "vegan burger",
+  ];
+
+  const isProcessedMeat = PROCESSED_MEAT_KEYWORDS.some((kw) => nameLower.includes(kw));
+  const isSweetSnack    = SWEET_SNACK_KEYWORDS.some((kw) => nameLower.includes(kw));
+  const isVegan         = VEGAN_KEYWORDS.some((kw) => nameLower.includes(kw));
+
+  // ── Kural 5: İşlenmiş et / şarküteri ─────────────────────────────────────
+  if (isProcessedMeat) {
     warnings.push({
-      code: 'PROCESSED_MEAT_PRECAUTION',
-      title: '\u0130\u015flenmi\u015f et / \u015fark\u00fcteri uyar\u0131s\u0131',
-      level: 'medium',
-      message: 'Bu \u00fcr\u00fcn i\u015flenmi\u015f et veya \u015fark\u00fcteri grubunda olabilir. Alerjen, katk\u0131 maddesi ve \u00e7apraz bula\u015fma beyanlar\u0131 ambalaj \u00fczerinden dikkatle kontrol edilmelidir.',
+      code: "PROCESSED_MEAT_PRECAUTION",
+      title: "İşlenmiş et / şarküteri uyarısı",
+      message:
+        "Bu ürün işlenmiş et veya şarküteri grubunda olabilir. Alerjen, katkı maddesi ve çapraz bulaşma beyanları ambalaj üzerinden dikkatle kontrol edilmelidir.",
+      level: "medium",
     });
   }
 
-  const sweetSnackKeywords = ['\u00e7ikolata', 'cikolata', 'gofret', 'bisk\u00fcvi', 'biskuvi', 'kek', 'krema', 'bar', 'kakaolu'];
-  if (sweetSnackKeywords.some((keyword) => nameLower.includes(keyword))) {
+  // ── Kural 6: Tatlı / çikolatalı / kremalı ürün ───────────────────────────
+  if (isSweetSnack) {
     warnings.push({
-      code: 'SWEET_SNACK_ALLERGEN_PRECAUTION',
-      title: 'Tatl\u0131 \u00fcr\u00fcn alerjen uyar\u0131s\u0131',
-      level: 'medium',
-      message: 'Bu \u00fcr\u00fcn s\u00fct, f\u0131nd\u0131k/f\u0131st\u0131k, soya, gluten veya benzeri alerjenlerle ili\u015fkili olabilir. Alerjisi veya hassasiyeti olan kullan\u0131c\u0131lar i\u00e7erik ve alerjen beyan\u0131n\u0131 kontrol etmelidir.',
+      code: "SWEET_SNACK_ALLERGEN_PRECAUTION",
+      title: "Tatlı / atıştırmalık alerjen uyarısı",
+      message:
+        "Bu ürün süt, fındık/fıstık, soya, gluten veya benzeri alerjenlerle ilişkili olabilir. Alerjisi veya hassasiyeti olan kullanıcılar içerik ve alerjen beyanını kontrol etmelidir.",
+      level: "medium",
     });
   }
 
-  const veganAlternativeKeywords = ['vegan', 'bitkisel', 'plant-based', 'bitkisel s\u00fct', 'vegan peynir', 'vegan burger'];
-  if (veganAlternativeKeywords.some((keyword) => nameLower.includes(keyword))) {
+  // ── Kural 7: Vegan / bitkisel alternatif ─────────────────────────────────
+  if (isVegan) {
     warnings.push({
-      code: 'VEGAN_ALLERGEN_PRECAUTION',
-      title: 'Vegan \u00fcr\u00fcn alerjen uyar\u0131s\u0131',
-      level: 'medium',
-      message: 'Vegan veya bitkisel ibaresi \u00fcr\u00fcn\u00fcn alerjensiz oldu\u011fu anlam\u0131na gelmez. \u00c7apraz bula\u015fma ve alerjen beyanlar\u0131 kontrol edilmelidir.',
+      code: "VEGAN_ALLERGEN_PRECAUTION",
+      title: "Vegan / bitkisel ürün uyarısı",
+      message:
+        "Vegan veya bitkisel ibaresi ürünün alerjensiz olduğu anlamına gelmez. Çapraz bulaşma ve alerjen beyanları kontrol edilmelidir.",
+      level: "medium",
     });
   }
+
+  // ── Profil bazlı ihtiyat kuralları ───────────────────────────────────────
+  const profile = product.userProfile;
+
+  if (profile) {
+    const hasAllergenProfile = profile.allergens.length > 0;
+
+    // ── Profil Kural A1: Alerjen profili var + içerik/alerjen bilgisi eksik ──
+    if (hasAllergenProfile && !hasIngredients && !hasAllergenInfo) {
+      warnings.push({
+        code: "PROFILE_ALLERGEN_INFO_MISSING",
+        title: "Alerjen bilgisi kontrol edilmeli",
+        message:
+          "Profilinizde alerjen hassasiyeti tanımlı. Bu üründe içerik veya alerjen bilgisi eksik olduğu için ambalaj üzerindeki alerjen ve çapraz bulaşma beyanları kontrol edilmelidir.",
+        level: "medium",
+      });
+    }
+
+    // ── Profil Kural A2: Yumurta hassasiyeti + riskli ürün kategorisi ────────
+    if (
+      profile.allergens.includes("egg") &&
+      (isProcessedMeat || isSweetSnack || isVegan)
+    ) {
+      warnings.push({
+        code: "PROFILE_EGG_PRECAUTION",
+        title: "Yumurta hassasiyeti için dikkat",
+        message:
+          "Profilinizde yumurta hassasiyeti tanımlı. Bu ürün grubunda yardımcı bileşenler, katkılar veya çapraz bulaşma ihtimali olabileceğinden ambalaj bilgileri dikkatle kontrol edilmelidir.",
+        level: "medium",
+      });
+    }
+
+    // ── Profil Kural B1: Kan şekeri hassasiyeti + tatlı/şekerli ürün ─────────
+    if (
+      profile.chronicSensitivities.includes("blood_sugar_diabetes") &&
+      isSweetSnack
+    ) {
+      warnings.push({
+        code: "PROFILE_BLOOD_SUGAR_PRECAUTION",
+        title: "Kan şekeri hassasiyeti için dikkat",
+        message:
+          "Profilinizde kan şekeri hassasiyeti tanımlı. Bu ürün şeker içeriği açısından dikkatle değerlendirilmelidir; besin değerleri ve porsiyon bilgisi kontrol edilmelidir.",
+        level: "medium",
+      });
+    }
+
+    // ── Profil Kural B2: Sodyum hassasiyeti + işlenmiş et ────────────────────
+    if (
+      profile.chronicSensitivities.includes("hypertension_sodium") &&
+      isProcessedMeat
+    ) {
+      warnings.push({
+        code: "PROFILE_SODIUM_PRECAUTION",
+        title: "Sodyum hassasiyeti için dikkat",
+        message:
+          "Profilinizde sodyum hassasiyeti tanımlı. Bu ürün grubunda tuz/sodyum içeriği yüksek olabileceğinden besin etiketi kontrol edilmelidir.",
+        level: "medium",
+      });
+    }
+
+    // ── Profil Kural C1: Daha az şeker tercihi + tatlı/şekerli ürün ──────────
+    if (
+      profile.healthPreferences.includes("less_sugar") &&
+      isSweetSnack
+    ) {
+      warnings.push({
+        code: "PROFILE_LESS_SUGAR_PREFERENCE",
+        title: "Daha az şeker tercihinize dikkat",
+        message:
+          "Profilinizde daha az şeker tercihi tanımlı. Bu ürünün şeker ve porsiyon bilgisi kontrol edilmelidir.",
+        level: "low",
+      });
+    }
+
+    // ── Profil Kural C2: Ultra işlenmiş ürün tercihi + NOVA 4 ────────────────
+    if (
+      profile.healthPreferences.includes("less_ultra_processed") &&
+      product.novaGroup === 4
+    ) {
+      warnings.push({
+        code: "PROFILE_ULTRA_PROCESSED_PREFERENCE",
+        title: "Ultra işlenmiş ürün tercihinize dikkat",
+        message:
+          "Profilinizde daha az ultra işlenmiş ürün tercihi tanımlı. Bu ürün işlenmişlik düzeyi açısından dikkatle değerlendirilmelidir.",
+        level: "low",
+      });
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const overallRisk = resolveOverallRisk(warnings);
 
   return {
-    overallRisk: getHighestRiskLevel(warnings),
+    overallRisk,
     warnings,
     isEvaluated: true,
   };
