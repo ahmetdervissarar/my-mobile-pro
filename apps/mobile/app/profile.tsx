@@ -1,7 +1,36 @@
-﻿import { router } from 'expo-router';
+﻿import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorage';
+
 export default function ProfileScreen() {
+  const [summary, setSummary] = useState({
+    allergens: 0,
+    chronicSensitivities: 0,
+    healthPreferences: 0,
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      void loadUserSensitivityProfile().then((profile) => {
+        if (!isActive) return;
+
+        setSummary({
+          allergens: profile.allergens.length,
+          chronicSensitivities: profile.chronicSensitivities.length,
+          healthPreferences: profile.healthPreferences.length,
+        });
+      });
+
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
   return (
     <ScrollView
       style={styles.container}
@@ -23,6 +52,7 @@ export default function ProfileScreen() {
           <Text style={styles.menuDescription}>
             Yumurta, süt, gluten, soya, fıstık ve diğer alerjenleri seçin.
           </Text>
+          <Text style={styles.menuSummary}>{summary.allergens} seçim</Text>
         </Pressable>
 
         <Pressable
@@ -33,6 +63,9 @@ export default function ProfileScreen() {
           <Text style={styles.menuDescription}>
             Kan şekeri, sodyum, kolesterol ve benzeri hassasiyetleri yönetin.
           </Text>
+          <Text style={styles.menuSummary}>
+            {summary.chronicSensitivities} seçim
+          </Text>
         </Pressable>
 
         <Pressable
@@ -42,6 +75,9 @@ export default function ProfileScreen() {
           <Text style={styles.menuTitle}>Sağlık Tercihlerim</Text>
           <Text style={styles.menuDescription}>
             Daha az şeker, daha az tuz, temiz içerik ve benzeri tercihleri belirleyin.
+          </Text>
+          <Text style={styles.menuSummary}>
+            {summary.healthPreferences} seçim
           </Text>
         </Pressable>
       </View>
@@ -102,6 +138,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6B7280',
     lineHeight: 18,
+  },
+  menuSummary: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#111827',
+    marginTop: 2,
   },
   actions: {
     width: '100%',
