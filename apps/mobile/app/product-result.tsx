@@ -270,7 +270,9 @@ export default function ProductResultScreen() {
 
         {/* ── RafSkoru Uyarıları ─────────────────────────────────────────── */}
         <Pressable style={styles.sectionHeader} onPress={() => setIsRiskOpen((current) => !current)}>
-          <Text style={styles.sectionTitle}>RafSkoru Uyarıları</Text>
+          <Text style={styles.sectionTitle}>
+  RafSkoru Uyarıları ({riskResult.warnings.length})
+</Text>
           <Text style={styles.sectionToggle}>{isRiskOpen ? '−' : '+'}</Text>
         </Pressable>
 
