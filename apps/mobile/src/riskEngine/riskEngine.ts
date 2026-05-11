@@ -69,7 +69,43 @@ const RISK_WEIGHT: Record<RiskLevel, number> = {
   high: 3,
 };
 
+/** Uyarı gösterim sırası — listede bulunmayan kodlar en sona düşer */
+const PRIORITY_ORDER: string[] = [
+  // 1. Profil bazlı uyarılar
+  "PROFILE_ALLERGEN_INFO_MISSING",
+  "PROFILE_EGG_PRECAUTION",
+  "PROFILE_BLOOD_SUGAR_PRECAUTION",
+  "PROFILE_SODIUM_PRECAUTION",
+  "PROFILE_LESS_SUGAR_PREFERENCE",
+  "PROFILE_ULTRA_PROCESSED_PREFERENCE",
+  // 2. Eksik bilgi uyarıları
+  "MISSING_INGREDIENTS",
+  "MISSING_ALLERGEN_INFO",
+  // 3. Yüksek işlenmişlik / katkı uyarıları
+  "NOVA_GROUP_4",
+  "CONTAINS_ADDITIVES",
+  // 4. Ürün grubu ihtiyat uyarıları
+  "PROCESSED_MEAT_PRECAUTION",
+  "SWEET_SNACK_ALLERGEN_PRECAUTION",
+  "VEGAN_ALLERGEN_PRECAUTION",
+];
+
 // ─── Yardımcı Fonksiyonlar ────────────────────────────────────────────────────
+
+/**
+ * Uyarıları PRIORITY_ORDER'a göre sıralar.
+ * Listede bulunmayan kodlar sıranın en sonuna eklenir.
+ * Orijinal diziyi değiştirmez; yeni dizi döner.
+ */
+function sortWarningsByPriority(warnings: RiskWarning[]): RiskWarning[] {
+  return [...warnings].sort((a, b) => {
+    const indexA = PRIORITY_ORDER.indexOf(a.code);
+    const indexB = PRIORITY_ORDER.indexOf(b.code);
+    const rankA = indexA === -1 ? PRIORITY_ORDER.length : indexA;
+    const rankB = indexB === -1 ? PRIORITY_ORDER.length : indexB;
+    return rankA - rankB;
+  });
+}
 
 /**
  * Uyarı listesindeki en yüksek ağırlıklı seviyeyi döndürür.
@@ -289,7 +325,7 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
 
   return {
     overallRisk,
-    warnings,
+    warnings: sortWarningsByPriority(warnings),
     isEvaluated: true,
   };
 }
