@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { allergenOptions } from '../src/userProfile/userProfileTypes';
+
 export default function ProfileAllergensScreen() {
   return (
     <ScrollView
@@ -17,20 +19,9 @@ export default function ProfileAllergensScreen() {
 
         <Text style={styles.sectionTitle}>Alerjen grupları</Text>
 
-        {[
-          'Yumurta',
-          'Süt',
-          'Laktoz',
-          'Gluten / Buğday',
-          'Soya',
-          'Fıstık',
-          'Fındık / Ağaç yemişleri',
-          'Susam',
-          'Balık',
-          'Kabuklu deniz ürünleri',
-        ].map((item) => (
-          <View key={item} style={styles.optionCard}>
-            <Text style={styles.optionText}>{item}</Text>
+        {allergenOptions.map((option) => (
+          <View key={option.key} style={styles.optionCard}>
+            <Text style={styles.optionText}>{option.label}</Text>
           </View>
         ))}
       </View>

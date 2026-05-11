@@ -1,16 +1,9 @@
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-export default function ProfileChronicScreen() {
-  const items = [
-    'Kan şekeri hassasiyeti / Diyabet',
-    'Hipertansiyon / Sodyum hassasiyeti',
-    'Kalp-damar hassasiyeti',
-    'Çölyak / Gluten hassasiyeti',
-    'Böbrek hassasiyeti',
-    'Kolesterol / Doymuş yağ hassasiyeti',
-  ];
+import { chronicSensitivityOptions } from '../src/userProfile/userProfileTypes';
 
+export default function ProfileChronicScreen() {
   return (
     <ScrollView
       style={styles.container}
@@ -26,9 +19,9 @@ export default function ProfileChronicScreen() {
 
         <Text style={styles.sectionTitle}>Hassasiyet grupları</Text>
 
-        {items.map((item) => (
-          <View key={item} style={styles.optionCard}>
-            <Text style={styles.optionText}>{item}</Text>
+        {chronicSensitivityOptions.map((option) => (
+          <View key={option.key} style={styles.optionCard}>
+            <Text style={styles.optionText}>{option.label}</Text>
           </View>
         ))}
       </View>

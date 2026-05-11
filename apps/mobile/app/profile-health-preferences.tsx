@@ -1,17 +1,9 @@
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-export default function ProfileHealthPreferencesScreen() {
-  const items = [
-    'Daha az şeker',
-    'Daha az tuz',
-    'Daha az katkı maddesi',
-    'Daha az ultra işlenmiş ürün',
-    'Yüksek protein tercihi',
-    'Çocuklar için daha dikkatli seçim',
-    'Temiz içerik tercihi',
-  ];
+import { healthPreferenceOptions } from '../src/userProfile/userProfileTypes';
 
+export default function ProfileHealthPreferencesScreen() {
   return (
     <ScrollView
       style={styles.container}
@@ -27,9 +19,9 @@ export default function ProfileHealthPreferencesScreen() {
 
         <Text style={styles.sectionTitle}>Tercih grupları</Text>
 
-        {items.map((item) => (
-          <View key={item} style={styles.optionCard}>
-            <Text style={styles.optionText}>{item}</Text>
+        {healthPreferenceOptions.map((option) => (
+          <View key={option.key} style={styles.optionCard}>
+            <Text style={styles.optionText}>{option.label}</Text>
           </View>
         ))}
       </View>
