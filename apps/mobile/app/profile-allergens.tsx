@@ -1,9 +1,33 @@
 import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { allergenOptions } from '../src/userProfile/userProfileTypes';
+import { AllergenKey, allergenOptions } from '../src/userProfile/userProfileTypes';
+import {
+  loadUserSensitivityProfile,
+  saveUserSensitivityProfile,
+} from '../src/userProfile/userProfileStorage';
 
 export default function ProfileAllergensScreen() {
+  const [selected, setSelected] = useState<AllergenKey[]>([]);
+
+  useEffect(() => {
+    void loadUserSensitivityProfile().then((profile) => {
+      setSelected(profile.allergens);
+    });
+  }, []);
+
+  const handleToggle = async (key: AllergenKey) => {
+    const next = selected.includes(key)
+      ? selected.filter((k) => k !== key)
+      : [...selected, key];
+
+    setSelected(next);
+
+    const profile = await loadUserSensitivityProfile();
+    await saveUserSensitivityProfile({ ...profile, allergens: next });
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -19,11 +43,20 @@ export default function ProfileAllergensScreen() {
 
         <Text style={styles.sectionTitle}>Alerjen grupları</Text>
 
-        {allergenOptions.map((option) => (
-          <View key={option.key} style={styles.optionCard}>
-            <Text style={styles.optionText}>{option.label}</Text>
-          </View>
-        ))}
+        {allergenOptions.map((option) => {
+          const isSelected = selected.includes(option.key);
+
+          return (
+            <Pressable
+              key={option.key}
+              style={[styles.optionCard, isSelected && styles.optionCardSelected]}
+              onPress={() => void handleToggle(option.key)}
+            >
+              <Text style={styles.optionText}>{option.label}</Text>
+              {isSelected ? <Text style={styles.selectedBadge}>Seçildi</Text> : null}
+            </Pressable>
+          );
+        })}
       </View>
 
       <View style={styles.actions}>
@@ -77,11 +110,23 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     backgroundColor: '#fff',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  optionCardSelected: {
+    borderColor: '#111827',
+    backgroundColor: '#F9FAFB',
   },
   optionText: {
     fontSize: 15,
     fontWeight: '600',
     color: '#111827',
+  },
+  selectedBadge: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
   },
   actions: {
     width: '100%',
