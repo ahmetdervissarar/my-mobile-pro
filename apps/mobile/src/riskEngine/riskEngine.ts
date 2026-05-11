@@ -93,6 +93,26 @@ const PRIORITY_ORDER: string[] = [
 // ─── Yardımcı Fonksiyonlar ────────────────────────────────────────────────────
 
 /**
+ * Profil bazlı uyarı varsa gereksiz hale gelen genel uyarıları listeden çıkarır.
+ * Orijinal diziyi değiştirmez; yeni dizi döner.
+ *
+ * Mevcut kural:
+ * - PROFILE_ALLERGEN_INFO_MISSING varsa MISSING_ALLERGEN_INFO gösterilmez.
+ */
+function suppressRedundantWarnings(warnings: RiskWarning[]): RiskWarning[] {
+  const codes = new Set(warnings.map((w) => w.code));
+
+  const suppress = new Set<string>();
+
+  if (codes.has("PROFILE_ALLERGEN_INFO_MISSING")) {
+    suppress.add("MISSING_ALLERGEN_INFO");
+  }
+
+  if (suppress.size === 0) return warnings;
+  return warnings.filter((w) => !suppress.has(w.code));
+}
+
+/**
  * Uyarıları PRIORITY_ORDER'a göre sıralar.
  * Listede bulunmayan kodlar sıranın en sonuna eklenir.
  * Orijinal diziyi değiştirmez; yeni dizi döner.
@@ -322,10 +342,11 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
   // ─────────────────────────────────────────────────────────────────────────
 
   const overallRisk = resolveOverallRisk(warnings);
+  const displayWarnings = sortWarningsByPriority(suppressRedundantWarnings(warnings));
 
   return {
     overallRisk,
-    warnings: sortWarningsByPriority(warnings),
+    warnings: displayWarnings,
     isEvaluated: true,
   };
 }
