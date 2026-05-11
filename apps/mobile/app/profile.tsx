@@ -1,8 +1,11 @@
 ﻿import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorage';
+import {
+  clearUserSensitivityProfile,
+  loadUserSensitivityProfile,
+} from '../src/userProfile/userProfileStorage';
 
 export default function ProfileScreen() {
   const [summary, setSummary] = useState({
@@ -11,25 +14,51 @@ export default function ProfileScreen() {
     healthPreferences: 0,
   });
 
-  useFocusEffect(
-    useCallback(() => {
-      let isActive = true;
+  const loadSummary = useCallback(() => {
+    let isActive = true;
 
-      void loadUserSensitivityProfile().then((profile) => {
-        if (!isActive) return;
+    void loadUserSensitivityProfile().then((profile) => {
+      if (!isActive) return;
 
-        setSummary({
-          allergens: profile.allergens.length,
-          chronicSensitivities: profile.chronicSensitivities.length,
-          healthPreferences: profile.healthPreferences.length,
-        });
+      setSummary({
+        allergens: profile.allergens.length,
+        chronicSensitivities: profile.chronicSensitivities.length,
+        healthPreferences: profile.healthPreferences.length,
       });
+    });
 
-      return () => {
-        isActive = false;
-      };
-    }, []),
-  );
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useFocusEffect(loadSummary);
+
+  const handleClearProfile = () => {
+    Alert.alert(
+      'Profil seçimleri temizlensin mi?',
+      'Alerjen, kronik hassasiyet ve sağlık tercihi seçimleriniz sıfırlanacak.',
+      [
+        {
+          text: 'Vazgeç',
+          style: 'cancel',
+        },
+        {
+          text: 'Temizle',
+          style: 'destructive',
+          onPress: () => {
+            void clearUserSensitivityProfile().then(() => {
+              setSummary({
+                allergens: 0,
+                chronicSensitivities: 0,
+                healthPreferences: 0,
+              });
+            });
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <ScrollView
@@ -83,6 +112,10 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.actions}>
+        <Pressable style={styles.dangerButton} onPress={handleClearProfile}>
+          <Text style={styles.dangerButtonText}>Seçimleri temizle</Text>
+        </Pressable>
+
         <Pressable style={styles.secondaryButton} onPress={() => router.push('/')}>
           <Text style={styles.secondaryButtonText}>Ana sayfaya dön</Text>
         </Pressable>
@@ -149,6 +182,19 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 20,
     gap: 12,
+  },
+  dangerButton: {
+    borderWidth: 1,
+    borderColor: '#DC2626',
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  dangerButtonText: {
+    color: '#DC2626',
+    fontSize: 16,
+    fontWeight: '700',
   },
   secondaryButton: {
     borderWidth: 1,
