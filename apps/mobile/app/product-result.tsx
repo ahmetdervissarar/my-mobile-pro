@@ -6,6 +6,11 @@ import { getMockProductResult, getProductResult } from '../src/services/productS
 import { getUserLocationForPricing } from '../src/services/locationService';
 import { fetchMarketPrices } from '../src/services/marketPriceService';
 import { evaluateProductRisks } from '../src/riskEngine/riskEngine';
+import {
+  formatNutritionValue,
+  getTrafficLightLevelLabel,
+  getTrafficLightNutrientLabel,
+} from '../src/nutrition/trafficLight';
 import type { ProductRiskResult, RiskLevel } from '../src/riskEngine/riskEngine';
 import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile } from '../src/userProfile/userProfileTypes';
@@ -114,11 +119,11 @@ export default function ProductResultScreen() {
       const location = await getUserLocationForPricing();
 
       if (!location) {
-        setLocationStatus("Konum izni verilmedi");
+        setLocationStatus('Konum izni verilmedi');
         return;
       }
 
-      setLocationStatus("Konum alındı");
+      setLocationStatus('Konum alındı');
 
       const marketPrices = await fetchMarketPrices(
         {
@@ -129,13 +134,13 @@ export default function ProductResultScreen() {
       );
 
       if (marketPrices.prices.length === 0) {
-        setMarketPriceStatus("Yakındaki market fiyatı bulunamadı");
+        setMarketPriceStatus('Yakındaki market fiyatı bulunamadı');
       } else {
         const firstPrice = marketPrices.prices[0];
         setMarketPriceStatus(`${firstPrice.marketName}: ${firstPrice.price} ${firstPrice.currency}`);
       }
     } catch {
-      setLocationStatus("Konum alınamadı");
+      setLocationStatus('Konum alınamadı');
       setMarketPriceStatus('Market fiyatı sorgulanamadı');
     } finally {
       setIsLocationLoading(false);
@@ -268,11 +273,36 @@ export default function ProductResultScreen() {
           </View>
         ) : null}
 
+        {/* ── Traffic Light Besin Etiketi ─────────────────────────────── */}
+        {result.trafficLight ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Traffic Light Besin Etiketi</Text>
+            </View>
+
+            {(['fat', 'saturatedFat', 'sugars', 'salt'] as const).map((nutrient) => {
+              const item = result.trafficLight?.[nutrient];
+
+              if (!item) return null;
+
+              return (
+                <View key={nutrient} style={styles.row}>
+                  <Text style={styles.label}>{getTrafficLightNutrientLabel(nutrient)}</Text>
+                  <Text style={styles.value}>{formatNutritionValue(item)}</Text>
+                  <Text style={[styles.helperText, getTrafficLightLevelTextStyle(item.level)]}>
+                    {getTrafficLightLevelLabel(item.level)}
+                  </Text>
+                </View>
+              );
+            })}
+          </>
+        ) : null}
+
         {/* ── RafSkoru Uyarıları ─────────────────────────────────────────── */}
         <Pressable style={styles.sectionHeader} onPress={() => setIsRiskOpen((current) => !current)}>
           <Text style={styles.sectionTitle}>
-  RafSkoru Uyarıları ({riskResult.warnings.length})
-</Text>
+            RafSkoru Uyarıları ({riskResult.warnings.length})
+          </Text>
           <Text style={styles.sectionToggle}>{isRiskOpen ? '−' : '+'}</Text>
         </Pressable>
 
@@ -291,6 +321,7 @@ export default function ProductResultScreen() {
                   else next.add(warning.code);
                   return next;
                 });
+
               return (
                 <View key={warning.code} style={[styles.row, styles.riskRow]}>
                   <Text style={styles.value}>{warning.title}</Text>
@@ -310,8 +341,6 @@ export default function ProductResultScreen() {
             })
           )
         ) : null}
-        {/* ─────────────────────────────────────────────────────────────── */}
-
       </View>
 
       <View style={styles.actions}>
@@ -353,6 +382,19 @@ function getRiskLevelTextStyle(level: RiskLevel) {
         : '#16A34A';
 
   return { fontSize: 12, fontWeight: '500' as const, color };
+}
+
+function getTrafficLightLevelTextStyle(level: 'low' | 'medium' | 'high' | 'unknown') {
+  const color =
+    level === 'high'
+      ? '#DC2626'
+      : level === 'medium'
+        ? '#D97706'
+        : level === 'low'
+          ? '#16A34A'
+          : '#6B7280';
+
+  return { fontSize: 12, fontWeight: '600' as const, color };
 }
 
 // ── Stil tanımları ───────────────────────────────────────────────────────────
