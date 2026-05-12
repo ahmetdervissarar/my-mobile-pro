@@ -16,9 +16,14 @@
  * - expectedWarningCodes listeleri bu iki davranışı yansıtır.
  */
 
+import type { TrafficLightNutrition } from "../types/product";
 import type { ProductRiskInput } from "./riskEngine";
 
 // ─── Senaryo Tipi ─────────────────────────────────────────────────────────────
+
+type ScenarioProductRiskInput = ProductRiskInput & {
+  trafficLight?: TrafficLightNutrition | null;
+};
 
 export interface RiskEngineScenario {
   /** Senaryonun benzersiz tanımlayıcısı */
@@ -28,7 +33,7 @@ export interface RiskEngineScenario {
   /** Senaryonun amacını ve beklenen davranışı açıklar */
   description: string;
   /** evaluateProductRisks() fonksiyonuna verilecek girdi */
-  input: ProductRiskInput;
+  input: ScenarioProductRiskInput;
   /**
    * Ekranda görünmesi beklenen uyarı kodları.
    * Sıra, sortWarningsByPriority + suppressRedundantWarnings uygulandıktan
@@ -64,13 +69,12 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
       },
     },
     expectedWarningCodes: [
-      "PROFILE_ALLERGEN_INFO_MISSING",  // profil + eksik alerjen → MISSING_ALLERGEN_INFO'yu bastırır
-      "PROFILE_EGG_PRECAUTION",         // egg + sweet snack
-      "PROFILE_BLOOD_SUGAR_PRECAUTION", // blood_sugar + sweet snack
-      "PROFILE_LESS_SUGAR_PREFERENCE",  // less_sugar + sweet snack
-      "MISSING_INGREDIENTS",            // içerik yok (bastırılmıyor)
+      "PROFILE_ALLERGEN_INFO_MISSING",
+      "PROFILE_EGG_PRECAUTION",
+      "PROFILE_BLOOD_SUGAR_PRECAUTION",
+      "PROFILE_LESS_SUGAR_PREFERENCE",
+      "MISSING_INGREDIENTS",
       "SWEET_SNACK_ALLERGEN_PRECAUTION",
-      // "MISSING_ALLERGEN_INFO" → bastırıldı
     ],
   },
 
@@ -96,9 +100,9 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
       },
     },
     expectedWarningCodes: [
-      "PROFILE_SODIUM_PRECAUTION",  // hypertension_sodium + processed meat
+      "PROFILE_SODIUM_PRECAUTION",
       "MISSING_INGREDIENTS",
-      "MISSING_ALLERGEN_INFO",      // alerjen profili boş → bastırılmıyor
+      "MISSING_ALLERGEN_INFO",
       "PROCESSED_MEAT_PRECAUTION",
     ],
   },
@@ -124,11 +128,10 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
       },
     },
     expectedWarningCodes: [
-      "PROFILE_ALLERGEN_INFO_MISSING", // egg profili + eksik bilgi → MISSING_ALLERGEN_INFO bastırılır
-      "PROFILE_EGG_PRECAUTION",        // egg + vegan
+      "PROFILE_ALLERGEN_INFO_MISSING",
+      "PROFILE_EGG_PRECAUTION",
       "MISSING_INGREDIENTS",
       "VEGAN_ALLERGEN_PRECAUTION",
-      // "MISSING_ALLERGEN_INFO" → bastırıldı
     ],
   },
 
@@ -153,9 +156,9 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
       },
     },
     expectedWarningCodes: [
-      "PROFILE_ULTRA_PROCESSED_PREFERENCE", // less_ultra_processed + NOVA 4
+      "PROFILE_ULTRA_PROCESSED_PREFERENCE",
       "MISSING_INGREDIENTS",
-      "MISSING_ALLERGEN_INFO",              // alerjen profili boş → bastırılmıyor
+      "MISSING_ALLERGEN_INFO",
       "NOVA_GROUP_4",
     ],
   },
@@ -206,6 +209,99 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
       },
     },
     expectedWarningCodes: [],
+  },
+
+  // ── Senaryo 7 ────────────────────────────────────────────────────────────────
+  {
+    id: "scenario-07",
+    title: "Traffic Light yüksek şeker + daha az şeker tercihi",
+    description:
+      "Ürünün Traffic Light şeker seviyesi yüksek. Kullanıcı profilinde daha az şeker " +
+      "tercihi tanımlı. Ürün adı tatlı anahtar kelimesi içermese bile gerçek besin " +
+      "etiketine göre şeker uyarısı beklenir.",
+    input: {
+      name: "meyveli kahvaltılık ürün",
+      ingredients: "yulaf, meyve püresi, şeker, bitkisel yağ",
+      allergens: ["gluten"],
+      additives: [],
+      novaGroup: null,
+      trafficLight: {
+        fat: { value: 4.2, unit: "g", level: "medium" },
+        saturatedFat: { value: 0.9, unit: "g", level: "low" },
+        sugars: { value: 28.5, unit: "g", level: "high" },
+        salt: { value: 0.18, unit: "g", level: "low" },
+      },
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: [],
+        healthPreferences: ["less_sugar"],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_TRAFFIC_LIGHT_HIGH_SUGAR",
+    ],
+  },
+
+  // ── Senaryo 8 ────────────────────────────────────────────────────────────────
+  {
+    id: "scenario-08",
+    title: "Traffic Light yüksek tuz + sodyum hassasiyeti",
+    description:
+      "Ürünün Traffic Light tuz seviyesi yüksek. Kullanıcı profilinde sodyum hassasiyeti " +
+      "tanımlı. Ürün adı işlenmiş et anahtar kelimesi içermese bile gerçek besin etiketi " +
+      "üzerinden sodyum/tuz uyarısı beklenir.",
+    input: {
+      name: "tuzlu kraker",
+      ingredients: "buğday unu, bitkisel yağ, tuz, maya",
+      allergens: ["gluten"],
+      additives: [],
+      novaGroup: null,
+      trafficLight: {
+        fat: { value: 9.1, unit: "g", level: "medium" },
+        saturatedFat: { value: 1.2, unit: "g", level: "low" },
+        sugars: { value: 2.4, unit: "g", level: "low" },
+        salt: { value: 1.8, unit: "g", level: "high" },
+      },
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: ["hypertension_sodium"],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_TRAFFIC_LIGHT_HIGH_SALT",
+    ],
+  },
+
+  // ── Senaryo 9 ────────────────────────────────────────────────────────────────
+  {
+    id: "scenario-09",
+    title: "Traffic Light yüksek doymuş yağ genel uyarısı",
+    description:
+      "Ürünün Traffic Light doymuş yağ seviyesi yüksek. Kullanıcı profili boş olsa bile " +
+      "genel besin etiketi uyarısı beklenir.",
+    input: {
+      name: "kremalı ürün",
+      ingredients: "bitkisel yağ, krema tozu, şeker, kakao",
+      allergens: ["süt"],
+      additives: [],
+      novaGroup: null,
+      trafficLight: {
+        fat: { value: 18.1, unit: "g", level: "high" },
+        saturatedFat: { value: 7.2, unit: "g", level: "high" },
+        sugars: { value: 12.5, unit: "g", level: "medium" },
+        salt: { value: 0.22, unit: "g", level: "low" },
+      },
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "TRAFFIC_LIGHT_HIGH_SATURATED_FAT",
+      "SWEET_SNACK_ALLERGEN_PRECAUTION",
+    ],
   },
 
 ];
