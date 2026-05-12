@@ -1,4 +1,4 @@
-import type { ProductResult } from '../types/product';
+import type { ProductResult, TrafficLightNutrition } from '../types/product';
 import { fetchOpenFoodFactsByBarcode } from './openFoodFactsService';
 
 export type ProductSearchInput = {
@@ -8,6 +8,34 @@ export type ProductSearchInput = {
 };
 
 const PRODUCT_API_URL = process.env.EXPO_PUBLIC_PRODUCT_API_URL?.trim() ?? '';
+
+const LOW_SUGAR_TRAFFIC_LIGHT: TrafficLightNutrition = {
+  fat: { value: 3.2, unit: 'g', level: 'medium' },
+  saturatedFat: { value: 0.8, unit: 'g', level: 'low' },
+  sugars: { value: 2.1, unit: 'g', level: 'low' },
+  salt: { value: 0.12, unit: 'g', level: 'low' },
+};
+
+const SWEET_SNACK_TRAFFIC_LIGHT: TrafficLightNutrition = {
+  fat: { value: 12.4, unit: 'g', level: 'medium' },
+  saturatedFat: { value: 5.8, unit: 'g', level: 'high' },
+  sugars: { value: 28.5, unit: 'g', level: 'high' },
+  salt: { value: 0.32, unit: 'g', level: 'medium' },
+};
+
+const GRANOLA_TRAFFIC_LIGHT: TrafficLightNutrition = {
+  fat: { value: 8.1, unit: 'g', level: 'medium' },
+  saturatedFat: { value: 1.4, unit: 'g', level: 'low' },
+  sugars: { value: 18.7, unit: 'g', level: 'high' },
+  salt: { value: 0.18, unit: 'g', level: 'low' },
+};
+
+const UNKNOWN_TRAFFIC_LIGHT: TrafficLightNutrition = {
+  fat: { value: null, unit: null, level: 'unknown' },
+  saturatedFat: { value: null, unit: null, level: 'unknown' },
+  sugars: { value: null, unit: null, level: 'unknown' },
+  salt: { value: null, unit: null, level: 'unknown' },
+};
 
 const MOCK_PRODUCTS: ProductResult[] = [
   {
@@ -23,6 +51,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     ingredients: 'Süt proteini, yoğurt tozu, lif karışımı, tatlandırıcı (steviol glikozitleri).',
     nutriScore: null,
     novaGroup: null,
+    trafficLight: SWEET_SNACK_TRAFFIC_LIGHT,
   },
   {
     id: 'p-002',
@@ -37,6 +66,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     ingredients: 'Yer fıstığı (%99,5), deniz tuzu.',
     nutriScore: null,
     novaGroup: null,
+    trafficLight: LOW_SUGAR_TRAFFIC_LIGHT,
   },
   {
     id: 'p-003',
@@ -51,6 +81,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     ingredients: 'Yulaf, bal, kuru meyve, bitkisel yağ, şeker.',
     nutriScore: null,
     novaGroup: null,
+    trafficLight: GRANOLA_TRAFFIC_LIGHT,
   },
 ];
 
@@ -67,6 +98,7 @@ const fallbackProduct: ProductResult = {
   ingredients: null,
   nutriScore: null,
   novaGroup: null,
+  trafficLight: UNKNOWN_TRAFFIC_LIGHT,
 };
 
 function hasProductApiUrl(): boolean {
@@ -150,6 +182,7 @@ function mapOpenFoodFactsToProductResult(
     ingredients,
     nutriScore,
     novaGroup,
+    trafficLight: UNKNOWN_TRAFFIC_LIGHT,
   };
 }
 
