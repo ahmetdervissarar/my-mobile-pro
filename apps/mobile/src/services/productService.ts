@@ -1,6 +1,7 @@
 import type { ProductResult } from '../types/product';
 import { createTrafficLightNutrition } from '../nutrition/trafficLight';
 import { fetchOpenFoodFactsByBarcode } from './openFoodFactsService';
+import { calculateHealthScore } from '../scoring/healthScore';
 
 export type ProductSearchInput = {
   barcode?: string;
@@ -201,12 +202,16 @@ function mapOpenFoodFactsToProductResult(
   novaGroup: number | null,
   nutritionValues: NutritionValues,
 ): ProductResult {
+  const trafficLight = resolveTrafficLight(nutritionValues);
+
+  const healthScore = calculateHealthScore({ nutriScore, novaGroup, trafficLight });
+
   return {
     id: `off-${barcode}`,
     name: productName?.trim() || 'Tanınmayan Ürün',
     barcode,
     searchSource: 'barcode',
-    healthScore: 50,
+    healthScore,
     priceText: 'Demo ürün - fiyat bilgisi yok',
     warnings: ['Ürün bilgisi Open Food Facts kaynağından alınmıştır. Eksik veya hatalı olabilir.'],
     allergens,
@@ -214,7 +219,7 @@ function mapOpenFoodFactsToProductResult(
     ingredients,
     nutriScore,
     novaGroup,
-    trafficLight: resolveTrafficLight(nutritionValues),
+    trafficLight,
   };
 }
 
