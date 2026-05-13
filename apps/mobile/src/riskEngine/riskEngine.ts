@@ -6,6 +6,7 @@
  * Bu dosya saf bir hesaplama katmanıdır — UI'a, API'ye ve fiyat sistemine dokunmaz.
  */
 
+import type { TrafficLightNutrition } from "../types/product";
 import type { UserSensitivityProfile } from "../userProfile/userProfileTypes";
 
 // ─── Tipler ───────────────────────────────────────────────────────────────────
@@ -55,6 +56,8 @@ export interface ProductRiskInput {
   additives?: string[];
   /** NOVA grubu (1–4) — gıda işleme düzeyi sınıflandırması */
   novaGroup?: number | null;
+  /** Traffic Light besin etiketi — yağ, doymuş yağ, şeker ve tuz düzeyleri */
+  trafficLight?: TrafficLightNutrition | null;
   /** Kullanıcı hassasiyet profili — profil bazlı uyarılar için opsiyonel */
   userProfile?: UserSensitivityProfile;
 }
@@ -78,12 +81,18 @@ const PRIORITY_ORDER: string[] = [
   "PROFILE_SODIUM_PRECAUTION",
   "PROFILE_LESS_SUGAR_PREFERENCE",
   "PROFILE_ULTRA_PROCESSED_PREFERENCE",
+  "PROFILE_TRAFFIC_LIGHT_HIGH_SUGAR",
+  "PROFILE_TRAFFIC_LIGHT_HIGH_SALT",
+
   // 2. Eksik bilgi uyarıları
   "MISSING_INGREDIENTS",
   "MISSING_ALLERGEN_INFO",
-  // 3. Yüksek işlenmişlik / katkı uyarıları
+
+  // 3. Yüksek işlenmişlik / katkı / besin etiketi uyarıları
   "NOVA_GROUP_4",
   "CONTAINS_ADDITIVES",
+  "TRAFFIC_LIGHT_HIGH_SATURATED_FAT",
+
   // 4. Ürün grubu ihtiyat uyarıları
   "PROCESSED_MEAT_PRECAUTION",
   "SWEET_SNACK_ALLERGEN_PRECAUTION",
@@ -160,7 +169,6 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
   }
 
   // ── Kural 2: Alerjen bilgisi eksikse ─────────────────────────────────────
-  // Hem allergenInfo string hem de allergens dizisi kontrol edilir
   const hasAllergenInfo =
     (typeof product.allergenInfo === "string" && product.allergenInfo.trim().length > 0) ||
     ((product.allergens ?? []).length > 0);
@@ -175,7 +183,6 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
   }
 
   // ── Kural 3: Katkı maddesi varsa ─────────────────────────────────────────
-  // Hem hasAdditives bayrağı hem de additives dizisi kontrol edilir
   const containsAdditives =
     product.hasAdditives === true ||
     ((product.additives ?? []).length > 0);
@@ -216,8 +223,8 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
   ];
 
   const isProcessedMeat = PROCESSED_MEAT_KEYWORDS.some((kw) => nameLower.includes(kw));
-  const isSweetSnack    = SWEET_SNACK_KEYWORDS.some((kw) => nameLower.includes(kw));
-  const isVegan         = VEGAN_KEYWORDS.some((kw) => nameLower.includes(kw));
+  const isSweetSnack = SWEET_SNACK_KEYWORDS.some((kw) => nameLower.includes(kw));
+  const isVegan = VEGAN_KEYWORDS.some((kw) => nameLower.includes(kw));
 
   // ── Kural 5: İşlenmiş et / şarküteri ─────────────────────────────────────
   if (isProcessedMeat) {
@@ -248,6 +255,17 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
       title: "Vegan / bitkisel ürün uyarısı",
       message:
         "Vegan veya bitkisel ibaresi ürünün alerjensiz olduğu anlamına gelmez. Çapraz bulaşma ve alerjen beyanları kontrol edilmelidir.",
+      level: "medium",
+    });
+  }
+
+  // ── Traffic Light genel besin etiketi kuralları ───────────────────────────
+  if (product.trafficLight?.saturatedFat.level === "high") {
+    warnings.push({
+      code: "TRAFFIC_LIGHT_HIGH_SATURATED_FAT",
+      title: "Doymuş yağ seviyesi yüksek",
+      message:
+        "Traffic Light besin etiketine göre bu üründe doymuş yağ seviyesi yüksek görünüyor. Porsiyon miktarı ve besin değerleri dikkatle kontrol edilmelidir.",
       level: "medium",
     });
   }
@@ -336,6 +354,37 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
         message:
           "Profilinizde daha az ultra işlenmiş ürün tercihi tanımlı. Bu ürün işlenmişlik düzeyi açısından dikkatle değerlendirilmelidir.",
         level: "low",
+      });
+    }
+
+    // ── Profil Kural D1: Traffic Light yüksek şeker + şeker hassasiyeti/tercihi ─
+    if (
+      product.trafficLight?.sugars.level === "high" &&
+      (
+        profile.healthPreferences.includes("less_sugar") ||
+        profile.chronicSensitivities.includes("blood_sugar_diabetes")
+      )
+    ) {
+      warnings.push({
+        code: "PROFILE_TRAFFIC_LIGHT_HIGH_SUGAR",
+        title: "Traffic Light şeker seviyesi yüksek",
+        message:
+          "Traffic Light besin etiketine göre bu üründe şeker seviyesi yüksek görünüyor. Profilinizde şekerle ilgili tercih veya hassasiyet bulunduğu için porsiyon ve besin değerleri dikkatle kontrol edilmelidir.",
+        level: "medium",
+      });
+    }
+
+    // ── Profil Kural D2: Traffic Light yüksek tuz + sodyum hassasiyeti ───────
+    if (
+      product.trafficLight?.salt.level === "high" &&
+      profile.chronicSensitivities.includes("hypertension_sodium")
+    ) {
+      warnings.push({
+        code: "PROFILE_TRAFFIC_LIGHT_HIGH_SALT",
+        title: "Traffic Light tuz seviyesi yüksek",
+        message:
+          "Traffic Light besin etiketine göre bu üründe tuz seviyesi yüksek görünüyor. Profilinizde sodyum hassasiyeti bulunduğu için porsiyon ve besin değerleri dikkatle kontrol edilmelidir.",
+        level: "medium",
       });
     }
   }

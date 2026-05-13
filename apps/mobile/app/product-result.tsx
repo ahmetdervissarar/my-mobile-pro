@@ -65,7 +65,6 @@ export default function ProductResultScreen() {
     emptyUserSensitivityProfile,
   );
 
-  // Kullanıcı profilini bir kez yükle; yüklenemezse boş profille devam et
   useEffect(() => {
     void loadUserSensitivityProfile()
       .then(setUserProfile)
@@ -80,6 +79,7 @@ export default function ProductResultScreen() {
         allergens: result.allergens ?? [],
         additives: result.additives ?? [],
         novaGroup: result.novaGroup ?? null,
+        trafficLight: result.trafficLight ?? null,
         userProfile,
       }),
     [result, userProfile],
@@ -156,7 +156,10 @@ export default function ProductResultScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>Ürün Sonucu</Text>
 
-        <Pressable style={styles.sectionHeader} onPress={() => setIsBasicInfoOpen((current) => !current)}>
+        <Pressable
+          style={styles.sectionHeader}
+          onPress={() => setIsBasicInfoOpen((current) => !current)}
+        >
           <Text style={styles.sectionTitle}>Temel bilgiler</Text>
           <Text style={styles.sectionToggle}>{isBasicInfoOpen ? '−' : '+'}</Text>
         </Pressable>
@@ -175,12 +178,17 @@ export default function ProductResultScreen() {
 
             <View style={styles.row}>
               <Text style={styles.label}>Arama kaynağı</Text>
-              <Text style={styles.value}>{sourceLabelMap[result.searchSource] ?? result.searchSource}</Text>
+              <Text style={styles.value}>
+                {sourceLabelMap[result.searchSource] ?? result.searchSource}
+              </Text>
             </View>
           </>
         ) : null}
 
-        <Pressable style={styles.sectionHeader} onPress={() => setIsHealthOpen((current) => !current)}>
+        <Pressable
+          style={styles.sectionHeader}
+          onPress={() => setIsHealthOpen((current) => !current)}
+        >
           <Text style={styles.sectionTitle}>Sağlık değerlendirmesi</Text>
           <Text style={styles.sectionToggle}>{isHealthOpen ? '−' : '+'}</Text>
         </Pressable>
@@ -210,7 +218,10 @@ export default function ProductResultScreen() {
           </>
         ) : null}
 
-        <Pressable style={styles.sectionHeader} onPress={() => setIsContentOpen((current) => !current)}>
+        <Pressable
+          style={styles.sectionHeader}
+          onPress={() => setIsContentOpen((current) => !current)}
+        >
           <Text style={styles.sectionTitle}>İçerik ve alerjenler</Text>
           <Text style={styles.sectionToggle}>{isContentOpen ? '−' : '+'}</Text>
         </Pressable>
@@ -237,7 +248,10 @@ export default function ProductResultScreen() {
 
             <View style={styles.row}>
               <Text style={styles.label}>İçindekiler</Text>
-              <Pressable style={styles.inlineButton} onPress={() => setIsIngredientsVisible((current) => !current)}>
+              <Pressable
+                style={styles.inlineButton}
+                onPress={() => setIsIngredientsVisible((current) => !current)}
+              >
                 <Text style={styles.inlineButtonText}>
                   {isIngredientsVisible ? 'İçindekileri gizle' : 'İçindekileri göster'}
                 </Text>
@@ -252,7 +266,10 @@ export default function ProductResultScreen() {
           </>
         ) : null}
 
-        <Pressable style={styles.sectionHeader} onPress={() => setIsPriceOpen((current) => !current)}>
+        <Pressable
+          style={styles.sectionHeader}
+          onPress={() => setIsPriceOpen((current) => !current)}
+        >
           <Text style={styles.sectionTitle}>Fiyat bilgisi</Text>
           <Text style={styles.sectionToggle}>{isPriceOpen ? '−' : '+'}</Text>
         </Pressable>
@@ -299,7 +316,10 @@ export default function ProductResultScreen() {
         ) : null}
 
         {/* ── RafSkoru Uyarıları ─────────────────────────────────────────── */}
-        <Pressable style={styles.sectionHeader} onPress={() => setIsRiskOpen((current) => !current)}>
+        <Pressable
+          style={styles.sectionHeader}
+          onPress={() => setIsRiskOpen((current) => !current)}
+        >
           <Text style={styles.sectionTitle}>
             RafSkoru Uyarıları ({riskResult.warnings.length})
           </Text>
@@ -364,8 +384,6 @@ export default function ProductResultScreen() {
   );
 }
 
-// ── Risk seviyesi Türkçe etiketleri ─────────────────────────────────────────
-
 const riskLevelLabel: Record<RiskLevel, string> = {
   low: 'Düşük risk',
   medium: 'Orta risk',
@@ -396,8 +414,6 @@ function getTrafficLightLevelTextStyle(level: 'low' | 'medium' | 'high' | 'unkno
 
   return { fontSize: 12, fontWeight: '600' as const, color };
 }
-
-// ── Stil tanımları ───────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
