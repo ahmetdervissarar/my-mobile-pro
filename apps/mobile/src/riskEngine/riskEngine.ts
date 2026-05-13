@@ -58,6 +58,13 @@ export interface ProductRiskInput {
   novaGroup?: number | null;
   /** Traffic Light besin etiketi — yağ, doymuş yağ, şeker ve tuz düzeyleri */
   trafficLight?: TrafficLightNutrition | null;
+  /**
+   * Nutri-Score kategorisi (A–E).
+   * Kaynak: Hercberg S. et al. (2017). The Nutri-Score: A Five-Colour Nutrition Label.
+   * European Journal of Public Health. doi:10.1093/eurpub/ckx028
+   * Büyük/küçük harf duyarsız değerlendirilir; null/undefined ise kural çalışmaz.
+   */
+  nutriScore?: string | null;
   /** Kullanıcı hassasiyet profili — profil bazlı uyarılar için opsiyonel */
   userProfile?: UserSensitivityProfile;
 }
@@ -90,6 +97,7 @@ const PRIORITY_ORDER: string[] = [
 
   // 3. Yüksek işlenmişlik / katkı / besin etiketi uyarıları
   "NOVA_GROUP_4",
+  "NUTRI_SCORE_LOW_CATEGORY",
   "CONTAINS_ADDITIVES",
   "TRAFFIC_LIGHT_HIGH_SATURATED_FAT",
 
@@ -203,6 +211,22 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
       title: "Ultra işlenmiş ürün",
       message: "Ultra işlenmiş ürün olabilir.",
       level: "high",
+    });
+  }
+
+  // ── Kural 4b: Nutri-Score D veya E ise ───────────────────────────────────
+  // Kaynak: Hercberg S. et al. (2017) — D ve E kategorileri besleyici değeri
+  // düşük ürünleri temsil eder. Bu uyarı tıbbi hüküm niteliği taşımaz.
+  const nutriScoreNorm = (product.nutriScore ?? "").trim().toUpperCase();
+  if (nutriScoreNorm === "D" || nutriScoreNorm === "E") {
+    warnings.push({
+      code: "NUTRI_SCORE_LOW_CATEGORY",
+      title: "Nutri-Score kategorisi dikkat gerektiriyor",
+      message:
+        "Nutri-Score bilgisine göre bu ürün D/E kategorisinde görünüyor. " +
+        "Bu sonuç tek başına sağlık kararı yerine geçmez; porsiyon, içerik ve " +
+        "diğer besin etiketi bilgileriyle birlikte değerlendirilmelidir.",
+      level: "medium",
     });
   }
 

@@ -80,6 +80,7 @@ export default function ProductResultScreen() {
         additives: result.additives ?? [],
         novaGroup: result.novaGroup ?? null,
         trafficLight: result.trafficLight ?? null,
+        nutriScore: result.nutriScore ?? null,
         userProfile,
       }),
     [result, userProfile],
@@ -290,7 +291,6 @@ export default function ProductResultScreen() {
           </View>
         ) : null}
 
-        {/* ── Traffic Light Besin Etiketi ─────────────────────────────── */}
         {result.trafficLight ? (
           <>
             <View style={styles.sectionHeader}>
@@ -315,7 +315,6 @@ export default function ProductResultScreen() {
           </>
         ) : null}
 
-        {/* ── RafSkoru Uyarıları ─────────────────────────────────────────── */}
         <Pressable
           style={styles.sectionHeader}
           onPress={() => setIsRiskOpen((current) => !current)}
