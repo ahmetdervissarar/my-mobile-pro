@@ -80,7 +80,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     allergens: ['Gluten'],
     additives: [],
     ingredients: 'Yulaf, bal, kuru meyve, bitkisel yağ, şeker.',
-    nutriScore: null,
+    nutriScore: 'E',
     novaGroup: null,
     trafficLight: GRANOLA_TRAFFIC_LIGHT,
   },
