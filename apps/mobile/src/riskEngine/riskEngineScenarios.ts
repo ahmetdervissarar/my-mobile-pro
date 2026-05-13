@@ -14,6 +14,20 @@
  *   MISSING_ALLERGEN_INFO ekranda bastırılır.
  * - sortWarningsByPriority: Profil uyarıları öne, ürün grubu uyarıları sona gelir.
  * - expectedWarningCodes listeleri bu iki davranışı yansıtır.
+ *
+ * Nutri-Score kaynağı:
+ *   Hercberg S. et al. (2017). The Nutri-Score: A Five-Colour Nutrition Label.
+ *   European Journal of Public Health. doi:10.1093/eurpub/ckx028
+ *   Kategoriler: A (en iyi) → E (en kötü)
+ *
+ * NOVA kaynağı:
+ *   Monteiro CA. et al. (2019). Ultra-processed foods: what they are and
+ *   how to identify them. Public Health Nutrition. doi:10.1017/S1368980018003762
+ *   NOVA 4 = ultra-işlenmiş gıda grubu
+ *
+ * Uyarı: Aşağıdaki senaryolar tıbbi hüküm niteliği taşımaz.
+ * Sonuçlar porsiyon büyüklüğü, tüketim sıklığı ve bireysel sağlık durumu ile
+ * birlikte değerlendirilmelidir.
  */
 
 import type { TrafficLightNutrition } from "../types/product";
@@ -21,8 +35,15 @@ import type { ProductRiskInput } from "./riskEngine";
 
 // ─── Senaryo Tipi ─────────────────────────────────────────────────────────────
 
+/**
+ * Genişletilmiş senaryo giriş tipi.
+ * `nutriScore` alanı ProductRiskInput'a henüz eklenmemişse bu tip geçici
+ * köprü görevi görür; riskEngine.ts'e dokunulmaz.
+ */
 type ScenarioProductRiskInput = ProductRiskInput & {
   trafficLight?: TrafficLightNutrition | null;
+  /** Nutri-Score kategorisi: "A" | "B" | "C" | "D" | "E" */
+  nutriScore?: string | null;
 };
 
 export interface RiskEngineScenario {
@@ -301,6 +322,137 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
     expectedWarningCodes: [
       "TRAFFIC_LIGHT_HIGH_SATURATED_FAT",
       "SWEET_SNACK_ALLERGEN_PRECAUTION",
+    ],
+  },
+
+  // ── Senaryo 10 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-10",
+    title: "Nutri-Score D/E — profil bağımsız genel dikkat uyarısı",
+    description:
+      "Ürünün Nutri-Score kategorisi E (en düşük). Kullanıcı profili tamamen boş. " +
+      "Nutri-Score D ve E kategorileri, Hercberg et al. (2017) sınıflandırmasına göre " +
+      "besleyici değeri düşük ürünleri temsil eder; bu nedenle profil bilgisinden " +
+      "bağımsız olarak genel bir dikkat uyarısı üretilmesi beklenir. " +
+      "Bu uyarı tek başına sağlık kararı yerine geçmez; porsiyon ve tüketim sıklığıyla " +
+      "birlikte değerlendirilmelidir.",
+    input: {
+      name: "şekerli mısır gevreği",
+      ingredients: "mısır unu, şeker, bitkisel yağ, tuz, aroma",
+      allergens: ["gluten"],
+      additives: [],
+      novaGroup: null,
+      nutriScore: "E",
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "NUTRI_SCORE_LOW_CATEGORY",
+    ],
+  },
+
+  // ── Senaryo 11 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-11",
+    title: "Nutri-Score A ama NOVA 4 — iki sistemin farklı boyutları ölçtüğünü gösterir",
+    description:
+      "Ürünün Nutri-Score kategorisi A (en iyi) ancak NOVA grubu 4 (ultra-işlenmiş). " +
+      "Nutri-Score yalnızca besin profilini değerlendirirken NOVA, gıdanın işlenme " +
+      "derecesini ölçer (Monteiro et al., 2019). Dolayısıyla Nutri-Score'un iyi " +
+      "görünmesi, ürünün ultra-işlenmiş olmadığı anlamına gelmez. " +
+      "Bu senaryo iki sistemin birbirini tamamladığını; 'iyi Nutri-Score = güvenli ürün' " +
+      "şeklinde bir genelleme yapılamayacağını doğrulamak için tasarlanmıştır. " +
+      "Sonuç dikkatle değerlendirilmeli; tek başına sağlık kararı yerine geçmez.",
+    input: {
+      name: "protein takviyeli sporcu içeceği",
+      ingredients:
+        "su, peynir altı suyu proteini, fruktoz, sitrik asit, yapay aroma, " +
+        "sodyum benzoat, aspartam, vitaminler",
+      allergens: ["süt"],
+      additives: [],          // CONTAINS_ADDITIVES'ı izole dışı bırakmak için boş
+      novaGroup: 4,
+      nutriScore: "A",
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "NOVA_GROUP_4",
+    ],
+  },
+
+  // ── Senaryo 12 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-12",
+    title: "NOVA 4 + kullanıcının ultra işlenmiş ürün kaçınma tercihi",
+    description:
+      "Ürünün NOVA grubu 4; kullanıcı profilinde 'less_ultra_processed' tercihi " +
+      "tanımlı. Monteiro et al. (2019) sınıflandırmasına göre NOVA 4 ürünler " +
+      "endüstriyel formülasyon, katkı maddesi ve aroma bileşenleri içerir. " +
+      "Kullanıcı bu kategoriden kaçınmak istediğini beyan ettiği için hem genel " +
+      "NOVA uyarısı hem de profil tercih uyarısı birlikte üretilmesi beklenir. " +
+      "Sonuçlar kontrol edilmelidir; içerik bilgisiyle birlikte değerlendirilmelidir.",
+    input: {
+      name: "hazır makarna sosu",
+      ingredients:
+        "domates püresi, modifiye nişasta, bitkisel yağ, şeker, tuz, " +
+        "sodyum glutamat, sitrik asit, yapay renklendirici",
+      allergens: ["Alerjen beyanı yok"], // MISSING_ALLERGEN_INFO'yu izole dışı bırakmak için
+      additives: [],                     // CONTAINS_ADDITIVES'ı izole dışı bırakmak için boş
+      novaGroup: 4,
+      nutriScore: "C",
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: [],
+        healthPreferences: ["less_ultra_processed"],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_ULTRA_PROCESSED_PREFERENCE",
+      "NOVA_GROUP_4",
+    ],
+  },
+
+  // ── Senaryo 13 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-13",
+    title: "Nutri-Score E + Traffic Light yüksek şeker + daha az şeker tercihi",
+    description:
+      "Ürünün Nutri-Score kategorisi E ve Traffic Light şeker seviyesi yüksek. " +
+      "Kullanıcı profilinde 'less_sugar' tercihi tanımlı. " +
+      "Hercberg et al. (2017) kapsamında E kategorisi zaten düşük besin profiline " +
+      "işaret ederken Traffic Light'ın yüksek şeker göstergesi bu bulguyu " +
+      "bağımsız bir besin verisiyle destekler. Kullanıcının şeker kısıtlama tercihi " +
+      "profil uyarısını da tetikler. " +
+      "Tüm uyarılar porsiyon büyüklüğü ve bireysel sağlık durumuyla birlikte " +
+      "değerlendirilmelidir; tek başına tıbbi hüküm niteliği taşımaz.",
+    input: {
+      name: "meyveli gummy şeker",
+      ingredients: "glikoz şurubu, şeker, jelatin, sitrik asit, yapay aroma, renklendirici",
+      allergens: ["Alerjen beyanı yok"], // MISSING_ALLERGEN_INFO'yu izole dışı bırakmak için
+      additives: [],                     // CONTAINS_ADDITIVES'ı izole dışı bırakmak için boş
+      novaGroup: null,
+      nutriScore: "E",
+      trafficLight: {
+        fat: { value: 0.1, unit: "g", level: "low" },
+        saturatedFat: { value: 0.0, unit: "g", level: "low" },
+        sugars: { value: 54.0, unit: "g", level: "high" },
+        salt: { value: 0.05, unit: "g", level: "low" },
+      },
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: [],
+        healthPreferences: ["less_sugar"],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_TRAFFIC_LIGHT_HIGH_SUGAR",
+      "NUTRI_SCORE_LOW_CATEGORY",
     ],
   },
 
