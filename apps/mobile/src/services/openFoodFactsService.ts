@@ -6,7 +6,20 @@ export type OpenFoodFactsProductInfo = {
   nutriScore: string | null;
   novaGroup: number | null;
   additives: string[];
+  /**
+   * 100 g başına besin değerleri.
+   * Open Food Facts'ten gelen nutriments nesnesinden parse edilir.
+   * Değer eksik veya geçersizse ilgili alan null kalır.
+   */
+  nutritionValues: {
+    fat: number | null;
+    saturatedFat: number | null;
+    sugars: number | null;
+    salt: number | null;
+  };
 };
+
+// ─── Parse Yardımcıları ────────────────────────────────────────────────────────
 
 function parseNutriScoreGrade(value: string | undefined): string | null {
   const normalized = value?.trim();
@@ -33,6 +46,28 @@ function parseNovaGroup(value: number | undefined): number | null {
   return [1, 2, 3, 4].includes(value) ? value : null;
 }
 
+/**
+ * Open Food Facts nutriments nesnesinden gelen ham değeri güvenli şekilde
+ * sayıya çevirir.
+ * - number türünde ve sonlu ise doğrudan döner.
+ * - string ise Number() ile parse edilmeye çalışılır.
+ * - Geçersiz, NaN veya sonsuz ise null döner.
+ */
+function parseNutrientNumber(value: unknown): number | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+// ─── API Tipleri ──────────────────────────────────────────────────────────────
+
 type OpenFoodFactsApiResponse = {
   status?: number;
   product?: {
@@ -42,8 +77,21 @@ type OpenFoodFactsApiResponse = {
     ingredients_text?: string;
     allergens_tags?: string[];
     additives_tags?: string[];
+    /**
+     * Open Food Facts nutriments nesnesi.
+     * Alan adları OFF API'siyle birebir eşleşir; değerler number veya string
+     * olarak gelebileceğinden unknown tipinde tutulur.
+     */
+    nutriments?: {
+      fat_100g?: unknown;
+      'saturated-fat_100g'?: unknown;
+      sugars_100g?: unknown;
+      salt_100g?: unknown;
+    };
   };
 };
+
+// ─── Dizi Parse Yardımcıları ──────────────────────────────────────────────────
 
 function parseAllergens(tags: string[] | undefined): string[] {
   if (!Array.isArray(tags)) {
@@ -55,7 +103,6 @@ function parseAllergens(tags: string[] | undefined): string[] {
     .filter(Boolean)
     .map((tag) => tag.charAt(0).toUpperCase() + tag.slice(1));
 }
-
 
 function parseIngredientsText(value: string | undefined): string | null {
   const normalized = value?.trim();
@@ -73,6 +120,8 @@ function parseAdditives(tags: string[] | undefined): string[] {
     .filter(Boolean)
     .map((tag) => tag.toUpperCase());
 }
+
+// ─── Ana Fonksiyon ────────────────────────────────────────────────────────────
 
 /**
  * Open Food Facts üzerinden barkoda göre ürün bilgisini getirir.
@@ -94,6 +143,7 @@ export async function fetchOpenFoodFactsByBarcode(
       'ingredients_text',
       'allergens_tags',
       'additives_tags',
+      'nutriments',
     ].join(',');
     const endpoint = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(trimmedBarcode)}?fields=${encodeURIComponent(fields)}`;
     const response = await fetch(endpoint);
@@ -108,6 +158,8 @@ export async function fetchOpenFoodFactsByBarcode(
       return null;
     }
 
+    const nutriments = data.product.nutriments;
+
     return {
       barcode: trimmedBarcode,
       productName: data.product.product_name ?? null,
@@ -116,6 +168,12 @@ export async function fetchOpenFoodFactsByBarcode(
       nutriScore: parseNutriScoreGrade(data.product.nutriscore_grade),
       novaGroup: parseNovaGroup(data.product.nova_group),
       additives: parseAdditives(data.product.additives_tags),
+      nutritionValues: {
+        fat: parseNutrientNumber(nutriments?.fat_100g),
+        saturatedFat: parseNutrientNumber(nutriments?.['saturated-fat_100g']),
+        sugars: parseNutrientNumber(nutriments?.sugars_100g),
+        salt: parseNutrientNumber(nutriments?.salt_100g),
+      },
     };
   } catch (error) {
     return null;

@@ -161,6 +161,36 @@ export function getMockProductResult(input: ProductSearchInput): ProductResult {
   return fallbackProduct;
 }
 
+type NutritionValues = {
+  fat: number | null;
+  saturatedFat: number | null;
+  sugars: number | null;
+  salt: number | null;
+};
+
+/**
+ * nutritionValues içindeki tüm alanlar null ise gerçek besin verisi yok
+ * demektir; bu durumda UNKNOWN_TRAFFIC_LIGHT kullanılır.
+ */
+function resolveTrafficLight(nutritionValues: NutritionValues) {
+  const hasAnyValue =
+    nutritionValues.fat !== null ||
+    nutritionValues.saturatedFat !== null ||
+    nutritionValues.sugars !== null ||
+    nutritionValues.salt !== null;
+
+  if (!hasAnyValue) {
+    return UNKNOWN_TRAFFIC_LIGHT;
+  }
+
+  return createTrafficLightNutrition({
+    fat: nutritionValues.fat,
+    saturatedFat: nutritionValues.saturatedFat,
+    sugars: nutritionValues.sugars,
+    salt: nutritionValues.salt,
+  });
+}
+
 function mapOpenFoodFactsToProductResult(
   barcode: string,
   productName: string | null,
@@ -169,6 +199,7 @@ function mapOpenFoodFactsToProductResult(
   ingredients: string | null,
   nutriScore: string | null,
   novaGroup: number | null,
+  nutritionValues: NutritionValues,
 ): ProductResult {
   return {
     id: `off-${barcode}`,
@@ -183,7 +214,7 @@ function mapOpenFoodFactsToProductResult(
     ingredients,
     nutriScore,
     novaGroup,
-    trafficLight: UNKNOWN_TRAFFIC_LIGHT,
+    trafficLight: resolveTrafficLight(nutritionValues),
   };
 }
 
@@ -203,6 +234,7 @@ export async function getProductResult(input: ProductSearchInput): Promise<Produ
           openFoodFactsResult.ingredientsText,
           openFoodFactsResult.nutriScore,
           openFoodFactsResult.novaGroup,
+          openFoodFactsResult.nutritionValues,
         );
       }
 
