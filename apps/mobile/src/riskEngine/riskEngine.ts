@@ -96,10 +96,13 @@ const PRIORITY_ORDER: string[] = [
   "PROFILE_BLOOD_SUGAR_PRECAUTION",
   "PROFILE_SODIUM_PRECAUTION",
   "PROFILE_SATURATED_FAT_SENSITIVITY",
+  "PROFILE_KIDNEY_SALT_SENSITIVITY",
   "PROFILE_LESS_SUGAR_PREFERENCE",
+  "PROFILE_LESS_SALT_PREFERENCE",
   "PROFILE_ULTRA_PROCESSED_PREFERENCE",
   "PROFILE_LESS_ADDITIVES_PREFERENCE",
   "PROFILE_CLEAN_LABEL_PREFERENCE",
+  "PROFILE_CHILD_SAFE_SELECTION",
   "PROFILE_TRAFFIC_LIGHT_HIGH_SUGAR",
   "PROFILE_TRAFFIC_LIGHT_HIGH_SALT",
 
@@ -794,6 +797,62 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
           "beyanı açısından temiz içerik tercihinizle tam uyumlu olmayabilir. " +
           "İçerik listesi ve işlenmişlik bilgisi birlikte değerlendirilmelidir.",
         level: "low",
+      });
+    }
+
+    // ── Profil Kural B4: Böbrek hassasiyeti + Traffic Light yüksek tuz ───────
+    if (
+      profile.chronicSensitivities.includes("kidney_sensitivity") &&
+      product.trafficLight?.salt.level === "high"
+    ) {
+      warnings.push({
+        code: "PROFILE_KIDNEY_SALT_SENSITIVITY",
+        title: "Böbrek hassasiyeti için tuz uyarısı",
+        message:
+          "Profilinizde böbrek hassasiyeti tanımlı. " +
+          "Traffic Light besin etiketine göre bu üründe tuz seviyesi yüksek görünüyor. " +
+          "Porsiyon ve besin değerleri dikkatle kontrol edilmelidir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz.",
+        level: "medium",
+      });
+    }
+
+    // ── Profil Kural C5: Daha az tuz tercihi + Traffic Light yüksek tuz ──────
+    if (
+      profile.healthPreferences.includes("less_salt") &&
+      product.trafficLight?.salt.level === "high"
+    ) {
+      warnings.push({
+        code: "PROFILE_LESS_SALT_PREFERENCE",
+        title: "Daha az tuz tercihinize dikkat",
+        message:
+          "Profilinizde daha az tuz tercihi tanımlı. " +
+          "Traffic Light besin etiketine göre bu üründe tuz seviyesi yüksek görünüyor. " +
+          "Porsiyon ve besin değerleri dikkatle kontrol edilmelidir.",
+        level: "low",
+      });
+    }
+
+    // ── Profil Kural C6: Çocuklar için dikkatli seçim + risk sinyali ─────────
+    if (
+      profile.healthPreferences.includes("child_safe_selection") &&
+      (
+        product.novaGroup === 4 ||
+        containsAdditives ||
+        product.trafficLight?.sugars.level === "high" ||
+        product.trafficLight?.salt.level === "high" ||
+        product.trafficLight?.saturatedFat.level === "high"
+      )
+    ) {
+      warnings.push({
+        code: "PROFILE_CHILD_SAFE_SELECTION",
+        title: "Çocuklar için dikkatli seçim uyarısı",
+        message:
+          "Profilinizde çocuklar için daha dikkatli seçim tercihi tanımlı. " +
+          "Bu ürün işlenmişlik düzeyi, katkı maddesi beyanı veya besin etiketi değerleri " +
+          "açısından çocuklar için ayrıca değerlendirilmelidir. " +
+          "Bu uyarı tek başına sağlık kararı yerine geçmez.",
+        level: "medium",
       });
     }
 

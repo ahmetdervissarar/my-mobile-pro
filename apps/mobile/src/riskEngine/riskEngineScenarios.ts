@@ -815,4 +815,113 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
     ],
   },
 
+  // ── Senaryo 26 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-26",
+    title: "Böbrek hassasiyeti + Traffic Light yüksek tuz",
+    description:
+      "Kullanıcı profilinde 'kidney_sensitivity' hassasiyeti tanımlı. " +
+      "Traffic Light tuz seviyesi 'high'. " +
+      "Profilde 'hypertension_sodium' olmadığı için PROFILE_TRAFFIC_LIGHT_HIGH_SALT tetiklenmez. " +
+      "Ürün adı 'tuzlu kraker' hiçbir sweet/meat/vegan keyword'üyle eşleşmediğinden " +
+      "yalnızca PROFILE_KIDNEY_SALT_SENSITIVITY beklenir.",
+    input: {
+      name: "tuzlu kraker",
+      ingredients: "buğday unu, bitkisel yağ, tuz, maya",
+      allergenInfo: "Gluten içerir.",
+      allergens: ["gluten"],
+      additives: [],
+      novaGroup: null,
+      trafficLight: {
+        fat: { value: 9.1, unit: "g", level: "medium" },
+        saturatedFat: { value: 1.2, unit: "g", level: "low" },
+        sugars: { value: 2.4, unit: "g", level: "low" },
+        salt: { value: 1.8, unit: "g", level: "high" },
+      },
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: ["kidney_sensitivity"],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_KIDNEY_SALT_SENSITIVITY",
+    ],
+  },
+
+  // ── Senaryo 27 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-27",
+    title: "Daha az tuz tercihi + Traffic Light yüksek tuz",
+    description:
+      "Kullanıcı profilinde 'less_salt' tercihi tanımlı. " +
+      "Traffic Light tuz seviyesi 'high'. " +
+      "Profilde 'hypertension_sodium' ve 'kidney_sensitivity' olmadığı için " +
+      "PROFILE_TRAFFIC_LIGHT_HIGH_SALT ve PROFILE_KIDNEY_SALT_SENSITIVITY tetiklenmez. " +
+      "allergens: ['Alerjen beyanı yok'] dolu olduğu için MISSING_ALLERGEN_INFO yok. " +
+      "Ürün adı 'tuzlu atıştırmalık' hiçbir sweet/meat/vegan keyword'üyle eşleşmediğinden " +
+      "yalnızca PROFILE_LESS_SALT_PREFERENCE beklenir.",
+    input: {
+      name: "tuzlu atıştırmalık",
+      ingredients: "mısır unu, bitkisel yağ, tuz, baharat",
+      allergenInfo: "Alerjen beyanı yok.",
+      allergens: ["Alerjen beyanı yok"],
+      additives: [],
+      novaGroup: null,
+      trafficLight: {
+        fat: { value: 8.5, unit: "g", level: "medium" },
+        saturatedFat: { value: 1.0, unit: "g", level: "low" },
+        sugars: { value: 1.5, unit: "g", level: "low" },
+        salt: { value: 2.1, unit: "g", level: "high" },
+      },
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: [],
+        healthPreferences: ["less_salt"],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_LESS_SALT_PREFERENCE",
+    ],
+  },
+
+  // ── Senaryo 28 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-28",
+    title: "Çocuklar için dikkatli seçim + NOVA 4 ve yüksek şeker",
+    description:
+      "Kullanıcı profilinde 'child_safe_selection' tercihi tanımlı. " +
+      "novaGroup 4, additives dolu ve trafficLight.sugars 'high' olduğu için " +
+      "PROFILE_CHILD_SAFE_SELECTION tetiklenir. " +
+      "Profilde 'less_sugar' ve 'blood_sugar_diabetes' olmadığı için PROFILE_TRAFFIC_LIGHT_HIGH_SUGAR tetiklenmez. " +
+      "Profilde 'less_ultra_processed' olmadığı için PROFILE_ULTRA_PROCESSED_PREFERENCE tetiklenmez. " +
+      "Ürün adı 'renkli jelibon' mevcut sweet snack keyword listesinde olmadığı için " +
+      "SWEET_SNACK_ALLERGEN_PRECAUTION tetiklenmez. " +
+      "PRIORITY_ORDER'a göre sıralama: PROFILE_CHILD_SAFE_SELECTION → NOVA_GROUP_4 → CONTAINS_ADDITIVES.",
+    input: {
+      name: "renkli jelibon",
+      ingredients: "glikoz şurubu, şeker, jelatin, aroma verici, renklendirici",
+      allergenInfo: "Alerjen beyanı yok.",
+      allergens: ["Alerjen beyanı yok"],
+      additives: ["aroma verici", "renklendirici"],
+      novaGroup: 4,
+      trafficLight: {
+        fat: { value: 0.1, unit: "g", level: "low" },
+        saturatedFat: { value: 0.0, unit: "g", level: "low" },
+        sugars: { value: 54.0, unit: "g", level: "high" },
+        salt: { value: 0.05, unit: "g", level: "low" },
+      },
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: [],
+        healthPreferences: ["child_safe_selection"],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_CHILD_SAFE_SELECTION",
+      "NOVA_GROUP_4",
+      "CONTAINS_ADDITIVES",
+    ],
+  },
+
 ];
