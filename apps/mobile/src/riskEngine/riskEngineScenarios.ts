@@ -516,4 +516,92 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
     ],
   },
 
+  // ── Senaryo 16 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-16",
+    title: "Gluten hassasiyeti + içerikte buğday beyanı",
+    description:
+      "Kullanıcı profilinde 'gluten_wheat' hassasiyeti tanımlı. " +
+      "İçerik listesinde 'tam buğday unu' ve allergenInfo'da 'Gluten içerir.' beyanı bulunuyor. " +
+      "allergens: ['gluten'] alanı dolu olduğu için hasAllergenInfo = true; " +
+      "MISSING_ALLERGEN_INFO üretilmez. " +
+      "Ürün adı hiçbir sweet/meat/vegan anahtar kelimesiyle eşleşmediğinden " +
+      "yalnızca PROFILE_GLUTEN_ALLERGEN_MATCH beklenir.",
+    input: {
+      name: "tam buğdaylı kraker",
+      ingredients: "tam buğday unu, bitkisel yağ, tuz, maya",
+      allergenInfo: "Gluten içerir.",
+      allergens: ["gluten"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["gluten_wheat"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_GLUTEN_ALLERGEN_MATCH",
+    ],
+  },
+
+  // ── Senaryo 17 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-17",
+    title: "Süt alerjisi + içerikte süt proteini beyanı",
+    description:
+      "Kullanıcı profilinde 'milk' alerjisi tanımlı. " +
+      "İçerik listesinde 'süt proteini' ve allergenInfo'da 'Süt içerir.' beyanı bulunuyor. " +
+      "Ürün adında 'bar' geçtiği için SWEET_SNACK_ALLERGEN_PRECAUTION da tetiklenir. " +
+      "PROFILE_MILK_ALLERGEN_MATCH, PRIORITY_ORDER'da SWEET_SNACK_ALLERGEN_PRECAUTION'dan " +
+      "önce yer aldığı için profil uyarısı listede öne geçer.",
+    input: {
+      name: "yoğurtlu protein bar",
+      ingredients: "süt proteini, yoğurt tozu, kakao, tatlandırıcı",
+      allergenInfo: "Süt içerir.",
+      allergens: ["milk"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["milk"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_MILK_ALLERGEN_MATCH",
+      "SWEET_SNACK_ALLERGEN_PRECAUTION",
+    ],
+  },
+
+  // ── Senaryo 18 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-18",
+    title: "Laktoz hassasiyeti + içerikte laktoz beyanı",
+    description:
+      "Kullanıcı profilinde 'lactose' hassasiyeti tanımlı. " +
+      "İçerik listesinde 'laktoz' ve allergenInfo'da 'Süt ve laktoz içerir.' beyanı bulunuyor. " +
+      "allergens: ['milk', 'lactose'] dolu olduğu için hasAllergenInfo = true; " +
+      "MISSING_ALLERGEN_INFO üretilmez. " +
+      "Profilde 'milk' yok; dolayısıyla PROFILE_MILK_ALLERGEN_MATCH tetiklenmez. " +
+      "Ürün adı 'sütlü içecek' hiçbir sweet/meat/vegan keyword'üyle eşleşmediğinden " +
+      "yalnızca PROFILE_LACTOSE_ALLERGEN_MATCH beklenir.",
+    input: {
+      name: "sütlü içecek",
+      ingredients: "süt, laktoz, kakao, şeker",
+      allergenInfo: "Süt ve laktoz içerir.",
+      allergens: ["milk", "lactose"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["lactose"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_LACTOSE_ALLERGEN_MATCH",
+    ],
+  },
+
 ];

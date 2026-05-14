@@ -85,6 +85,9 @@ const PRIORITY_ORDER: string[] = [
   "PROFILE_ALLERGEN_INFO_MISSING",
   "PROFILE_PEANUT_ALLERGEN_MATCH",
   "PROFILE_SOY_ALLERGEN_MATCH",
+  "PROFILE_GLUTEN_ALLERGEN_MATCH",
+  "PROFILE_MILK_ALLERGEN_MATCH",
+  "PROFILE_LACTOSE_ALLERGEN_MATCH",
   "PROFILE_EGG_PRECAUTION",
   "PROFILE_BLOOD_SUGAR_PRECAUTION",
   "PROFILE_SODIUM_PRECAUTION",
@@ -184,6 +187,58 @@ const SOY_KEYWORDS = [
   "soybean",
   "soya",
   "soy",
+];
+
+/**
+ * Gluten / buğday arama terimleri.
+ * Kaynak: Türk Gıda Kodeksi ve Avrupa Birliği alerjen listesi.
+ */
+const GLUTEN_KEYWORDS = [
+  "buğday",
+  "bugday",
+  "wheat",
+  "gluten",
+  "barley",
+  "arpa",
+  "rye",
+  "çavdar",
+  "cavdar",
+  "malt",
+  "spelt",
+  "kamut",
+];
+
+/**
+ * Süt alerjisi arama terimleri.
+ * Laktozu kapsamaz; sadece süt proteini / süt kaynaklı bileşenler.
+ */
+const MILK_KEYWORDS = [
+  "süt proteini",
+  "sut proteini",
+  "milk protein",
+  "peynir altı suyu",
+  "whey",
+  "casein",
+  "caseinate",
+  "kazein",
+  "dairy",
+  "yoğurt",
+  "yogurt",
+  "süt",
+  "milk",
+];
+
+/**
+ * Laktoz hassasiyeti arama terimleri.
+ * Açık laktoz beyanı + genel süt/dairy bileşenleri dahildir.
+ */
+const LACTOSE_KEYWORDS = [
+  "laktoz",
+  "lactose",
+  "süt",
+  "milk",
+  "dairy",
+  "whey",
 ];
 
 // ─── Yardımcı Fonksiyonlar ────────────────────────────────────────────────────
@@ -423,6 +478,57 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
           "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
           "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
         level: "high",
+      });
+    }
+
+    // ── Profil Kural A4: Gluten/buğday hassasiyeti + içerikte gluten beyanı ──
+    if (
+      profile.allergens.includes("gluten_wheat") &&
+      productContainsAny(product, GLUTEN_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_GLUTEN_ALLERGEN_MATCH",
+        title: "Gluten / buğday hassasiyeti için yüksek dikkat",
+        message:
+          "Bu üründe gluten veya buğday ile ilişkili içerik ya da alerjen beyanı bulunuyor. " +
+          "Profilinizde gluten/buğday hassasiyeti tanımlı olduğu için ürünü tüketmeden önce " +
+          "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A5: Süt alerjisi + içerikte süt/kazein/whey beyanı ──────
+    if (
+      profile.allergens.includes("milk") &&
+      productContainsAny(product, MILK_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_MILK_ALLERGEN_MATCH",
+        title: "Süt alerjisi için yüksek dikkat",
+        message:
+          "Bu üründe süt veya süt bileşenleriyle ilişkili içerik ya da alerjen beyanı bulunuyor. " +
+          "Profilinizde süt alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
+          "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A6: Laktoz hassasiyeti + içerikte laktoz/süt beyanı ─────
+    if (
+      profile.allergens.includes("lactose") &&
+      productContainsAny(product, LACTOSE_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_LACTOSE_ALLERGEN_MATCH",
+        title: "Laktoz hassasiyeti için dikkat",
+        message:
+          "Bu üründe laktoz veya süt bileşenleriyle ilişkili içerik ya da alerjen beyanı bulunuyor. " +
+          "Profilinizde laktoz hassasiyeti tanımlı olduğu için ürünü tüketmeden önce " +
+          "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz; porsiyon ve içerik bilgisiyle birlikte değerlendirilmelidir.",
+        level: "medium",
       });
     }
 

@@ -167,7 +167,13 @@ export default function ProductResultScreen() {
     }
   };
 
-  const CRITICAL_ALLERGEN_CODES = ['PROFILE_PEANUT_ALLERGEN_MATCH', 'PROFILE_SOY_ALLERGEN_MATCH'];
+  const CRITICAL_ALLERGEN_CODES = [
+    'PROFILE_PEANUT_ALLERGEN_MATCH',
+    'PROFILE_SOY_ALLERGEN_MATCH',
+    'PROFILE_GLUTEN_ALLERGEN_MATCH',
+    'PROFILE_MILK_ALLERGEN_MATCH',
+    'PROFILE_LACTOSE_ALLERGEN_MATCH',
+  ];
   const criticalProfileWarnings = riskResult.warnings.filter((w) =>
     CRITICAL_ALLERGEN_CODES.includes(w.code),
   );
