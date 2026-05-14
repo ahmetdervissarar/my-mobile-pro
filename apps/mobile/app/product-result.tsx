@@ -130,6 +130,13 @@ export default function ProductResultScreen() {
     };
   }, [normalizedInput]);
 
+  // Uyarı varsa RafSkoru bölümünü otomatik aç; yoksa elle kapatılmış hali koru.
+  useEffect(() => {
+    if (riskResult.warnings.length > 0) {
+      setIsRiskOpen(true);
+    }
+  }, [riskResult.warnings.length]);
+
   const handleFindPricesByLocation = async () => {
     setIsLocationLoading(true);
     setLocationStatus(null);
