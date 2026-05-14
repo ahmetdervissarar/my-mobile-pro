@@ -39,6 +39,41 @@ const UNKNOWN_TRAFFIC_LIGHT = createTrafficLightNutrition({
   salt: null,
 });
 
+const CRACKER_TRAFFIC_LIGHT = createTrafficLightNutrition({
+  fat: 7.2,
+  saturatedFat: 1.1,
+  sugars: 1.8,
+  salt: 0.6,
+});
+
+const MILK_BAR_TRAFFIC_LIGHT = createTrafficLightNutrition({
+  fat: 11.8,
+  saturatedFat: 4.9,
+  sugars: 24.0,
+  salt: 0.28,
+});
+
+const DRINK_TRAFFIC_LIGHT = createTrafficLightNutrition({
+  fat: 0.2,
+  saturatedFat: 0.0,
+  sugars: 18.0,
+  salt: 0.05,
+});
+
+const SOUP_TRAFFIC_LIGHT = createTrafficLightNutrition({
+  fat: 3.5,
+  saturatedFat: 0.8,
+  sugars: 1.2,
+  salt: 1.6,
+});
+
+const CANDY_TRAFFIC_LIGHT = createTrafficLightNutrition({
+  fat: 0.1,
+  saturatedFat: 0.0,
+  sugars: 54.0,
+  salt: 0.05,
+});
+
 const MOCK_PRODUCTS: ProductResult[] = [
   {
     id: 'p-001',
@@ -88,6 +123,91 @@ const MOCK_PRODUCTS: ProductResult[] = [
     nutriScore: 'E',
     novaGroup: null,
     trafficLight: GRANOLA_TRAFFIC_LIGHT,
+    analysisStatus: 'ready',
+    analysisMessage: null,
+  },
+  {
+    id: 'p-004',
+    name: 'Tam Buğdaylı Kraker',
+    barcode: '8691004000043',
+    searchSource: 'name',
+    healthScore: 58,
+    priceText: '44,90 TL (Demo fiyat verisi)',
+    warnings: ['Gluten içerir'],
+    allergens: ['gluten'],
+    additives: [],
+    ingredients: 'Tam buğday unu, bitkisel yağ, tuz, maya.',
+    nutriScore: null,
+    novaGroup: null,
+    trafficLight: CRACKER_TRAFFIC_LIGHT,
+    analysisStatus: 'ready',
+    analysisMessage: null,
+  },
+  {
+    id: 'p-005',
+    name: 'Sütlü Protein Bar',
+    barcode: '8691004000050',
+    searchSource: 'name',
+    healthScore: 64,
+    priceText: '39,90 TL (Demo fiyat verisi)',
+    warnings: ['Süt içerir'],
+    allergens: ['milk'],
+    additives: [],
+    ingredients: 'Süt proteini, yoğurt tozu, kakao, tatlandırıcı.',
+    nutriScore: null,
+    novaGroup: null,
+    trafficLight: MILK_BAR_TRAFFIC_LIGHT,
+    analysisStatus: 'ready',
+    analysisMessage: null,
+  },
+  {
+    id: 'p-006',
+    name: 'Aromalı İçecek',
+    barcode: '8691004000067',
+    searchSource: 'name',
+    healthScore: 42,
+    priceText: '24,90 TL (Demo fiyat verisi)',
+    warnings: ['Katkı maddesi içerir'],
+    allergens: [],
+    additives: ['sitrik asit', 'aroma verici'],
+    ingredients: 'Su, şeker, aroma verici, sitrik asit.',
+    nutriScore: 'D',
+    novaGroup: null,
+    trafficLight: DRINK_TRAFFIC_LIGHT,
+    analysisStatus: 'ready',
+    analysisMessage: null,
+  },
+  {
+    id: 'p-007',
+    name: 'Hazır Çorba',
+    barcode: '8691004000074',
+    searchSource: 'name',
+    healthScore: 38,
+    priceText: '19,90 TL (Demo fiyat verisi)',
+    warnings: ['Ultra işlenmiş ürün olabilir'],
+    allergens: ['Alerjen beyanı yok'],
+    additives: [],
+    ingredients: 'Modifiye nişasta, aroma verici, tuz, bitkisel yağ.',
+    nutriScore: 'C',
+    novaGroup: 4,
+    trafficLight: SOUP_TRAFFIC_LIGHT,
+    analysisStatus: 'ready',
+    analysisMessage: null,
+  },
+  {
+    id: 'p-008',
+    name: 'Renkli Jelibon',
+    barcode: '8691004000081',
+    searchSource: 'name',
+    healthScore: 25,
+    priceText: '29,90 TL (Demo fiyat verisi)',
+    warnings: ['Yüksek şeker içerir', 'Katkı maddesi içerir'],
+    allergens: ['Alerjen beyanı yok'],
+    additives: ['aroma verici', 'renklendirici'],
+    ingredients: 'Glikoz şurubu, şeker, jelatin, aroma verici, renklendirici.',
+    nutriScore: 'E',
+    novaGroup: 4,
+    trafficLight: CANDY_TRAFFIC_LIGHT,
     analysisStatus: 'ready',
     analysisMessage: null,
   },
