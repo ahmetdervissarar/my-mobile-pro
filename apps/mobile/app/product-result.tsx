@@ -409,13 +409,16 @@ export default function ProductResultScreen() {
                 });
 
               return (
-                <View key={warning.code} style={[styles.row, styles.riskRow]}>
-                  <Text style={styles.value}>{warning.title}</Text>
+                <View
+                  key={warning.code}
+                  style={[styles.riskWarningCard, getRiskWarningCardStyle(warning.level)]}
+                >
+                  <Text style={styles.warningTitle}>{warning.title}</Text>
                   <Text style={[styles.helperText, getRiskLevelTextStyle(warning.level)]}>
                     {riskLevelLabel[warning.level]}
                   </Text>
-                  <Pressable style={styles.inlineButton} onPress={toggleDetail}>
-                    <Text style={styles.inlineButtonText}>
+                  <Pressable style={styles.warningDetailButton} onPress={toggleDetail}>
+                    <Text style={styles.warningDetailButtonText}>
                       {isExpanded ? 'Detayları gizle' : 'Detayları göster'}
                     </Text>
                   </Pressable>
@@ -468,6 +471,13 @@ function getRiskLevelTextStyle(level: RiskLevel) {
           : '#16A34A';
 
   return { fontSize: 12, fontWeight: '500' as const, color };
+}
+
+function getRiskWarningCardStyle(level: RiskLevel) {
+  if (level === 'high')    return { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' };
+  if (level === 'medium')  return { backgroundColor: '#FFFBEB', borderColor: '#FCD34D' };
+  if (level === 'low')     return { backgroundColor: '#F0FDF4', borderColor: '#86EFAC' };
+  return                          { backgroundColor: '#F9FAFB', borderColor: '#D1D5DB' };
 }
 
 function getTrafficLightLevelTextStyle(level: 'low' | 'medium' | 'high' | 'unknown') {
@@ -534,6 +544,32 @@ const styles = StyleSheet.create({
   },
   riskRow: {
     paddingTop: 4,
+  },
+  riskWarningCard: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    gap: 8,
+    marginBottom: 4,
+  },
+  warningTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  warningDetailButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#fff',
+  },
+  warningDetailButtonText: {
+    color: '#374151',
+    fontSize: 12,
+    fontWeight: '600',
   },
   label: {
     fontSize: 13,
