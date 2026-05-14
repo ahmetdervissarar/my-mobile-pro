@@ -71,20 +71,39 @@ export default function ProductResultScreen() {
       .catch(() => setUserProfile(emptyUserSensitivityProfile));
   }, []);
 
-  const riskResult: ProductRiskResult = useMemo(
-    () =>
-      evaluateProductRisks({
-        name: result.name ?? null,
-        ingredients: result.ingredients ?? null,
-        allergens: result.allergens ?? [],
-        additives: result.additives ?? [],
-        novaGroup: result.novaGroup ?? null,
-        trafficLight: result.trafficLight ?? null,
-        nutriScore: result.nutriScore ?? null,
-        userProfile,
-      }),
-    [result, userProfile],
-  );
+  /**
+   * analysisStatus === 'ready' ise riskEngine normal çalışır.
+   * Diğer durumlarda evaluateProductRisks çağrılmaz; bunun yerine tek bir
+   * güvenli FOOD_ANALYSIS_UNAVAILABLE uyarısı döner.
+   */
+  const riskResult: ProductRiskResult = useMemo(() => {
+    if (result.analysisStatus !== 'ready') {
+      return {
+        overallRisk: 'unknown',
+        warnings: [
+          {
+            code: 'FOOD_ANALYSIS_UNAVAILABLE',
+            title: 'Gıda analizi yapılamadı',
+            message:
+              result.analysisMessage ?? 'Bu ürün için yeterli gıda verisi bulunamadı.',
+            level: 'unknown',
+          },
+        ],
+        isEvaluated: false,
+      };
+    }
+
+    return evaluateProductRisks({
+      name: result.name ?? null,
+      ingredients: result.ingredients ?? null,
+      allergens: result.allergens ?? [],
+      additives: result.additives ?? [],
+      novaGroup: result.novaGroup ?? null,
+      trafficLight: result.trafficLight ?? null,
+      nutriScore: result.nutriScore ?? null,
+      userProfile,
+    });
+  }, [result, userProfile]);
 
   useEffect(() => {
     setResult(getMockProductResult(normalizedInput));
@@ -198,7 +217,11 @@ export default function ProductResultScreen() {
           <>
             <View style={styles.row}>
               <Text style={styles.label}>Sağlık skoru</Text>
-              <Text style={styles.value}>{result.healthScore}/100</Text>
+              <Text style={styles.value}>
+                {result.analysisStatus === 'ready'
+                  ? `${result.healthScore}/100`
+                  : 'Değerlendirilemedi'}
+              </Text>
             </View>
 
             <View style={styles.row}>
@@ -297,21 +320,29 @@ export default function ProductResultScreen() {
               <Text style={styles.sectionTitle}>Traffic Light Besin Etiketi</Text>
             </View>
 
-            {(['fat', 'saturatedFat', 'sugars', 'salt'] as const).map((nutrient) => {
-              const item = result.trafficLight?.[nutrient];
+            {result.analysisStatus !== 'ready' ? (
+              <View style={styles.row}>
+                <Text style={styles.helperText}>
+                  Bu ürün için Traffic Light besin etiketi hesaplanamadı.
+                </Text>
+              </View>
+            ) : (
+              (['fat', 'saturatedFat', 'sugars', 'salt'] as const).map((nutrient) => {
+                const item = result.trafficLight?.[nutrient];
 
-              if (!item) return null;
+                if (!item) return null;
 
-              return (
-                <View key={nutrient} style={styles.row}>
-                  <Text style={styles.label}>{getTrafficLightNutrientLabel(nutrient)}</Text>
-                  <Text style={styles.value}>{formatNutritionValue(item)}</Text>
-                  <Text style={[styles.helperText, getTrafficLightLevelTextStyle(item.level)]}>
-                    {getTrafficLightLevelLabel(item.level)}
-                  </Text>
-                </View>
-              );
-            })}
+                return (
+                  <View key={nutrient} style={styles.row}>
+                    <Text style={styles.label}>{getTrafficLightNutrientLabel(nutrient)}</Text>
+                    <Text style={styles.value}>{formatNutritionValue(item)}</Text>
+                    <Text style={[styles.helperText, getTrafficLightLevelTextStyle(item.level)]}>
+                      {getTrafficLightLevelLabel(item.level)}
+                    </Text>
+                  </View>
+                );
+              })
+            )}
           </>
         ) : null}
 
@@ -396,7 +427,9 @@ function getRiskLevelTextStyle(level: RiskLevel) {
       ? '#DC2626'
       : level === 'medium'
         ? '#D97706'
-        : '#16A34A';
+        : level === 'unknown'
+          ? '#6B7280'
+          : '#16A34A';
 
   return { fontSize: 12, fontWeight: '500' as const, color };
 }
