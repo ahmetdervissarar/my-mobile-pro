@@ -83,6 +83,8 @@ const RISK_WEIGHT: Record<RiskLevel, number> = {
 const PRIORITY_ORDER: string[] = [
   // 1. Profil bazlı uyarılar
   "PROFILE_ALLERGEN_INFO_MISSING",
+  "PROFILE_PEANUT_ALLERGEN_MATCH",
+  "PROFILE_SOY_ALLERGEN_MATCH",
   "PROFILE_EGG_PRECAUTION",
   "PROFILE_BLOOD_SUGAR_PRECAUTION",
   "PROFILE_SODIUM_PRECAUTION",
@@ -105,6 +107,83 @@ const PRIORITY_ORDER: string[] = [
   "PROCESSED_MEAT_PRECAUTION",
   "SWEET_SNACK_ALLERGEN_PRECAUTION",
   "VEGAN_ALLERGEN_PRECAUTION",
+];
+
+// ─── Metin Normalleştirme ─────────────────────────────────────────────────────
+
+/**
+ * Alerjen içerik eşleştirmesi için metin normalleştirici.
+ *
+ * Adımlar:
+ * 1. Türkçe dotless-ı → i  (NFD bu karakteri ayrıştırmaz; açıkça değiştirilir)
+ * 2. Unicode NFD ayrıştırma — Türkçe ş, ç, ğ, ü, ö ve İ gibi karakterleri
+ *    temel harf + birleştirici işaret çiftlerine böler.
+ *    Örnek: ş → s + \u0327,  İ → I + \u0307,  ğ → g + \u0306
+ * 3. Birleştirici işaretleri (U+0300–U+036F) kaldır → temel Latin harfleri kalır.
+ * 4. Küçük harfe çevir.
+ *
+ * Sonuç: "Yer Fıstığı" → "yer fistigi",  "Soya Lesitini" → "soya lesitini"
+ */
+function normalizeText(text: string): string {
+  return text
+    .replace(/ı/g, "i")                       // dotless-ı: NFD ile çözülmez
+    .normalize("NFD")                          // bileşik karakterleri ayır
+    .replace(/[\u0300-\u036f]/g, "")           // birleştirici işaretleri sil
+    .toLowerCase();
+}
+
+// ─── İçerik Eşleştirme Yardımcısı ────────────────────────────────────────────
+
+/**
+ * ingredients, allergenInfo ve allergens dizisini birleştirip
+ * verilen anahtar kelimelerden herhangi birinin geçip geçmediğini kontrol eder.
+ *
+ * Hem kaynak metin hem anahtar kelimeler normalizeText ile işlenir;
+ * Türkçe karakter ve büyük/küçük harf farkı göz ardı edilir.
+ */
+function productContainsAny(product: ProductRiskInput, keywords: string[]): boolean {
+  const combined = normalizeText(
+    [
+      product.ingredients ?? "",
+      product.allergenInfo ?? "",
+      (product.allergens ?? []).join(" "),
+    ].join(" "),
+  );
+
+  return keywords.some((kw) => combined.includes(normalizeText(kw)));
+}
+
+/**
+ * Yer fıstığı / peanut arama terimleri.
+ *
+ * "fıstık" tek başına Antep fıstığını da kapsayabilir; bu nedenle
+ * "yer fıstığı", "peanut" ve "groundnut" daha güçlü sinyal kabul edilir.
+ * Ancak "fıstık ezmesi" ve "fıstık" de listeye dahildir — mesaj ihtiyatlı tutulur.
+ */
+const PEANUT_KEYWORDS = [
+  "peanut",
+  "groundnut",
+  "yer fıstığı",
+  "yer fistigi",
+  "fıstık ezmesi",
+  "fistik ezmesi",
+  "fıstık",
+  "fistik",
+];
+
+/**
+ * Soya arama terimleri.
+ * Uzun formlar önce aranır; "soy" kısa ama gıda içerik listesinde tekil
+ * geçişi soya anlamına taşır.
+ */
+const SOY_KEYWORDS = [
+  "soy lecithin",
+  "soya lesitini",
+  "soy protein",
+  "soya protein",
+  "soybean",
+  "soya",
+  "soy",
 ];
 
 // ─── Yardımcı Fonksiyonlar ────────────────────────────────────────────────────
@@ -311,7 +390,43 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
       });
     }
 
-    // ── Profil Kural A2: Yumurta hassasiyeti + riskli ürün kategorisi ────────
+    // ── Profil Kural A2: Fıstık alerjisi + içerikte fıstık/peanut beyanı ────
+    // ingredients, allergenInfo ve allergens dizisi normalizeText ile birlikte taranır.
+    // "fıstık" tek başına Antep fıstığını da kapsayabileceğinden mesaj ihtiyatlı tutulmuştur.
+    if (
+      profile.allergens.includes("peanut") &&
+      productContainsAny(product, PEANUT_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_PEANUT_ALLERGEN_MATCH",
+        title: "Fıstık alerjisi için yüksek dikkat",
+        message:
+          "Bu üründe fıstık/yer fıstığı ile ilişkili içerik veya alerjen beyanı bulunuyor. " +
+          "Profilinizde fıstık alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
+          "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A3: Soya alerjisi + içerikte soya beyanı ────────────────
+    if (
+      profile.allergens.includes("soy") &&
+      productContainsAny(product, SOY_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_SOY_ALLERGEN_MATCH",
+        title: "Soya alerjisi için yüksek dikkat",
+        message:
+          "Bu üründe soya ile ilişkili içerik veya alerjen beyanı bulunuyor. " +
+          "Profilinizde soya alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
+          "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A4: Yumurta hassasiyeti + riskli ürün kategorisi ────────
     if (
       profile.allergens.includes("egg") &&
       (isProcessedMeat || isSweetSnack || isVegan)

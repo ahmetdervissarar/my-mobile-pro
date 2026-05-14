@@ -456,4 +456,64 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
     ],
   },
 
+  // ── Senaryo 14 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-14",
+    title: "Fıstık alerjisi + içerikte yer fıstığı beyanı",
+    description:
+      "Kullanıcı profilinde 'peanut' alerjisi tanımlı. " +
+      "Ürün adında 'bar' geçtiği için SWEET_SNACK_ALLERGEN_PRECAUTION tetiklenir. " +
+      "İçerik listesinde 'yer fıstığı ezmesi' ve allergenInfo'da 'Yer fıstığı içerir.' " +
+      "beyanı bulunduğu için PROFILE_PEANUT_ALLERGEN_MATCH üretilir. " +
+      "PROFILE_PEANUT_ALLERGEN_MATCH, PRIORITY_ORDER'da SWEET_SNACK_ALLERGEN_PRECAUTION'dan " +
+      "önce yer aldığı için profil uyarısı listede öne geçer.",
+    input: {
+      name: "yer fıstıklı protein bar",
+      ingredients: "yulaf, yer fıstığı ezmesi, kakao, şeker",
+      allergenInfo: "Yer fıstığı içerir.",
+      allergens: ["peanut"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["peanut"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_PEANUT_ALLERGEN_MATCH",
+      "SWEET_SNACK_ALLERGEN_PRECAUTION",
+    ],
+  },
+
+  // ── Senaryo 15 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-15",
+    title: "Soya alerjisi + içerikte soya lesitini beyanı",
+    description:
+      "Kullanıcı profilinde 'soy' alerjisi tanımlı. " +
+      "Ürün adında 'bisküvi' ve 'kakaolu' geçtiği için SWEET_SNACK_ALLERGEN_PRECAUTION tetiklenir. " +
+      "İçerik listesinde 'soya lesitini' ve allergenInfo'da 'Soya içerir.' beyanı bulunduğu için " +
+      "PROFILE_SOY_ALLERGEN_MATCH üretilir. " +
+      "PROFILE_SOY_ALLERGEN_MATCH, PRIORITY_ORDER'da SWEET_SNACK_ALLERGEN_PRECAUTION'dan " +
+      "önce yer aldığı için profil uyarısı listede öne geçer.",
+    input: {
+      name: "kakaolu bisküvi",
+      ingredients: "buğday unu, şeker, kakao, soya lesitini, bitkisel yağ",
+      allergenInfo: "Soya içerir.",
+      allergens: ["soy"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["soy"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_SOY_ALLERGEN_MATCH",
+      "SWEET_SNACK_ALLERGEN_PRECAUTION",
+    ],
+  },
+
 ];
