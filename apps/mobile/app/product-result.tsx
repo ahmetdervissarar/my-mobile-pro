@@ -167,6 +167,11 @@ export default function ProductResultScreen() {
     }
   };
 
+  const CRITICAL_ALLERGEN_CODES = ['PROFILE_PEANUT_ALLERGEN_MATCH', 'PROFILE_SOY_ALLERGEN_MATCH'];
+  const criticalProfileWarnings = riskResult.warnings.filter((w) =>
+    CRITICAL_ALLERGEN_CODES.includes(w.code),
+  );
+
   return (
     <ScrollView
       style={styles.container}
@@ -175,6 +180,20 @@ export default function ProductResultScreen() {
     >
       <View style={styles.card}>
         <Text style={styles.title}>Ürün Sonucu</Text>
+
+        {criticalProfileWarnings.length > 0 ? (
+          <View style={styles.criticalAlertCard}>
+            <Text style={styles.criticalAlertHeader}>
+              Profilinizle çakışan kritik alerjen uyarısı
+            </Text>
+            {criticalProfileWarnings.map((warning) => (
+              <View key={warning.code} style={styles.criticalAlertItem}>
+                <Text style={styles.criticalAlertItemTitle}>{warning.title}</Text>
+                <Text style={styles.criticalAlertMessage}>{warning.message}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         <Pressable
           style={styles.sectionHeader}
@@ -554,5 +573,31 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontSize: 14,
     fontWeight: '600',
+  },
+  criticalAlertCard: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 10,
+    padding: 14,
+    gap: 10,
+  },
+  criticalAlertHeader: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#991B1B',
+  },
+  criticalAlertItem: {
+    gap: 4,
+  },
+  criticalAlertItemTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#7F1D1D',
+  },
+  criticalAlertMessage: {
+    fontSize: 13,
+    color: '#1F2937',
+    lineHeight: 18,
   },
 });
