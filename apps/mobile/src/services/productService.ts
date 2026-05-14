@@ -258,6 +258,28 @@ export async function fetchProductFromApi(input: ProductSearchInput): Promise<Pr
   return null;
 }
 
+/**
+ * Ürün adı aramasında Türkçe karakter ve büyük/küçük harf farkını gidermek için
+ * kullanılan normalleştirici.
+ *
+ * Adımlar:
+ * 1. trim — baştaki/sondaki boşlukları at.
+ * 2. ı → i — dotless-ı NFD ile ayrışmaz; açıkça değiştirilir.
+ * 3. NFD normalize — ş, ç, ğ, ü, ö, İ gibi karakterleri temel harf + işaret çiftine böler.
+ * 4. Birleştirici işaretleri (U+0300–U+036F) kaldır — temel Latin harfleri kalır.
+ * 5. toLowerCase — büyük/küçük harf farkını kapat.
+ *
+ * Örnek: "Aromalı İçecek" → "aromali iceecek" → doğru: "aromali icecek"
+ */
+function normalizeSearchText(text: string): string {
+  return text
+    .trim()
+    .replace(/ı/g, 'i')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 export function getMockProductResult(input: ProductSearchInput): ProductResult {
   if (input.photoSource?.trim()) {
     return {
@@ -298,8 +320,10 @@ export function getMockProductResult(input: ProductSearchInput): ProductResult {
   }
 
   if (input.productName?.trim()) {
-    const normalizedName = input.productName.trim().toLowerCase();
-    const byName = MOCK_PRODUCTS.find((item) => item.name.toLowerCase().includes(normalizedName));
+    const normalizedName = normalizeSearchText(input.productName);
+    const byName = MOCK_PRODUCTS.find((item) =>
+      normalizeSearchText(item.name).includes(normalizedName),
+    );
 
     return {
       ...(byName ?? fallbackProduct),
