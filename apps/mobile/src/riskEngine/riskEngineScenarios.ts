@@ -604,4 +604,117 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
     ],
   },
 
+  // ── Senaryo 19 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-19",
+    title: "Ağaç yemişleri hassasiyeti + içerikte fındık beyanı",
+    description:
+      "Kullanıcı profilinde 'tree_nuts' hassasiyeti tanımlı. " +
+      "İçerik listesinde 'fındık' ve allergenInfo'da 'Fındık içerir.' beyanı bulunuyor. " +
+      "Ürün adında 'çikolata' geçtiği için SWEET_SNACK_ALLERGEN_PRECAUTION da tetiklenir. " +
+      "PROFILE_TREE_NUTS_ALLERGEN_MATCH, PRIORITY_ORDER'da SWEET_SNACK_ALLERGEN_PRECAUTION'dan " +
+      "önce yer aldığı için profil uyarısı listede öne geçer.",
+    input: {
+      name: "fındıklı çikolata",
+      ingredients: "şeker, kakao, fındık, süt tozu",
+      allergenInfo: "Fındık içerir.",
+      allergens: ["tree_nuts"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["tree_nuts"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_TREE_NUTS_ALLERGEN_MATCH",
+      "SWEET_SNACK_ALLERGEN_PRECAUTION",
+    ],
+  },
+
+  // ── Senaryo 20 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-20",
+    title: "Susam alerjisi + içerikte tahin beyanı",
+    description:
+      "Kullanıcı profilinde 'sesame' alerjisi tanımlı. " +
+      "İçerik listesinde 'tahin' ve 'susam' ile allergenInfo'da 'Susam içerir.' beyanı bulunuyor. " +
+      "allergens: ['sesame'] dolu olduğu için hasAllergenInfo = true; MISSING_ALLERGEN_INFO yok. " +
+      "Ürün adı 'tahinli kraker' hiçbir sweet/meat/vegan keyword'üyle eşleşmediğinden " +
+      "yalnızca PROFILE_SESAME_ALLERGEN_MATCH beklenir.",
+    input: {
+      name: "tahinli kraker",
+      ingredients: "buğday unu, tahin, susam, tuz",
+      allergenInfo: "Susam içerir.",
+      allergens: ["sesame"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["sesame"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_SESAME_ALLERGEN_MATCH",
+    ],
+  },
+
+  // ── Senaryo 21 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-21",
+    title: "Balık alerjisi + içerikte ton balığı beyanı",
+    description:
+      "Kullanıcı profilinde 'fish' alerjisi tanımlı. " +
+      "İçerik listesinde 'ton balığı' ve allergenInfo'da 'Balık içerir.' beyanı bulunuyor. " +
+      "allergens: ['fish'] dolu olduğu için MISSING_ALLERGEN_INFO yok. " +
+      "Ürün adı 'ton balıklı sandviç' hiçbir sweet/meat/vegan keyword'üyle eşleşmediğinden " +
+      "yalnızca PROFILE_FISH_ALLERGEN_MATCH beklenir.",
+    input: {
+      name: "ton balıklı sandviç",
+      ingredients: "ekmek, ton balığı, mısır, mayonez",
+      allergenInfo: "Balık içerir.",
+      allergens: ["fish"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["fish"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_FISH_ALLERGEN_MATCH",
+    ],
+  },
+
+  // ── Senaryo 22 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-22",
+    title: "Kabuklu deniz ürünleri alerjisi + içerikte karides beyanı",
+    description:
+      "Kullanıcı profilinde 'shellfish' alerjisi tanımlı. " +
+      "İçerik listesinde 'karides' ve allergenInfo'da 'Kabuklu deniz ürünleri içerir.' beyanı bulunuyor. " +
+      "allergens: ['shellfish'] dolu olduğu için MISSING_ALLERGEN_INFO yok. " +
+      "Ürün adı 'karidesli noodle' hiçbir sweet/meat/vegan keyword'üyle eşleşmediğinden " +
+      "yalnızca PROFILE_SHELLFISH_ALLERGEN_MATCH beklenir.",
+    input: {
+      name: "karidesli noodle",
+      ingredients: "noodle, karides, soya sosu, baharat",
+      allergenInfo: "Kabuklu deniz ürünleri içerir.",
+      allergens: ["shellfish"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["shellfish"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_SHELLFISH_ALLERGEN_MATCH",
+    ],
+  },
+
 ];

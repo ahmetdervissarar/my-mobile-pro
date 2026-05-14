@@ -88,6 +88,10 @@ const PRIORITY_ORDER: string[] = [
   "PROFILE_GLUTEN_ALLERGEN_MATCH",
   "PROFILE_MILK_ALLERGEN_MATCH",
   "PROFILE_LACTOSE_ALLERGEN_MATCH",
+  "PROFILE_TREE_NUTS_ALLERGEN_MATCH",
+  "PROFILE_SESAME_ALLERGEN_MATCH",
+  "PROFILE_FISH_ALLERGEN_MATCH",
+  "PROFILE_SHELLFISH_ALLERGEN_MATCH",
   "PROFILE_EGG_PRECAUTION",
   "PROFILE_BLOOD_SUGAR_PRECAUTION",
   "PROFILE_SODIUM_PRECAUTION",
@@ -239,6 +243,72 @@ const LACTOSE_KEYWORDS = [
   "milk",
   "dairy",
   "whey",
+];
+
+/**
+ * Ağaç yemişleri (tree nuts) arama terimleri.
+ * Yer fıstığı (peanut/groundnut) bu listeye dahil değildir; ayrı kural kapsar.
+ */
+const TREE_NUTS_KEYWORDS = [
+  "fındık ezmesi",
+  "hazelnut butter",
+  "almond butter",
+  "fındık",
+  "hazelnut",
+  "badem",
+  "almond",
+  "ceviz",
+  "walnut",
+  "kaju",
+  "cashew",
+  "antep fıstığı",
+  "pistachio",
+  "pecan",
+  "macadamia",
+];
+
+/** Susam / sesame arama terimleri. */
+const SESAME_KEYWORDS = [
+  "tahini",
+  "tahin",
+  "susam",
+  "sesame",
+];
+
+/** Balık alerjisi arama terimleri. */
+const FISH_KEYWORDS = [
+  "ton balığı",
+  "tuna",
+  "somon",
+  "salmon",
+  "hamsi",
+  "anchovy",
+  "sardalya",
+  "sardine",
+  "levrek",
+  "sea bass",
+  "balık",
+  "fish",
+];
+
+/** Kabuklu deniz ürünleri alerjisi arama terimleri. */
+const SHELLFISH_KEYWORDS = [
+  "kabuklu deniz ürünü",
+  "shellfish",
+  "karides",
+  "shrimp",
+  "prawn",
+  "yengeç",
+  "crab",
+  "istakoz",
+  "lobster",
+  "midye",
+  "mussel",
+  "istiridye",
+  "oyster",
+  "ahtapot",
+  "squid",
+  "kalamar",
 ];
 
 // ─── Yardımcı Fonksiyonlar ────────────────────────────────────────────────────
@@ -529,6 +599,76 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
           "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
           "Bu uyarı tıbbi hüküm niteliği taşımaz; porsiyon ve içerik bilgisiyle birlikte değerlendirilmelidir.",
         level: "medium",
+      });
+    }
+
+    // ── Profil Kural A7: Ağaç yemişleri hassasiyeti + içerikte fındık/nut beyanı ─
+    if (
+      profile.allergens.includes("tree_nuts") &&
+      productContainsAny(product, TREE_NUTS_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_TREE_NUTS_ALLERGEN_MATCH",
+        title: "Ağaç yemişleri hassasiyeti için yüksek dikkat",
+        message:
+          "Bu üründe fındık, badem, ceviz veya diğer ağaç yemişleriyle ilişkili " +
+          "içerik ya da alerjen beyanı bulunuyor. " +
+          "Profilinizde ağaç yemişleri hassasiyeti tanımlı olduğu için ürünü tüketmeden önce " +
+          "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A8: Susam alerjisi + içerikte susam/tahin beyanı ─────────
+    if (
+      profile.allergens.includes("sesame") &&
+      productContainsAny(product, SESAME_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_SESAME_ALLERGEN_MATCH",
+        title: "Susam alerjisi için yüksek dikkat",
+        message:
+          "Bu üründe susam veya susam bileşenleriyle ilişkili içerik ya da alerjen beyanı bulunuyor. " +
+          "Profilinizde susam alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
+          "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A9: Balık alerjisi + içerikte balık beyanı ──────────────
+    if (
+      profile.allergens.includes("fish") &&
+      productContainsAny(product, FISH_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_FISH_ALLERGEN_MATCH",
+        title: "Balık alerjisi için yüksek dikkat",
+        message:
+          "Bu üründe balık veya balık bileşenleriyle ilişkili içerik ya da alerjen beyanı bulunuyor. " +
+          "Profilinizde balık alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
+          "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A10: Kabuklu deniz ürünleri alerjisi + içerikte beyan ────
+    if (
+      profile.allergens.includes("shellfish") &&
+      productContainsAny(product, SHELLFISH_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_SHELLFISH_ALLERGEN_MATCH",
+        title: "Kabuklu deniz ürünleri alerjisi için yüksek dikkat",
+        message:
+          "Bu üründe karides, yengeç, midye veya diğer kabuklu deniz ürünleriyle ilişkili " +
+          "içerik ya da alerjen beyanı bulunuyor. " +
+          "Profilinizde kabuklu deniz ürünleri alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
+          "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
       });
     }
 

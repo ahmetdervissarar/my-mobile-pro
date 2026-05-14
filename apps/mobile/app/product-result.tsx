@@ -173,6 +173,10 @@ export default function ProductResultScreen() {
     'PROFILE_GLUTEN_ALLERGEN_MATCH',
     'PROFILE_MILK_ALLERGEN_MATCH',
     'PROFILE_LACTOSE_ALLERGEN_MATCH',
+    'PROFILE_TREE_NUTS_ALLERGEN_MATCH',
+    'PROFILE_SESAME_ALLERGEN_MATCH',
+    'PROFILE_FISH_ALLERGEN_MATCH',
+    'PROFILE_SHELLFISH_ALLERGEN_MATCH',
   ];
   const criticalProfileWarnings = riskResult.warnings.filter((w) =>
     CRITICAL_ALLERGEN_CODES.includes(w.code),
