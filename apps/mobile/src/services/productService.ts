@@ -168,7 +168,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     healthScore: 42,
     priceText: '24,90 TL (Demo fiyat verisi)',
     warnings: ['Katkı maddesi içerir'],
-    allergens: [],
+    allergens: ['Alerjen beyanı yok'],
     additives: ['sitrik asit', 'aroma verici'],
     ingredients: 'Su, şeker, aroma verici, sitrik asit.',
     nutriScore: 'D',
