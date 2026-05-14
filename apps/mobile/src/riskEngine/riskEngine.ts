@@ -95,8 +95,11 @@ const PRIORITY_ORDER: string[] = [
   "PROFILE_EGG_PRECAUTION",
   "PROFILE_BLOOD_SUGAR_PRECAUTION",
   "PROFILE_SODIUM_PRECAUTION",
+  "PROFILE_SATURATED_FAT_SENSITIVITY",
   "PROFILE_LESS_SUGAR_PREFERENCE",
   "PROFILE_ULTRA_PROCESSED_PREFERENCE",
+  "PROFILE_LESS_ADDITIVES_PREFERENCE",
+  "PROFILE_CLEAN_LABEL_PREFERENCE",
   "PROFILE_TRAFFIC_LIGHT_HIGH_SUGAR",
   "PROFILE_TRAFFIC_LIGHT_HIGH_SALT",
 
@@ -714,6 +717,26 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
       });
     }
 
+    // ── Profil Kural B3: Kolesterol/doymuş yağ veya kalp-damar hassasiyeti ───
+    if (
+      (
+        profile.chronicSensitivities.includes("cholesterol_saturated_fat") ||
+        profile.chronicSensitivities.includes("cardiovascular")
+      ) &&
+      product.trafficLight?.saturatedFat.level === "high"
+    ) {
+      warnings.push({
+        code: "PROFILE_SATURATED_FAT_SENSITIVITY",
+        title: "Doymuş yağ hassasiyeti için dikkat",
+        message:
+          "Profilinizde kolesterol/doymuş yağ veya kalp-damar hassasiyeti tanımlı. " +
+          "Traffic Light besin etiketine göre bu üründe doymuş yağ seviyesi yüksek görünüyor. " +
+          "Porsiyon ve besin değerleri dikkatle kontrol edilmelidir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz.",
+        level: "medium",
+      });
+    }
+
     // ── Profil Kural C1: Daha az şeker tercihi + tatlı/şekerli ürün ──────────
     if (
       profile.healthPreferences.includes("less_sugar") &&
@@ -738,6 +761,38 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
         title: "Ultra işlenmiş ürün tercihinize dikkat",
         message:
           "Profilinizde daha az ultra işlenmiş ürün tercihi tanımlı. Bu ürün işlenmişlik düzeyi açısından dikkatle değerlendirilmelidir.",
+        level: "low",
+      });
+    }
+
+    // ── Profil Kural C3: Daha az katkı maddesi tercihi + katkı maddesi var ───
+    if (
+      profile.healthPreferences.includes("less_additives") &&
+      containsAdditives
+    ) {
+      warnings.push({
+        code: "PROFILE_LESS_ADDITIVES_PREFERENCE",
+        title: "Daha az katkı maddesi tercihinize dikkat",
+        message:
+          "Profilinizde daha az katkı maddesi tercihi tanımlı. Bu üründe katkı maddesi beyanı " +
+          "bulunduğu için içerik listesi dikkatle incelenmelidir. " +
+          "Bu uyarı tek başına sağlık kararı yerine geçmez.",
+        level: "low",
+      });
+    }
+
+    // ── Profil Kural C4: Temiz içerik tercihi + NOVA 4 veya katkı maddesi ────
+    if (
+      profile.healthPreferences.includes("clean_label") &&
+      (product.novaGroup === 4 || containsAdditives)
+    ) {
+      warnings.push({
+        code: "PROFILE_CLEAN_LABEL_PREFERENCE",
+        title: "Temiz içerik tercihinize dikkat",
+        message:
+          "Profilinizde temiz içerik tercihi tanımlı. Bu ürün işlenmişlik düzeyi veya katkı maddesi " +
+          "beyanı açısından temiz içerik tercihinizle tam uyumlu olmayabilir. " +
+          "İçerik listesi ve işlenmişlik bilgisi birlikte değerlendirilmelidir.",
         level: "low",
       });
     }

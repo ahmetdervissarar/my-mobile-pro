@@ -717,4 +717,102 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
     ],
   },
 
+  // ── Senaryo 23 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-23",
+    title: "Kolesterol hassasiyeti + Traffic Light yüksek doymuş yağ",
+    description:
+      "Kullanıcı profilinde 'cholesterol_saturated_fat' hassasiyeti tanımlı. " +
+      "Traffic Light doymuş yağ seviyesi 'high'. " +
+      "Ürün adında 'bisküvi' geçtiği için SWEET_SNACK_ALLERGEN_PRECAUTION da tetiklenir. " +
+      "PROFILE_SATURATED_FAT_SENSITIVITY profil bölümünde, " +
+      "TRAFFIC_LIGHT_HIGH_SATURATED_FAT besin etiketi bölümünde, " +
+      "SWEET_SNACK_ALLERGEN_PRECAUTION ürün grubu bölümünde yer alır.",
+    input: {
+      name: "kremalı bisküvi",
+      ingredients: "buğday unu, krema tozu, bitkisel yağ, şeker",
+      allergenInfo: "Süt ve gluten içerebilir.",
+      allergens: ["milk", "gluten"],
+      additives: [],
+      novaGroup: null,
+      trafficLight: {
+        fat: { value: 18.1, unit: "g", level: "high" },
+        saturatedFat: { value: 7.2, unit: "g", level: "high" },
+        sugars: { value: 12.5, unit: "g", level: "medium" },
+        salt: { value: 0.22, unit: "g", level: "low" },
+      },
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: ["cholesterol_saturated_fat"],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_SATURATED_FAT_SENSITIVITY",
+      "TRAFFIC_LIGHT_HIGH_SATURATED_FAT",
+      "SWEET_SNACK_ALLERGEN_PRECAUTION",
+    ],
+  },
+
+  // ── Senaryo 24 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-24",
+    title: "Daha az katkı maddesi tercihi + katkı maddesi beyanı",
+    description:
+      "Kullanıcı profilinde 'less_additives' tercihi tanımlı. " +
+      "Üründe additives dizisi dolu olduğu için containsAdditives = true; " +
+      "CONTAINS_ADDITIVES genel uyarısı + PROFILE_LESS_ADDITIVES_PREFERENCE profil uyarısı üretilir. " +
+      "allergens: ['Alerjen beyanı yok'] dolu olduğu için MISSING_ALLERGEN_INFO yok. " +
+      "Ürün adı hiçbir sweet/meat/vegan keyword'üyle eşleşmediğinden " +
+      "PROFILE_LESS_ADDITIVES_PREFERENCE PRIORITY_ORDER'da CONTAINS_ADDITIVES'tan önce gelir.",
+    input: {
+      name: "aromalı içecek",
+      ingredients: "su, şeker, aroma verici, sitrik asit",
+      allergenInfo: "Alerjen beyanı yok.",
+      allergens: ["Alerjen beyanı yok"],
+      additives: ["sitrik asit", "aroma verici"],
+      novaGroup: null,
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: [],
+        healthPreferences: ["less_additives"],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_LESS_ADDITIVES_PREFERENCE",
+      "CONTAINS_ADDITIVES",
+    ],
+  },
+
+  // ── Senaryo 25 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-25",
+    title: "Clean label tercihi + NOVA 4 ürün",
+    description:
+      "Kullanıcı profilinde 'clean_label' tercihi tanımlı. " +
+      "novaGroup 4 olduğu için hem NOVA_GROUP_4 genel uyarısı hem " +
+      "PROFILE_CLEAN_LABEL_PREFERENCE profil uyarısı üretilir. " +
+      "allergens: ['Alerjen beyanı yok'] dolu olduğu için MISSING_ALLERGEN_INFO yok. " +
+      "additives [] olduğu için CONTAINS_ADDITIVES yok. " +
+      "Ürün adı 'hazır çorba' hiçbir sweet/meat/vegan keyword'üyle eşleşmez. " +
+      "PROFILE_CLEAN_LABEL_PREFERENCE PRIORITY_ORDER'da NOVA_GROUP_4'ten önce gelir.",
+    input: {
+      name: "hazır çorba",
+      ingredients: "modifiye nişasta, aroma verici, tuz, bitkisel yağ",
+      allergenInfo: "Alerjen beyanı yok.",
+      allergens: ["Alerjen beyanı yok"],
+      additives: [],
+      novaGroup: 4,
+      userProfile: {
+        allergens: [],
+        chronicSensitivities: [],
+        healthPreferences: ["clean_label"],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_CLEAN_LABEL_PREFERENCE",
+      "NOVA_GROUP_4",
+    ],
+  },
+
 ];
