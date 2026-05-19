@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   IPriceProvider,
   PriceQuery,
   PriceResult,
@@ -20,20 +20,29 @@ interface JoJRawItem {
   product_name?: string;
   name?: string;
   barcode?: string;
+  brand?: string | null;
+  category?: string | null;
+  imageUrl?: string | null;
   marketName?: string;
   market?: string;
+  marketCount?: number | null;
+  markets?: unknown;
   price?: number | string;
+  total?: number | string;
   currency?: string;
+  salesUnit?: string;
   updatedAt?: string;
   updated_at?: string;
   distance?: string;
 }
 
-interface JoJRawResponse {
-  results?: JoJRawItem[];
-  data?: JoJRawItem[];
-  items?: JoJRawItem[];
-}
+type JoJRawResponse =
+  | JoJRawItem[]
+  | {
+      results?: JoJRawItem[];
+      data?: JoJRawItem[];
+      items?: JoJRawItem[];
+    };
 
 export class CamgozJojProvider implements IPriceProvider {
   public readonly name: PriceSource = 'camgoz_joj';
@@ -56,11 +65,12 @@ export class CamgozJojProvider implements IPriceProvider {
 
   async fetch(query: PriceQuery): Promise<PriceResult | null> {
     if (!this.isEnabled()) return null;
-    if (!query.barcode && !query.productName) return null;
+
+    const searchTerm = query.productName ?? query.barcode;
+    if (!searchTerm) return null;
 
     const params = new URLSearchParams();
-    if (query.barcode) params.set('barcode', query.barcode);
-    if (query.productName) params.set('q', query.productName);
+    params.set('query', searchTerm);
 
     const url = `${this.endpoint}?${params.toString()}`;
 
@@ -83,16 +93,16 @@ export class CamgozJojProvider implements IPriceProvider {
       }
 
       const json = (await res.json()) as JoJRawResponse;
-      const list = json.results ?? json.data ?? json.items ?? [];
+      const list = extractList(json);
       if (list.length === 0) return null;
 
       const top = list[0];
-      const priceNum = parseNumber(top.price);
+      const priceNum = parseNumber(top.total ?? top.price);
       if (priceNum === null) return null;
 
       const productName =
         top.productName ?? top.product_name ?? top.name ?? query.productName ?? '';
-      const marketName = top.marketName ?? top.market ?? 'Bilinmeyen Market';
+      const marketName = top.marketName ?? top.market ?? 'Camgöz / JoJ';
       const updatedAt = top.updatedAt ?? top.updated_at ?? new Date().toISOString();
 
       return {
@@ -100,11 +110,11 @@ export class CamgozJojProvider implements IPriceProvider {
         barcode: top.barcode ?? query.barcode,
         marketName,
         price: priceNum,
-        currency: top.currency ?? 'TRY',
+        currency: normalizeCurrency(top.currency ?? top.salesUnit),
         source: 'camgoz_joj',
         status: 'live',
         updatedAt,
-        confidence: 0.9,
+        confidence: 0.85,
         distanceText: top.distance,
         raw: top,
       };
@@ -117,12 +127,31 @@ export class CamgozJojProvider implements IPriceProvider {
   }
 }
 
+function extractList(response: JoJRawResponse): JoJRawItem[] {
+  if (Array.isArray(response)) return response;
+  return response.results ?? response.data ?? response.items ?? [];
+}
+
 function parseNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
+
   if (typeof value === 'string') {
-    const normalized = value.replace(',', '.').trim();
+    const trimmed = value.trim();
+    const normalized = trimmed.includes(',')
+      ? trimmed.replace(/\./g, '').replace(',', '.')
+      : trimmed;
     const n = Number(normalized);
     return Number.isFinite(n) ? n : null;
   }
+
   return null;
+}
+
+function normalizeCurrency(value: unknown): string {
+  if (typeof value !== 'string') return 'TRY';
+
+  const normalized = value.trim().toUpperCase();
+  if (normalized === 'TL' || normalized === 'TRY') return 'TRY';
+
+  return normalized || 'TRY';
 }
