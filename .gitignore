@@ -32,3 +32,5 @@ dist-ssr
 *.sw?
 
 apps/backend/.env
+
+apps/mobile/.env
