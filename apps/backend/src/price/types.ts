@@ -1,4 +1,4 @@
-export type PriceSource =
+﻿export type PriceSource =
   | 'camgoz_joj'
   | 'manual_beta'
   | 'beta_reference'
@@ -13,6 +13,17 @@ export type PriceStatus =
   | 'last_known'
   | 'unavailable';
 
+export interface MarketPriceOption {
+  id?: string;
+  productName?: string;
+  marketName: string;
+  price: number;
+  currency: string;
+  location?: string;
+  sourceUrl?: string;
+  updatedAt?: string;
+}
+
 export interface PriceResult {
   productName: string;
   barcode?: string;
@@ -25,6 +36,7 @@ export interface PriceResult {
   confidence: number;
   note?: string;
   distanceText?: string;
+  marketPrices?: MarketPriceOption[];
   raw?: unknown;
 }
 
@@ -44,9 +56,9 @@ export interface IPriceProvider {
 }
 
 export const BETA_DISCLAIMER =
-  'Bu fiyatlar kapal\u0131 beta test s\u00fcrecinde kullan\u0131lan referans fiyatlard\u0131r. ' +
-  'Market, kampanya, konum ve stok durumuna g\u00f6re de\u011fi\u015febilir. ' +
-  'Sat\u0131n alma \u00f6ncesinde g\u00fcncel market fiyat\u0131n\u0131 kontrol ediniz.';
+  'Bu fiyatlar kapalı beta test sürecinde kullanılan referans fiyatlardır. ' +
+  'Market, kampanya, konum ve stok durumuna göre değişebilir. ' +
+  'Satın alma öncesinde güncel market fiyatını kontrol ediniz.';
 
 export function makeUnavailableResult(query: PriceQuery): PriceResult {
   return {
@@ -59,6 +71,6 @@ export function makeUnavailableResult(query: PriceQuery): PriceResult {
     status: 'unavailable',
     updatedAt: new Date().toISOString(),
     confidence: 0,
-    note: 'Fiyat bilgisi \u015fu anda bulunamad\u0131.',
+    note: 'Fiyat bilgisi şu anda bulunamadı.',
   };
 }

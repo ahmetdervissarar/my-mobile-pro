@@ -1,4 +1,4 @@
-export type PriceSource =
+﻿export type PriceSource =
   | 'camgoz_joj'
   | 'manual_beta'
   | 'beta_reference'
@@ -13,6 +13,17 @@ export type PriceStatus =
   | 'last_known'
   | 'unavailable';
 
+export interface MarketPriceOption {
+  id?: string;
+  productName?: string;
+  marketName: string;
+  price: number;
+  currency: string;
+  location?: string;
+  sourceUrl?: string;
+  updatedAt?: string;
+}
+
 export interface PriceResult {
   productName: string;
   barcode?: string;
@@ -25,6 +36,7 @@ export interface PriceResult {
   confidence: number;
   note?: string;
   distanceText?: string;
+  marketPrices?: MarketPriceOption[];
 }
 
 export interface PriceResolveResponse {

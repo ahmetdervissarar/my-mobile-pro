@@ -1,5 +1,6 @@
 ﻿import type {
   IPriceProvider,
+  MarketPriceOption,
   PriceQuery,
   PriceResult,
   PriceSource,
@@ -15,6 +16,16 @@ interface CamgozJojOptions {
   fetchImpl?: typeof fetch;
 }
 
+interface JoJMarketItem {
+  id?: string;
+  name?: string;
+  price?: number | string;
+  priceModified?: string;
+  market?: string;
+  sourceUrl?: string;
+  location?: string;
+}
+
 interface JoJRawItem {
   productName?: string;
   product_name?: string;
@@ -26,7 +37,7 @@ interface JoJRawItem {
   marketName?: string;
   market?: string;
   marketCount?: number | null;
-  markets?: unknown;
+  markets?: JoJMarketItem[] | null;
   price?: number | string;
   total?: number | string;
   currency?: string;
@@ -71,6 +82,7 @@ export class CamgozJojProvider implements IPriceProvider {
 
     const params = new URLSearchParams();
     params.set('query', searchTerm);
+    params.set('marketPrices', 'true');
 
     const url = `${this.endpoint}?${params.toString()}`;
 
@@ -97,24 +109,42 @@ export class CamgozJojProvider implements IPriceProvider {
       if (list.length === 0) return null;
 
       const top = list[0];
-      const priceNum = parseNumber(top.total ?? top.price);
-      if (priceNum === null) return null;
-
       const productName =
         top.productName ?? top.product_name ?? top.name ?? query.productName ?? '';
-      const marketName = top.marketName ?? top.market ?? 'Camgöz / JoJ';
-      const updatedAt = top.updatedAt ?? top.updated_at ?? new Date().toISOString();
+      const currency = normalizeCurrency(top.currency ?? top.salesUnit);
+      const marketPrices = extractMarketPrices(top, currency);
+
+      if (marketPrices.length > 0) {
+        const best = marketPrices[0];
+
+        return {
+          productName,
+          barcode: top.barcode ?? query.barcode,
+          marketName: best.marketName,
+          price: best.price,
+          currency: best.currency,
+          source: 'camgoz_joj',
+          status: 'live',
+          updatedAt: best.updatedAt ?? top.updatedAt ?? top.updated_at ?? new Date().toISOString(),
+          confidence: 0.9,
+          marketPrices,
+          raw: top,
+        };
+      }
+
+      const priceNum = parseNumber(top.total ?? top.price);
+      if (priceNum === null) return null;
 
       return {
         productName,
         barcode: top.barcode ?? query.barcode,
-        marketName,
+        marketName: top.marketName ?? top.market ?? 'Fiyat kaynağı',
         price: priceNum,
-        currency: normalizeCurrency(top.currency ?? top.salesUnit),
+        currency,
         source: 'camgoz_joj',
         status: 'live',
-        updatedAt,
-        confidence: 0.85,
+        updatedAt: top.updatedAt ?? top.updated_at ?? new Date().toISOString(),
+        confidence: 0.75,
         distanceText: top.distance,
         raw: top,
       };
@@ -130,6 +160,31 @@ export class CamgozJojProvider implements IPriceProvider {
 function extractList(response: JoJRawResponse): JoJRawItem[] {
   if (Array.isArray(response)) return response;
   return response.results ?? response.data ?? response.items ?? [];
+}
+
+function extractMarketPrices(item: JoJRawItem, currency: string): MarketPriceOption[] {
+  if (!Array.isArray(item.markets)) return [];
+
+  return item.markets
+    .map((marketItem): MarketPriceOption | null => {
+      const price = parseNumber(marketItem.price);
+      const marketName = cleanText(marketItem.market);
+
+      if (price === null || !marketName) return null;
+
+      return {
+        id: marketItem.id,
+        productName: cleanText(marketItem.name),
+        marketName,
+        price,
+        currency,
+        location: cleanText(marketItem.location),
+        sourceUrl: cleanText(marketItem.sourceUrl),
+        updatedAt: cleanText(marketItem.priceModified),
+      };
+    })
+    .filter((value): value is MarketPriceOption => value !== null)
+    .sort((a, b) => a.price - b.price);
 }
 
 function parseNumber(value: unknown): number | null {
@@ -154,4 +209,11 @@ function normalizeCurrency(value: unknown): string {
   if (normalized === 'TL' || normalized === 'TRY') return 'TRY';
 
   return normalized || 'TRY';
+}
+
+function cleanText(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
 }
