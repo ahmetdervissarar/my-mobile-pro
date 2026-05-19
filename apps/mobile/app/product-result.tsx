@@ -15,6 +15,12 @@ import type { ProductRiskResult, RiskLevel } from '../src/riskEngine/riskEngine'
 import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile } from '../src/userProfile/userProfileTypes';
 import type { UserSensitivityProfile } from '../src/userProfile/userProfileTypes';
+import { PriceClient, formatPriceForDisplay, priceStatusLabel } from '../src/price/priceClient';
+import type { PriceResolveResponse } from '../src/price/types';
+
+const priceClient = new PriceClient({
+  baseUrl: process.env.EXPO_PUBLIC_PRICE_API_URL ?? 'http://localhost:3001',
+});
 
 export default function ProductResultScreen() {
   const { barcode, productName, searchType } = useLocalSearchParams<{
@@ -64,6 +70,9 @@ export default function ProductResultScreen() {
   const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(
     emptyUserSensitivityProfile,
   );
+  const [priceResolution, setPriceResolution] = useState<PriceResolveResponse | null>(null);
+  const [isPriceLoading, setIsPriceLoading] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
 
   useEffect(() => {
     void loadUserSensitivityProfile()
@@ -124,6 +133,41 @@ export default function ProductResultScreen() {
         setResult(nextResult);
       }
     });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [normalizedInput]);
+
+  // PriceClient ile fiyat sorgusu. Mevcut fiyat akışını bozmadan paralel olarak çalışır.
+  // Sonuç yoksa veya hata olursa eski result.priceText fallback olarak gösterilmeye devam eder.
+  useEffect(() => {
+    setPriceResolution(null);
+    setPriceError(null);
+
+    if (!normalizedInput.barcode && !normalizedInput.productName) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsPriceLoading(true);
+
+    priceClient
+      .resolve({
+        barcode: normalizedInput.barcode,
+        productName: normalizedInput.productName,
+      })
+      .then((response) => {
+        if (isMounted) setPriceResolution(response);
+      })
+      .catch((err: unknown) => {
+        if (isMounted) {
+          setPriceError((err as Error)?.message ?? 'Fiyat al\u0131namad\u0131');
+        }
+      })
+      .finally(() => {
+        if (isMounted) setIsPriceLoading(false);
+      });
 
     return () => {
       isMounted = false;
@@ -337,7 +381,34 @@ export default function ProductResultScreen() {
         {isPriceOpen ? (
           <View style={styles.row}>
             <Text style={styles.label}>Fiyat bilgisi</Text>
-            <Text style={styles.value}>{result.priceText}</Text>
+
+            {isPriceLoading ? (
+              <Text style={styles.helperText}>Fiyat sorgulanıyor...</Text>
+            ) : priceResolution && priceResolution.result.price !== null ? (
+              <>
+                <Text style={styles.value}>{priceResolution.result.marketName}</Text>
+                <Text style={styles.value}>
+                  {formatPriceForDisplay(
+                    priceResolution.result.price,
+                    priceResolution.result.currency,
+                  )}
+                </Text>
+                <Text style={styles.helperText}>
+                  {priceStatusLabel(priceResolution.result.status)}
+                  {priceResolution.result.updatedAt
+                    ? ` · ${new Date(priceResolution.result.updatedAt).toLocaleString('tr-TR')}`
+                    : ''}
+                </Text>
+                {priceResolution.result.note ? (
+                  <Text style={styles.helperText}>{priceResolution.result.note}</Text>
+                ) : null}
+                <Text style={styles.helperText}>{priceResolution.disclaimer}</Text>
+              </>
+            ) : (
+              <Text style={styles.value}>{result.priceText}</Text>
+            )}
+
+            {priceError ? <Text style={styles.helperText}>{priceError}</Text> : null}
 
             <Pressable style={styles.inlineButton} onPress={handleFindPricesByLocation}>
               <Text style={styles.inlineButtonText}>
