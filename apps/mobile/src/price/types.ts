@@ -19,6 +19,7 @@ export interface MarketPriceOption {
   marketName: string;
   price: number;
   currency: string;
+  imageUrl?: string | null;
   location?: string;
   sourceUrl?: string;
   updatedAt?: string;
@@ -30,6 +31,7 @@ export interface PriceResult {
   marketName: string;
   price: number | null;
   currency: string;
+  imageUrl?: string | null;
   source: PriceSource | null;
   status: PriceStatus;
   updatedAt: string;

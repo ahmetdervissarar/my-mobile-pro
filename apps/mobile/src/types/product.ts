@@ -29,6 +29,7 @@ export type ProductResult = {
   searchSource: 'barcode' | 'name' | 'photo';
   healthScore: number;
   priceText: string;
+  imageUrl?: string | null;
   warnings: string[];
   allergens: string[];
   additives: string[];

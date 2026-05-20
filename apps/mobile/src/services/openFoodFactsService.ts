@@ -1,6 +1,7 @@
 export type OpenFoodFactsProductInfo = {
   barcode: string;
   productName: string | null;
+  imageUrl: string | null;
   ingredientsText: string | null;
   allergens: string[];
   nutriScore: string | null;
@@ -72,6 +73,8 @@ type OpenFoodFactsApiResponse = {
   status?: number;
   product?: {
     product_name?: string;
+    image_url?: string;
+    image_front_url?: string;
     nutriscore_grade?: string;
     nova_group?: number;
     ingredients_text?: string;
@@ -138,6 +141,8 @@ export async function fetchOpenFoodFactsByBarcode(
   try {
     const fields = [
       'product_name',
+      'image_url',
+      'image_front_url',
       'nutriscore_grade',
       'nova_group',
       'ingredients_text',
@@ -163,6 +168,7 @@ export async function fetchOpenFoodFactsByBarcode(
     return {
       barcode: trimmedBarcode,
       productName: data.product.product_name ?? null,
+      imageUrl: data.product.image_url ?? data.product.image_front_url ?? null,
       ingredientsText: parseIngredientsText(data.product.ingredients_text),
       allergens: parseAllergens(data.product.allergens_tags),
       nutriScore: parseNutriScoreGrade(data.product.nutriscore_grade),

@@ -1,6 +1,6 @@
 ﻿import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getMockProductResult, getProductResult } from '../src/services/productService';
 import { getUserLocationForPricing } from '../src/services/locationService';
@@ -233,6 +233,10 @@ export default function ProductResultScreen() {
     CRITICAL_ALLERGEN_CODES.includes(w.code),
   );
 
+  const displayProductName = priceResolution?.result.productName?.trim() || result.name;
+  const displayBarcode = priceResolution?.result.barcode?.trim() || result.barcode;
+  const displayImageUrl = result.imageUrl ?? priceResolution?.result.imageUrl ?? null;
+
   return (
     <ScrollView
       style={styles.container}
@@ -241,6 +245,33 @@ export default function ProductResultScreen() {
     >
       <View style={styles.card}>
         <Text style={styles.title}>Ürün Sonucu</Text>
+
+        <View style={styles.productHero}>
+          {displayImageUrl ? (
+            <Image
+              source={{ uri: displayImageUrl }}
+              style={styles.productImage}
+              resizeMode="contain"
+            />
+          ) : (
+            <View style={styles.productImagePlaceholder}>
+              <Text style={styles.helperText}>Ürün görseli bulunamadı</Text>
+            </View>
+          )}
+
+          <View style={styles.productHeroInfo}>
+            <Text style={styles.productName}>{displayProductName}</Text>
+            <Text style={styles.productBarcode}>Barkod: {displayBarcode}</Text>
+          </View>
+        </View>
+
+        <View style={styles.rafScoreCard}>
+          <Text style={styles.rafScoreLabel}>RAF SKORU</Text>
+          <Text style={styles.rafScoreValue}>{result.healthScore}/100</Text>
+          <Text style={styles.rafScoreCaption}>
+            Fiyat, sağlık profili ve ürün içeriği birlikte değerlendirilir.
+          </Text>
+        </View>
 
         {criticalProfileWarnings.length > 0 ? (
           <View style={styles.criticalAlertCard}>
@@ -268,12 +299,12 @@ export default function ProductResultScreen() {
           <>
             <View style={styles.row}>
               <Text style={styles.label}>Ürün adı</Text>
-              <Text style={styles.value}>{result.name}</Text>
+              <Text style={styles.value}>{displayProductName}</Text>
             </View>
 
             <View style={styles.row}>
               <Text style={styles.label}>Barkod numarası</Text>
-              <Text style={styles.value}>{result.barcode}</Text>
+              <Text style={styles.value}>{displayBarcode}</Text>
             </View>
 
             <View style={styles.row}>
@@ -588,7 +619,68 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     marginBottom: 4,
+  },  productHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
+  productImage: {
+    width: 96,
+    height: 96,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  productImagePlaceholder: {
+    width: 96,
+    height: 96,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+  },
+  productHeroInfo: {
+    flex: 1,
+    gap: 6,
+  },
+  productName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  productBarcode: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  rafScoreCard: {
+    borderRadius: 16,
+    padding: 16,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    gap: 6,
+  },
+  rafScoreLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#047857',
+    letterSpacing: 0.8,
+  },
+  rafScoreValue: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: '#065F46',
+  },
+  rafScoreCaption: {
+    fontSize: 12,
+    color: '#047857',
+  },
+
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
