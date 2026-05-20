@@ -9,6 +9,7 @@ import { BetaReferencePriceProvider } from './providers/betaReferencePriceProvid
 import { CamgozJojProvider } from './providers/camgozJojProvider.js';
 import { LastKnownPriceProvider } from './providers/lastKnownPriceProvider.js';
 import { ManualBetaPriceProvider } from './providers/manualBetaPriceProvider.js';
+import { enrichOffers, pickBestOffer } from './enrich/index.js';
 
 export interface PriceProviderServiceOptions {
   camgozJoj?: CamgozJojProvider;
@@ -61,6 +62,35 @@ export class PriceProviderService {
         if (result && result.price !== null) {
           if (provider.name !== 'last_known') {
             this.lastKnown.remember(query, result);
+          }
+
+          try {
+            const rawOffers = (result.marketPrices ?? []).map((marketPrice) => ({
+              marketName: marketPrice.marketName,
+              price: marketPrice.price,
+              currency: marketPrice.currency,
+            }));
+
+            const offers = await enrichOffers(rawOffers, {
+              location: query.location
+                ? { latitude: query.location.lat, longitude: query.location.lng }
+                : undefined,
+            });
+
+            if (offers.length > 0) {
+              result.offers = offers;
+
+              const bestOffer = pickBestOffer(offers);
+
+              if (bestOffer) {
+                result.bestOffer = bestOffer;
+              }
+            }
+          } catch (err) {
+            console.warn(
+              '[PriceProviderService] offer enrichment failed:',
+              (err as Error).message,
+            );
           }
 
           return {

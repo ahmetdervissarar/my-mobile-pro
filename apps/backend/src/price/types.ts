@@ -1,3 +1,5 @@
+import type { EnrichedMarketOffer } from './stores/storeTypes.js';
+
 ﻿export type PriceSource =
   | 'camgoz_joj'
   | 'manual_beta'
@@ -39,6 +41,8 @@ export interface PriceResult {
   note?: string;
   distanceText?: string;
   marketPrices?: MarketPriceOption[];
+  offers?: EnrichedMarketOffer[];
+  bestOffer?: EnrichedMarketOffer;
   raw?: unknown;
 }
 
