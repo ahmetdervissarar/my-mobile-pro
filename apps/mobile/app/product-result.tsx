@@ -289,38 +289,67 @@ export default function ProductResultScreen() {
 
         <Pressable
           style={styles.sectionHeader}
-          onPress={() => setIsBasicInfoOpen((current) => !current)}
+          onPress={() => setIsPriceOpen((current) => !current)}
         >
-          <Text style={styles.sectionTitle}>Temel bilgiler</Text>
-          <Text style={styles.sectionToggle}>{isBasicInfoOpen ? '−' : '+'}</Text>
+          <Text style={styles.sectionTitle}>Fiyat Skoru</Text>
+          <Text style={styles.sectionToggle}>{isPriceOpen ? '−' : '+'}</Text>
         </Pressable>
 
-        {isBasicInfoOpen ? (
-          <>
-            <View style={styles.row}>
-              <Text style={styles.label}>Ürün adı</Text>
-              <Text style={styles.value}>{displayProductName}</Text>
-            </View>
+        {isPriceOpen ? (
+          <View style={styles.row}>
+            {isPriceLoading ? (
+              <Text style={styles.helperText}>Fiyat sorgulanıyor...</Text>
+            ) : priceResolution && priceResolution.result.price !== null ? (
+              <>
+                <Text style={styles.label}>En uygun fiyat</Text>
+                <Text style={styles.value}>{priceResolution.result.marketName}</Text>
+                <Text style={styles.value}>
+                  {formatPriceForDisplay(
+                    priceResolution.result.price,
+                    priceResolution.result.currency,
+                  )}
+                </Text>
+                <Text style={styles.helperText}>
+                  {priceStatusLabel(priceResolution.result.status)}
+                  {priceResolution.result.updatedAt
+                    ? ` · Güncelleme: ${priceResolution.result.updatedAt}`
+                    : ''}
+                </Text>
 
-            <View style={styles.row}>
-              <Text style={styles.label}>Barkod numarası</Text>
-              <Text style={styles.value}>{displayBarcode}</Text>
-            </View>
+                {priceResolution.result.marketPrices &&
+                priceResolution.result.marketPrices.length > 1 ? (
+                  <>
+                    <Text style={styles.label}>Diğer fiyat seçenekleri</Text>
+                    {priceResolution.result.marketPrices.slice(1, 6).map((marketOption, index) => (
+                      <Text
+                        key={`${marketOption.marketName}-${marketOption.price}-${index}`}
+                        style={styles.helperText}
+                      >
+                        {marketOption.marketName} ·{' '}
+                        {formatPriceForDisplay(marketOption.price, marketOption.currency)}
+                      </Text>
+                    ))}
+                  </>
+                ) : null}
 
-            <View style={styles.row}>
-              <Text style={styles.label}>Arama kaynağı</Text>
-              <Text style={styles.value}>
-                {sourceLabelMap[result.searchSource] ?? result.searchSource}
-              </Text>
-            </View>
-          </>
+                {priceResolution.result.note ? (
+                  <Text style={styles.helperText}>{priceResolution.result.note}</Text>
+                ) : null}
+                <Text style={styles.helperText}>{priceResolution.disclaimer}</Text>
+              </>
+            ) : (
+              <Text style={styles.value}>{result.priceText}</Text>
+            )}
+
+            {priceError ? <Text style={styles.helperText}>{priceError}</Text> : null}
+          </View>
         ) : null}
 
         <Pressable
           style={styles.sectionHeader}
           onPress={() => setIsHealthOpen((current) => !current)}
         >
-          <Text style={styles.sectionTitle}>Sağlık değerlendirmesi</Text>
+          <Text style={styles.sectionTitle}>Sağlık Skoru</Text>
           <Text style={styles.sectionToggle}>{isHealthOpen ? '−' : '+'}</Text>
         </Pressable>
 
@@ -403,53 +432,31 @@ export default function ProductResultScreen() {
 
         <Pressable
           style={styles.sectionHeader}
-          onPress={() => setIsPriceOpen((current) => !current)}
+          onPress={() => setIsBasicInfoOpen((current) => !current)}
         >
-          <Text style={styles.sectionTitle}>Fiyat bilgisi</Text>
-          <Text style={styles.sectionToggle}>{isPriceOpen ? '−' : '+'}</Text>
+          <Text style={styles.sectionTitle}>Ürün detayları</Text>
+          <Text style={styles.sectionToggle}>{isBasicInfoOpen ? '−' : '+'}</Text>
         </Pressable>
 
-        {isPriceOpen ? (
-          <View style={styles.row}>
-            <Text style={styles.label}>Fiyat bilgisi</Text>
+        {isBasicInfoOpen ? (
+          <>
+            <View style={styles.row}>
+              <Text style={styles.label}>Ürün adı</Text>
+              <Text style={styles.value}>{displayProductName}</Text>
+            </View>
 
-            {isPriceLoading ? (
-              <Text style={styles.helperText}>Fiyat sorgulanıyor...</Text>
-            ) : priceResolution && priceResolution.result.price !== null ? (
-              <>
-                <Text style={styles.value}>{priceResolution.result.marketName}</Text>
-                <Text style={styles.value}>
-                  {formatPriceForDisplay(
-                    priceResolution.result.price,
-                    priceResolution.result.currency,
-                  )}
-                </Text>
-                <Text style={styles.helperText}>
-                  {priceStatusLabel(priceResolution.result.status)}
-                  {priceResolution.result.updatedAt
-                    ? ` · ${new Date(priceResolution.result.updatedAt).toLocaleString('tr-TR')}`
-                    : ''}
-                </Text>
-                {priceResolution.result.note ? (
-                  <Text style={styles.helperText}>{priceResolution.result.note}</Text>
-                ) : null}
-                <Text style={styles.helperText}>{priceResolution.disclaimer}</Text>
-              </>
-            ) : (
-              <Text style={styles.value}>{result.priceText}</Text>
-            )}
+            <View style={styles.row}>
+              <Text style={styles.label}>Barkod numarası</Text>
+              <Text style={styles.value}>{displayBarcode}</Text>
+            </View>
 
-            {priceError ? <Text style={styles.helperText}>{priceError}</Text> : null}
-
-            <Pressable style={styles.inlineButton} onPress={handleFindPricesByLocation}>
-              <Text style={styles.inlineButtonText}>
-                {isLocationLoading ? 'Konum alınıyor...' : 'Konumla fiyat ara'}
+            <View style={styles.row}>
+              <Text style={styles.label}>Arama kaynağı</Text>
+              <Text style={styles.value}>
+                {sourceLabelMap[result.searchSource] ?? result.searchSource}
               </Text>
-            </Pressable>
-
-            {locationStatus ? <Text style={styles.value}>{locationStatus}</Text> : null}
-            {marketPriceStatus ? <Text style={styles.value}>{marketPriceStatus}</Text> : null}
-          </View>
+            </View>
+          </>
         ) : null}
 
         {result.trafficLight ? (
