@@ -50,4 +50,9 @@ export interface PriceResolveResponse {
 export interface PriceQuery {
   barcode?: string;
   productName?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+    accuracyMeters?: number;
+  };
 }

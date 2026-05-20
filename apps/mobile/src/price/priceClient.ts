@@ -41,6 +41,12 @@ export class PriceClient {
       params.set('q', query.productName);
     }
 
+
+    if (query.location) {
+      params.set('lat', String(query.location.latitude));
+      params.set('lng', String(query.location.longitude));
+    }
+
     const url = `${this.baseUrl}/api/price/resolve?${params.toString()}`;
 
     const controller = new AbortController();

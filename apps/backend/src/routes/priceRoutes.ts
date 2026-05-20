@@ -22,6 +22,21 @@ function requireAdminKey(req: Request, res: Response, next: NextFunction): void 
   next();
 }
 
+
+function parseCoordinate(value: unknown, min: number, max: number): number | undefined {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
+    return undefined;
+  }
+
+  return parsed;
+}
+
 export function createPriceRouter(
   service: PriceProviderService = new PriceProviderService(),
 ): Router {
@@ -37,7 +52,14 @@ export function createPriceRouter(
       });
     }
 
-    const query: PriceQuery = { barcode, productName };
+    const latitude = parseCoordinate(req.query.lat ?? req.query.latitude, -90, 90);
+    const longitude = parseCoordinate(req.query.lng ?? req.query.longitude, -180, 180);
+    const location =
+      latitude !== undefined && longitude !== undefined
+        ? { lat: latitude, lng: longitude }
+        : undefined;
+
+    const query: PriceQuery = { barcode, productName, location };
 
     try {
       const response = await service.resolve(query);

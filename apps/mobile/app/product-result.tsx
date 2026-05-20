@@ -152,13 +152,19 @@ export default function ProductResultScreen() {
     let isMounted = true;
     setIsPriceLoading(true);
 
-    priceClient
-      .resolve({
-        barcode: normalizedInput.barcode,
-        productName: normalizedInput.productName,
+    getUserLocationForPricing()
+      .catch(() => null)
+      .then((location) => {
+        if (!isMounted) return undefined;
+
+        return priceClient.resolve({
+          barcode: normalizedInput.barcode,
+          productName: normalizedInput.productName,
+          location: location ?? undefined,
+        });
       })
       .then((response) => {
-        if (isMounted) setPriceResolution(response);
+        if (isMounted && response) setPriceResolution(response);
       })
       .catch((err: unknown) => {
         if (isMounted) {
