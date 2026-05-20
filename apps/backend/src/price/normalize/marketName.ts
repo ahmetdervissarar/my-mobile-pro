@@ -30,7 +30,7 @@ const PATTERNS: Array<{
   displayName: string;
   tokens: string[];
 }> = [
-  { code: 'BIZIM_TOPTAN', displayName: 'Bizim Toptan', tokens: ['bizim toptan', 'bizim'] },
+  { code: 'BIZIM_TOPTAN', displayName: 'Bizim Toptan', tokens: ['bizim toptan'] },
   { code: 'CARREFOURSA', displayName: 'CarrefourSA', tokens: ['carrefoursa', 'carrefour sa', 'carrefour'] },
   { code: 'MIGROS', displayName: 'Migros', tokens: ['migros'] },
   { code: 'A101', displayName: 'A101', tokens: ['a101', 'a 101'] },
@@ -58,3 +58,4 @@ export function normalizeMarketName(raw: string | null | undefined): NormalizedM
 
   return { chainCode: 'UNKNOWN', displayName: '' };
 }
+
