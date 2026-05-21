@@ -1,4 +1,4 @@
-import {
+﻿import {
   BETA_DISCLAIMER,
   makeUnavailableResult,
   type IPriceProvider,
@@ -31,7 +31,10 @@ export class PriceProviderService {
   public readonly manualBeta: ManualBetaPriceProvider;
 
   constructor(opts: PriceProviderServiceOptions = {}) {
-    const camgoz = opts.camgozJoj ?? new CamgozJojProvider();
+    const camgoz =
+      process.env.ENABLE_CAMGOZ_JOJ === 'true'
+        ? opts.camgozJoj ?? new CamgozJojProvider()
+        : null;
     const manual = opts.manualBeta ?? new ManualBetaPriceProvider();
     const lastKnown = opts.lastKnown ?? new LastKnownPriceProvider();
     const betaRef = opts.betaReference ?? new BetaReferencePriceProvider();
@@ -40,7 +43,7 @@ export class PriceProviderService {
     this.lastKnown = lastKnown;
 
     this.chain = [
-      camgoz,
+      ...(camgoz ? [camgoz] : []),
       ...(opts.extras ?? []),
       manual,
       lastKnown,
@@ -114,3 +117,7 @@ export class PriceProviderService {
     };
   }
 }
+
+
+
+
