@@ -1,4 +1,4 @@
-﻿import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -16,12 +16,40 @@ import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorag
 import { emptyUserSensitivityProfile } from '../src/userProfile/userProfileTypes';
 import type { UserSensitivityProfile } from '../src/userProfile/userProfileTypes';
 import { PriceClient, formatPriceForDisplay, priceStatusLabel } from '../src/price/priceClient';
-import type { PriceResolveResponse } from '../src/price/types';
+import type { EnrichedMarketOffer, PriceResolveResponse } from '../src/price/types';
 
 const priceClient = new PriceClient({
   baseUrl: process.env.EXPO_PUBLIC_PRICE_API_URL ?? 'http://localhost:3001',
 });
 
+
+function formatOfferStoreLabel(offer: EnrichedMarketOffer): string {
+  const branchName = offer.store?.branchName?.trim();
+
+  if (
+    branchName &&
+    branchName.toLocaleLowerCase('tr-TR') !== offer.displayName.toLocaleLowerCase('tr-TR')
+  ) {
+    return `${offer.displayName} · ${branchName}`;
+  }
+
+  return offer.displayName;
+}
+
+function formatOfferDistanceLabel(offer: EnrichedMarketOffer): string {
+  return offer.distance?.distanceText ?? 'Mesafe bilgisi yok';
+}
+
+function isSameOffer(first: EnrichedMarketOffer, second: EnrichedMarketOffer): boolean {
+  return (
+    first.chainCode === second.chainCode &&
+    first.displayName === second.displayName &&
+    first.price === second.price &&
+    first.currency === second.currency &&
+    first.store?.branchName === second.store?.branchName &&
+    first.distance?.distanceText === second.distance?.distanceText
+  );
+}
 export default function ProductResultScreen() {
   const { barcode, productName, searchType } = useLocalSearchParams<{
     barcode?: string;
@@ -243,6 +271,16 @@ export default function ProductResultScreen() {
   const displayBarcode = priceResolution?.result.barcode?.trim() || result.barcode;
   const displayImageUrl = result.imageUrl ?? priceResolution?.result.imageUrl ?? null;
 
+  const priceResult = priceResolution?.result ?? null;
+  const priceDisclaimer =
+    priceResolution?.disclaimer ?? 'Fiyat bilgisi sağlayıcı kaynaklara göre gösterilir.';
+  const bestOffer = priceResult?.bestOffer ?? null;
+  const offerOptions = priceResult?.offers ?? [];
+  const otherOffers = bestOffer
+    ? offerOptions.filter((offer) => !isSameOffer(offer, bestOffer)).slice(0, 5)
+    : offerOptions.slice(1, 6);
+  const fallbackMarketPrices = priceResult?.marketPrices ?? [];
+
   return (
     <ScrollView
       style={styles.container}
@@ -305,43 +343,81 @@ export default function ProductResultScreen() {
           <View style={styles.row}>
             {isPriceLoading ? (
               <Text style={styles.helperText}>Fiyat sorgulanıyor...</Text>
-            ) : priceResolution && priceResolution.result.price !== null ? (
+            ) : priceResult && priceResult.price !== null ? (
               <>
-                <Text style={styles.label}>En uygun fiyat</Text>
-                <Text style={styles.value}>{priceResolution.result.marketName}</Text>
-                <Text style={styles.value}>
-                  {formatPriceForDisplay(
-                    priceResolution.result.price,
-                    priceResolution.result.currency,
-                  )}
-                </Text>
-                <Text style={styles.helperText}>
-                  {priceStatusLabel(priceResolution.result.status)}
-                  {priceResolution.result.updatedAt
-                    ? ` · Güncelleme: ${priceResolution.result.updatedAt}`
-                    : ''}
-                </Text>
-
-                {priceResolution.result.marketPrices &&
-                priceResolution.result.marketPrices.length > 1 ? (
+                {bestOffer ? (
                   <>
-                    <Text style={styles.label}>Diğer fiyat seçenekleri</Text>
-                    {priceResolution.result.marketPrices.slice(1, 6).map((marketOption, index) => (
-                      <Text
-                        key={`${marketOption.marketName}-${marketOption.price}-${index}`}
-                        style={styles.helperText}
-                      >
-                        {marketOption.marketName} ·{' '}
-                        {formatPriceForDisplay(marketOption.price, marketOption.currency)}
+                    <Text style={styles.label}>En uygun fiyat</Text>
+                    <View style={styles.bestOfferCard}>
+                      <View style={styles.offerHeaderRow}>
+                        <Text style={styles.offerMarketName}>
+                          {formatOfferStoreLabel(bestOffer)}
+                        </Text>
+                        <Text style={styles.offerPrice}>
+                          {formatPriceForDisplay(bestOffer.price, bestOffer.currency)}
+                        </Text>
+                      </View>
+                      <Text style={styles.offerDistance}>
+                        {formatOfferDistanceLabel(bestOffer)}
                       </Text>
-                    ))}
-                  </>
-                ) : null}
+                    </View>
 
-                {priceResolution.result.note ? (
-                  <Text style={styles.helperText}>{priceResolution.result.note}</Text>
-                ) : null}
-                <Text style={styles.helperText}>{priceResolution.disclaimer}</Text>
+                    {otherOffers.length > 0 ? (
+                      <>
+                        <Text style={styles.label}>Diğer marketler</Text>
+                        {otherOffers.map((offer, index) => (
+                          <View
+                            key={`${offer.chainCode}-${offer.displayName}-${offer.price}-${index}`}
+                            style={styles.offerCard}
+                          >
+                            <View style={styles.offerHeaderRow}>
+                              <Text style={styles.offerMarketName}>
+                                {formatOfferStoreLabel(offer)}
+                              </Text>
+                              <Text style={styles.offerPrice}>
+                                {formatPriceForDisplay(offer.price, offer.currency)}
+                              </Text>
+                            </View>
+                            <Text style={styles.offerDistance}>
+                              {formatOfferDistanceLabel(offer)}
+                            </Text>
+                          </View>
+                        ))}
+                      </>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.label}>En uygun fiyat</Text>
+                    <Text style={styles.value}>{priceResult.marketName}</Text>
+                    <Text style={styles.value}>
+                      {formatPriceForDisplay(priceResult.price, priceResult.currency)}
+                    </Text>
+
+                    {fallbackMarketPrices.length > 1 ? (
+                      <>
+                        <Text style={styles.label}>Diğer fiyat seçenekleri</Text>
+                        {fallbackMarketPrices.slice(1, 6).map((marketOption, index) => (
+                          <Text
+                            key={`${marketOption.marketName}-${marketOption.price}-${index}`}
+                            style={styles.helperText}
+                          >
+                            {marketOption.marketName} ·{' '}
+                            {formatPriceForDisplay(marketOption.price, marketOption.currency)}
+                          </Text>
+                        ))}
+                      </>
+                    ) : null}
+                  </>
+                )}
+
+                <Text style={styles.helperText}>
+                  {priceStatusLabel(priceResult.status)}
+                  {priceResult.updatedAt ? ` · Güncelleme: ${priceResult.updatedAt}` : ''}
+                </Text>
+
+                {priceResult.note ? <Text style={styles.helperText}>{priceResult.note}</Text> : null}
+                <Text style={styles.helperText}>{priceDisclaimer}</Text>
               </>
             ) : (
               <Text style={styles.value}>{result.priceText}</Text>
@@ -760,6 +836,43 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
   },
+  bestOfferCard: {
+    gap: 6,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    backgroundColor: '#ECFDF5',
+  },
+  offerCard: {
+    gap: 6,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+  },
+  offerHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  offerMarketName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  offerPrice: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#065F46',
+  },
+  offerDistance: {
+    fontSize: 12,
+    color: '#047857',
+  },
+
   actions: {
     width: '100%',
     marginTop: 20,
