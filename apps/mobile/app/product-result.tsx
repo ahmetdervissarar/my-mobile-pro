@@ -17,6 +17,11 @@ import { emptyUserSensitivityProfile } from '../src/userProfile/userProfileTypes
 import type { UserSensitivityProfile } from '../src/userProfile/userProfileTypes';
 import { PriceClient, formatPriceForDisplay, priceStatusLabel } from '../src/price/priceClient';
 import type { EnrichedMarketOffer, PriceResolveResponse } from '../src/price/types';
+import {
+  getRafScoreConfidenceText,
+  getRafScoreDisplayValue,
+  getRafScoreStatusText,
+} from '../src/price/rafScoreDisplay';
 
 const priceClient = new PriceClient({
   baseUrl: process.env.EXPO_PUBLIC_PRICE_API_URL ?? 'http://localhost:3001',
@@ -109,11 +114,6 @@ export default function ProductResultScreen() {
       .catch(() => setUserProfile(emptyUserSensitivityProfile));
   }, []);
 
-  /**
-   * analysisStatus === 'ready' ise riskEngine normal çalışır.
-   * Diğer durumlarda evaluateProductRisks çağrılmaz; bunun yerine tek bir
-   * güvenli FOOD_ANALYSIS_UNAVAILABLE uyarısı döner.
-   */
   const riskResult: ProductRiskResult = useMemo(() => {
     if (result.analysisStatus !== 'ready') {
       return {
@@ -169,8 +169,6 @@ export default function ProductResultScreen() {
     };
   }, [normalizedInput]);
 
-  // PriceClient ile fiyat sorgusu. Mevcut fiyat akışını bozmadan paralel olarak çalışır.
-  // Sonuç yoksa veya hata olursa eski result.priceText fallback olarak gösterilmeye devam eder.
   useEffect(() => {
     setPriceResolution(null);
     setPriceError(null);
@@ -210,7 +208,6 @@ export default function ProductResultScreen() {
     };
   }, [normalizedInput]);
 
-  // Uyarı varsa RafSkoru bölümünü otomatik aç; yoksa elle kapatılmış hali koru.
   useEffect(() => {
     if (riskResult.warnings.length > 0) {
       setIsRiskOpen(true);
@@ -274,6 +271,7 @@ export default function ProductResultScreen() {
   const displayImageUrl = result.imageUrl ?? priceResolution?.result.imageUrl ?? null;
 
   const priceResult = priceResolution?.result ?? null;
+  const rafScore = priceResult?.rafScore ?? null;
   const sustainability = priceResult?.sustainability ?? null;
   const priceDisclaimer =
     priceResolution?.disclaimer ?? 'Fiyat bilgisi sağlayıcı kaynaklara göre gösterilir.';
@@ -314,12 +312,9 @@ export default function ProductResultScreen() {
 
         <View style={styles.rafScoreCard}>
           <Text style={styles.rafScoreLabel}>RAF SKORU</Text>
-          <Text style={styles.rafScoreValue}>
-            {result.analysisStatus === 'ready' ? `${result.healthScore}/100` : 'Hazırlanıyor'}
-          </Text>
-          <Text style={styles.rafScoreCaption}>
-            Fiyat, sağlık, içerik/alerjen ve sürdürülebilirlik birlikte değerlendirilir.
-          </Text>
+          <Text style={styles.rafScoreValue}>{getRafScoreDisplayValue(rafScore)}</Text>
+          <Text style={styles.rafScoreCaption}>{getRafScoreStatusText(rafScore)}</Text>
+          <Text style={styles.rafScoreCaption}>{getRafScoreConfidenceText(rafScore)}</Text>
         </View>
 
         {criticalProfileWarnings.length > 0 ? (
@@ -1053,4 +1048,3 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
-
