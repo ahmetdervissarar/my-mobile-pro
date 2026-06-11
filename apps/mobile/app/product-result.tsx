@@ -314,7 +314,9 @@ export default function ProductResultScreen() {
 
         <View style={styles.rafScoreCard}>
           <Text style={styles.rafScoreLabel}>RAF SKORU</Text>
-          <Text style={styles.rafScoreValue}>{result.healthScore}/100</Text>
+          <Text style={styles.rafScoreValue}>
+            {result.analysisStatus === 'ready' ? `${result.healthScore}/100` : 'Hazırlanıyor'}
+          </Text>
           <Text style={styles.rafScoreCaption}>
             Fiyat, sağlık, içerik/alerjen ve sürdürülebilirlik birlikte değerlendirilir.
           </Text>
@@ -1051,3 +1053,4 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
