@@ -11,6 +11,7 @@ import { LastKnownPriceProvider } from './providers/lastKnownPriceProvider.js';
 import { ManualBetaPriceProvider } from './providers/manualBetaPriceProvider.js';
 import { enrichOffers, pickBestOffer } from './enrich/index.js';
 import { calculateSustainabilityScore } from './sustainability/index.js';
+import { calculateRafScore } from './rafScore/index.js';
 
 export interface PriceProviderServiceOptions {
   camgozJoj?: CamgozJojProvider;
@@ -30,6 +31,15 @@ function attachSustainabilityScore(result: PriceResult, query: PriceQuery): void
   result.sustainability = calculateSustainabilityScore({
     productName: result.productName || query.productName,
     categoryText: result.productName || query.productName,
+  });
+}
+
+function attachRafScore(result: PriceResult): void {
+  result.rafScore = calculateRafScore({
+    priceScore: null,
+    healthScore: null,
+    contentScore: null,
+    sustainabilityScore: result.sustainability?.score ?? null,
   });
 }
 
@@ -105,6 +115,7 @@ export class PriceProviderService {
           }
 
           attachSustainabilityScore(result, query);
+          attachRafScore(result);
 
           return {
             result,
@@ -122,6 +133,7 @@ export class PriceProviderService {
 
     const unavailableResult = makeUnavailableResult(query);
     attachSustainabilityScore(unavailableResult, query);
+    attachRafScore(unavailableResult);
 
     return {
       result: unavailableResult,
