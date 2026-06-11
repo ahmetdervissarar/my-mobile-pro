@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+﻿import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -21,7 +21,6 @@ import type { EnrichedMarketOffer, PriceResolveResponse } from '../src/price/typ
 const priceClient = new PriceClient({
   baseUrl: process.env.EXPO_PUBLIC_PRICE_API_URL ?? 'http://localhost:3001',
 });
-
 
 function formatOfferStoreLabel(offer: EnrichedMarketOffer): string {
   const branchName = offer.store?.branchName?.trim();
@@ -50,6 +49,7 @@ function isSameOffer(first: EnrichedMarketOffer, second: EnrichedMarketOffer): b
     first.distance?.distanceText === second.distance?.distanceText
   );
 }
+
 export default function ProductResultScreen() {
   const { barcode, productName, searchType } = useLocalSearchParams<{
     barcode?: string;
@@ -89,6 +89,7 @@ export default function ProductResultScreen() {
   const [isHealthOpen, setIsHealthOpen] = useState(false);
   const [isContentOpen, setIsContentOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
+  const [isSustainabilityOpen, setIsSustainabilityOpen] = useState(false);
   const [isRiskOpen, setIsRiskOpen] = useState(false);
   const [expandedWarnings, setExpandedWarnings] = useState<Set<string>>(new Set());
   const [isIngredientsVisible, setIsIngredientsVisible] = useState(false);
@@ -148,6 +149,7 @@ export default function ProductResultScreen() {
     setIsHealthOpen(false);
     setIsContentOpen(false);
     setIsPriceOpen(false);
+    setIsSustainabilityOpen(false);
     setIsRiskOpen(false);
     setExpandedWarnings(new Set());
     setIsIngredientsVisible(false);
@@ -196,7 +198,7 @@ export default function ProductResultScreen() {
       })
       .catch((err: unknown) => {
         if (isMounted) {
-          setPriceError((err as Error)?.message ?? 'Fiyat al\u0131namad\u0131');
+          setPriceError((err as Error)?.message ?? 'Fiyat alınamadı');
         }
       })
       .finally(() => {
@@ -272,6 +274,7 @@ export default function ProductResultScreen() {
   const displayImageUrl = result.imageUrl ?? priceResolution?.result.imageUrl ?? null;
 
   const priceResult = priceResolution?.result ?? null;
+  const sustainability = priceResult?.sustainability ?? null;
   const priceDisclaimer =
     priceResolution?.disclaimer ?? 'Fiyat bilgisi sağlayıcı kaynaklara göre gösterilir.';
   const bestOffer = priceResult?.bestOffer ?? null;
@@ -424,6 +427,60 @@ export default function ProductResultScreen() {
             )}
 
             {priceError ? <Text style={styles.helperText}>{priceError}</Text> : null}
+          </View>
+        ) : null}
+
+        <Pressable
+          style={styles.sectionHeader}
+          onPress={() => setIsSustainabilityOpen((current) => !current)}
+        >
+          <Text style={styles.sectionTitle}>Sürdürülebilirlik Skoru</Text>
+          <Text style={styles.sectionToggle}>{isSustainabilityOpen ? '−' : '+'}</Text>
+        </Pressable>
+
+        {isSustainabilityOpen ? (
+          <View style={styles.row}>
+            {sustainability ? (
+              <>
+                <View style={styles.sustainabilitySummaryCard}>
+                  <View style={styles.sustainabilityHeaderRow}>
+                    <Text style={styles.sustainabilityGrade}>{sustainability.grade}</Text>
+
+                    <View style={styles.sustainabilityInfo}>
+                      <Text style={styles.value}>{sustainability.score}/100</Text>
+                      <Text style={styles.helperText}>{sustainability.label}</Text>
+                    </View>
+                  </View>
+                </View>
+
+                <Text style={styles.label}>Güven düzeyi</Text>
+                <Text style={styles.value}>
+                  {getSustainabilityConfidenceLabel(sustainability.confidence)}
+                </Text>
+
+                <Text style={styles.label}>Kategori</Text>
+                <Text style={styles.value}>
+                  {getSustainabilityCategoryLabel(sustainability.categoryKey)}
+                </Text>
+
+                {sustainability.explanations.length > 0 ? (
+                  <>
+                    <Text style={styles.label}>Açıklama</Text>
+                    {sustainability.explanations.slice(0, 3).map((explanation, index) => (
+                      <Text key={`${explanation}-${index}`} style={styles.helperText}>
+                        • {explanation}
+                      </Text>
+                    ))}
+                  </>
+                ) : null}
+
+                <Text style={styles.helperText}>{sustainability.disclaimer}</Text>
+              </>
+            ) : (
+              <Text style={styles.helperText}>
+                Bu ürün için sürdürülebilirlik skoru henüz hesaplanamadı.
+              </Text>
+            )}
           </View>
         ) : null}
 
@@ -644,6 +701,31 @@ export default function ProductResultScreen() {
   );
 }
 
+function getSustainabilityConfidenceLabel(confidence: 'low' | 'medium' | 'high'): string {
+  if (confidence === 'high') return 'Yüksek';
+  if (confidence === 'medium') return 'Orta';
+  return 'Düşük';
+}
+
+function getSustainabilityCategoryLabel(categoryKey: string): string {
+  const labels: Record<string, string> = {
+    plant_based: 'Bitkisel ürün',
+    staple_food: 'Temel gıda',
+    beverages: 'İçecek',
+    breakfast: 'Kahvaltılık',
+    baby_food: 'Bebek gıdası',
+    dairy: 'Süt ürünü',
+    sauces_condiments: 'Sos / çeşni',
+    snacks: 'Atıştırmalık',
+    sweets_chocolate: 'Tatlı / çikolata',
+    frozen_ready: 'Dondurulmuş / hazır gıda',
+    meat: 'Et ürünü',
+    unknown: 'Bilinmeyen kategori',
+  };
+
+  return labels[categoryKey] ?? 'Bilinmeyen kategori';
+}
+
 const riskLevelLabel: Record<RiskLevel, string> = {
   low: 'Düşük risk',
   medium: 'Orta risk',
@@ -665,10 +747,10 @@ function getRiskLevelTextStyle(level: RiskLevel) {
 }
 
 function getRiskWarningCardStyle(level: RiskLevel) {
-  if (level === 'high')    return { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' };
-  if (level === 'medium')  return { backgroundColor: '#FFFBEB', borderColor: '#FCD34D' };
-  if (level === 'low')     return { backgroundColor: '#F0FDF4', borderColor: '#86EFAC' };
-  return                          { backgroundColor: '#F9FAFB', borderColor: '#D1D5DB' };
+  if (level === 'high') return { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' };
+  if (level === 'medium') return { backgroundColor: '#FFFBEB', borderColor: '#FCD34D' };
+  if (level === 'low') return { backgroundColor: '#F0FDF4', borderColor: '#86EFAC' };
+  return { backgroundColor: '#F9FAFB', borderColor: '#D1D5DB' };
 }
 
 function getTrafficLightLevelTextStyle(level: 'low' | 'medium' | 'high' | 'unknown') {
@@ -708,7 +790,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     marginBottom: 4,
-  },  productHero: {
+  },
+  productHero: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
@@ -769,7 +852,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#047857',
   },
-
+  sustainabilitySummaryCard: {
+    borderRadius: 14,
+    padding: 14,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  sustainabilityHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  sustainabilityGrade: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    backgroundColor: '#16A34A',
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  sustainabilityInfo: {
+    flex: 1,
+    gap: 4,
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -872,7 +981,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#047857',
   },
-
   actions: {
     width: '100%',
     marginTop: 20,

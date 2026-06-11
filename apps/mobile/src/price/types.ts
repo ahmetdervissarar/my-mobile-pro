@@ -22,6 +22,41 @@ export type MarketChainCode =
   | 'BIZIM_TOPTAN'
   | 'UNKNOWN';
 
+export type SustainabilityCategoryKey =
+  | 'plant_based'
+  | 'staple_food'
+  | 'beverages'
+  | 'breakfast'
+  | 'baby_food'
+  | 'dairy'
+  | 'sauces_condiments'
+  | 'snacks'
+  | 'sweets_chocolate'
+  | 'frozen_ready'
+  | 'meat'
+  | 'unknown';
+
+export type SustainabilityGrade = 'A' | 'B' | 'C' | 'D' | 'E';
+
+export type SustainabilityConfidence = 'low' | 'medium' | 'high';
+
+export interface SustainabilityResult {
+  score: number;
+  grade: SustainabilityGrade;
+  label: string;
+  confidence: SustainabilityConfidence;
+  categoryKey: SustainabilityCategoryKey;
+  categoryBaseScore: number;
+  factors: {
+    packaging: number;
+    processing: number;
+    origin: number;
+    ecoScoreReference: number;
+  };
+  explanations: string[];
+  disclaimer: string;
+}
+
 export interface MarketPriceOption {
   id?: string;
   productName?: string;
@@ -73,6 +108,7 @@ export interface PriceResult {
   marketPrices?: MarketPriceOption[];
   offers?: EnrichedMarketOffer[];
   bestOffer?: EnrichedMarketOffer;
+  sustainability?: SustainabilityResult;
 }
 
 export interface PriceResolveResponse {
