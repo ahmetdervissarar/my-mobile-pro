@@ -10,6 +10,7 @@ import { CamgozJojProvider } from './providers/camgozJojProvider.js';
 import { LastKnownPriceProvider } from './providers/lastKnownPriceProvider.js';
 import { ManualBetaPriceProvider } from './providers/manualBetaPriceProvider.js';
 import { enrichOffers, pickBestOffer } from './enrich/index.js';
+import { calculateSustainabilityScore } from './sustainability/index.js';
 
 export interface PriceProviderServiceOptions {
   camgozJoj?: CamgozJojProvider;
@@ -23,6 +24,13 @@ export interface PriceResolveResponse {
   result: PriceResult;
   disclaimer: string;
   triedProviders: string[];
+}
+
+function attachSustainabilityScore(result: PriceResult, query: PriceQuery): void {
+  result.sustainability = calculateSustainabilityScore({
+    productName: result.productName || query.productName,
+    categoryText: result.productName || query.productName,
+  });
 }
 
 export class PriceProviderService {
@@ -96,6 +104,8 @@ export class PriceProviderService {
             );
           }
 
+          attachSustainabilityScore(result, query);
+
           return {
             result,
             disclaimer: BETA_DISCLAIMER,
@@ -110,14 +120,13 @@ export class PriceProviderService {
       }
     }
 
+    const unavailableResult = makeUnavailableResult(query);
+    attachSustainabilityScore(unavailableResult, query);
+
     return {
-      result: makeUnavailableResult(query),
+      result: unavailableResult,
       disclaimer: BETA_DISCLAIMER,
       triedProviders,
     };
   }
 }
-
-
-
-

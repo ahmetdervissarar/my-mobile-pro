@@ -1,6 +1,7 @@
 import type { EnrichedMarketOffer } from './stores/storeTypes.js';
+import type { SustainabilityResult } from './sustainability/index.js';
 
-﻿export type PriceSource =
+export type PriceSource =
   | 'camgoz_joj'
   | 'manual_beta'
   | 'beta_reference'
@@ -43,6 +44,7 @@ export interface PriceResult {
   marketPrices?: MarketPriceOption[];
   offers?: EnrichedMarketOffer[];
   bestOffer?: EnrichedMarketOffer;
+  sustainability?: SustainabilityResult;
   raw?: unknown;
 }
 
