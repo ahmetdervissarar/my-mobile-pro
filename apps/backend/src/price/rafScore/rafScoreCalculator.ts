@@ -83,7 +83,7 @@ function buildExplanations(components: RafScoreComponent[]): string[] {
 
   if (missing.length > 0) {
     explanations.push(
-      `Eksik bilesenler guven duzeyini dusurur: ${missing
+      `Genel RafSkoru henuz hesaplanmadi. Eksik bilesenler: ${missing
         .map((component) => component.label)
         .join(', ')}.`,
     );
@@ -102,26 +102,27 @@ export function calculateRafScore(
       component.isAvailable && component.score !== null,
   );
 
-  const availableWeightTotal = availableComponents.reduce(
-    (total, component) => total + component.weight,
-    0,
-  );
+  const availableCount = availableComponents.length;
+  const status = getStatus(availableCount);
 
   const weightedScoreTotal = availableComponents.reduce(
     (total, component) => total + component.score * component.weight,
     0,
   );
 
-  const score =
-    availableWeightTotal > 0
-      ? clampScore(weightedScoreTotal / availableWeightTotal)
-      : null;
+  const weightTotal = components.reduce(
+    (total, component) => total + component.weight,
+    0,
+  );
 
-  const availableCount = availableComponents.length;
+  const score =
+    status === 'ready' && weightTotal > 0
+      ? clampScore(weightedScoreTotal / weightTotal)
+      : null;
 
   return {
     score,
-    status: getStatus(availableCount),
+    status,
     confidence: getConfidence(availableCount),
     weights,
     components,
