@@ -316,7 +316,7 @@ export default function ProductResultScreen() {
           <Text style={styles.rafScoreLabel}>RAF SKORU</Text>
           <Text style={styles.rafScoreValue}>{result.healthScore}/100</Text>
           <Text style={styles.rafScoreCaption}>
-            Fiyat, sağlık profili ve ürün içeriği birlikte değerlendirilir.
+            Fiyat, sağlık, içerik/alerjen ve sürdürülebilirlik birlikte değerlendirilir.
           </Text>
         </View>
 
