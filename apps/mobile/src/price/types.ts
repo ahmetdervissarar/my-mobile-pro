@@ -57,6 +57,41 @@ export interface SustainabilityResult {
   disclaimer: string;
 }
 
+export type RafScoreComponentKey =
+  | 'price'
+  | 'health'
+  | 'content'
+  | 'sustainability';
+
+export type RafScoreConfidence = 'low' | 'medium' | 'high';
+
+export type RafScoreStatus = 'ready' | 'partial' | 'unavailable';
+
+export interface RafScoreWeights {
+  price: number;
+  health: number;
+  content: number;
+  sustainability: number;
+}
+
+export interface RafScoreComponent {
+  key: RafScoreComponentKey;
+  label: string;
+  score: number | null;
+  weight: number;
+  isAvailable: boolean;
+}
+
+export interface RafScoreResult {
+  score: number | null;
+  status: RafScoreStatus;
+  confidence: RafScoreConfidence;
+  weights: RafScoreWeights;
+  components: RafScoreComponent[];
+  explanations: string[];
+  disclaimer: string;
+}
+
 export interface MarketPriceOption {
   id?: string;
   productName?: string;
@@ -109,6 +144,7 @@ export interface PriceResult {
   offers?: EnrichedMarketOffer[];
   bestOffer?: EnrichedMarketOffer;
   sustainability?: SustainabilityResult;
+  rafScore?: RafScoreResult;
 }
 
 export interface PriceResolveResponse {
