@@ -14,6 +14,10 @@ import { calculateSustainabilityScore } from './sustainability/index.js';
 import { calculateRafScore } from './rafScore/index.js';
 import { calculatePriceScore } from './priceScore/index.js';
 import { calculateHealthScore, type HealthScoreInput } from './healthScore/index.js';
+import {
+  calculateContentScore,
+  type ContentScoreInput,
+} from './contentScore/index.js';
 
 export interface PriceProviderServiceOptions {
   camgozJoj?: CamgozJojProvider;
@@ -78,7 +82,10 @@ function inferBetaHealthInput(productName?: string): HealthScoreInput {
       novaGroup: 4,
       trafficLight: {
         sugar: normalizedName.includes('cikolata') ? 'high' : 'medium',
-        salt: normalizedName.includes('cips') || normalizedName.includes('chips') ? 'high' : 'medium',
+        salt:
+          normalizedName.includes('cips') || normalizedName.includes('chips')
+            ? 'high'
+            : 'medium',
         saturatedFat: 'high',
         fat: 'high',
       },
@@ -142,6 +149,86 @@ function inferBetaHealthInput(productName?: string): HealthScoreInput {
   return {};
 }
 
+function inferBetaContentInput(productName?: string): ContentScoreInput {
+  const normalizedName = normalizeTurkish(productName ?? '');
+
+  if (!normalizedName) {
+    return {};
+  }
+
+  if (
+    normalizedName.includes('kola') ||
+    normalizedName.includes('cola') ||
+    normalizedName.includes('gazoz')
+  ) {
+    return {
+      productName,
+      ingredientsText:
+        'Su, seker, karbondioksit, asitlik duzenleyici, aroma vericiler, renklendirici.',
+      additives: ['asitlik duzenleyici', 'renklendirici', 'aroma verici'],
+      additiveRiskLevel: 'medium',
+      allergenDataStatus: 'unknown',
+      hasPalmOil: false,
+      isUltraProcessedHint: true,
+    };
+  }
+
+  if (
+    normalizedName.includes('cikolata') ||
+    normalizedName.includes('cips') ||
+    normalizedName.includes('chips')
+  ) {
+    return {
+      productName,
+      ingredientsText:
+        'Seker, bitkisel yag, aroma verici, emulgator, tuz ve islenmis bilesenler.',
+      additives: ['aroma verici', 'emulgator'],
+      additiveRiskLevel: 'medium',
+      allergenDataStatus: 'contains_allergen',
+      hasPalmOil: normalizedName.includes('cikolata'),
+      isUltraProcessedHint: true,
+    };
+  }
+
+  if (
+    normalizedName.includes('sut') ||
+    normalizedName.includes('yogurt') ||
+    normalizedName.includes('peynir')
+  ) {
+    return {
+      productName,
+      ingredientsText: 'Sut ve sut urunleri.',
+      additives: [],
+      additiveRiskLevel: 'none',
+      allergenDataStatus: 'contains_allergen',
+      hasPalmOil: false,
+      isUltraProcessedHint: false,
+    };
+  }
+
+  if (
+    normalizedName.includes('makarna') ||
+    normalizedName.includes('pirinc') ||
+    normalizedName.includes('ekmek')
+  ) {
+    return {
+      productName,
+      ingredientsText: normalizedName.includes('makarna')
+        ? 'Durum bugdayi irmigi ve su.'
+        : 'Temel tahil bilesenleri.',
+      additives: [],
+      additiveRiskLevel: 'none',
+      allergenDataStatus: normalizedName.includes('makarna')
+        ? 'contains_allergen'
+        : 'clear',
+      hasPalmOil: false,
+      isUltraProcessedHint: false,
+    };
+  }
+
+  return {};
+}
+
 function attachSustainabilityScore(result: PriceResult, query: PriceQuery): void {
   result.sustainability = calculateSustainabilityScore({
     productName: result.productName || query.productName,
@@ -152,6 +239,12 @@ function attachSustainabilityScore(result: PriceResult, query: PriceQuery): void
 function attachHealthScore(result: PriceResult, query: PriceQuery): void {
   result.healthScore = calculateHealthScore(
     inferBetaHealthInput(result.productName || query.productName),
+  );
+}
+
+function attachContentScore(result: PriceResult, query: PriceQuery): void {
+  result.contentScore = calculateContentScore(
+    inferBetaContentInput(result.productName || query.productName),
   );
 }
 
@@ -186,7 +279,7 @@ function attachRafScore(result: PriceResult): void {
   result.rafScore = calculateRafScore({
     priceScore: result.priceScore?.score ?? null,
     healthScore: result.healthScore?.score ?? null,
-    contentScore: null,
+    contentScore: result.contentScore?.score ?? null,
     sustainabilityScore: result.sustainability?.score ?? null,
   });
 }
@@ -264,6 +357,7 @@ export class PriceProviderService {
 
           attachPriceScore(result);
           attachHealthScore(result, query);
+          attachContentScore(result, query);
           attachSustainabilityScore(result, query);
           attachRafScore(result);
 
@@ -284,6 +378,7 @@ export class PriceProviderService {
     const unavailableResult = makeUnavailableResult(query);
     attachPriceScore(unavailableResult);
     attachHealthScore(unavailableResult, query);
+    attachContentScore(unavailableResult, query);
     attachSustainabilityScore(unavailableResult, query);
     attachRafScore(unavailableResult);
 
