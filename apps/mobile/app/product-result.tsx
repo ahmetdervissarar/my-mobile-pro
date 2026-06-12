@@ -111,6 +111,10 @@ export default function ProductResultScreen() {
   const [isContentOpen, setIsContentOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [isSustainabilityOpen, setIsSustainabilityOpen] = useState(false);
+  const [isPriceDetailsOpen, setIsPriceDetailsOpen] = useState(false);
+  const [isSustainabilityDetailsOpen, setIsSustainabilityDetailsOpen] = useState(false);
+  const [isHealthDetailsOpen, setIsHealthDetailsOpen] = useState(false);
+  const [isContentDetailsOpen, setIsContentDetailsOpen] = useState(false);
   const [isRiskOpen, setIsRiskOpen] = useState(false);
   const [expandedWarnings, setExpandedWarnings] = useState<Set<string>>(new Set());
   const [isIngredientsVisible, setIsIngredientsVisible] = useState(false);
@@ -166,6 +170,10 @@ export default function ProductResultScreen() {
     setIsContentOpen(false);
     setIsPriceOpen(false);
     setIsSustainabilityOpen(false);
+    setIsPriceDetailsOpen(false);
+    setIsSustainabilityDetailsOpen(false);
+    setIsHealthDetailsOpen(false);
+    setIsContentDetailsOpen(false);
     setIsRiskOpen(false);
     setExpandedWarnings(new Set());
     setIsIngredientsVisible(false);
@@ -367,11 +375,6 @@ export default function ProductResultScreen() {
                 <Text style={styles.label}>Fiyat skoru</Text>
                 <Text style={styles.value}>{getPriceScoreDisplayValue(priceScore)}</Text>
                 <Text style={styles.helperText}>{getPriceScoreStatusText(priceScore)}</Text>
-                <Text style={styles.helperText}>{getPriceScoreConfidenceText(priceScore)}</Text>
-
-                {priceScore?.explanations?.length ? (
-                  <Text style={styles.helperText}>{priceScore.explanations[0]}</Text>
-                ) : null}
 
                 {bestOffer ? (
                   <>
@@ -389,8 +392,35 @@ export default function ProductResultScreen() {
                         {formatOfferDistanceLabel(bestOffer)}
                       </Text>
                     </View>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.label}>En uygun fiyat</Text>
+                    <Text style={styles.value}>{priceResult.marketName}</Text>
+                    <Text style={styles.value}>
+                      {formatPriceForDisplay(priceResult.price, priceResult.currency)}
+                    </Text>
+                  </>
+                )}
 
-                    {otherOffers.length > 0 ? (
+                <Pressable
+                  style={styles.inlineButton}
+                  onPress={() => setIsPriceDetailsOpen((current) => !current)}
+                >
+                  <Text style={styles.inlineButtonText}>
+                    {isPriceDetailsOpen ? 'Detayları gizle' : 'Detayları göster'}
+                  </Text>
+                </Pressable>
+
+                {isPriceDetailsOpen ? (
+                  <>
+                    <Text style={styles.helperText}>{getPriceScoreConfidenceText(priceScore)}</Text>
+
+                    {priceScore?.explanations?.length ? (
+                      <Text style={styles.helperText}>{priceScore.explanations[0]}</Text>
+                    ) : null}
+
+                    {bestOffer && otherOffers.length > 0 ? (
                       <>
                         <Text style={styles.label}>Diğer marketler</Text>
                         {otherOffers.map((offer, index) => (
@@ -413,16 +443,8 @@ export default function ProductResultScreen() {
                         ))}
                       </>
                     ) : null}
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.label}>En uygun fiyat</Text>
-                    <Text style={styles.value}>{priceResult.marketName}</Text>
-                    <Text style={styles.value}>
-                      {formatPriceForDisplay(priceResult.price, priceResult.currency)}
-                    </Text>
 
-                    {fallbackMarketPrices.length > 1 ? (
+                    {!bestOffer && fallbackMarketPrices.length > 1 ? (
                       <>
                         <Text style={styles.label}>Diğer fiyat seçenekleri</Text>
                         {fallbackMarketPrices.slice(1, 6).map((marketOption, index) => (
@@ -436,16 +458,19 @@ export default function ProductResultScreen() {
                         ))}
                       </>
                     ) : null}
+
+                    <Text style={styles.helperText}>
+                      {priceStatusLabel(priceResult.status)}
+                      {priceResult.updatedAt ? ` · Güncelleme: ${priceResult.updatedAt}` : ''}
+                    </Text>
+
+                    {priceResult.note ? (
+                      <Text style={styles.helperText}>{priceResult.note}</Text>
+                    ) : null}
+
+                    <Text style={styles.helperText}>{priceDisclaimer}</Text>
                   </>
-                )}
-
-                <Text style={styles.helperText}>
-                  {priceStatusLabel(priceResult.status)}
-                  {priceResult.updatedAt ? ` · Güncelleme: ${priceResult.updatedAt}` : ''}
-                </Text>
-
-                {priceResult.note ? <Text style={styles.helperText}>{priceResult.note}</Text> : null}
-                <Text style={styles.helperText}>{priceDisclaimer}</Text>
+                ) : null}
               </>
             ) : (
               <Text style={styles.value}>{result.priceText}</Text>
@@ -478,28 +503,41 @@ export default function ProductResultScreen() {
                   </View>
                 </View>
 
-                <Text style={styles.label}>Güven düzeyi</Text>
-                <Text style={styles.value}>
-                  {getSustainabilityConfidenceLabel(sustainability.confidence)}
-                </Text>
+                <Pressable
+                  style={styles.inlineButton}
+                  onPress={() => setIsSustainabilityDetailsOpen((current) => !current)}
+                >
+                  <Text style={styles.inlineButtonText}>
+                    {isSustainabilityDetailsOpen ? 'Detayları gizle' : 'Detayları göster'}
+                  </Text>
+                </Pressable>
 
-                <Text style={styles.label}>Kategori</Text>
-                <Text style={styles.value}>
-                  {getSustainabilityCategoryLabel(sustainability.categoryKey)}
-                </Text>
-
-                {sustainability.explanations.length > 0 ? (
+                {isSustainabilityDetailsOpen ? (
                   <>
-                    <Text style={styles.label}>Açıklama</Text>
-                    {sustainability.explanations.slice(0, 3).map((explanation, index) => (
-                      <Text key={`${explanation}-${index}`} style={styles.helperText}>
-                        • {explanation}
-                      </Text>
-                    ))}
+                    <Text style={styles.label}>Güven</Text>
+                    <Text style={styles.value}>
+                      {getSustainabilityConfidenceLabel(sustainability.confidence)}
+                    </Text>
+
+                    <Text style={styles.label}>Kategori</Text>
+                    <Text style={styles.value}>
+                      {getSustainabilityCategoryLabel(sustainability.categoryKey)}
+                    </Text>
+
+                    {sustainability.explanations.length > 0 ? (
+                      <>
+                        <Text style={styles.label}>Açıklama</Text>
+                        {sustainability.explanations.slice(0, 3).map((explanation, index) => (
+                          <Text key={`${explanation}-${index}`} style={styles.helperText}>
+                            • {explanation}
+                          </Text>
+                        ))}
+                      </>
+                    ) : null}
+
+                    <Text style={styles.helperText}>{sustainability.disclaimer}</Text>
                   </>
                 ) : null}
-
-                <Text style={styles.helperText}>{sustainability.disclaimer}</Text>
               </>
             ) : (
               <Text style={styles.helperText}>
@@ -518,15 +556,27 @@ export default function ProductResultScreen() {
         </Pressable>
 
         {isHealthOpen ? (
-          <>
-            <View style={styles.row}>
-              <Text style={styles.label}>Sağlık skoru</Text>
-              <Text style={styles.value}>{getHealthScoreDisplayValue(healthScore)}</Text>
-              <Text style={styles.helperText}>{getHealthScoreStatusText(healthScore)}</Text>
-              <Text style={styles.helperText}>{getHealthScoreGradeText(healthScore)}</Text>
-              <Text style={styles.helperText}>{getHealthScoreConfidenceText(healthScore)}</Text>
-            </View>
-          </>
+          <View style={styles.row}>
+            <Text style={styles.label}>Sağlık skoru</Text>
+            <Text style={styles.value}>{getHealthScoreDisplayValue(healthScore)}</Text>
+            <Text style={styles.helperText}>{getHealthScoreStatusText(healthScore)}</Text>
+
+            <Pressable
+              style={styles.inlineButton}
+              onPress={() => setIsHealthDetailsOpen((current) => !current)}
+            >
+              <Text style={styles.inlineButtonText}>
+                {isHealthDetailsOpen ? 'Detayları gizle' : 'Detayları göster'}
+              </Text>
+            </Pressable>
+
+            {isHealthDetailsOpen ? (
+              <>
+                <Text style={styles.helperText}>{getHealthScoreGradeText(healthScore)}</Text>
+                <Text style={styles.helperText}>{getHealthScoreConfidenceText(healthScore)}</Text>
+              </>
+            ) : null}
+          </View>
         ) : null}
 
         <Pressable
@@ -538,50 +588,56 @@ export default function ProductResultScreen() {
         </Pressable>
 
         {isContentOpen ? (
-          <>
-            <View style={styles.row}>
-              <Text style={styles.label}>İçerik/Alerjen skoru</Text>
-              <Text style={styles.value}>{getContentScoreDisplayValue(contentScore)}</Text>
-              <Text style={styles.helperText}>{getContentScoreStatusText(contentScore)}</Text>
-              <Text style={styles.helperText}>{getContentScoreConfidenceText(contentScore)}</Text>
-            </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>İçerik/Alerjen skoru</Text>
+            <Text style={styles.value}>{getContentScoreDisplayValue(contentScore)}</Text>
+            <Text style={styles.helperText}>{getContentScoreStatusText(contentScore)}</Text>
 
-            <Text style={styles.helperText}>
-              Alerjen ve katkı bilgileri ürün etiketine göre değişebilir. Son karar için ambalaj üzerindeki bilgileri kontrol edin.
-            </Text>
-
-            <View style={styles.row}>
-              <Text style={styles.label}>Alerjenler</Text>
-              <Text style={styles.value}>
-                {result.allergens.length > 0 ? result.allergens.join(', ') : 'Bilinmiyor'}
+            <Pressable
+              style={styles.inlineButton}
+              onPress={() => setIsContentDetailsOpen((current) => !current)}
+            >
+              <Text style={styles.inlineButtonText}>
+                {isContentDetailsOpen ? 'Detayları gizle' : 'Detayları göster'}
               </Text>
-            </View>
+            </Pressable>
 
-            <View style={styles.row}>
-              <Text style={styles.label}>Katkı maddeleri</Text>
-              <Text style={styles.value}>
-                {result.additives.length > 0 ? result.additives.join(', ') : 'Bilinmiyor'}
-              </Text>
-            </View>
+            {isContentDetailsOpen ? (
+              <>
+                <Text style={styles.helperText}>{getContentScoreConfidenceText(contentScore)}</Text>
 
-            <View style={styles.row}>
-              <Text style={styles.label}>İçindekiler</Text>
-              <Pressable
-                style={styles.inlineButton}
-                onPress={() => setIsIngredientsVisible((current) => !current)}
-              >
-                <Text style={styles.inlineButtonText}>
-                  {isIngredientsVisible ? 'İçindekileri gizle' : 'İçindekileri göster'}
+                <Text style={styles.helperText}>
+                  Alerjen ve katkı bilgileri ürün etiketine göre değişebilir. Son karar için ambalaj üzerindeki bilgileri kontrol edin.
                 </Text>
-              </Pressable>
 
-              {isIngredientsVisible ? (
+                <Text style={styles.label}>Alerjenler</Text>
                 <Text style={styles.value}>
-                  {result.ingredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
+                  {result.allergens.length > 0 ? result.allergens.join(', ') : 'Bilinmiyor'}
                 </Text>
-              ) : null}
-            </View>
-          </>
+
+                <Text style={styles.label}>Katkı maddeleri</Text>
+                <Text style={styles.value}>
+                  {result.additives.length > 0 ? result.additives.join(', ') : 'Bilinmiyor'}
+                </Text>
+
+                <Text style={styles.label}>İçindekiler</Text>
+                <Pressable
+                  style={styles.inlineButton}
+                  onPress={() => setIsIngredientsVisible((current) => !current)}
+                >
+                  <Text style={styles.inlineButtonText}>
+                    {isIngredientsVisible ? 'İçindekileri gizle' : 'İçindekileri göster'}
+                  </Text>
+                </Pressable>
+
+                {isIngredientsVisible ? (
+                  <Text style={styles.value}>
+                    {result.ingredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
+                  </Text>
+                ) : null}
+              </>
+            ) : null}
+          </View>
         ) : null}
 
         <Pressable
@@ -1066,6 +1122,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
 
 
 
