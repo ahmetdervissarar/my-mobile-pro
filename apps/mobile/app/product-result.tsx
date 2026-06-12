@@ -6,11 +6,7 @@ import { getMockProductResult, getProductResult } from '../src/services/productS
 import { getUserLocationForPricing } from '../src/services/locationService';
 import { fetchMarketPrices } from '../src/services/marketPriceService';
 import { evaluateProductRisks } from '../src/riskEngine/riskEngine';
-import {
-  formatNutritionValue,
-  getTrafficLightLevelLabel,
-  getTrafficLightNutrientLabel,
-} from '../src/nutrition/trafficLight';
+
 import type { ProductRiskResult, RiskLevel } from '../src/riskEngine/riskEngine';
 import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile } from '../src/userProfile/userProfileTypes';
@@ -134,8 +130,18 @@ export default function ProductResultScreen() {
       .catch(() => setUserProfile(emptyUserSensitivityProfile));
   }, []);
 
+  const hasBackendRafScore = priceResolution?.result.rafScore?.status === 'ready';
+
   const riskResult: ProductRiskResult = useMemo(() => {
     if (result.analysisStatus !== 'ready') {
+      if (hasBackendRafScore) {
+        return {
+          overallRisk: 'low',
+          warnings: [],
+          isEvaluated: true,
+        };
+      }
+
       return {
         overallRisk: 'unknown',
         warnings: [
@@ -161,7 +167,7 @@ export default function ProductResultScreen() {
       nutriScore: result.nutriScore ?? null,
       userProfile,
     });
-  }, [result, userProfile]);
+  }, [hasBackendRafScore, result, userProfile]);
 
   useEffect(() => {
     setResult(getMockProductResult(normalizedInput));
@@ -669,85 +675,52 @@ export default function ProductResultScreen() {
           </>
         ) : null}
 
-        {result.trafficLight ? (
+
+        {riskResult.warnings.length > 0 ? (
           <>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Traffic Light Besin Etiketi</Text>
-            </View>
+            <Pressable
+              style={styles.sectionHeader}
+              onPress={() => setIsRiskOpen((current) => !current)}
+            >
+              <Text style={styles.sectionTitle}>
+                RafSkoru Uyarıları ({riskResult.warnings.length})
+              </Text>
+              <Text style={styles.sectionToggle}>{isRiskOpen ? '−' : '+'}</Text>
+            </Pressable>
 
-            {result.analysisStatus !== 'ready' ? (
-              <View style={styles.row}>
-                <Text style={styles.helperText}>
-                  Bu ürün için Traffic Light besin etiketi hesaplanamadı.
-                </Text>
-              </View>
-            ) : (
-              (['fat', 'saturatedFat', 'sugars', 'salt'] as const).map((nutrient) => {
-                const item = result.trafficLight?.[nutrient];
+            {isRiskOpen
+              ? riskResult.warnings.map((warning) => {
+                  const isExpanded = expandedWarnings.has(warning.code);
+                  const toggleDetail = () =>
+                    setExpandedWarnings((prev) => {
+                      const next = new Set(prev);
+                      if (isExpanded) next.delete(warning.code);
+                      else next.add(warning.code);
+                      return next;
+                    });
 
-                if (!item) return null;
-
-                return (
-                  <View key={nutrient} style={styles.row}>
-                    <Text style={styles.label}>{getTrafficLightNutrientLabel(nutrient)}</Text>
-                    <Text style={styles.value}>{formatNutritionValue(item)}</Text>
-                    <Text style={[styles.helperText, getTrafficLightLevelTextStyle(item.level)]}>
-                      {getTrafficLightLevelLabel(item.level)}
-                    </Text>
-                  </View>
-                );
-              })
-            )}
+                  return (
+                    <View
+                      key={warning.code}
+                      style={[styles.riskWarningCard, getRiskWarningCardStyle(warning.level)]}
+                    >
+                      <Text style={styles.warningTitle}>{warning.title}</Text>
+                      <Text style={[styles.helperText, getRiskLevelTextStyle(warning.level)]}>
+                        {riskLevelLabel[warning.level]}
+                      </Text>
+                      <Pressable style={styles.warningDetailButton} onPress={toggleDetail}>
+                        <Text style={styles.warningDetailButtonText}>
+                          {isExpanded ? 'Detayları gizle' : 'Detayları göster'}
+                        </Text>
+                      </Pressable>
+                      {isExpanded ? (
+                        <Text style={styles.helperText}>{warning.message}</Text>
+                      ) : null}
+                    </View>
+                  );
+                })
+              : null}
           </>
-        ) : null}
-
-        <Pressable
-          style={styles.sectionHeader}
-          onPress={() => setIsRiskOpen((current) => !current)}
-        >
-          <Text style={styles.sectionTitle}>
-            RafSkoru Uyarıları ({riskResult.warnings.length})
-          </Text>
-          <Text style={styles.sectionToggle}>{isRiskOpen ? '−' : '+'}</Text>
-        </Pressable>
-
-        {isRiskOpen ? (
-          riskResult.warnings.length === 0 ? (
-            <View style={styles.row}>
-              <Text style={styles.value}>Bu ürün için belirgin bir risk uyarısı oluşturulmadı.</Text>
-            </View>
-          ) : (
-            riskResult.warnings.map((warning) => {
-              const isExpanded = expandedWarnings.has(warning.code);
-              const toggleDetail = () =>
-                setExpandedWarnings((prev) => {
-                  const next = new Set(prev);
-                  if (isExpanded) next.delete(warning.code);
-                  else next.add(warning.code);
-                  return next;
-                });
-
-              return (
-                <View
-                  key={warning.code}
-                  style={[styles.riskWarningCard, getRiskWarningCardStyle(warning.level)]}
-                >
-                  <Text style={styles.warningTitle}>{warning.title}</Text>
-                  <Text style={[styles.helperText, getRiskLevelTextStyle(warning.level)]}>
-                    {riskLevelLabel[warning.level]}
-                  </Text>
-                  <Pressable style={styles.warningDetailButton} onPress={toggleDetail}>
-                    <Text style={styles.warningDetailButtonText}>
-                      {isExpanded ? 'Detayları gizle' : 'Detayları göster'}
-                    </Text>
-                  </Pressable>
-                  {isExpanded ? (
-                    <Text style={styles.helperText}>{warning.message}</Text>
-                  ) : null}
-                </View>
-              );
-            })
-          )
         ) : null}
       </View>
 
@@ -824,18 +797,6 @@ function getRiskWarningCardStyle(level: RiskLevel) {
   return { backgroundColor: '#F9FAFB', borderColor: '#D1D5DB' };
 }
 
-function getTrafficLightLevelTextStyle(level: 'low' | 'medium' | 'high' | 'unknown') {
-  const color =
-    level === 'high'
-      ? '#DC2626'
-      : level === 'medium'
-        ? '#D97706'
-        : level === 'low'
-          ? '#16A34A'
-          : '#6B7280';
-
-  return { fontSize: 12, fontWeight: '600' as const, color };
-}
 
 const styles = StyleSheet.create({
   container: {
@@ -1122,6 +1083,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
 
 
 
