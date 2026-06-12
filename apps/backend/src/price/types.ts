@@ -2,6 +2,7 @@ import type { EnrichedMarketOffer } from './stores/storeTypes.js';
 import type { SustainabilityResult } from './sustainability/index.js';
 import type { RafScoreResult } from './rafScore/index.js';
 import type { PriceScoreResult } from './priceScore/index.js';
+import type { HealthScoreResult } from './healthScore/index.js';
 
 export type PriceSource =
   | 'camgoz_joj'
@@ -47,6 +48,7 @@ export interface PriceResult {
   offers?: EnrichedMarketOffer[];
   bestOffer?: EnrichedMarketOffer;
   priceScore?: PriceScoreResult;
+  healthScore?: HealthScoreResult;
   sustainability?: SustainabilityResult;
   rafScore?: RafScoreResult;
   raw?: unknown;
