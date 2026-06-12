@@ -64,6 +64,26 @@ export interface HealthScoreResult {
   disclaimer: string;
 }
 
+export type ContentScoreStatus = 'ready' | 'partial' | 'unavailable';
+
+export type ContentScoreConfidence = 'low' | 'medium' | 'high';
+
+export interface ContentScoreResult {
+  score: number | null;
+  status: ContentScoreStatus;
+  confidence: ContentScoreConfidence;
+  label: string;
+  factors: {
+    ingredientClarity: number;
+    additiveRisk: number;
+    allergenTransparency: number;
+    processingHint: number;
+    palmOil: number;
+  };
+  explanations: string[];
+  disclaimer: string;
+}
+
 export type SustainabilityCategoryKey =
   | 'plant_based'
   | 'staple_food'
@@ -187,6 +207,7 @@ export interface PriceResult {
   bestOffer?: EnrichedMarketOffer;
   priceScore?: PriceScoreResult;
   healthScore?: HealthScoreResult;
+  contentScore?: ContentScoreResult;
   sustainability?: SustainabilityResult;
   rafScore?: RafScoreResult;
 }
