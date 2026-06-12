@@ -521,27 +521,14 @@ export default function ProductResultScreen() {
           <>
             <View style={styles.row}>
               <Text style={styles.label}>Sağlık skoru</Text>
-              <Text style={styles.value}>
-                {result.analysisStatus === 'ready'
-                  ? `${result.healthScore}/100`
-                  : 'Değerlendirilemedi'}
-              </Text>
-            </View>
+              <Text style={styles.value}>{getHealthScoreDisplayValue(healthScore)}</Text>
+              <Text style={styles.helperText}>{getHealthScoreStatusText(healthScore)}</Text>
+              <Text style={styles.helperText}>{getHealthScoreGradeText(healthScore)}</Text>
+              <Text style={styles.helperText}>{getHealthScoreConfidenceText(healthScore)}</Text>
 
-            <View style={styles.row}>
-              <Text style={styles.label}>Nutri-Score</Text>
-              <Text style={styles.value}>
-                {result.nutriScore ? result.nutriScore.toUpperCase() : 'Bilinmiyor'}
-              </Text>
-              <Text style={styles.helperText}>Besin kalitesini gösterir.</Text>
-            </View>
-
-            <View style={styles.row}>
-              <Text style={styles.label}>NOVA grubu</Text>
-              <Text style={styles.value}>
-                {result.novaGroup != null ? `Grup ${result.novaGroup}` : 'Bilinmiyor'}
-              </Text>
-              <Text style={styles.helperText}>Ürünün işlenmişlik düzeyini gösterir.</Text>
+              {healthScore?.explanations?.length ? (
+                <Text style={styles.helperText}>{healthScore.explanations[0]}</Text>
+              ) : null}
             </View>
           </>
         ) : null}
@@ -556,6 +543,17 @@ export default function ProductResultScreen() {
 
         {isContentOpen ? (
           <>
+            <View style={styles.row}>
+              <Text style={styles.label}>İçerik/Alerjen skoru</Text>
+              <Text style={styles.value}>{getContentScoreDisplayValue(contentScore)}</Text>
+              <Text style={styles.helperText}>{getContentScoreStatusText(contentScore)}</Text>
+              <Text style={styles.helperText}>{getContentScoreConfidenceText(contentScore)}</Text>
+
+              {contentScore?.explanations?.length ? (
+                <Text style={styles.helperText}>{contentScore.explanations[0]}</Text>
+              ) : null}
+            </View>
+
             <Text style={styles.helperText}>
               Alerjen ve katkı bilgileri ürün etiketine göre değişebilir. Son karar için ambalaj üzerindeki bilgileri kontrol edin.
             </Text>
@@ -1076,5 +1074,6 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
 
 
