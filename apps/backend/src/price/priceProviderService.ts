@@ -13,6 +13,7 @@ import { enrichOffers, pickBestOffer } from './enrich/index.js';
 import { calculateSustainabilityScore } from './sustainability/index.js';
 import { calculateRafScore } from './rafScore/index.js';
 import { calculatePriceScore } from './priceScore/index.js';
+import { calculateHealthScore, type HealthScoreInput } from './healthScore/index.js';
 
 export interface PriceProviderServiceOptions {
   camgozJoj?: CamgozJojProvider;
@@ -28,11 +29,130 @@ export interface PriceResolveResponse {
   triedProviders: string[];
 }
 
+function normalizeTurkish(value: string): string {
+  return value
+    .trim()
+    .toLocaleLowerCase('tr-TR')
+    .replaceAll('ç', 'c')
+    .replaceAll('ğ', 'g')
+    .replaceAll('ı', 'i')
+    .replaceAll('i̇', 'i')
+    .replaceAll('ö', 'o')
+    .replaceAll('ş', 's')
+    .replaceAll('ü', 'u');
+}
+
+function inferBetaHealthInput(productName?: string): HealthScoreInput {
+  const normalizedName = normalizeTurkish(productName ?? '');
+
+  if (!normalizedName) {
+    return {};
+  }
+
+  if (
+    normalizedName.includes('kola') ||
+    normalizedName.includes('cola') ||
+    normalizedName.includes('gazoz')
+  ) {
+    return {
+      productName,
+      nutriScoreGrade: 'D',
+      novaGroup: 4,
+      trafficLight: {
+        sugar: 'high',
+        salt: 'low',
+        saturatedFat: 'low',
+        fat: 'low',
+      },
+    };
+  }
+
+  if (
+    normalizedName.includes('cikolata') ||
+    normalizedName.includes('cips') ||
+    normalizedName.includes('chips')
+  ) {
+    return {
+      productName,
+      nutriScoreGrade: 'D',
+      novaGroup: 4,
+      trafficLight: {
+        sugar: normalizedName.includes('cikolata') ? 'high' : 'medium',
+        salt: normalizedName.includes('cips') || normalizedName.includes('chips') ? 'high' : 'medium',
+        saturatedFat: 'high',
+        fat: 'high',
+      },
+    };
+  }
+
+  if (
+    normalizedName.includes('sut') ||
+    normalizedName.includes('yogurt') ||
+    normalizedName.includes('peynir')
+  ) {
+    return {
+      productName,
+      nutriScoreGrade: 'B',
+      novaGroup: 1,
+      trafficLight: {
+        sugar: 'low',
+        salt: normalizedName.includes('peynir') ? 'medium' : 'low',
+        saturatedFat: normalizedName.includes('peynir') ? 'medium' : 'low',
+        fat: 'medium',
+      },
+    };
+  }
+
+  if (
+    normalizedName.includes('makarna') ||
+    normalizedName.includes('pirinc') ||
+    normalizedName.includes('ekmek')
+  ) {
+    return {
+      productName,
+      nutriScoreGrade: 'B',
+      novaGroup: 1,
+      trafficLight: {
+        sugar: 'low',
+        salt: 'low',
+        saturatedFat: 'low',
+        fat: 'low',
+      },
+    };
+  }
+
+  if (
+    normalizedName.includes('seker') ||
+    normalizedName.includes('kahve') ||
+    normalizedName.includes('cay')
+  ) {
+    return {
+      productName,
+      nutriScoreGrade: 'C',
+      novaGroup: 2,
+      trafficLight: {
+        sugar: normalizedName.includes('seker') ? 'high' : 'low',
+        salt: 'low',
+        saturatedFat: 'low',
+        fat: 'low',
+      },
+    };
+  }
+
+  return {};
+}
+
 function attachSustainabilityScore(result: PriceResult, query: PriceQuery): void {
   result.sustainability = calculateSustainabilityScore({
     productName: result.productName || query.productName,
     categoryText: result.productName || query.productName,
   });
+}
+
+function attachHealthScore(result: PriceResult, query: PriceQuery): void {
+  result.healthScore = calculateHealthScore(
+    inferBetaHealthInput(result.productName || query.productName),
+  );
 }
 
 function attachPriceScore(result: PriceResult): void {
@@ -65,7 +185,7 @@ function attachPriceScore(result: PriceResult): void {
 function attachRafScore(result: PriceResult): void {
   result.rafScore = calculateRafScore({
     priceScore: result.priceScore?.score ?? null,
-    healthScore: null,
+    healthScore: result.healthScore?.score ?? null,
     contentScore: null,
     sustainabilityScore: result.sustainability?.score ?? null,
   });
@@ -143,6 +263,7 @@ export class PriceProviderService {
           }
 
           attachPriceScore(result);
+          attachHealthScore(result, query);
           attachSustainabilityScore(result, query);
           attachRafScore(result);
 
@@ -162,6 +283,7 @@ export class PriceProviderService {
 
     const unavailableResult = makeUnavailableResult(query);
     attachPriceScore(unavailableResult);
+    attachHealthScore(unavailableResult, query);
     attachSustainabilityScore(unavailableResult, query);
     attachRafScore(unavailableResult);
 
