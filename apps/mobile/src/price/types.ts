@@ -42,6 +42,28 @@ export interface PriceScoreResult {
   disclaimer: string;
 }
 
+export type HealthScoreStatus = 'ready' | 'partial' | 'unavailable';
+
+export type HealthScoreConfidence = 'low' | 'medium' | 'high';
+
+export type HealthScoreGrade = 'A' | 'B' | 'C' | 'D' | 'E';
+
+export interface HealthScoreResult {
+  score: number | null;
+  status: HealthScoreStatus;
+  confidence: HealthScoreConfidence;
+  label: string;
+  grade: HealthScoreGrade | null;
+  factors: {
+    nutriScore: number;
+    nova: number;
+    trafficLight: number;
+    category: number;
+  };
+  explanations: string[];
+  disclaimer: string;
+}
+
 export type SustainabilityCategoryKey =
   | 'plant_based'
   | 'staple_food'
@@ -164,6 +186,7 @@ export interface PriceResult {
   offers?: EnrichedMarketOffer[];
   bestOffer?: EnrichedMarketOffer;
   priceScore?: PriceScoreResult;
+  healthScore?: HealthScoreResult;
   sustainability?: SustainabilityResult;
   rafScore?: RafScoreResult;
 }
