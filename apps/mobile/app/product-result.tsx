@@ -22,6 +22,11 @@ import {
   getRafScoreDisplayValue,
   getRafScoreStatusText,
 } from '../src/price/rafScoreDisplay';
+import {
+  getPriceScoreConfidenceText,
+  getPriceScoreDisplayValue,
+  getPriceScoreStatusText,
+} from '../src/price/priceScoreDisplay';
 
 const priceClient = new PriceClient({
   baseUrl: process.env.EXPO_PUBLIC_PRICE_API_URL ?? 'http://localhost:3001',
@@ -272,6 +277,7 @@ export default function ProductResultScreen() {
 
   const priceResult = priceResolution?.result ?? null;
   const rafScore = priceResult?.rafScore ?? null;
+  const priceScore = priceResult?.priceScore ?? null;
   const sustainability = priceResult?.sustainability ?? null;
   const priceDisclaimer =
     priceResolution?.disclaimer ?? 'Fiyat bilgisi sağlayıcı kaynaklara göre gösterilir.';
@@ -345,6 +351,15 @@ export default function ProductResultScreen() {
               <Text style={styles.helperText}>Fiyat sorgulanıyor...</Text>
             ) : priceResult && priceResult.price !== null ? (
               <>
+                <Text style={styles.label}>Fiyat skoru</Text>
+                <Text style={styles.value}>{getPriceScoreDisplayValue(priceScore)}</Text>
+                <Text style={styles.helperText}>{getPriceScoreStatusText(priceScore)}</Text>
+                <Text style={styles.helperText}>{getPriceScoreConfidenceText(priceScore)}</Text>
+
+                {priceScore?.explanations?.length ? (
+                  <Text style={styles.helperText}>{priceScore.explanations[0]}</Text>
+                ) : null}
+
                 {bestOffer ? (
                   <>
                     <Text style={styles.label}>En uygun fiyat</Text>
