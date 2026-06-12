@@ -1,4 +1,4 @@
-import type { ContentScoreResult } from './types';
+﻿import type { ContentScoreResult } from './types';
 
 export function getContentScoreDisplayValue(
   contentScore?: ContentScoreResult | null,
@@ -33,10 +33,10 @@ export function getContentScoreStatusText(
 export function getContentScoreConfidenceText(
   contentScore?: ContentScoreResult | null,
 ): string {
-  if (!contentScore) return 'Güven düzeyi: Bekleniyor';
+  if (!contentScore) return 'Güven: Bekleniyor';
 
-  if (contentScore.confidence === 'high') return 'Güven düzeyi: Yüksek';
-  if (contentScore.confidence === 'medium') return 'Güven düzeyi: Orta';
+  if (contentScore.confidence === 'high') return 'Güven: Yüksek';
+  if (contentScore.confidence === 'medium') return 'Güven: Orta';
 
-  return 'Güven düzeyi: Düşük';
+  return 'Güven: Düşük';
 }

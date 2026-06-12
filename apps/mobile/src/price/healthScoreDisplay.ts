@@ -1,4 +1,4 @@
-import type { HealthScoreResult } from './types';
+﻿import type { HealthScoreResult } from './types';
 
 export function getHealthScoreDisplayValue(
   healthScore?: HealthScoreResult | null,
@@ -33,12 +33,12 @@ export function getHealthScoreStatusText(
 export function getHealthScoreConfidenceText(
   healthScore?: HealthScoreResult | null,
 ): string {
-  if (!healthScore) return 'Güven düzeyi: Bekleniyor';
+  if (!healthScore) return 'Güven: Bekleniyor';
 
-  if (healthScore.confidence === 'high') return 'Güven düzeyi: Yüksek';
-  if (healthScore.confidence === 'medium') return 'Güven düzeyi: Orta';
+  if (healthScore.confidence === 'high') return 'Güven: Yüksek';
+  if (healthScore.confidence === 'medium') return 'Güven: Orta';
 
-  return 'Güven düzeyi: Düşük';
+  return 'Güven: Düşük';
 }
 
 export function getHealthScoreGradeText(

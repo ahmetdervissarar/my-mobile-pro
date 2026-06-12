@@ -525,10 +525,6 @@ export default function ProductResultScreen() {
               <Text style={styles.helperText}>{getHealthScoreStatusText(healthScore)}</Text>
               <Text style={styles.helperText}>{getHealthScoreGradeText(healthScore)}</Text>
               <Text style={styles.helperText}>{getHealthScoreConfidenceText(healthScore)}</Text>
-
-              {healthScore?.explanations?.length ? (
-                <Text style={styles.helperText}>{healthScore.explanations[0]}</Text>
-              ) : null}
             </View>
           </>
         ) : null}
@@ -548,10 +544,6 @@ export default function ProductResultScreen() {
               <Text style={styles.value}>{getContentScoreDisplayValue(contentScore)}</Text>
               <Text style={styles.helperText}>{getContentScoreStatusText(contentScore)}</Text>
               <Text style={styles.helperText}>{getContentScoreConfidenceText(contentScore)}</Text>
-
-              {contentScore?.explanations?.length ? (
-                <Text style={styles.helperText}>{contentScore.explanations[0]}</Text>
-              ) : null}
             </View>
 
             <Text style={styles.helperText}>
@@ -1074,6 +1066,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
 
 
 
