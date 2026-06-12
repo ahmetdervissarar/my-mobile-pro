@@ -12,6 +12,7 @@ import { ManualBetaPriceProvider } from './providers/manualBetaPriceProvider.js'
 import { enrichOffers, pickBestOffer } from './enrich/index.js';
 import { calculateSustainabilityScore } from './sustainability/index.js';
 import { calculateRafScore } from './rafScore/index.js';
+import { calculatePriceScore } from './priceScore/index.js';
 
 export interface PriceProviderServiceOptions {
   camgozJoj?: CamgozJojProvider;
@@ -34,9 +35,36 @@ function attachSustainabilityScore(result: PriceResult, query: PriceQuery): void
   });
 }
 
+function attachPriceScore(result: PriceResult): void {
+  const offerPrices =
+    result.offers
+      ?.map((offer) => offer.price)
+      .filter((price) => Number.isFinite(price) && price > 0) ?? [];
+
+  const marketPrices =
+    result.marketPrices
+      ?.map((marketPrice) => marketPrice.price)
+      .filter((price) => Number.isFinite(price) && price > 0) ?? [];
+
+  const comparisonPrices = offerPrices.length > 0 ? offerPrices : marketPrices;
+
+  const lowestPrice =
+    comparisonPrices.length > 0 ? Math.min(...comparisonPrices) : null;
+
+  const highestPrice =
+    comparisonPrices.length > 0 ? Math.max(...comparisonPrices) : null;
+
+  result.priceScore = calculatePriceScore({
+    productPrice: result.bestOffer?.price ?? result.price,
+    lowestPrice,
+    highestPrice,
+    offerCount: comparisonPrices.length,
+  });
+}
+
 function attachRafScore(result: PriceResult): void {
   result.rafScore = calculateRafScore({
-    priceScore: null,
+    priceScore: result.priceScore?.score ?? null,
     healthScore: null,
     contentScore: null,
     sustainabilityScore: result.sustainability?.score ?? null,
@@ -114,6 +142,7 @@ export class PriceProviderService {
             );
           }
 
+          attachPriceScore(result);
           attachSustainabilityScore(result, query);
           attachRafScore(result);
 
@@ -132,6 +161,7 @@ export class PriceProviderService {
     }
 
     const unavailableResult = makeUnavailableResult(query);
+    attachPriceScore(unavailableResult);
     attachSustainabilityScore(unavailableResult, query);
     attachRafScore(unavailableResult);
 
