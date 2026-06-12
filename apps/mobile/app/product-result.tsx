@@ -27,6 +27,12 @@ import {
   getPriceScoreDisplayValue,
   getPriceScoreStatusText,
 } from '../src/price/priceScoreDisplay';
+import {
+  getHealthScoreConfidenceText,
+  getHealthScoreDisplayValue,
+  getHealthScoreGradeText,
+  getHealthScoreStatusText,
+} from '../src/price/healthScoreDisplay';
 
 const priceClient = new PriceClient({
   baseUrl: process.env.EXPO_PUBLIC_PRICE_API_URL ?? 'http://localhost:3001',
@@ -278,6 +284,7 @@ export default function ProductResultScreen() {
   const priceResult = priceResolution?.result ?? null;
   const rafScore = priceResult?.rafScore ?? null;
   const priceScore = priceResult?.priceScore ?? null;
+  const healthScore = priceResult?.healthScore ?? null;
   const sustainability = priceResult?.sustainability ?? null;
   const priceDisclaimer =
     priceResolution?.disclaimer ?? 'Fiyat bilgisi sağlayıcı kaynaklara göre gösterilir.';
@@ -1063,3 +1070,4 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
