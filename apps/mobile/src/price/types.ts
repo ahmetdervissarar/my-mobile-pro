@@ -22,6 +22,26 @@ export type MarketChainCode =
   | 'BIZIM_TOPTAN'
   | 'UNKNOWN';
 
+export type PriceScoreStatus = 'ready' | 'partial' | 'unavailable';
+
+export type PriceScoreConfidence = 'low' | 'medium' | 'high';
+
+export interface PriceScoreResult {
+  score: number | null;
+  status: PriceScoreStatus;
+  confidence: PriceScoreConfidence;
+  label: string;
+  explanations: string[];
+  reference: {
+    productPrice: number | null;
+    referencePrice: number | null;
+    lowestPrice: number | null;
+    highestPrice: number | null;
+    offerCount: number;
+  };
+  disclaimer: string;
+}
+
 export type SustainabilityCategoryKey =
   | 'plant_based'
   | 'staple_food'
@@ -143,6 +163,7 @@ export interface PriceResult {
   marketPrices?: MarketPriceOption[];
   offers?: EnrichedMarketOffer[];
   bestOffer?: EnrichedMarketOffer;
+  priceScore?: PriceScoreResult;
   sustainability?: SustainabilityResult;
   rafScore?: RafScoreResult;
 }
