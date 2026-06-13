@@ -1,10 +1,19 @@
 import type { RafScoreResult } from './types';
 
+function isPriceComponentMissing(rafScore: RafScoreResult): boolean {
+  const priceComponent = rafScore.components.find((component) => component.key === 'price');
+
+  return Boolean(
+    priceComponent &&
+      (!priceComponent.isAvailable || priceComponent.score === null),
+  );
+}
+
 export function getRafScoreDisplayValue(rafScore?: RafScoreResult | null): string {
   if (!rafScore) return 'Hazırlanıyor';
 
   if (rafScore.status !== 'ready' || rafScore.score === null) {
-    return 'Hazırlanıyor';
+    return 'Eksik';
   }
 
   return `${rafScore.score}/100`;
@@ -20,6 +29,10 @@ export function getRafScoreStatusText(rafScore?: RafScoreResult | null): string 
   }
 
   if (rafScore.status === 'partial') {
+    if (isPriceComponentMissing(rafScore)) {
+      return 'Fiyat verisi eksik olduğu için genel RafSkoru geçici olarak eksik hesaplandı.';
+    }
+
     return 'Genel RafSkoru için bazı bileşenler henüz eksik.';
   }
 
@@ -28,6 +41,10 @@ export function getRafScoreStatusText(rafScore?: RafScoreResult | null): string 
 
 export function getRafScoreConfidenceText(rafScore?: RafScoreResult | null): string {
   if (!rafScore) return 'Güven düzeyi: Bekleniyor';
+
+  if (rafScore.status === 'partial' && isPriceComponentMissing(rafScore)) {
+    return 'Sağlık, içerik ve sürdürülebilirlik analizleri yine gösterilebilir.';
+  }
 
   if (rafScore.confidence === 'high') return 'Güven düzeyi: Yüksek';
   if (rafScore.confidence === 'medium') return 'Güven düzeyi: Orta';
