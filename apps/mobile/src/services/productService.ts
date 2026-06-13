@@ -77,15 +77,15 @@ const CANDY_TRAFFIC_LIGHT = createTrafficLightNutrition({
 const MOCK_PRODUCTS: ProductResult[] = [
   {
     id: 'p-001',
-    name: 'YoÄŸurtlu Protein Bar',
+    name: 'Yoğurtlu Protein Bar',
     barcode: '8691004000012',
     searchSource: 'barcode',
     healthScore: 74,
     priceText: '36,90 TL (Demo fiyat verisi)',
     warnings: ['Süt ürünü içerir', 'Yüksek protein içerir'],
-    allergens: ['SÃ¼t'],
+    allergens: ['Süt'],
     additives: [],
-    ingredients: 'SÃ¼t proteini, yoÄŸurt tozu, lif karÄ±ÅŸÄ±mÄ±, tatlandÄ±rÄ±cÄ± (steviol glikozitleri).',
+    ingredients: 'Süt proteini, yoğurt tozu, lif karışımı, tatlandırıcı (steviol glikozitleri).',
     nutriScore: null,
     novaGroup: null,
     trafficLight: SWEET_SNACK_TRAFFIC_LIGHT,
@@ -94,15 +94,15 @@ const MOCK_PRODUCTS: ProductResult[] = [
   },
   {
     id: 'p-002',
-    name: 'Åekersiz FÄ±stÄ±k Ezmesi',
+    name: 'Şekersiz Fıstık Ezmesi',
     barcode: '8691004000029',
     searchSource: 'name',
     healthScore: 81,
     priceText: '89,50 TL (Demo fiyat verisi)',
-    warnings: ['Yer fÄ±stÄ±ÄŸÄ± alerjeni iÃ§erir'],
-    allergens: ['Yer fÄ±stÄ±ÄŸÄ±'],
+    warnings: ['Yer fıstığı alerjeni içerir'],
+    allergens: ['Yer fıstığı'],
     additives: [],
-    ingredients: 'Yer fÄ±stÄ±ÄŸÄ± (%99,5), deniz tuzu.',
+    ingredients: 'Yer fıstığı (%99,5), deniz tuzu.',
     nutriScore: null,
     novaGroup: null,
     trafficLight: LOW_SUGAR_TRAFFIC_LIGHT,
@@ -116,10 +116,10 @@ const MOCK_PRODUCTS: ProductResult[] = [
     searchSource: 'photo',
     healthScore: 68,
     priceText: '62,00 TL (Demo fiyat verisi)',
-    warnings: ['Gluten iÃ§erebilir', 'Ek ÅŸeker iÃ§erir'],
+    warnings: ['Gluten içerebilir', 'Ek şeker içerir'],
     allergens: ['Gluten'],
     additives: [],
-    ingredients: 'Yulaf, bal, kuru meyve, bitkisel yaÄŸ, ÅŸeker.',
+    ingredients: 'Yulaf, bal, kuru meyve, bitkisel yağ, şeker.',
     nutriScore: 'E',
     novaGroup: null,
     trafficLight: GRANOLA_TRAFFIC_LIGHT,
@@ -128,15 +128,15 @@ const MOCK_PRODUCTS: ProductResult[] = [
   },
   {
     id: 'p-004',
-    name: 'Tam BuÄŸdaylÄ± Kraker',
+    name: 'Tam Buğdaylı Kraker',
     barcode: '8691004000043',
     searchSource: 'name',
     healthScore: 58,
     priceText: '44,90 TL (Demo fiyat verisi)',
-    warnings: ['Gluten iÃ§erir'],
+    warnings: ['Gluten içerir'],
     allergens: ['gluten'],
     additives: [],
-    ingredients: 'Tam buÄŸday unu, bitkisel yaÄŸ, tuz, maya.',
+    ingredients: 'Tam buğday unu, bitkisel yağ, tuz, maya.',
     nutriScore: null,
     novaGroup: null,
     trafficLight: CRACKER_TRAFFIC_LIGHT,
@@ -145,15 +145,15 @@ const MOCK_PRODUCTS: ProductResult[] = [
   },
   {
     id: 'p-005',
-    name: 'SÃ¼tlÃ¼ Protein Bar',
+    name: 'Sütlü Protein Bar',
     barcode: '8691004000050',
     searchSource: 'name',
     healthScore: 64,
     priceText: '39,90 TL (Demo fiyat verisi)',
-    warnings: ['SÃ¼t iÃ§erir'],
+    warnings: ['Süt içerir'],
     allergens: ['milk'],
     additives: [],
-    ingredients: 'SÃ¼t proteini, yoÄŸurt tozu, kakao, tatlandÄ±rÄ±cÄ±.',
+    ingredients: 'Süt proteini, yoğurt tozu, kakao, tatlandırıcı.',
     nutriScore: null,
     novaGroup: null,
     trafficLight: MILK_BAR_TRAFFIC_LIGHT,
@@ -162,15 +162,15 @@ const MOCK_PRODUCTS: ProductResult[] = [
   },
   {
     id: 'p-006',
-    name: 'AromalÄ± Ä°Ã§ecek',
+    name: 'Aromalı İçecek',
     barcode: '8691004000067',
     searchSource: 'name',
     healthScore: 42,
     priceText: '24,90 TL (Demo fiyat verisi)',
-    warnings: ['KatkÄ± maddesi iÃ§erir'],
-    allergens: ['Alerjen beyanÄ± yok'],
+    warnings: ['Katkı maddesi içerir'],
+    allergens: ['Alerjen beyanı yok'],
     additives: ['sitrik asit', 'aroma verici'],
-    ingredients: 'Su, ÅŸeker, aroma verici, sitrik asit.',
+    ingredients: 'Su, şeker, aroma verici, sitrik asit.',
     nutriScore: 'D',
     novaGroup: null,
     trafficLight: DRINK_TRAFFIC_LIGHT,
@@ -179,15 +179,15 @@ const MOCK_PRODUCTS: ProductResult[] = [
   },
   {
     id: 'p-007',
-    name: 'HazÄ±r Ã‡orba',
+    name: 'Hazır Çorba',
     barcode: '8691004000074',
     searchSource: 'name',
     healthScore: 38,
     priceText: '19,90 TL (Demo fiyat verisi)',
     warnings: ['Ultra işlenmiş ürün olabilir'],
-    allergens: ['Alerjen beyanÄ± yok'],
+    allergens: ['Alerjen beyanı yok'],
     additives: [],
-    ingredients: 'Modifiye niÅŸasta, aroma verici, tuz, bitkisel yaÄŸ.',
+    ingredients: 'Modifiye nişasta, aroma verici, tuz, bitkisel yağ.',
     nutriScore: 'C',
     novaGroup: 4,
     trafficLight: SOUP_TRAFFIC_LIGHT,
@@ -201,10 +201,10 @@ const MOCK_PRODUCTS: ProductResult[] = [
     searchSource: 'name',
     healthScore: 25,
     priceText: '29,90 TL (Demo fiyat verisi)',
-    warnings: ['YÃ¼ksek ÅŸeker iÃ§erir', 'KatkÄ± maddesi iÃ§erir'],
-    allergens: ['Alerjen beyanÄ± yok'],
+    warnings: ['Yüksek şeker içerir', 'Katkı maddesi içerir'],
+    allergens: ['Alerjen beyanı yok'],
     additives: ['aroma verici', 'renklendirici'],
-    ingredients: 'Glikoz ÅŸurubu, ÅŸeker, jelatin, aroma verici, renklendirici.',
+    ingredients: 'Glikoz şurubu, şeker, jelatin, aroma verici, renklendirici.',
     nutriScore: 'E',
     novaGroup: 4,
     trafficLight: CANDY_TRAFFIC_LIGHT,
@@ -215,12 +215,12 @@ const MOCK_PRODUCTS: ProductResult[] = [
 
 const fallbackProduct: ProductResult = {
   id: 'p-fallback',
-  name: 'TanÄ±nmayan ÃœrÃ¼n',
+  name: 'Tanınmayan Ürün',
   barcode: 'Bilinmiyor',
   searchSource: 'name',
   healthScore: 50,
   priceText: 'Demo ürün - fiyat bilgisi yok',
-  warnings: ['DetaylÄ± analiz iÃ§in gerÃ§ek API entegrasyonu bekleniyor'],
+  warnings: ['Detaylı analiz için gerçek API entegrasyonu bekleniyor'],
   allergens: [],
   additives: [],
   ingredients: null,
@@ -236,9 +236,9 @@ function hasProductApiUrl(): boolean {
 }
 
 export function mapApiResponseToProductResult(apiResponse: unknown): ProductResult {
-  // TODO: API alanlarÄ± kontrol edilecek.
-  // TODO: Eksik alanlar gÃ¼venli varsayÄ±lan deÄŸerlerle doldurulacak.
-  // TODO: price deÄŸeri TL formatÄ±na Ã§evrilecek.
+  // TODO: API alanları kontrol edilecek.
+  // TODO: Eksik alanlar güvenli varsayılan değerlerle doldurulacak.
+  // TODO: price değeri TL formatına çevrilecek.
   // TODO: warnings dizisi/metni ekrana uygun hale getirilecek.
   void apiResponse;
 
@@ -250,31 +250,31 @@ export async function fetchProductFromApi(input: ProductSearchInput): Promise<Pr
     return null;
   }
 
-  // TODO: API URL .env iÃ§inden alÄ±nacak.
-  // TODO: barkod / Ã¼rÃ¼n adÄ± / fotoÄŸraf kaynaÄŸÄ± API'ye gÃ¶nderilecek.
-  // TODO: API cevabÄ± ProductResult formatÄ±na Ã§evrilecek.
+  // TODO: API URL .env içinden alınacak.
+  // TODO: barkod / ürün adı / fotoğraf kaynağı API'ye gönderilecek.
+  // TODO: API cevabı ProductResult formatına çevrilecek.
   void input;
 
   return null;
 }
 
 /**
- * ÃœrÃ¼n adÄ± aramasÄ±nda TÃ¼rkÃ§e karakter ve bÃ¼yÃ¼k/kÃ¼Ã§Ã¼k harf farkÄ±nÄ± gidermek iÃ§in
- * kullanÄ±lan normalleÅŸtirici.
+ * Ürün adı aramasında Türkçe karakter ve büyük/küçük harf farkını gidermek için
+ * kullanılan normalleştirici.
  *
- * AdÄ±mlar:
- * 1. trim â€” baÅŸtaki/sondaki boÅŸluklarÄ± at.
- * 2. Ä± â†’ i â€” dotless-Ä± NFD ile ayrÄ±ÅŸmaz; aÃ§Ä±kÃ§a deÄŸiÅŸtirilir.
- * 3. NFD normalize â€” ÅŸ, Ã§, ÄŸ, Ã¼, Ã¶, Ä° gibi karakterleri temel harf + iÅŸaret Ã§iftine bÃ¶ler.
- * 4. BirleÅŸtirici iÅŸaretleri (U+0300â€“U+036F) kaldÄ±r â€” temel Latin harfleri kalÄ±r.
- * 5. toLowerCase â€” bÃ¼yÃ¼k/kÃ¼Ã§Ã¼k harf farkÄ±nÄ± kapat.
+ * Adımlar:
+ * 1. trim — baştaki/sondaki boşlukları at.
+ * 2. ı → i — dotless-ı NFD ile ayrışmaz; açıkça değiştirilir.
+ * 3. NFD normalize — ş, ç, ğ, ü, ö, İ gibi karakterleri temel harf + işaret çiftine böler.
+ * 4. Birleştirici işaretleri (U+0300–U+036F) kaldır — temel Latin harfleri kalır.
+ * 5. toLowerCase — büyük/küçük harf farkını kapat.
  *
- * Ã–rnek: "AromalÄ± Ä°Ã§ecek" â†’ "aromali iceecek" â†’ doÄŸru: "aromali icecek"
+ * Örnek: "Aromalı İçecek" → "aromali icecek" → doğru: "aromali icecek"
  */
 function normalizeSearchText(text: string): string {
   return text
     .trim()
-    .replace(/Ä±/g, 'i')
+    .replace(/ı/g, 'i')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
@@ -300,7 +300,7 @@ export function getMockProductResult(input: ProductSearchInput): ProductResult {
       };
     }
 
-    // Barkod eÅŸleÅŸmesi yok â€” yanlÄ±ÅŸ mock dÃ¶ndÃ¼rmek yerine aÃ§Ä±k not_found dÃ¶n
+    // Barkod eşleşmesi yok — yanlış mock döndürmek yerine açık not_found dön
     return {
       ...fallbackProduct,
       id: `p-unknown-barcode-${barcode}`,
@@ -335,7 +335,7 @@ export function getMockProductResult(input: ProductSearchInput): ProductResult {
   return fallbackProduct;
 }
 
-// â”€â”€â”€ Open Food Facts YardÄ±mcÄ±larÄ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Open Food Facts Yardimcilari ---
 
 type NutritionValues = {
   fat: number | null;
@@ -345,8 +345,8 @@ type NutritionValues = {
 };
 
 /**
- * nutritionValues iÃ§indeki tÃ¼m alanlar null ise gerÃ§ek besin verisi yok
- * demektir; bu durumda UNKNOWN_TRAFFIC_LIGHT kullanÄ±lÄ±r.
+ * nutritionValues içindeki tüm alanlar null ise gerçek besin verisi yok
+ * demektir; bu durumda UNKNOWN_TRAFFIC_LIGHT kullanılır.
  */
 function resolveTrafficLight(nutritionValues: NutritionValues) {
   const hasAnyValue =
@@ -368,11 +368,11 @@ function resolveTrafficLight(nutritionValues: NutritionValues) {
 }
 
 /**
- * Open Food Facts'ten dÃ¶nen kayÄ±tta gÄ±da analizi yapmaya yetecek en az bir
- * anlamlÄ± alan var mÄ± kontrol eder.
+ * Open Food Facts'ten dönen kayıtta gıda analizi yapmaya yetecek en az bir
+ * anlamlı alan var mı kontrol eder.
  *
- * HiÃ§bir alan dolmamÄ±ÅŸsa Ã¼rÃ¼n gÄ±da dÄ±ÅŸÄ± bir barkod (Ä±slak mendil, temizlik
- * Ã¼rÃ¼nÃ¼ vb.) olabilir; bu durumda analiz yapÄ±lmamalÄ±dÄ±r.
+ * Hiçbir alan dolmamışsa ürün gıda dışı bir barkod (ıslak mendil, temizlik
+ * ürünü vb.) olabilir; bu durumda analiz yapılmamalıdır.
  */
 function hasMeaningfulFoodData(
   productName: string | null,
@@ -383,8 +383,8 @@ function hasMeaningfulFoodData(
   novaGroup: number | null,
   nutritionValues: NutritionValues,
 ): boolean {
-  // productName tek baÅŸÄ±na yeterli sayÄ±lmaz: gÄ±da dÄ±ÅŸÄ± bir Ã¼rÃ¼n de
-  // isimle dÃ¶nebilir. Analiz iÃ§in besin/iÃ§erik verisinin bulunmasÄ± gerekir.
+  // productName tek başına yeterli sayılmaz: gıda dışı bir ürün de
+  // isimle dönebilir. Analiz için besin/içerik verisinin bulunması gerekir.
   void productName;
 
   return (
@@ -426,7 +426,7 @@ function mapOpenFoodFactsToProductResult(
   if (!isAnalysisReady) {
     return {
       id: `off-${barcode}`,
-      name: productName?.trim() || 'TanÄ±nmayan ÃœrÃ¼n',
+      name: productName?.trim() || 'Tanınmayan Ürün',
       barcode,
       imageUrl,
       searchSource: 'barcode',
@@ -441,7 +441,7 @@ function mapOpenFoodFactsToProductResult(
       trafficLight: UNKNOWN_TRAFFIC_LIGHT,
       analysisStatus: 'insufficient_food_data',
       analysisMessage:
-        'Bu barkod iÃ§in gÄ±da analizi yapmaya yetecek besin veya iÃ§erik verisi bulunamadÄ±.',
+        'Bu barkod için gıda analizi yapmaya yetecek besin veya içerik verisi bulunamadı.',
     };
   }
 
@@ -449,13 +449,13 @@ function mapOpenFoodFactsToProductResult(
 
   return {
     id: `off-${barcode}`,
-    name: productName?.trim() || 'TanÄ±nmayan ÃœrÃ¼n',
+    name: productName?.trim() || 'Tanınmayan Ürün',
     barcode,
       imageUrl,
     searchSource: 'barcode',
     healthScore,
     priceText: 'Demo ürün - fiyat bilgisi yok',
-    warnings: ['ÃœrÃ¼n bilgisi Open Food Facts kaynaÄŸÄ±ndan alÄ±nmÄ±ÅŸtÄ±r. Eksik veya hatalÄ± olabilir.'],
+    warnings: ['Ürün bilgisi Open Food Facts kaynağından alınmıştır. Eksik veya hatalı olabilir.'],
     allergens,
     additives,
     ingredients,
@@ -488,7 +488,7 @@ export async function getProductResult(input: ProductSearchInput): Promise<Produ
         );
       }
 
-      // OFF'tan kayÄ±t dÃ¶nmedi â€” not_found
+      // OFF'tan kayıt dönmedi — not_found
       return {
         ...fallbackProduct,
         id: `p-unknown-barcode-${barcode}`,
@@ -502,13 +502,13 @@ export async function getProductResult(input: ProductSearchInput): Promise<Produ
     }
 
     if (hasProductApiUrl()) {
-      // TODO: API URL hazÄ±r. GerÃ§ek Ã§aÄŸrÄ± burada eklenecek.
-      // Not: Barkod dÄ±ÅŸÄ± kaynaklarda ÅŸimdilik mock sonuÃ§ dÃ¶nmeye devam ediyoruz.
+      // TODO: API URL hazır. Gerçek çağrı burada eklenecek.
+      // Not: Barkod dışı kaynaklarda şimdilik mock sonuç dönmeye devam ediyoruz.
     }
 
     return getMockProductResult(input);
   } catch (error) {
-    // Gelecekte gerÃ§ek API Ã§aÄŸrÄ±sÄ± hata verirse uygulamanÄ±n Ã§Ã¶kmesini Ã¶nlemek iÃ§in gÃ¼venli fallback.
+    // Gelecekte gerçek API çağrısı hata verirse uygulamanın çökmesini önlemek için güvenli fallback.
     return getMockProductResult(input);
   }
 }
