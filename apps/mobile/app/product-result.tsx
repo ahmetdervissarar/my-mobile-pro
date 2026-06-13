@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { getMockProductResult, getProductResult } from '../src/services/productService';
+import { getFallbackProductSummary, getMockProductResult } from '../src/services/productService';
 import { getUserLocationForPricing } from '../src/services/locationService';
 import { fetchMarketPrices } from '../src/services/marketPriceService';
 import { evaluateProductRisks } from '../src/riskEngine/riskEngine';
@@ -253,7 +253,7 @@ export default function ProductResultScreen() {
     let isMounted = true;
 
     if (searchType !== 'barcode') {
-      void getProductResult(normalizedInput).then((nextResult) => {
+      void getFallbackProductSummary(normalizedInput).then((nextResult) => {
         if (isMounted) {
           setResult(nextResult);
         }

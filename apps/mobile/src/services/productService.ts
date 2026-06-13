@@ -369,4 +369,3 @@ export async function getFallbackProductSummary(
   }
 }
 
-export const getProductResult = getFallbackProductSummary;
