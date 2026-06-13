@@ -82,7 +82,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     searchSource: 'barcode',
     healthScore: 74,
     priceText: '36,90 TL (Demo fiyat verisi)',
-    warnings: ['SÃ¼t Ã¼rÃ¼nÃ¼ iÃ§erir', 'YÃ¼ksek protein iÃ§erir'],
+    warnings: ['Süt ürünü içerir', 'Yüksek protein içerir'],
     allergens: ['SÃ¼t'],
     additives: [],
     ingredients: 'SÃ¼t proteini, yoÄŸurt tozu, lif karÄ±ÅŸÄ±mÄ±, tatlandÄ±rÄ±cÄ± (steviol glikozitleri).',
@@ -111,7 +111,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
   },
   {
     id: 'p-003',
-    name: 'Tam TahÄ±llÄ± Granola',
+    name: 'Tam Tahıllı Granola',
     barcode: '8691004000036',
     searchSource: 'photo',
     healthScore: 68,
@@ -184,7 +184,7 @@ const MOCK_PRODUCTS: ProductResult[] = [
     searchSource: 'name',
     healthScore: 38,
     priceText: '19,90 TL (Demo fiyat verisi)',
-    warnings: ['Ultra iÅŸlenmiÅŸ Ã¼rÃ¼n olabilir'],
+    warnings: ['Ultra işlenmiş ürün olabilir'],
     allergens: ['Alerjen beyanÄ± yok'],
     additives: [],
     ingredients: 'Modifiye niÅŸasta, aroma verici, tuz, bitkisel yaÄŸ.',
@@ -219,7 +219,7 @@ const fallbackProduct: ProductResult = {
   barcode: 'Bilinmiyor',
   searchSource: 'name',
   healthScore: 50,
-  priceText: 'Demo Ã¼rÃ¼n - fiyat bilgisi yok',
+  priceText: 'Demo ürün - fiyat bilgisi yok',
   warnings: ['DetaylÄ± analiz iÃ§in gerÃ§ek API entegrasyonu bekleniyor'],
   allergens: [],
   additives: [],
@@ -228,7 +228,7 @@ const fallbackProduct: ProductResult = {
   novaGroup: null,
   trafficLight: UNKNOWN_TRAFFIC_LIGHT,
   analysisStatus: 'not_found',
-  analysisMessage: 'Bu Ã¼rÃ¼n iÃ§in gÃ¼venilir barkod verisi bulunamadÄ±.',
+  analysisMessage: 'Bu ürün için güvenilir barkod verisi bulunamadı.',
 };
 
 function hasProductApiUrl(): boolean {
@@ -304,11 +304,11 @@ export function getMockProductResult(input: ProductSearchInput): ProductResult {
     return {
       ...fallbackProduct,
       id: `p-unknown-barcode-${barcode}`,
-      name: 'Barkodlu Ã¼rÃ¼n bulunamadÄ±',
+      name: 'Barkodlu ürün bulunamadı',
       barcode,
       searchSource: 'barcode',
       analysisStatus: 'not_found',
-      analysisMessage: 'Bu barkod iÃ§in Ã¼rÃ¼n bilgisi bulunamadÄ±. ÃœrÃ¼n etiketi kontrol edilmelidir.',
+      analysisMessage: 'Bu barkod için ürün bilgisi bulunamadı. Ürün etiketi kontrol edilmelidir.',
       trafficLight: UNKNOWN_TRAFFIC_LIGHT,
       healthScore: 50,
       nutriScore: null,
@@ -431,7 +431,7 @@ function mapOpenFoodFactsToProductResult(
       imageUrl,
       searchSource: 'barcode',
       healthScore: 50,
-      priceText: 'Demo Ã¼rÃ¼n - fiyat bilgisi yok',
+      priceText: 'Demo ürün - fiyat bilgisi yok',
       warnings: [],
       allergens: [],
       additives: [],
@@ -454,7 +454,7 @@ function mapOpenFoodFactsToProductResult(
       imageUrl,
     searchSource: 'barcode',
     healthScore,
-    priceText: 'Demo Ã¼rÃ¼n - fiyat bilgisi yok',
+    priceText: 'Demo ürün - fiyat bilgisi yok',
     warnings: ['ÃœrÃ¼n bilgisi Open Food Facts kaynaÄŸÄ±ndan alÄ±nmÄ±ÅŸtÄ±r. Eksik veya hatalÄ± olabilir.'],
     allergens,
     additives,
@@ -492,12 +492,12 @@ export async function getProductResult(input: ProductSearchInput): Promise<Produ
       return {
         ...fallbackProduct,
         id: `p-unknown-barcode-${barcode}`,
-        name: 'Barkodlu Ã¼rÃ¼n bulunamadÄ±',
+        name: 'Barkodlu ürün bulunamadı',
         barcode,
         searchSource: 'barcode',
         analysisStatus: 'not_found',
         analysisMessage:
-          'Bu barkod iÃ§in Ã¼rÃ¼n bilgisi bulunamadÄ±. ÃœrÃ¼n etiketi kontrol edilmelidir.',
+          'Bu barkod için ürün bilgisi bulunamadı. Ürün etiketi kontrol edilmelidir.',
       };
     }
 
@@ -512,3 +512,4 @@ export async function getProductResult(input: ProductSearchInput): Promise<Produ
     return getMockProductResult(input);
   }
 }
+
