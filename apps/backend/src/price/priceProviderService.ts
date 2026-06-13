@@ -283,6 +283,27 @@ function attachContentScore(
   );
 }
 
+function attachProductFactsMetadata(
+  result: PriceResult,
+  productFacts?: ProductFacts | null,
+): void {
+  if (!productFacts) {
+    return;
+  }
+
+  if (!result.productName.trim() && productFacts.productName) {
+    result.productName = productFacts.productName;
+  }
+
+  if (!result.imageUrl && productFacts.imageUrl) {
+    result.imageUrl = productFacts.imageUrl;
+  }
+
+  if (!result.barcode && productFacts.barcode) {
+    result.barcode = productFacts.barcode;
+  }
+}
+
 function attachPriceScore(result: PriceResult): void {
   const offerPrices =
     result.offers
@@ -390,6 +411,7 @@ export class PriceProviderService {
             );
           }
 
+          attachProductFactsMetadata(result, productFacts);
           attachPriceScore(result);
           attachHealthScore(result, query, productFacts);
           attachContentScore(result, query, productFacts);
@@ -411,6 +433,7 @@ export class PriceProviderService {
     }
 
     const unavailableResult = makeUnavailableResult(query);
+    attachProductFactsMetadata(unavailableResult, productFacts);
     attachPriceScore(unavailableResult);
     attachHealthScore(unavailableResult, query, productFacts);
     attachContentScore(unavailableResult, query, productFacts);
