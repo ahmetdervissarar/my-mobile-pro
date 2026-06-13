@@ -102,11 +102,11 @@ export default function ProductResultScreen() {
   }, [barcode, productName, searchType]);
 
   const [result, setResult] = useState(() => getMockProductResult(normalizedInput));
-  const [isBasicInfoOpen, setIsBasicInfoOpen] = useState(true);
-  const [isHealthOpen, setIsHealthOpen] = useState(false);
-  const [isContentOpen, setIsContentOpen] = useState(false);
-  const [isPriceOpen, setIsPriceOpen] = useState(false);
-  const [isSustainabilityOpen, setIsSustainabilityOpen] = useState(false);
+  const [isBasicInfoOpen, setIsBasicInfoOpen] = useState(false);
+  const [isHealthOpen, setIsHealthOpen] = useState(true);
+  const [isContentOpen, setIsContentOpen] = useState(true);
+  const [isPriceOpen, setIsPriceOpen] = useState(true);
+  const [isSustainabilityOpen, setIsSustainabilityOpen] = useState(true);
   const [isPriceDetailsOpen, setIsPriceDetailsOpen] = useState(false);
   const [isSustainabilityDetailsOpen, setIsSustainabilityDetailsOpen] = useState(false);
   const [isHealthDetailsOpen, setIsHealthDetailsOpen] = useState(false);
@@ -171,11 +171,11 @@ export default function ProductResultScreen() {
 
   useEffect(() => {
     setResult(getMockProductResult(normalizedInput));
-    setIsBasicInfoOpen(true);
-    setIsHealthOpen(false);
-    setIsContentOpen(false);
-    setIsPriceOpen(false);
-    setIsSustainabilityOpen(false);
+    setIsBasicInfoOpen(false);
+    setIsHealthOpen(true);
+    setIsContentOpen(true);
+    setIsPriceOpen(true);
+    setIsSustainabilityOpen(true);
     setIsPriceDetailsOpen(false);
     setIsSustainabilityDetailsOpen(false);
     setIsHealthDetailsOpen(false);
@@ -1083,6 +1083,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
 
 
 
