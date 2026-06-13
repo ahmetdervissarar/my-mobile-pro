@@ -389,6 +389,9 @@ export default function ProductResultScreen() {
   const displayAllergens = backendProductFacts?.allergens ?? result.allergens;
   const displayAdditives = backendProductFacts?.additives ?? result.additives;
   const displayIngredients = backendProductFacts?.ingredientsText ?? result.ingredients;
+  const productFactsSourceText = backendProductFacts
+    ? `Ürün analiz verisi: ${backendProductFacts.dataSource === 'off' ? 'Open Food Facts' : 'Beta çıkarım'}${backendProductFacts.isComplete ? '' : ' (kısmi veri)'}`
+    : null;
 
   return (
     <ScrollView
@@ -705,6 +708,10 @@ export default function ProductResultScreen() {
             {isContentDetailsOpen ? (
               <>
                 <Text style={styles.helperText}>{getContentScoreConfidenceText(contentScore)}</Text>
+
+                {productFactsSourceText ? (
+                  <Text style={styles.helperText}>{productFactsSourceText}</Text>
+                ) : null}
 
                 <Text style={styles.helperText}>
                   Alerjen ve katkı bilgileri ürün etiketine göre değişebilir. Son karar için ambalaj üzerindeki bilgileri kontrol edin.
