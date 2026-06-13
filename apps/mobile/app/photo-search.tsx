@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Button, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -27,11 +27,21 @@ export default function PhotoSearchScreen() {
 
     try {
       setIsTakingPhoto(true);
-      await cameraRef.current.takePictureAsync({ quality: 0.8 });
+
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
+
+      if (!photo?.uri) {
+        throw new Error('PHOTO_URI_MISSING');
+      }
+
       setIsPhotoTaken(true);
+
       router.push({
         pathname: '/product-result',
-        params: { searchType: 'photo' },
+        params: {
+          searchType: 'photo',
+          photoUri: photo.uri,
+        },
       });
     } catch {
       Alert.alert('Hata', 'Fotoğraf çekilirken bir sorun oluştu.');
@@ -63,10 +73,18 @@ export default function PhotoSearchScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Fotoğrafla Ara</Text>
       <CameraView ref={cameraRef} style={styles.camera} facing="back" />
+
       <View style={styles.buttonContainer}>
-        <Button title={isTakingPhoto ? 'Çekiliyor...' : 'Fotoğraf çek'} onPress={handleTakePhoto} disabled={isTakingPhoto} />
+        <Button
+          title={isTakingPhoto ? 'Çekiliyor...' : 'Fotoğraf çek'}
+          onPress={handleTakePhoto}
+          disabled={isTakingPhoto}
+        />
       </View>
-      {isPhotoTaken ? <Text style={styles.infoText}>Fotoğraf başarıyla çekildi.</Text> : null}
+
+      {isPhotoTaken ? (
+        <Text style={styles.infoText}>Fotoğraf başarıyla çekildi.</Text>
+      ) : null}
     </View>
   );
 }
