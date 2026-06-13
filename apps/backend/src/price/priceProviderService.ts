@@ -347,7 +347,7 @@ export class PriceProviderService {
 
   async resolve(query: PriceQuery): Promise<PriceResolveResponse> {
     const triedProviders: string[] = [];
-
+    const productFacts = await tryFetchProductFacts(query);
     for (const provider of this.chain) {
       if (!provider.isEnabled()) continue;
 
@@ -391,8 +391,8 @@ export class PriceProviderService {
           }
 
           attachPriceScore(result);
-          attachHealthScore(result, query);
-          attachContentScore(result, query);
+          attachHealthScore(result, query, productFacts);
+          attachContentScore(result, query, productFacts);
           attachSustainabilityScore(result, query);
           attachRafScore(result);
 
@@ -412,8 +412,8 @@ export class PriceProviderService {
 
     const unavailableResult = makeUnavailableResult(query);
     attachPriceScore(unavailableResult);
-    attachHealthScore(unavailableResult, query);
-    attachContentScore(unavailableResult, query);
+    attachHealthScore(unavailableResult, query, productFacts);
+    attachContentScore(unavailableResult, query, productFacts);
     attachSustainabilityScore(unavailableResult, query);
     attachRafScore(unavailableResult);
 
