@@ -501,11 +501,13 @@ export default function ProductResultScreen() {
             {sustainability ? (
               <>
                 <View style={styles.sustainabilitySummaryCard}>
+                  <Text style={styles.sustainabilitySummaryLabel}>Sürdürülebilirlik Skoru</Text>
+
                   <View style={styles.sustainabilityHeaderRow}>
                     <Text style={styles.sustainabilityGrade}>{sustainability.grade}</Text>
 
                     <View style={styles.sustainabilityInfo}>
-                      <Text style={styles.value}>{sustainability.score}/100</Text>
+                      <Text style={styles.scoreSummaryValue}>{sustainability.score}/100</Text>
                       <Text style={styles.helperText}>{sustainability.label}</Text>
                     </View>
                   </View>
@@ -897,6 +899,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BBF7D0',
   },
+  sustainabilitySummaryLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#15803D',
+    letterSpacing: 0.5,
+  },
   sustainabilityHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1116,6 +1124,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
 
 
 
