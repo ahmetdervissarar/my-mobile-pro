@@ -29,6 +29,36 @@ export interface OpenFoodFactsFetcherOptions {
 }
 
 const DEFAULT_TIMEOUT_MS = 5000;
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+interface CachedProductFacts {
+  facts: ProductFacts;
+  expiresAt: number;
+}
+
+const productFactsCache = new Map<string, CachedProductFacts>();
+
+function getCachedProductFacts(barcode: string): ProductFacts | null {
+  const cached = productFactsCache.get(barcode);
+
+  if (!cached) {
+    return null;
+  }
+
+  if (cached.expiresAt <= Date.now()) {
+    productFactsCache.delete(barcode);
+    return null;
+  }
+
+  return cached.facts;
+}
+
+function setCachedProductFacts(barcode: string, facts: ProductFacts): void {
+  productFactsCache.set(barcode, {
+    facts,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  });
+}
 
 function parseNutrientNumber(value: unknown): number | null {
   if (typeof value === 'number') {
@@ -109,6 +139,12 @@ export async function fetchOpenFoodFactsProductFactsByBarcode(
     return null;
   }
 
+  const cachedFacts = getCachedProductFacts(trimmedBarcode);
+
+  if (cachedFacts) {
+    return cachedFacts;
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),
@@ -129,8 +165,13 @@ export async function fetchOpenFoodFactsProductFactsByBarcode(
 
     const data = (await response.json()) as OpenFoodFactsApiResponse;
     const info = mapApiResponseToInfoLike(trimmedBarcode, data);
+    const facts = info ? openFoodFactsInfoToProductFacts(info) : null;
 
-    return info ? openFoodFactsInfoToProductFacts(info) : null;
+    if (facts) {
+      setCachedProductFacts(trimmedBarcode, facts);
+    }
+
+    return facts;
   } catch {
     return null;
   } finally {
