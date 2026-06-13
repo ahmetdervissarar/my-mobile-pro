@@ -252,10 +252,27 @@ function inferBetaContentInput(productName?: string): ContentScoreInput {
   return {};
 }
 
-function attachSustainabilityScore(result: PriceResult, query: PriceQuery): void {
+function getSustainabilityProcessingFromProductFacts(
+  productFacts?: ProductFacts | null,
+): 'nova_1' | 'nova_2' | 'nova_3' | 'nova_4' | undefined {
+  if (productFacts?.novaGroup === 1) return 'nova_1';
+  if (productFacts?.novaGroup === 2) return 'nova_2';
+  if (productFacts?.novaGroup === 3) return 'nova_3';
+  if (productFacts?.novaGroup === 4) return 'nova_4';
+
+  return undefined;
+}
+
+function attachSustainabilityScore(
+  result: PriceResult,
+  query: PriceQuery,
+  productFacts?: ProductFacts | null,
+): void {
   result.sustainability = calculateSustainabilityScore({
-    productName: result.productName || query.productName,
-    categoryText: result.productName || query.productName,
+    productName: result.productName || productFacts?.productName || query.productName,
+    categoryText: result.productName || productFacts?.productName || query.productName,
+    ingredientsText: productFacts?.ingredientsText ?? undefined,
+    processing: getSustainabilityProcessingFromProductFacts(productFacts),
   });
 }
 
@@ -417,7 +434,7 @@ export class PriceProviderService {
           attachPriceScore(result);
           attachHealthScore(result, query, productFacts);
           attachContentScore(result, query, productFacts);
-          attachSustainabilityScore(result, query);
+          attachSustainabilityScore(result, query, productFacts);
           attachRafScore(result);
 
           return {
@@ -439,7 +456,7 @@ export class PriceProviderService {
     attachPriceScore(unavailableResult);
     attachHealthScore(unavailableResult, query, productFacts);
     attachContentScore(unavailableResult, query, productFacts);
-    attachSustainabilityScore(unavailableResult, query);
+    attachSustainabilityScore(unavailableResult, query, productFacts);
     attachRafScore(unavailableResult);
 
     return {
