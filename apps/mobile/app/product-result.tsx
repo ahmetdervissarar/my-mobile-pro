@@ -378,9 +378,11 @@ export default function ProductResultScreen() {
               <Text style={styles.helperText}>Fiyat sorgulanıyor...</Text>
             ) : priceResult && priceResult.price !== null ? (
               <>
-                <Text style={styles.label}>Fiyat skoru</Text>
-                <Text style={styles.value}>{getPriceScoreDisplayValue(priceScore)}</Text>
-                <Text style={styles.helperText}>{getPriceScoreStatusText(priceScore)}</Text>
+                <View style={styles.scoreSummaryCard}>
+                  <Text style={styles.scoreSummaryLabel}>Fiyat Skoru</Text>
+                  <Text style={styles.scoreSummaryValue}>{getPriceScoreDisplayValue(priceScore)}</Text>
+                  <Text style={styles.helperText}>{getPriceScoreStatusText(priceScore)}</Text>
+                </View>
 
                 {bestOffer ? (
                   <>
@@ -985,6 +987,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
   },
+  scoreSummaryCard: {
+    gap: 6,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    backgroundColor: '#EFF6FF',
+  },
+  scoreSummaryLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1D4ED8',
+    letterSpacing: 0.5,
+  },
+  scoreSummaryValue: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#111827',
+  },
   bestOfferCard: {
     gap: 6,
     padding: 12,
@@ -1091,6 +1112,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
 
 
 
