@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getFallbackProductSummary, getMockProductResult } from '../src/services/productService';
+import type { ProductSearchInput } from '../src/services/productService';
 import { getUserLocationForPricing } from '../src/services/locationService';
 import { fetchMarketPrices } from '../src/services/marketPriceService';
 import { evaluateProductRisks } from '../src/riskEngine/riskEngine';
@@ -13,7 +14,7 @@ import { emptyUserSensitivityProfile } from '../src/userProfile/userProfileTypes
 import type { UserSensitivityProfile } from '../src/userProfile/userProfileTypes';
 import { PriceClient, formatPriceForDisplay, priceStatusLabel } from '../src/price/priceClient';
 import type { EnrichedMarketOffer, PriceResolveResponse, ProductFacts } from '../src/price/types';
-import type { TrafficLightNutrition } from '../src/types/product';
+import type { ProductResult, TrafficLightNutrition } from '../src/types/product';
 import {
   getRafScoreConfidenceText,
   getRafScoreDisplayValue,
@@ -107,6 +108,37 @@ function productFactsToRiskTrafficLight(
   };
 }
 
+function createBarcodePendingResult(barcode: string | undefined): ProductResult {
+  return {
+    id: barcode ? `barcode-pending-${barcode}` : 'barcode-pending',
+    name: '',
+    barcode: barcode ?? '',
+    searchSource: 'barcode',
+    healthScore: 0,
+    priceText: '',
+    imageUrl: null,
+    warnings: [],
+    allergens: [],
+    additives: [],
+    ingredients: null,
+    nutriScore: null,
+    novaGroup: null,
+    trafficLight: null,
+    analysisStatus: 'ready',
+    analysisMessage: null,
+  };
+}
+
+function getInitialResult(input: ProductSearchInput): ProductResult {
+  const barcode = input.barcode?.trim();
+
+  if (barcode) {
+    return createBarcodePendingResult(barcode);
+  }
+
+  return getMockProductResult(input);
+}
+
 export default function ProductResultScreen() {
   const { barcode, productName, searchType, photoUri } = useLocalSearchParams<{
     barcode?: string;
@@ -142,7 +174,7 @@ export default function ProductResultScreen() {
     };
   }, [barcode, productName, searchType]);
 
-  const [result, setResult] = useState(() => getMockProductResult(normalizedInput));
+  const [result, setResult] = useState(() => getInitialResult(normalizedInput));
   const [isBasicInfoOpen, setIsBasicInfoOpen] = useState(false);
   const [isHealthOpen, setIsHealthOpen] = useState(true);
   const [isContentOpen, setIsContentOpen] = useState(true);
@@ -234,7 +266,7 @@ export default function ProductResultScreen() {
   }, [backendProductFacts, hasBackendFoodAnalysis, priceResolution?.result.productName, result, userProfile]);
 
   useEffect(() => {
-    setResult(getMockProductResult(normalizedInput));
+    setResult(getInitialResult(normalizedInput));
     setIsBasicInfoOpen(false);
     setIsHealthOpen(true);
     setIsContentOpen(true);
