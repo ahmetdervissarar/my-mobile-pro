@@ -252,11 +252,13 @@ export default function ProductResultScreen() {
 
     let isMounted = true;
 
-    void getProductResult(normalizedInput).then((nextResult) => {
-      if (isMounted) {
-        setResult(nextResult);
-      }
-    });
+    if (searchType !== 'barcode') {
+      void getProductResult(normalizedInput).then((nextResult) => {
+        if (isMounted) {
+          setResult(nextResult);
+        }
+      });
+    }
 
     return () => {
       isMounted = false;
