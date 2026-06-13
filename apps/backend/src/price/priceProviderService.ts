@@ -20,6 +20,8 @@ import {
 } from './contentScore/index.js';
 import {
   fetchOpenFoodFactsProductFactsByBarcode,
+  productFactsToContentScoreInput,
+  productFactsToHealthScoreInput,
   type ProductFacts,
 } from './productFacts/index.js';
 
@@ -257,15 +259,27 @@ function attachSustainabilityScore(result: PriceResult, query: PriceQuery): void
   });
 }
 
-function attachHealthScore(result: PriceResult, query: PriceQuery): void {
+function attachHealthScore(
+  result: PriceResult,
+  query: PriceQuery,
+  productFacts?: ProductFacts | null,
+): void {
   result.healthScore = calculateHealthScore(
-    inferBetaHealthInput(result.productName || query.productName),
+    productFacts
+      ? productFactsToHealthScoreInput(productFacts)
+      : inferBetaHealthInput(result.productName || query.productName),
   );
 }
 
-function attachContentScore(result: PriceResult, query: PriceQuery): void {
+function attachContentScore(
+  result: PriceResult,
+  query: PriceQuery,
+  productFacts?: ProductFacts | null,
+): void {
   result.contentScore = calculateContentScore(
-    inferBetaContentInput(result.productName || query.productName),
+    productFacts
+      ? productFactsToContentScoreInput(productFacts)
+      : inferBetaContentInput(result.productName || query.productName),
   );
 }
 
