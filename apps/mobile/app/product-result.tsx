@@ -348,6 +348,9 @@ export default function ProductResultScreen() {
           <Text style={styles.rafScoreValue}>{getRafScoreDisplayValue(rafScore)}</Text>
           <Text style={styles.rafScoreCaption}>{getRafScoreStatusText(rafScore)}</Text>
           <Text style={styles.rafScoreCaption}>{getRafScoreConfidenceText(rafScore)}</Text>
+          <Text style={styles.rafScoreWeightsText}>
+            Fiyat %35 · Sağlık %30 · İçerik %20 · Sürdürülebilirlik %15
+          </Text>
         </View>
 
         {criticalProfileWarnings.length > 0 ? (
@@ -892,6 +895,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#047857',
   },
+  rafScoreWeightsText: {
+    marginTop: 4,
+    fontSize: 11,
+    color: '#065F46',
+    fontWeight: '600',
+  },
   sustainabilitySummaryCard: {
     borderRadius: 14,
     padding: 14,
@@ -1124,6 +1133,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
 
 
 
