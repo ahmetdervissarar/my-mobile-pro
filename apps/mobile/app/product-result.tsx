@@ -300,7 +300,7 @@ export default function ProductResultScreen() {
   const displayProductName = priceResolution?.result.productName?.trim() || result.name;
   const displayBarcode = priceResolution?.result.barcode?.trim() || result.barcode;
   const capturedPhotoUri = searchType === 'photo' ? photoUri?.trim() : undefined;
-  const displayImageUrl = result.imageUrl ?? priceResolution?.result.imageUrl ?? capturedPhotoUri ?? null;
+  const displayImageUrl = priceResolution?.result.imageUrl ?? result.imageUrl ?? capturedPhotoUri ?? null;
 
   const priceResult = priceResolution?.result ?? null;
   const rafScore = priceResult?.rafScore ?? null;
