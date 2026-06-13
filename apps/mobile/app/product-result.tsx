@@ -345,13 +345,6 @@ export default function ProductResultScreen() {
           </View>
         </View>
 
-        <View style={styles.rafScoreCard}>
-          <Text style={styles.rafScoreLabel}>RAF SKORU</Text>
-          <Text style={styles.rafScoreValue}>{getRafScoreDisplayValue(rafScore)}</Text>
-          <Text style={styles.rafScoreCaption}>{getRafScoreStatusText(rafScore)}</Text>
-          <Text style={styles.rafScoreCaption}>{getRafScoreConfidenceText(rafScore)}</Text>
-        </View>
-
         {criticalProfileWarnings.length > 0 ? (
           <View style={styles.criticalAlertCard}>
             <Text style={styles.criticalAlertHeader}>
@@ -365,6 +358,13 @@ export default function ProductResultScreen() {
             ))}
           </View>
         ) : null}
+
+        <View style={styles.rafScoreCard}>
+          <Text style={styles.rafScoreLabel}>RAF SKORU</Text>
+          <Text style={styles.rafScoreValue}>{getRafScoreDisplayValue(rafScore)}</Text>
+          <Text style={styles.rafScoreCaption}>{getRafScoreStatusText(rafScore)}</Text>
+          <Text style={styles.rafScoreCaption}>{getRafScoreConfidenceText(rafScore)}</Text>
+        </View>
 
         <Pressable
           style={styles.sectionHeader}
