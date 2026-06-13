@@ -565,9 +565,11 @@ export default function ProductResultScreen() {
 
         {isHealthOpen ? (
           <View style={styles.row}>
-            <Text style={styles.label}>Sağlık skoru</Text>
-            <Text style={styles.value}>{getHealthScoreDisplayValue(healthScore)}</Text>
-            <Text style={styles.helperText}>{getHealthScoreStatusText(healthScore)}</Text>
+            <View style={styles.scoreSummaryCard}>
+              <Text style={styles.scoreSummaryLabel}>Sağlık Skoru</Text>
+              <Text style={styles.scoreSummaryValue}>{getHealthScoreDisplayValue(healthScore)}</Text>
+              <Text style={styles.helperText}>{getHealthScoreStatusText(healthScore)}</Text>
+            </View>
 
             <Pressable
               style={styles.inlineButton}
@@ -597,9 +599,11 @@ export default function ProductResultScreen() {
 
         {isContentOpen ? (
           <View style={styles.row}>
-            <Text style={styles.label}>İçerik/Alerjen skoru</Text>
-            <Text style={styles.value}>{getContentScoreDisplayValue(contentScore)}</Text>
-            <Text style={styles.helperText}>{getContentScoreStatusText(contentScore)}</Text>
+            <View style={styles.scoreSummaryCard}>
+              <Text style={styles.scoreSummaryLabel}>İçerik/Alerjen Skoru</Text>
+              <Text style={styles.scoreSummaryValue}>{getContentScoreDisplayValue(contentScore)}</Text>
+              <Text style={styles.helperText}>{getContentScoreStatusText(contentScore)}</Text>
+            </View>
 
             <Pressable
               style={styles.inlineButton}
@@ -1112,6 +1116,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
 
 
 
