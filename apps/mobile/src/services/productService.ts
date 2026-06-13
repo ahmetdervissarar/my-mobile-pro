@@ -1,7 +1,5 @@
 ﻿import type { ProductResult } from '../types/product';
 import { createTrafficLightNutrition } from '../nutrition/trafficLight';
-import { fetchOpenFoodFactsByBarcode } from './openFoodFactsService';
-import { calculateHealthScore } from '../scoring/healthScore';
 
 export type ProductSearchInput = {
   barcode?: string;
@@ -335,160 +333,20 @@ export function getMockProductResult(input: ProductSearchInput): ProductResult {
   return fallbackProduct;
 }
 
-// --- Open Food Facts Yardimcilari ---
-
-type NutritionValues = {
-  fat: number | null;
-  saturatedFat: number | null;
-  sugars: number | null;
-  salt: number | null;
-};
-
 /**
- * nutritionValues içindeki tüm alanlar null ise gerçek besin verisi yok
- * demektir; bu durumda UNKNOWN_TRAFFIC_LIGHT kullanılır.
- */
-function resolveTrafficLight(nutritionValues: NutritionValues) {
-  const hasAnyValue =
-    nutritionValues.fat !== null ||
-    nutritionValues.saturatedFat !== null ||
-    nutritionValues.sugars !== null ||
-    nutritionValues.salt !== null;
-
-  if (!hasAnyValue) {
-    return UNKNOWN_TRAFFIC_LIGHT;
-  }
-
-  return createTrafficLightNutrition({
-    fat: nutritionValues.fat,
-    saturatedFat: nutritionValues.saturatedFat,
-    sugars: nutritionValues.sugars,
-    salt: nutritionValues.salt,
-  });
-}
-
-/**
- * Open Food Facts'ten dönen kayıtta gıda analizi yapmaya yetecek en az bir
- * anlamlı alan var mı kontrol eder.
+ * Isim/foto aramalari icin fallback urun ozeti.
  *
- * Hiçbir alan dolmamışsa ürün gıda dışı bir barkod (ıslak mendil, temizlik
- * ürünü vb.) olabilir; bu durumda analiz yapılmamalıdır.
+ * Not: Barkod urun verisi artik backend ProductFacts hattinin sorumlulugundadir.
+ * Bu fonksiyon barkod icin Open Food Facts sorgusu yapmaz ve saglik skoru hesaplamaz.
+ * Barkodla cagrilirsa rastgele mock yerine acik not_found doner.
  */
-function hasMeaningfulFoodData(
-  productName: string | null,
-  ingredients: string | null,
-  allergens: string[],
-  additives: string[],
-  nutriScore: string | null,
-  novaGroup: number | null,
-  nutritionValues: NutritionValues,
-): boolean {
-  // productName tek başına yeterli sayılmaz: gıda dışı bir ürün de
-  // isimle dönebilir. Analiz için besin/içerik verisinin bulunması gerekir.
-  void productName;
-
-  return (
-    !!ingredients?.trim() ||
-    allergens.length > 0 ||
-    additives.length > 0 ||
-    nutriScore !== null ||
-    novaGroup !== null ||
-    nutritionValues.fat !== null ||
-    nutritionValues.saturatedFat !== null ||
-    nutritionValues.sugars !== null ||
-    nutritionValues.salt !== null
-  );
-}
-
-function mapOpenFoodFactsToProductResult(
-  barcode: string,
-  productName: string | null,
-  imageUrl: string | null,
-  allergens: string[],
-  additives: string[],
-  ingredients: string | null,
-  nutriScore: string | null,
-  novaGroup: number | null,
-  nutritionValues: NutritionValues,
-): ProductResult {
-  const trafficLight = resolveTrafficLight(nutritionValues);
-
-  const isAnalysisReady = hasMeaningfulFoodData(
-    productName,
-    ingredients,
-    allergens,
-    additives,
-    nutriScore,
-    novaGroup,
-    nutritionValues,
-  );
-
-  if (!isAnalysisReady) {
-    return {
-      id: `off-${barcode}`,
-      name: productName?.trim() || 'Tanınmayan Ürün',
-      barcode,
-      imageUrl,
-      searchSource: 'barcode',
-      healthScore: 50,
-      priceText: 'Demo ürün - fiyat bilgisi yok',
-      warnings: [],
-      allergens: [],
-      additives: [],
-      ingredients: null,
-      nutriScore: null,
-      novaGroup: null,
-      trafficLight: UNKNOWN_TRAFFIC_LIGHT,
-      analysisStatus: 'insufficient_food_data',
-      analysisMessage:
-        'Bu barkod için gıda analizi yapmaya yetecek besin veya içerik verisi bulunamadı.',
-    };
-  }
-
-  const healthScore = calculateHealthScore({ nutriScore, novaGroup, trafficLight });
-
-  return {
-    id: `off-${barcode}`,
-    name: productName?.trim() || 'Tanınmayan Ürün',
-    barcode,
-      imageUrl,
-    searchSource: 'barcode',
-    healthScore,
-    priceText: 'Demo ürün - fiyat bilgisi yok',
-    warnings: ['Ürün bilgisi Open Food Facts kaynağından alınmıştır. Eksik veya hatalı olabilir.'],
-    allergens,
-    additives,
-    ingredients,
-    nutriScore,
-    novaGroup,
-    trafficLight,
-    analysisStatus: 'ready',
-    analysisMessage: null,
-  };
-}
-
-export async function getFallbackProductSummary(input: ProductSearchInput): Promise<ProductResult> {
+export async function getFallbackProductSummary(
+  input: ProductSearchInput,
+): Promise<ProductResult> {
   try {
     const barcode = input.barcode?.trim();
 
     if (barcode) {
-      const openFoodFactsResult = await fetchOpenFoodFactsByBarcode(barcode);
-
-      if (openFoodFactsResult) {
-        return mapOpenFoodFactsToProductResult(
-          barcode,
-          openFoodFactsResult.productName,
-          openFoodFactsResult.imageUrl,
-          openFoodFactsResult.allergens,
-          openFoodFactsResult.additives,
-          openFoodFactsResult.ingredientsText,
-          openFoodFactsResult.nutriScore,
-          openFoodFactsResult.novaGroup,
-          openFoodFactsResult.nutritionValues,
-        );
-      }
-
-      // OFF'tan kayıt dönmedi — not_found
       return {
         ...fallbackProduct,
         id: `p-unknown-barcode-${barcode}`,
@@ -502,14 +360,13 @@ export async function getFallbackProductSummary(input: ProductSearchInput): Prom
     }
 
     if (hasProductApiUrl()) {
-      // TODO: API URL hazır. Gerçek çağrı burada eklenecek.
-      // Not: Barkod dışı kaynaklarda şimdilik mock sonuç dönmeye devam ediyoruz.
+      // TODO: Barkod disi kaynaklar icin gercek API cagrisi buraya eklenecek.
     }
 
     return getMockProductResult(input);
-  } catch (error) {
-    // Gelecekte gerçek API çağrısı hata verirse uygulamanın çökmesini önlemek için güvenli fallback.
+  } catch {
     return getMockProductResult(input);
   }
 }
+
 export const getProductResult = getFallbackProductSummary;
