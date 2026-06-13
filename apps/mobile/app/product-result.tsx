@@ -197,15 +197,15 @@ export default function ProductResultScreen() {
       });
     }
 
-    if (result.analysisStatus !== 'ready') {
-      if (hasBackendFoodAnalysis) {
-        return {
-          overallRisk: 'unknown',
-          warnings: [],
-          isEvaluated: true,
-        };
-      }
+    if (hasBackendFoodAnalysis) {
+      return {
+        overallRisk: 'unknown',
+        warnings: [],
+        isEvaluated: true,
+      };
+    }
 
+    if (result.analysisStatus !== 'ready') {
       return {
         overallRisk: 'unknown',
         warnings: [
