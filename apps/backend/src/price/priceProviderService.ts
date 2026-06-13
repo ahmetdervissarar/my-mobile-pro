@@ -302,6 +302,8 @@ function attachProductFactsMetadata(
   if (!result.barcode && productFacts.barcode) {
     result.barcode = productFacts.barcode;
   }
+
+  result.productFacts = productFacts;
 }
 
 function attachPriceScore(result: PriceResult): void {

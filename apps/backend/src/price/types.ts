@@ -4,6 +4,7 @@ import type { RafScoreResult } from './rafScore/index.js';
 import type { PriceScoreResult } from './priceScore/index.js';
 import type { HealthScoreResult } from './healthScore/index.js';
 import type { ContentScoreResult } from './contentScore/index.js';
+import type { ProductFacts } from './productFacts/index.js';
 
 export type PriceSource =
   | 'camgoz_joj'
@@ -53,6 +54,7 @@ export interface PriceResult {
   contentScore?: ContentScoreResult;
   sustainability?: SustainabilityResult;
   rafScore?: RafScoreResult;
+  productFacts?: ProductFacts;
   raw?: unknown;
 }
 
