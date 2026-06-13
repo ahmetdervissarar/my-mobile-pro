@@ -29,6 +29,12 @@ export interface OpenFoodFactsFetcherOptions {
 }
 
 const DEFAULT_TIMEOUT_MS = 5000;
+
+// Closed beta note:
+// This cache is in-memory only. It is cleared when the backend restarts
+// and is not shared across multiple server processes.
+// This is acceptable for low-volume closed beta usage.
+// Production should use a persistent cache such as Redis or a database table.
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 interface CachedProductFacts {
