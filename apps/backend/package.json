@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx src/index.ts",
     "check": "tsc --noEmit",
-    "start": "tsx src/index.ts"
+    "start": "tsx src/index.ts",
+    "smoke:product-facts": "tsx src/price/productFacts/adapters.smoke.ts"
   },
   "keywords": [],
   "author": "",
