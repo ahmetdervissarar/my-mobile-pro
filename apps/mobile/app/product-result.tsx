@@ -432,6 +432,17 @@ export default function ProductResultScreen() {
           </View>
         ) : null}
 
+        {searchType === 'photo' ? (
+          <View style={styles.photoBetaNoticeCard}>
+            <Text style={styles.photoBetaNoticeTitle}>
+              Fotoğrafla arama beta aşamasındadır
+            </Text>
+            <Text style={styles.photoBetaNoticeText}>
+              Kesin ürün sonucu için barkod okutmanız önerilir.
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.rafScoreCard}>
           <Text style={styles.rafScoreLabel}>RAF SKORU</Text>
           <Text style={styles.rafScoreValue}>{getRafScoreDisplayValue(rafScore)}</Text>
@@ -1171,6 +1182,25 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontSize: 14,
     fontWeight: '600',
+  },
+  photoBetaNoticeCard: {
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    marginBottom: 12,
+  },
+  photoBetaNoticeTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1D4ED8',
+    marginBottom: 4,
+  },
+  photoBetaNoticeText: {
+    fontSize: 12,
+    color: '#1E40AF',
+    lineHeight: 17,
   },
   criticalAlertCard: {
     backgroundColor: '#FEF2F2',
