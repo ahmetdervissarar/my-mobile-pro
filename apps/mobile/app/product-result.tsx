@@ -68,10 +68,11 @@ function isSameOffer(first: EnrichedMarketOffer, second: EnrichedMarketOffer): b
 }
 
 export default function ProductResultScreen() {
-  const { barcode, productName, searchType } = useLocalSearchParams<{
+  const { barcode, productName, searchType, photoUri } = useLocalSearchParams<{
     barcode?: string;
     productName?: string;
     searchType?: string;
+    photoUri?: string;
   }>();
 
   const router = useRouter();
@@ -298,7 +299,8 @@ export default function ProductResultScreen() {
 
   const displayProductName = priceResolution?.result.productName?.trim() || result.name;
   const displayBarcode = priceResolution?.result.barcode?.trim() || result.barcode;
-  const displayImageUrl = result.imageUrl ?? priceResolution?.result.imageUrl ?? null;
+  const capturedPhotoUri = searchType === 'photo' ? photoUri?.trim() : undefined;
+  const displayImageUrl = result.imageUrl ?? priceResolution?.result.imageUrl ?? capturedPhotoUri ?? null;
 
   const priceResult = priceResolution?.result ?? null;
   const rafScore = priceResult?.rafScore ?? null;
@@ -1124,6 +1126,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
 
 
 
