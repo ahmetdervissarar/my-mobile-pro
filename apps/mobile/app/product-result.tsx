@@ -131,13 +131,18 @@ export default function ProductResultScreen() {
       .catch(() => setUserProfile(emptyUserSensitivityProfile));
   }, []);
 
-  const hasBackendRafScore = priceResolution?.result.rafScore?.status === 'ready';
+  const hasBackendFoodAnalysis =
+    priceResolution?.result.healthScore?.status === 'ready' ||
+    priceResolution?.result.healthScore?.status === 'partial' ||
+    priceResolution?.result.contentScore?.status === 'ready' ||
+    priceResolution?.result.contentScore?.status === 'partial' ||
+    priceResolution?.result.rafScore?.status === 'ready';
 
   const riskResult: ProductRiskResult = useMemo(() => {
     if (result.analysisStatus !== 'ready') {
-      if (hasBackendRafScore) {
+      if (hasBackendFoodAnalysis) {
         return {
-          overallRisk: 'low',
+          overallRisk: 'unknown',
           warnings: [],
           isEvaluated: true,
         };
@@ -168,7 +173,7 @@ export default function ProductResultScreen() {
       nutriScore: result.nutriScore ?? null,
       userProfile,
     });
-  }, [hasBackendRafScore, result, userProfile]);
+  }, [hasBackendFoodAnalysis, result, userProfile]);
 
   useEffect(() => {
     setResult(getMockProductResult(normalizedInput));
