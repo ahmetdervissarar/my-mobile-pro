@@ -22,6 +22,7 @@ import {
   fetchOpenFoodFactsProductFactsByBarcode,
   productFactsToContentScoreInput,
   productFactsToHealthScoreInput,
+  productFactsToSustainabilityInput,
   type ProductFacts,
 } from './productFacts/index.js';
 
@@ -252,27 +253,19 @@ function inferBetaContentInput(productName?: string): ContentScoreInput {
   return {};
 }
 
-function getSustainabilityProcessingFromProductFacts(
-  productFacts?: ProductFacts | null,
-): 'nova_1' | 'nova_2' | 'nova_3' | 'nova_4' | undefined {
-  if (productFacts?.novaGroup === 1) return 'nova_1';
-  if (productFacts?.novaGroup === 2) return 'nova_2';
-  if (productFacts?.novaGroup === 3) return 'nova_3';
-  if (productFacts?.novaGroup === 4) return 'nova_4';
-
-  return undefined;
-}
-
 function attachSustainabilityScore(
   result: PriceResult,
   query: PriceQuery,
   productFacts?: ProductFacts | null,
 ): void {
+  const productFactsInput = productFacts
+    ? productFactsToSustainabilityInput(productFacts)
+    : {};
+
   result.sustainability = calculateSustainabilityScore({
-    productName: result.productName || productFacts?.productName || query.productName,
-    categoryText: result.productName || productFacts?.productName || query.productName,
-    ingredientsText: productFacts?.ingredientsText ?? undefined,
-    processing: getSustainabilityProcessingFromProductFacts(productFacts),
+    ...productFactsInput,
+    productName: result.productName || productFactsInput.productName || query.productName,
+    categoryText: result.productName || productFactsInput.categoryText || query.productName,
   });
 }
 

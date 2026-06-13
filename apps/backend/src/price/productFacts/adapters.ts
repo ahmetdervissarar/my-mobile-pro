@@ -1,5 +1,6 @@
 ﻿import type { ContentScoreInput } from '../contentScore/types.js';
 import type { HealthScoreInput } from '../healthScore/types.js';
+import type { SustainabilityInput } from '../sustainability/types.js';
 import type { ProductFacts } from './types.js';
 
 function getAdditiveRiskLevel(
@@ -50,3 +51,25 @@ export function productFactsToContentScoreInput(facts: ProductFacts): ContentSco
     isUltraProcessedHint: facts.novaGroup === 4 ? true : null,
   };
 }
+function getSustainabilityProcessingFromProductFacts(
+  facts: ProductFacts,
+): SustainabilityInput['processing'] {
+  if (facts.novaGroup === 1) return 'nova_1';
+  if (facts.novaGroup === 2) return 'nova_2';
+  if (facts.novaGroup === 3) return 'nova_3';
+  if (facts.novaGroup === 4) return 'nova_4';
+
+  return undefined;
+}
+
+export function productFactsToSustainabilityInput(
+  facts: ProductFacts,
+): SustainabilityInput {
+  return {
+    productName: facts.productName ?? undefined,
+    categoryText: facts.productName ?? undefined,
+    ingredientsText: facts.ingredientsText ?? undefined,
+    processing: getSustainabilityProcessingFromProductFacts(facts),
+  };
+}
+
