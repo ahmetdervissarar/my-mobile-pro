@@ -1,5 +1,4 @@
 ﻿export type PriceSource =
-  | 'camgoz_joj'
   | 'manual_beta'
   | 'beta_reference'
   | 'last_known'

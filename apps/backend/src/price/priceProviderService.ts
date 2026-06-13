@@ -6,7 +6,6 @@
   type PriceResult,
 } from './types.js';
 import { BetaReferencePriceProvider } from './providers/betaReferencePriceProvider.js';
-import { CamgozJojProvider } from './providers/camgozJojProvider.js';
 import { LastKnownPriceProvider } from './providers/lastKnownPriceProvider.js';
 import { ManualBetaPriceProvider } from './providers/manualBetaPriceProvider.js';
 import { enrichOffers, pickBestOffer } from './enrich/index.js';
@@ -28,7 +27,6 @@ import {
 
 
 export interface PriceProviderServiceOptions {
-  camgozJoj?: CamgozJojProvider;
   manualBeta?: ManualBetaPriceProvider;
   lastKnown?: LastKnownPriceProvider;
   betaReference?: BetaReferencePriceProvider;
@@ -358,10 +356,6 @@ export class PriceProviderService {
   public readonly manualBeta: ManualBetaPriceProvider;
 
   constructor(opts: PriceProviderServiceOptions = {}) {
-    const camgoz =
-      process.env.ENABLE_CAMGOZ_JOJ === 'true'
-        ? opts.camgozJoj ?? new CamgozJojProvider()
-        : null;
     const manual = opts.manualBeta ?? new ManualBetaPriceProvider();
     const lastKnown = opts.lastKnown ?? new LastKnownPriceProvider();
     const betaRef = opts.betaReference ?? new BetaReferencePriceProvider();
@@ -370,7 +364,6 @@ export class PriceProviderService {
     this.lastKnown = lastKnown;
 
     this.chain = [
-      ...(camgoz ? [camgoz] : []),
       ...(opts.extras ?? []),
       manual,
       lastKnown,

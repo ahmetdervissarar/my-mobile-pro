@@ -7,7 +7,6 @@ import type { ContentScoreResult } from './contentScore/index.js';
 import type { ProductFacts } from './productFacts/index.js';
 
 export type PriceSource =
-  | 'camgoz_joj'
   | 'manual_beta'
   | 'beta_reference'
   | 'last_known'
