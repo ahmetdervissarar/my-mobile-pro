@@ -18,6 +18,11 @@ import {
   calculateContentScore,
   type ContentScoreInput,
 } from './contentScore/index.js';
+import {
+  fetchOpenFoodFactsProductFactsByBarcode,
+  type ProductFacts,
+} from './productFacts/index.js';
+
 
 export interface PriceProviderServiceOptions {
   camgozJoj?: CamgozJojProvider;
@@ -31,6 +36,22 @@ export interface PriceResolveResponse {
   result: PriceResult;
   disclaimer: string;
   triedProviders: string[];
+}
+
+async function tryFetchProductFacts(query: PriceQuery): Promise<ProductFacts | null> {
+  const barcode = query.barcode?.trim();
+
+  if (!barcode) {
+    return null;
+  }
+
+  try {
+    const facts = await fetchOpenFoodFactsProductFactsByBarcode(barcode);
+
+    return facts?.isComplete ? facts : null;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeTurkish(value: string): string {
