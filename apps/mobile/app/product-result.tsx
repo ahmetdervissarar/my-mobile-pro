@@ -379,6 +379,9 @@ export default function ProductResultScreen() {
     ? offerOptions.filter((offer) => !isSameOffer(offer, bestOffer)).slice(0, 5)
     : offerOptions.slice(1, 6);
   const fallbackMarketPrices = priceResult?.marketPrices ?? [];
+  const displayAllergens = backendProductFacts?.allergens ?? result.allergens;
+  const displayAdditives = backendProductFacts?.additives ?? result.additives;
+  const displayIngredients = backendProductFacts?.ingredientsText ?? result.ingredients;
 
   return (
     <ScrollView
@@ -691,12 +694,12 @@ export default function ProductResultScreen() {
 
                 <Text style={styles.label}>Alerjenler</Text>
                 <Text style={styles.value}>
-                  {result.allergens.length > 0 ? result.allergens.join(', ') : 'Bilinmiyor'}
+                  {displayAllergens.length > 0 ? displayAllergens.join(', ') : 'Bilinmiyor'}
                 </Text>
 
                 <Text style={styles.label}>Katkı maddeleri</Text>
                 <Text style={styles.value}>
-                  {result.additives.length > 0 ? result.additives.join(', ') : 'Bilinmiyor'}
+                  {displayAdditives.length > 0 ? displayAdditives.join(', ') : 'Bilinmiyor'}
                 </Text>
 
                 <Text style={styles.label}>İçindekiler</Text>
@@ -711,7 +714,7 @@ export default function ProductResultScreen() {
 
                 {isIngredientsVisible ? (
                   <Text style={styles.value}>
-                    {result.ingredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
+                    {displayIngredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
                   </Text>
                 ) : null}
               </>
