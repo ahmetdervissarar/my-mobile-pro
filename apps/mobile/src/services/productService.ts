@@ -467,7 +467,7 @@ function mapOpenFoodFactsToProductResult(
   };
 }
 
-export async function getProductResult(input: ProductSearchInput): Promise<ProductResult> {
+export async function getFallbackProductSummary(input: ProductSearchInput): Promise<ProductResult> {
   try {
     const barcode = input.barcode?.trim();
 
@@ -512,4 +512,4 @@ export async function getProductResult(input: ProductSearchInput): Promise<Produ
     return getMockProductResult(input);
   }
 }
-
+export const getProductResult = getFallbackProductSummary;
