@@ -12,7 +12,8 @@ import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorag
 import { emptyUserSensitivityProfile } from '../src/userProfile/userProfileTypes';
 import type { UserSensitivityProfile } from '../src/userProfile/userProfileTypes';
 import { PriceClient, formatPriceForDisplay, priceStatusLabel } from '../src/price/priceClient';
-import type { EnrichedMarketOffer, PriceResolveResponse } from '../src/price/types';
+import type { EnrichedMarketOffer, PriceResolveResponse, ProductFacts } from '../src/price/types';
+import type { TrafficLightNutrition } from '../src/types/product';
 import {
   getRafScoreConfidenceText,
   getRafScoreDisplayValue,
@@ -65,6 +66,45 @@ function isSameOffer(first: EnrichedMarketOffer, second: EnrichedMarketOffer): b
     first.store?.branchName === second.store?.branchName &&
     first.distance?.distanceText === second.distance?.distanceText
   );
+}
+
+function normalizeProductFactsTrafficLightLevel(
+  level: 'low' | 'medium' | 'high' | null | undefined,
+): 'low' | 'medium' | 'high' | 'unknown' {
+  return level ?? 'unknown';
+}
+
+function productFactsToRiskTrafficLight(
+  productFacts: ProductFacts,
+): TrafficLightNutrition | null {
+  const trafficLight = productFacts.trafficLight;
+
+  if (!trafficLight) {
+    return null;
+  }
+
+  return {
+    fat: {
+      value: null,
+      unit: null,
+      level: normalizeProductFactsTrafficLightLevel(trafficLight.fat),
+    },
+    saturatedFat: {
+      value: null,
+      unit: null,
+      level: normalizeProductFactsTrafficLightLevel(trafficLight.saturatedFat),
+    },
+    sugars: {
+      value: null,
+      unit: null,
+      level: normalizeProductFactsTrafficLightLevel(trafficLight.sugar),
+    },
+    salt: {
+      value: null,
+      unit: null,
+      level: normalizeProductFactsTrafficLightLevel(trafficLight.salt),
+    },
+  };
 }
 
 export default function ProductResultScreen() {
@@ -137,8 +177,26 @@ export default function ProductResultScreen() {
     priceResolution?.result.contentScore?.status === 'ready' ||
     priceResolution?.result.contentScore?.status === 'partial' ||
     priceResolution?.result.rafScore?.status === 'ready';
+  const backendProductFacts = priceResolution?.result.productFacts ?? null;
 
   const riskResult: ProductRiskResult = useMemo(() => {
+    if (backendProductFacts?.isComplete) {
+      return evaluateProductRisks({
+        name:
+          backendProductFacts.productName ??
+          priceResolution?.result.productName ??
+          result.name ??
+          null,
+        ingredients: backendProductFacts.ingredientsText ?? null,
+        allergens: backendProductFacts.allergens ?? [],
+        additives: backendProductFacts.additives ?? [],
+        novaGroup: backendProductFacts.novaGroup ?? null,
+        trafficLight: productFactsToRiskTrafficLight(backendProductFacts),
+        nutriScore: backendProductFacts.nutriScoreGrade ?? null,
+        userProfile,
+      });
+    }
+
     if (result.analysisStatus !== 'ready') {
       if (hasBackendFoodAnalysis) {
         return {
@@ -173,7 +231,7 @@ export default function ProductResultScreen() {
       nutriScore: result.nutriScore ?? null,
       userProfile,
     });
-  }, [hasBackendFoodAnalysis, result, userProfile]);
+  }, [backendProductFacts, hasBackendFoodAnalysis, priceResolution?.result.productName, result, userProfile]);
 
   useEffect(() => {
     setResult(getMockProductResult(normalizedInput));
