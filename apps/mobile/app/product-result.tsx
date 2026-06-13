@@ -916,6 +916,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
   },
   sectionTitle: {
     fontSize: 17,
@@ -931,9 +937,11 @@ const styles = StyleSheet.create({
   },
   row: {
     gap: 8,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   riskRow: {
     paddingTop: 4,
@@ -1083,6 +1091,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
 
 
 
