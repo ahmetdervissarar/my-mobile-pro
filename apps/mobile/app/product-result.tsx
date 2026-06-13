@@ -362,10 +362,15 @@ export default function ProductResultScreen() {
     CRITICAL_ALLERGEN_CODES.includes(w.code),
   );
 
-  const displayProductName = priceResolution?.result.productName?.trim() || result.name;
+  const isBackendBarcodeLoading = Boolean(normalizedInput.barcode && isPriceLoading && !priceResolution);
+  const displayProductName = isBackendBarcodeLoading
+    ? 'Ürün bilgisi alınıyor...'
+    : priceResolution?.result.productName?.trim() || result.name;
   const displayBarcode = priceResolution?.result.barcode?.trim() || result.barcode;
   const capturedPhotoUri = searchType === 'photo' ? photoUri?.trim() : undefined;
-  const displayImageUrl = priceResolution?.result.imageUrl ?? result.imageUrl ?? capturedPhotoUri ?? null;
+  const displayImageUrl = isBackendBarcodeLoading
+    ? null
+    : priceResolution?.result.imageUrl ?? result.imageUrl ?? capturedPhotoUri ?? null;
 
   const priceResult = priceResolution?.result ?? null;
   const rafScore = priceResult?.rafScore ?? null;
