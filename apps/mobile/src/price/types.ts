@@ -1,8 +1,7 @@
-﻿export type PriceSource =
+export type PriceSource =
   | 'manual_beta'
   | 'beta_reference'
   | 'last_known'
-  | 'marketfiyati'
   | 'retailer_scraper';
 
 export type PriceStatus =
