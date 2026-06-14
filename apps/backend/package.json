@@ -9,7 +9,8 @@
     "check": "tsc --noEmit",
     "start": "tsx src/index.ts",
     "smoke:product-facts": "tsx src/price/productFacts/adapters.smoke.ts",
-    "smoke": "npm run smoke:product-facts"
+    "smoke:offers": "tsx src/price/enrich/enrichOffers.smoke.ts",
+    "smoke": "npm run smoke:product-facts && npm run smoke:offers"
   },
   "keywords": [],
   "author": "",
@@ -28,3 +29,4 @@
     "typescript": "^6.0.3"
   }
 }
+
