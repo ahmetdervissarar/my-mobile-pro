@@ -10,7 +10,8 @@
     "start": "tsx src/index.ts",
     "smoke:product-facts": "tsx src/price/productFacts/adapters.smoke.ts",
     "smoke:offers": "tsx src/price/enrich/enrichOffers.smoke.ts",
-    "smoke": "npm run smoke:product-facts && npm run smoke:offers"
+    "smoke:price-service": "tsx src/price/priceProviderService.smoke.ts",
+    "smoke": "npm run smoke:product-facts && npm run smoke:offers && npm run smoke:price-service"
   },
   "keywords": [],
   "author": "",
@@ -29,4 +30,5 @@
     "typescript": "^6.0.3"
   }
 }
+
 
