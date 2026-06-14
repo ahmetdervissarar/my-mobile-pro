@@ -58,9 +58,15 @@ assert.equal(incompleteFacts.isComplete, false);
 assert.equal(incompleteFacts.verificationNeeded, true);
 assert.ok(incompleteFacts.missingFields?.includes('ingredientsText'));
 assert.ok(incompleteFacts.missingFields?.includes('nutrition'));
+assert.ok(incompleteFacts.missingFields?.includes('allergens'));
 assert.equal(incompleteFacts.confidence, 'low');
+
+const incompleteContentInput = productFactsToContentScoreInput(incompleteFacts);
+assert.equal(incompleteContentInput.allergenDataStatus, null);
+assert.equal(incompleteContentInput.additiveRiskLevel, null);
 assert.equal(incompleteFacts.sourceUrl, 'https://world.openfoodfacts.org/product/8690000000001');
 
 console.log('PRODUCT_FACTS_ADAPTERS_SMOKE_OK');
+
 
 

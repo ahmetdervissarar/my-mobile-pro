@@ -126,10 +126,10 @@ function mapApiResponseToInfoLike(
     productName: data.product.product_name ?? null,
     imageUrl: data.product.image_url ?? data.product.image_front_url ?? null,
     ingredientsText: data.product.ingredients_text ?? null,
-    allergens: parseTagList(data.product.allergens_tags),
+    allergens: Array.isArray(data.product.allergens_tags) ? parseTagList(data.product.allergens_tags) : null,
     nutriScore: data.product.nutriscore_grade ?? null,
     novaGroup: data.product.nova_group ?? null,
-    additives: parseTagList(data.product.additives_tags),
+    additives: Array.isArray(data.product.additives_tags) ? parseTagList(data.product.additives_tags) : null,
     nutritionValues: {
       fat: parseNutrientNumber(nutriments?.fat_100g),
       saturatedFat: parseNutrientNumber(nutriments?.['saturated-fat_100g']),
@@ -189,5 +189,6 @@ export async function fetchOpenFoodFactsProductFactsByBarcode(
     clearTimeout(timeout);
   }
 }
+
 
 

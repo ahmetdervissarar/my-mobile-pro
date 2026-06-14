@@ -194,8 +194,8 @@ export function openFoodFactsInfoToProductFacts(
     productName: normalizeText(input.productName),
     imageUrl: normalizeText(input.imageUrl),
     ingredientsText: normalizeText(input.ingredientsText),
-    allergens: normalizeStringList(input.allergens),
-    additives: normalizeStringList(input.additives),
+    allergens: Array.isArray(input.allergens) ? normalizeStringList(input.allergens) : undefined,
+    additives: Array.isArray(input.additives) ? normalizeStringList(input.additives) : undefined,
     nutriScoreGrade: normalizeNutriScoreGrade(input.nutriScore),
     novaGroup: normalizeNovaGroup(input.novaGroup),
     trafficLight: mapNutritionValuesToTrafficLight(input.nutritionValues),
@@ -217,4 +217,5 @@ export function openFoodFactsInfoToProductFacts(
     confidence: getConfidence(missingFields),
   };
 }
+
 

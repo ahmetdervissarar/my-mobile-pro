@@ -1,4 +1,4 @@
-﻿import type { ContentScoreInput } from '../contentScore/types.js';
+import type { ContentScoreInput } from '../contentScore/types.js';
 import type { HealthScoreInput } from '../healthScore/types.js';
 import type { SustainabilityInput } from '../sustainability/types.js';
 import type { ProductFacts } from './types.js';
@@ -16,7 +16,7 @@ function getAdditiveRiskLevel(
 function getAllergenDataStatus(
   allergens: ProductFacts['allergens'],
 ): ContentScoreInput['allergenDataStatus'] {
-  if (!Array.isArray(allergens)) return 'unknown';
+  if (!Array.isArray(allergens)) return null;
   return allergens.length > 0 ? 'contains_allergen' : 'clear';
 }
 
@@ -72,4 +72,5 @@ export function productFactsToSustainabilityInput(
     processing: getSustainabilityProcessingFromProductFacts(facts),
   };
 }
+
 

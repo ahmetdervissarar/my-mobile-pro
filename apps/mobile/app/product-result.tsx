@@ -450,8 +450,8 @@ export default function ProductResultScreen() {
     ? offerOptions.filter((offer) => !isSameOffer(offer, bestOffer)).slice(0, 5)
     : offerOptions.slice(1, 6);
   const fallbackMarketPrices = priceResult?.marketPrices ?? [];
-  const displayAllergens = backendProductFacts?.allergens ?? result.allergens;
-  const displayAdditives = backendProductFacts?.additives ?? result.additives;
+  const displayAllergens = backendProductFacts ? (backendProductFacts.allergens ?? []) : result.allergens;
+  const displayAdditives = backendProductFacts ? (backendProductFacts.additives ?? []) : result.additives;
   const displayIngredients = backendProductFacts?.ingredientsText ?? result.ingredients;
   const productFactsSourceText = backendProductFacts
     ? `Ürün analiz verisi: ${backendProductFacts.dataSource === 'off' ? 'Open Food Facts' : 'Beta çýkarým'}${backendProductFacts.isComplete ? '' : ' (kýsmi veri)'}`
@@ -1351,6 +1351,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+
 
 
 
