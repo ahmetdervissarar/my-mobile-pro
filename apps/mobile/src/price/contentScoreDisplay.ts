@@ -1,4 +1,4 @@
-﻿import type { ContentScoreResult } from './types';
+import type { ContentScoreResult } from './types';
 
 export function getContentScoreDisplayValue(
   contentScore?: ContentScoreResult | null,
@@ -6,7 +6,7 @@ export function getContentScoreDisplayValue(
   if (!contentScore) return 'Hazırlanıyor';
 
   if (contentScore.status === 'unavailable' || contentScore.score === null) {
-    return 'Hazırlanıyor';
+    return 'Hesaplanamadı';
   }
 
   return `${contentScore.score}/100`;
@@ -24,10 +24,10 @@ export function getContentScoreStatusText(
   }
 
   if (contentScore.status === 'partial') {
-    return 'İçerik/Alerjen skoru bazı veri eksikleriyle hesaplandı.';
+    return 'İçerik/Alerjen skoru kısmi veriyle hesaplandı. İçerik, katkı veya alerjen bilgisi eksik olabilir.';
   }
 
-  return 'İçerik/Alerjen skoru şu anda hesaplanamadı.';
+  return 'İçerik/Alerjen skoru şu anda hesaplanamadı. Ürün etiketi kontrol edilmelidir.';
 }
 
 export function getContentScoreConfidenceText(

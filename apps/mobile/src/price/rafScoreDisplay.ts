@@ -12,7 +12,7 @@ function isPriceComponentMissing(rafScore: RafScoreResult): boolean {
 export function getRafScoreDisplayValue(rafScore?: RafScoreResult | null): string {
   if (!rafScore) return 'Hazırlanıyor';
 
-  if (rafScore.status !== 'ready' || rafScore.score === null) {
+  if (rafScore.status === 'unavailable' || rafScore.score === null) {
     return 'Eksik';
   }
 
@@ -30,7 +30,7 @@ export function getRafScoreStatusText(rafScore?: RafScoreResult | null): string 
 
   if (rafScore.status === 'partial') {
     if (isPriceComponentMissing(rafScore)) {
-      return 'Fiyat verisi eksik olduğu için genel RafSkoru geçici olarak eksik hesaplandı.';
+      return 'Fiyat verisi eksik olduğu için genel RafSkoru henüz tamamlanmadı.';
     }
 
     return 'Genel RafSkoru için bazı bileşenler henüz eksik.';

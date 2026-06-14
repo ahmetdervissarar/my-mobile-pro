@@ -1,4 +1,4 @@
-﻿import type { HealthScoreResult } from './types';
+import type { HealthScoreResult } from './types';
 
 export function getHealthScoreDisplayValue(
   healthScore?: HealthScoreResult | null,
@@ -6,7 +6,7 @@ export function getHealthScoreDisplayValue(
   if (!healthScore) return 'Hazırlanıyor';
 
   if (healthScore.status === 'unavailable' || healthScore.score === null) {
-    return 'Hazırlanıyor';
+    return 'Hesaplanamadı';
   }
 
   return `${healthScore.score}/100`;
@@ -24,10 +24,10 @@ export function getHealthScoreStatusText(
   }
 
   if (healthScore.status === 'partial') {
-    return 'Sağlık skoru bazı veri eksikleriyle hesaplandı.';
+    return 'Sağlık skoru kısmi veriyle hesaplandı. Eksik besin verileri olabilir.';
   }
 
-  return 'Sağlık skoru şu anda hesaplanamadı.';
+  return 'Sağlık skoru şu anda hesaplanamadı. Nutri-Score, NOVA veya Traffic Light verisi eksik olabilir.';
 }
 
 export function getHealthScoreConfidenceText(
@@ -44,7 +44,7 @@ export function getHealthScoreConfidenceText(
 export function getHealthScoreGradeText(
   healthScore?: HealthScoreResult | null,
 ): string {
-  if (!healthScore?.grade) return 'Derece: Bekleniyor';
+  if (!healthScore?.grade) return 'Derece: Hesaplanamadı';
 
   return `Derece: ${healthScore.grade}`;
 }
