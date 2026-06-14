@@ -253,6 +253,13 @@ export interface ProductFacts {
   allergens?: string[];
   dataSource: ProductFactsSource;
   isComplete: boolean;
+  missingFields?: ProductFactsMissingField[];
+  verificationNeeded?: boolean;
+  verificationReason?: string;
+  confidence?: ProductFactsConfidence;
+  sourceUrl?: string | null;
+  observedAt?: string | null;
+  verifiedAt?: string | null;
 }
 
 export interface PriceResult {
@@ -294,5 +301,6 @@ export interface PriceQuery {
     accuracyMeters?: number;
   };
 }
+
 
 
