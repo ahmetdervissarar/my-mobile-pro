@@ -6,6 +6,8 @@ import {
   productFactsToSustainabilityInput,
 } from './adapters.js';
 import { calculateContentScore } from '../contentScore/index.js';
+import { calculateHealthScore } from '../healthScore/index.js';
+import { calculateRafScore } from '../rafScore/index.js';
 import { openFoodFactsInfoToProductFacts } from './openFoodFactsAdapter.js';
 import type { ProductFacts } from './types.js';
 
@@ -69,9 +71,28 @@ assert.equal(incompleteContentInput.additiveRiskLevel, null);
 const incompleteContentScore = calculateContentScore(incompleteContentInput);
 assert.notEqual(incompleteContentScore.status, 'ready');
 assert.notEqual(incompleteContentScore.confidence, 'high');
+
+const incompleteHealthInput = productFactsToHealthScoreInput(incompleteFacts);
+const incompleteHealthScore = calculateHealthScore(incompleteHealthInput);
+assert.equal(incompleteHealthScore.status, 'unavailable');
+assert.equal(incompleteHealthScore.score, null);
+
+const rafScoreWithoutPrice = calculateRafScore({
+  priceScore: null,
+  healthScore: 91,
+  contentScore: 82,
+  sustainabilityScore: 61,
+});
+assert.equal(rafScoreWithoutPrice.status, 'partial');
+assert.equal(rafScoreWithoutPrice.score, null);
+assert.equal(
+  rafScoreWithoutPrice.components.find((component) => component.key === 'price')?.isAvailable,
+  false,
+);
 assert.equal(incompleteFacts.sourceUrl, 'https://world.openfoodfacts.org/product/8690000000001');
 
 console.log('PRODUCT_FACTS_ADAPTERS_SMOKE_OK');
+
 
 
 
