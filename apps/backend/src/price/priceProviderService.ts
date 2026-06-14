@@ -260,10 +260,24 @@ function attachSustainabilityScore(
     ? productFactsToSustainabilityInput(productFacts)
     : {};
 
+  const productName =
+    result.productName?.trim() ||
+    productFactsInput.productName?.trim() ||
+    query.productName?.trim();
+
+  const categoryText =
+    result.productName?.trim() ||
+    productFactsInput.categoryText?.trim() ||
+    query.productName?.trim();
+
+  if (!productName && !categoryText && !productFacts) {
+    return;
+  }
+
   result.sustainability = calculateSustainabilityScore({
     ...productFactsInput,
-    productName: result.productName || productFactsInput.productName || query.productName,
-    categoryText: result.productName || productFactsInput.categoryText || query.productName,
+    productName,
+    categoryText,
   });
 }
 
@@ -469,6 +483,7 @@ export class PriceProviderService {
     };
   }
 }
+
 
 
 
