@@ -1,4 +1,4 @@
-ï»¿import {
+import {
   BETA_DISCLAIMER,
   makeUnavailableResult,
   type IPriceProvider,
@@ -59,13 +59,13 @@ function normalizeTurkish(value: string): string {
   return value
     .trim()
     .toLocaleLowerCase('tr-TR')
-    .replaceAll('Ã§', 'c')
-    .replaceAll('ÄŸ', 'g')
-    .replaceAll('Ä±', 'i')
-    .replaceAll('iÌ‡', 'i')
-    .replaceAll('Ã¶', 'o')
-    .replaceAll('ÅŸ', 's')
-    .replaceAll('Ã¼', 'u');
+    .replaceAll('ç', 'c')
+    .replaceAll('ð', 'g')
+    .replaceAll('ý', 'i')
+    .replaceAll('i·', 'i')
+    .replaceAll('ö', 'o')
+    .replaceAll('þ', 's')
+    .replaceAll('ü', 'u');
 }
 
 function inferBetaHealthInput(productName?: string): HealthScoreInput {
@@ -388,10 +388,27 @@ export class PriceProviderService {
           }
 
           try {
-            const rawOffers = (result.marketPrices ?? []).map((marketPrice) => ({
+            const rawOffers: import('./enrich/index.js').RawOfferInput[] = (result.marketPrices ?? []).map((marketPrice) => ({
               marketName: marketPrice.marketName,
               price: marketPrice.price,
               currency: marketPrice.currency,
+              source: result.source ?? undefined,
+              productName: marketPrice.productName ?? result.productName,
+              barcode: result.barcode,
+              productUrl: marketPrice.sourceUrl,
+              imageUrl: marketPrice.imageUrl ?? result.imageUrl,
+              observedAt: marketPrice.updatedAt ?? result.updatedAt,
+              freshnessLabel:
+                result.status === 'live'
+                  ? 'live'
+                  : result.status === 'last_known'
+                    ? 'recent'
+                    : result.status === 'manual_beta' || result.status === 'beta_reference'
+                      ? 'reference'
+                      : 'stale',
+              availability: 'unknown' as const,
+              confidence: result.confidence,
+              matchType: result.barcode ? ('barcode' as const) : ('fuzzy_name' as const),
             }));
 
             const offers = await enrichOffers(rawOffers, {
@@ -452,3 +469,5 @@ export class PriceProviderService {
     };
   }
 }
+
+

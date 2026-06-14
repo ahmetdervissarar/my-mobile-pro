@@ -1,13 +1,32 @@
-﻿import { distanceMeters, distanceText } from '../geo/distance.js';
+import { distanceMeters, distanceText } from '../geo/distance.js';
 import { normalizeMarketName } from '../normalize/marketName.js';
 import type { StoreLocator } from '../stores/storeLocator.js';
-import type { EnrichedMarketOffer, Store } from '../stores/storeTypes.js';
+import type {
+  EnrichedMarketOffer,
+  PriceAvailability,
+  PriceFreshnessLabel,
+  PriceMatchType,
+  Store,
+} from '../stores/storeTypes.js';
 import { getDefaultStoreLocator } from './storeLocatorRegistry.js';
 
 export interface RawOfferInput {
   marketName: string | null | undefined;
   price: number;
   currency?: string;
+  source?: string;
+  unitPrice?: number;
+  unit?: string;
+  productName?: string;
+  barcode?: string;
+  productUrl?: string;
+  imageUrl?: string | null;
+  availability?: PriceAvailability;
+  observedAt?: string;
+  freshnessLabel?: PriceFreshnessLabel;
+  confidence?: number;
+  matchType?: PriceMatchType;
+  note?: string;
 }
 
 export interface EnrichContext {
@@ -43,10 +62,24 @@ export async function enrichOffers(
       }
 
       const base: EnrichedMarketOffer = {
+        source: raw.source,
+        marketName: raw.marketName ?? displayName,
         chainCode,
         displayName,
         price: raw.price,
         currency: 'TRY',
+        unitPrice: raw.unitPrice,
+        unit: raw.unit,
+        productName: raw.productName,
+        barcode: raw.barcode,
+        productUrl: raw.productUrl,
+        imageUrl: raw.imageUrl,
+        availability: raw.availability,
+        observedAt: raw.observedAt,
+        freshnessLabel: raw.freshnessLabel,
+        confidence: raw.confidence,
+        matchType: raw.matchType,
+        note: raw.note,
       };
 
       if (!context.location) {
@@ -77,13 +110,17 @@ export async function enrichOffers(
         longitude: nearest.longitude,
       });
 
+      const readableDistance = distanceText(meters);
+
       return {
         ...base,
         store: nearest,
         distance: {
           distanceMeters: meters,
-          distanceText: distanceText(meters),
+          distanceText: readableDistance,
         },
+        distanceMeters: meters,
+        distanceText: readableDistance,
       };
     }),
   );
