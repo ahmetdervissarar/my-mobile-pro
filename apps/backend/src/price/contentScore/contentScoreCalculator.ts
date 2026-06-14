@@ -1,4 +1,4 @@
-﻿import {
+import {
   ADDITIVE_RISK_POINTS,
   ALLERGEN_DATA_POINTS,
   CONTENT_SCORE_DISCLAIMER,
@@ -73,8 +73,18 @@ function getPalmOilPoints(input: ContentScoreInput): number | null {
   return input.hasPalmOil ? 40 : 100;
 }
 
-function getStatus(availableCount: number): ContentScoreStatus {
+function getStatus(
+  availableCount: number,
+  hasIngredientClarity: boolean,
+  hasAdditiveRisk: boolean,
+  hasAllergenTransparency: boolean,
+): ContentScoreStatus {
   if (availableCount === 0) return 'unavailable';
+
+  if (!hasIngredientClarity || !hasAdditiveRisk || !hasAllergenTransparency) {
+    return 'partial';
+  }
+
   if (availableCount < 3) return 'partial';
   return 'ready';
 }
@@ -163,7 +173,12 @@ export function calculateContentScore(
   );
 
   const availableCount = availableComponents.length;
-  const status = getStatus(availableCount);
+  const status = getStatus(
+    availableCount,
+    ingredientClarity !== null,
+    additiveRisk !== null,
+    allergenTransparency !== null,
+  );
 
   const availableWeightTotal = availableComponents.reduce(
     (sum, component) => sum + component.weight,
@@ -199,3 +214,4 @@ export function calculateContentScore(
     disclaimer: CONTENT_SCORE_DISCLAIMER,
   };
 }
+

@@ -5,6 +5,7 @@ import {
   productFactsToHealthScoreInput,
   productFactsToSustainabilityInput,
 } from './adapters.js';
+import { calculateContentScore } from '../contentScore/index.js';
 import { openFoodFactsInfoToProductFacts } from './openFoodFactsAdapter.js';
 import type { ProductFacts } from './types.js';
 
@@ -64,9 +65,16 @@ assert.equal(incompleteFacts.confidence, 'low');
 const incompleteContentInput = productFactsToContentScoreInput(incompleteFacts);
 assert.equal(incompleteContentInput.allergenDataStatus, null);
 assert.equal(incompleteContentInput.additiveRiskLevel, null);
+
+const incompleteContentScore = calculateContentScore(incompleteContentInput);
+assert.notEqual(incompleteContentScore.status, 'ready');
+assert.notEqual(incompleteContentScore.confidence, 'high');
 assert.equal(incompleteFacts.sourceUrl, 'https://world.openfoodfacts.org/product/8690000000001');
 
 console.log('PRODUCT_FACTS_ADAPTERS_SMOKE_OK');
+
+
+
 
 
 
