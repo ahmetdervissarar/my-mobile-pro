@@ -178,13 +178,40 @@ export interface StoreDistance {
   distanceText: string;
 }
 
+export type PriceFreshnessLabel = 'live' | 'recent' | 'stale' | 'reference';
+
+export type PriceAvailability = 'in_stock' | 'out_of_stock' | 'unknown';
+
+export type PriceMatchType =
+  | 'barcode'
+  | 'provider_product_id'
+  | 'exact_name'
+  | 'fuzzy_name'
+  | 'category_reference';
+
 export interface EnrichedMarketOffer {
+  source?: string;
+  marketName?: string;
   chainCode: MarketChainCode;
   displayName: string;
   price: number;
   currency: string;
+  unitPrice?: number;
+  unit?: string;
+  productName?: string;
+  barcode?: string;
+  productUrl?: string;
+  imageUrl?: string | null;
+  availability?: PriceAvailability;
+  observedAt?: string;
+  freshnessLabel?: PriceFreshnessLabel;
   store?: Store;
   distance?: StoreDistance;
+  distanceMeters?: number;
+  distanceText?: string;
+  confidence?: number;
+  matchType?: PriceMatchType;
+  note?: string;
 }
 
 export type ProductFactsSource = 'off' | 'beta_inference';
@@ -255,3 +282,4 @@ export interface PriceQuery {
     accuracyMeters?: number;
   };
 }
+
