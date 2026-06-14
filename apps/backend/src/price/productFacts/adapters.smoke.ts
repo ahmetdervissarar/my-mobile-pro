@@ -50,6 +50,7 @@ const incompleteFacts = openFoodFactsInfoToProductFacts({
   barcode: '8690000000001',
   productName: 'Eksik Veri Ürünü',
   imageUrl: 'https://example.com/missing.jpg',
+  sourceUrl: 'https://world.openfoodfacts.org/product/8690000000001',
 });
 
 assert.equal(incompleteFacts.dataSource, 'off');
@@ -58,6 +59,8 @@ assert.equal(incompleteFacts.verificationNeeded, true);
 assert.ok(incompleteFacts.missingFields?.includes('ingredientsText'));
 assert.ok(incompleteFacts.missingFields?.includes('nutrition'));
 assert.equal(incompleteFacts.confidence, 'low');
+assert.equal(incompleteFacts.sourceUrl, 'https://world.openfoodfacts.org/product/8690000000001');
 
 console.log('PRODUCT_FACTS_ADAPTERS_SMOKE_OK');
+
 

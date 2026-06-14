@@ -1,4 +1,4 @@
-﻿import type { ProductFacts } from './types.js';
+import type { ProductFacts } from './types.js';
 import {
   openFoodFactsInfoToProductFacts,
   type OpenFoodFactsProductInfoLike,
@@ -89,6 +89,10 @@ function parseTagList(tags: string[] | undefined): string[] {
     .filter(Boolean);
 }
 
+function buildOpenFoodFactsProductPageUrl(barcode: string): string {
+  return 'https://world.openfoodfacts.org/product/' + encodeURIComponent(barcode);
+}
+
 function buildOpenFoodFactsEndpoint(barcode: string): string {
   const fields = [
     'product_name',
@@ -132,6 +136,7 @@ function mapApiResponseToInfoLike(
       sugars: parseNutrientNumber(nutriments?.sugars_100g),
       salt: parseNutrientNumber(nutriments?.salt_100g),
     },
+    sourceUrl: buildOpenFoodFactsProductPageUrl(barcode),
   };
 }
 
@@ -184,3 +189,5 @@ export async function fetchOpenFoodFactsProductFactsByBarcode(
     clearTimeout(timeout);
   }
 }
+
+
