@@ -1,5 +1,7 @@
-ï»¿import type {
+import type {
   ProductFacts,
+  ProductFactsConfidence,
+  ProductFactsMissingField,
   ProductFactsNovaGroup,
   ProductFactsNutriScoreGrade,
   ProductFactsTrafficLight,
@@ -21,6 +23,7 @@ export interface OpenFoodFactsProductInfoLike {
     sugars?: number | null;
     salt?: number | null;
   } | null;
+  sourceUrl?: string | null;
 }
 
 type TrafficLightNutrient = 'fat' | 'saturatedFat' | 'sugars' | 'salt';
@@ -120,6 +123,58 @@ function mapNutritionValuesToTrafficLight(
   };
 }
 
+function hasAnyTrafficLightValue(trafficLight: ProductFactsTrafficLight | null | undefined): boolean {
+  if (!trafficLight) {
+    return false;
+  }
+
+  return (
+    trafficLight.fat !== null &&
+    trafficLight.fat !== undefined ||
+    trafficLight.saturatedFat !== null &&
+    trafficLight.saturatedFat !== undefined ||
+    trafficLight.sugar !== null &&
+    trafficLight.sugar !== undefined ||
+    trafficLight.salt !== null &&
+    trafficLight.salt !== undefined
+  );
+}
+
+function getMissingFields(facts: ProductFacts): ProductFactsMissingField[] {
+  const missingFields: ProductFactsMissingField[] = [];
+
+  if (!facts.productName?.trim()) missingFields.push('productName');
+  if (!facts.imageUrl?.trim()) missingFields.push('imageUrl');
+  if (!facts.ingredientsText?.trim()) missingFields.push('ingredientsText');
+  if (!Array.isArray(facts.allergens)) missingFields.push('allergens');
+  if (!hasAnyTrafficLightValue(facts.trafficLight)) missingFields.push('nutrition');
+  if (!facts.nutriScoreGrade) missingFields.push('nutriScoreGrade');
+  if (!facts.novaGroup) missingFields.push('novaGroup');
+  if (!hasAnyTrafficLightValue(facts.trafficLight)) missingFields.push('trafficLight');
+
+  return missingFields;
+}
+
+function getVerificationReason(missingFields: ProductFactsMissingField[]): string | undefined {
+  if (missingFields.length === 0) return undefined;
+
+  if (missingFields.includes('ingredientsText')) {
+    return 'OFF ürünü bulundu ancak içerik listesi eksik olduðu için doðrulama kuyruðuna alýnmalý.';
+  }
+
+  if (missingFields.includes('nutrition')) {
+    return 'OFF ürünü bulundu ancak besin deðerleri eksik olduðu için saðlýk skoru sýnýrlý kalýr.';
+  }
+
+  return 'OFF ürünü bulundu ancak skorlamada kullanýlan bazý alanlar eksik.';
+}
+
+function getConfidence(missingFields: ProductFactsMissingField[]): ProductFactsConfidence {
+  if (missingFields.length === 0) return 'high';
+  if (missingFields.includes('ingredientsText') || missingFields.includes('nutrition')) return 'low';
+  return 'medium';
+}
+
 function hasMeaningfulFoodFacts(facts: ProductFacts): boolean {
   return (
     !!facts.ingredientsText?.trim() ||
@@ -127,10 +182,7 @@ function hasMeaningfulFoodFacts(facts: ProductFacts): boolean {
     (facts.additives?.length ?? 0) > 0 ||
     facts.nutriScoreGrade !== null ||
     facts.novaGroup !== null ||
-    facts.trafficLight?.fat !== null ||
-    facts.trafficLight?.saturatedFat !== null ||
-    facts.trafficLight?.sugar !== null ||
-    facts.trafficLight?.salt !== null
+    hasAnyTrafficLightValue(facts.trafficLight)
   );
 }
 
@@ -149,10 +201,20 @@ export function openFoodFactsInfoToProductFacts(
     trafficLight: mapNutritionValuesToTrafficLight(input.nutritionValues),
     dataSource: 'off',
     isComplete: false,
+    sourceUrl: normalizeText(input.sourceUrl),
+    observedAt: new Date().toISOString(),
   };
+
+  const missingFields = getMissingFields(facts);
+  const isComplete = hasMeaningfulFoodFacts(facts) && missingFields.length === 0;
 
   return {
     ...facts,
-    isComplete: hasMeaningfulFoodFacts(facts),
+    isComplete,
+    missingFields,
+    verificationNeeded: missingFields.length > 0,
+    verificationReason: getVerificationReason(missingFields),
+    confidence: getConfidence(missingFields),
   };
 }
+

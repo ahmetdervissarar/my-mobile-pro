@@ -5,6 +5,7 @@ import {
   productFactsToHealthScoreInput,
   productFactsToSustainabilityInput,
 } from './adapters.js';
+import { openFoodFactsInfoToProductFacts } from './openFoodFactsAdapter.js';
 import type { ProductFacts } from './types.js';
 
 const facts: ProductFacts = {
@@ -45,4 +46,18 @@ assert.equal(sustainabilityInput.categoryText, 'Adapter Smoke Product');
 assert.equal(sustainabilityInput.ingredientsText, facts.ingredientsText);
 assert.equal(sustainabilityInput.processing, 'nova_4');
 
+const incompleteFacts = openFoodFactsInfoToProductFacts({
+  barcode: '8690000000001',
+  productName: 'Eksik Veri Ürünü',
+  imageUrl: 'https://example.com/missing.jpg',
+});
+
+assert.equal(incompleteFacts.dataSource, 'off');
+assert.equal(incompleteFacts.isComplete, false);
+assert.equal(incompleteFacts.verificationNeeded, true);
+assert.ok(incompleteFacts.missingFields?.includes('ingredientsText'));
+assert.ok(incompleteFacts.missingFields?.includes('nutrition'));
+assert.equal(incompleteFacts.confidence, 'low');
+
 console.log('PRODUCT_FACTS_ADAPTERS_SMOKE_OK');
+

@@ -222,6 +222,18 @@ export type ProductFactsNovaGroup = 1 | 2 | 3 | 4;
 
 export type ProductFactsTrafficLightValue = 'low' | 'medium' | 'high';
 
+export type ProductFactsMissingField =
+  | 'productName'
+  | 'imageUrl'
+  | 'ingredientsText'
+  | 'allergens'
+  | 'nutrition'
+  | 'nutriScoreGrade'
+  | 'novaGroup'
+  | 'trafficLight';
+
+export type ProductFactsConfidence = 'low' | 'medium' | 'high';
+
 export interface ProductFactsTrafficLight {
   sugar?: ProductFactsTrafficLightValue | null;
   salt?: ProductFactsTrafficLightValue | null;
@@ -282,4 +294,5 @@ export interface PriceQuery {
     accuracyMeters?: number;
   };
 }
+
 

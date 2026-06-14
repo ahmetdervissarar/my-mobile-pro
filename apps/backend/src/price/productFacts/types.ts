@@ -1,10 +1,22 @@
-﻿export type ProductFactsSource = 'off' | 'beta_inference';
+export type ProductFactsSource = 'off' | 'beta_inference';
 
 export type ProductFactsNutriScoreGrade = 'A' | 'B' | 'C' | 'D' | 'E';
 
 export type ProductFactsNovaGroup = 1 | 2 | 3 | 4;
 
 export type ProductFactsTrafficLightValue = 'low' | 'medium' | 'high';
+
+export type ProductFactsMissingField =
+  | 'productName'
+  | 'imageUrl'
+  | 'ingredientsText'
+  | 'allergens'
+  | 'nutrition'
+  | 'nutriScoreGrade'
+  | 'novaGroup'
+  | 'trafficLight';
+
+export type ProductFactsConfidence = 'low' | 'medium' | 'high';
 
 export interface ProductFactsTrafficLight {
   sugar?: ProductFactsTrafficLightValue | null;
@@ -28,4 +40,12 @@ export interface ProductFacts {
 
   dataSource: ProductFactsSource;
   isComplete: boolean;
+  missingFields?: ProductFactsMissingField[];
+  verificationNeeded?: boolean;
+  verificationReason?: string;
+  confidence?: ProductFactsConfidence;
+  sourceUrl?: string | null;
+  observedAt?: string | null;
+  verifiedAt?: string | null;
 }
+
