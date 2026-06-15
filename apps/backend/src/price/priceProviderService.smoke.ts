@@ -30,6 +30,11 @@ try {
   assert.equal(response.result.rafScore?.status, 'unavailable');
   assert.equal(response.result.rafScore?.score, null);
 
+  assert.equal(response.result.healthScore?.status, 'unavailable');
+  assert.equal(response.result.healthScore?.score, null);
+  assert.equal(response.result.contentScore?.status, 'unavailable');
+  assert.equal(response.result.contentScore?.score, null);
+
   const sustainabilityComponent = response.result.rafScore?.components.find(
     (component) => component.key === 'sustainability',
   );
