@@ -48,7 +48,7 @@ function formatOfferStoreLabel(offer: EnrichedMarketOffer): string {
     branchName &&
     branchName.toLocaleLowerCase('tr-TR') !== offer.displayName.toLocaleLowerCase('tr-TR')
   ) {
-    return `${offer.displayName} · ${branchName}`;
+    return `${offer.displayName} Â· ${branchName}`;
   }
 
   return offer.displayName;
@@ -109,20 +109,20 @@ function productFactsToRiskTrafficLight(
 }
 
 const productFactsMissingFieldLabels: Record<string, string> = {
-  productName: 'ürün adý',
-  imageUrl: 'ürün görseli',
-  ingredientsText: 'içindekiler',
+  productName: 'Ã¼rÃ¼n adÄ±',
+  imageUrl: 'Ã¼rÃ¼n gÃ¶rseli',
+  ingredientsText: 'iÃ§indekiler',
   allergens: 'alerjen bilgisi',
-  nutrition: 'besin deðerleri',
+  nutrition: 'besin deÄŸerleri',
   nutriScoreGrade: 'Nutri-Score',
   novaGroup: 'NOVA grubu',
   trafficLight: 'Traffic Light',
 };
 
 function getProductFactsConfidenceLabel(confidence: ProductFacts['confidence']): string {
-  if (confidence === 'high') return 'Yüksek';
+  if (confidence === 'high') return 'YÃ¼ksek';
   if (confidence === 'medium') return 'Orta';
-  return 'Düþük';
+  return 'DÃ¼ÅŸÃ¼k';
 }
 
 function formatProductFactsMissingFields(productFacts: ProductFacts | null): string | null {
@@ -183,9 +183,9 @@ export default function ProductResultScreen() {
 
   const sourceLabelMap: Record<string, string> = {
     barcode: 'Barkod',
-    search: 'Ürün arama',
-    name: 'Ürün arama',
-    photo: 'Fotoðrafla arama',
+    search: 'ÃœrÃ¼n arama',
+    name: 'ÃœrÃ¼n arama',
+    photo: 'FotoÄŸrafla arama',
   };
 
   const normalizedInput = useMemo(() => {
@@ -275,9 +275,9 @@ export default function ProductResultScreen() {
         warnings: [
           {
             code: 'FOOD_ANALYSIS_UNAVAILABLE',
-            title: 'Gýda analizi yapýlamadý',
+            title: 'GÄ±da analizi yapÄ±lamadÄ±',
             message:
-              result.analysisMessage ?? 'Bu ürün için yeterli gýda verisi bulunamadý.',
+              result.analysisMessage ?? 'Bu Ã¼rÃ¼n iÃ§in yeterli gÄ±da verisi bulunamadÄ±.',
             level: 'unknown',
           },
         ],
@@ -356,7 +356,7 @@ export default function ProductResultScreen() {
       })
       .catch((err: unknown) => {
         if (isMounted) {
-          setPriceError((err as Error)?.message ?? 'Fiyat alýnamadý');
+          setPriceError((err as Error)?.message ?? 'Fiyat alÄ±namadÄ±');
         }
       })
       .finally(() => {
@@ -387,7 +387,7 @@ export default function ProductResultScreen() {
         return;
       }
 
-      setLocationStatus('Konum alýndý');
+      setLocationStatus('Konum alÄ±ndÄ±');
 
       const marketPrices = await fetchMarketPrices(
         {
@@ -398,14 +398,14 @@ export default function ProductResultScreen() {
       );
 
       if (marketPrices.prices.length === 0) {
-        setMarketPriceStatus('Yakýndaki market fiyatý bulunamadý');
+        setMarketPriceStatus('YakÄ±ndaki market fiyatÄ± bulunamadÄ±');
       } else {
         const firstPrice = marketPrices.prices[0];
         setMarketPriceStatus(`${firstPrice.marketName}: ${firstPrice.price} ${firstPrice.currency}`);
       }
     } catch {
-      setLocationStatus('Konum alýnamadý');
-      setMarketPriceStatus('Market fiyatý sorgulanamadý');
+      setLocationStatus('Konum alÄ±namadÄ±');
+      setMarketPriceStatus('Market fiyatÄ± sorgulanamadÄ±');
     } finally {
       setIsLocationLoading(false);
     }
@@ -428,7 +428,7 @@ export default function ProductResultScreen() {
 
   const isBackendBarcodeLoading = Boolean(normalizedInput.barcode && isPriceLoading && !priceResolution);
   const displayProductName = isBackendBarcodeLoading
-    ? 'Ürün bilgisi alýnýyor...'
+    ? 'ÃœrÃ¼n bilgisi alÄ±nÄ±yor...'
     : priceResolution?.result.productName?.trim() || result.name;
   const displayBarcode = priceResolution?.result.barcode?.trim() || result.barcode;
   const capturedPhotoUri = searchType === 'photo' ? photoUri?.trim() : undefined;
@@ -443,7 +443,7 @@ export default function ProductResultScreen() {
   const contentScore = priceResult?.contentScore ?? null;
   const sustainability = priceResult?.sustainability ?? null;
   const priceDisclaimer =
-    priceResolution?.disclaimer ?? 'Fiyat bilgisi saðlayýcý kaynaklara göre gösterilir.';
+    priceResolution?.disclaimer ?? 'Fiyat bilgisi saÄŸlayÄ±cÄ± kaynaklara gÃ¶re gÃ¶sterilir.';
   const bestOffer = priceResult?.bestOffer ?? null;
   const offerOptions = priceResult?.offers ?? [];
   const otherOffers = bestOffer
@@ -454,7 +454,7 @@ export default function ProductResultScreen() {
   const displayAdditives = backendProductFacts ? (backendProductFacts.additives ?? []) : result.additives;
   const displayIngredients = backendProductFacts?.ingredientsText ?? result.ingredients;
   const productFactsSourceText = backendProductFacts
-    ? `Ürün analiz verisi: ${backendProductFacts.dataSource === 'off' ? 'Open Food Facts' : 'Beta çýkarým'}${backendProductFacts.isComplete ? '' : ' (kýsmi veri)'}`
+    ? `ÃœrÃ¼n analiz verisi: ${backendProductFacts.dataSource === 'off' ? 'Open Food Facts' : 'Beta Ã§Ä±karÄ±m'}${backendProductFacts.isComplete ? '' : ' (kÄ±smi veri)'}`
     : null;
 
   const productFactsMissingText = formatProductFactsMissingFields(backendProductFacts);
@@ -463,7 +463,7 @@ export default function ProductResultScreen() {
   );
   const productFactsVerificationReason =
     backendProductFacts?.verificationReason?.trim() ||
-    'Bu ürün için ürün analiz verisi eksik. Skorlar kýsmi veriyle yorumlanmalýdýr.';
+    'Bu Ã¼rÃ¼n iÃ§in Ã¼rÃ¼n analiz verisi eksik. Skorlar kÄ±smi veriyle yorumlanmalÄ±dÄ±r.';
   return (
     <ScrollView
       style={styles.container}
@@ -471,7 +471,7 @@ export default function ProductResultScreen() {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.card}>
-        <Text style={styles.title}>Ürün Sonucu</Text>
+        <Text style={styles.title}>ÃœrÃ¼n Sonucu</Text>
 
         <View style={styles.productHero}>
           {displayImageUrl ? (
@@ -482,7 +482,7 @@ export default function ProductResultScreen() {
             />
           ) : (
             <View style={styles.productImagePlaceholder}>
-              <Text style={styles.helperText}>Ürün görseli bulunamadý</Text>
+              <Text style={styles.helperText}>ÃœrÃ¼n gÃ¶rseli bulunamadÄ±</Text>
             </View>
           )}
 
@@ -495,7 +495,7 @@ export default function ProductResultScreen() {
         {criticalProfileWarnings.length > 0 ? (
           <View style={styles.criticalAlertCard}>
             <Text style={styles.criticalAlertHeader}>
-              Profilinizle çakýþan kritik alerjen uyarýsý
+              Profilinizle Ã§akÄ±ÅŸan kritik alerjen uyarÄ±sÄ±
             </Text>
             {criticalProfileWarnings.map((warning) => (
               <View key={warning.code} style={styles.criticalAlertItem}>
@@ -509,17 +509,17 @@ export default function ProductResultScreen() {
         {searchType === 'photo' ? (
           <View style={styles.photoBetaNoticeCard}>
             <Text style={styles.photoBetaNoticeTitle}>
-              Fotoðrafla arama beta aþamasýndadýr
+              FotoÄŸrafla arama beta aÅŸamasÄ±ndadÄ±r
             </Text>
             <Text style={styles.photoBetaNoticeText}>
-              Kesin ürün sonucu için barkod okutmanýz önerilir.
+              Kesin Ã¼rÃ¼n sonucu iÃ§in barkod okutmanÄ±z Ã¶nerilir.
             </Text>
           </View>
         ) : null}
 
         {shouldShowProductFactsNotice ? (
           <View style={styles.productFactsNoticeCard}>
-            <Text style={styles.productFactsNoticeTitle}>Ürün verisi eksik</Text>
+            <Text style={styles.productFactsNoticeTitle}>ÃœrÃ¼n verisi eksik</Text>
             <Text style={styles.productFactsNoticeText}>
               {productFactsVerificationReason}
             </Text>
@@ -532,7 +532,7 @@ export default function ProductResultScreen() {
 
             {backendProductFacts?.confidence ? (
               <Text style={styles.productFactsNoticeMeta}>
-                Veri güveni: {getProductFactsConfidenceLabel(backendProductFacts.confidence)}
+                Veri gÃ¼veni: {getProductFactsConfidenceLabel(backendProductFacts.confidence)}
               </Text>
             ) : null}
           </View>
@@ -555,7 +555,7 @@ export default function ProductResultScreen() {
         {isPriceOpen ? (
           <View style={styles.row}>
             {isPriceLoading ? (
-              <Text style={styles.helperText}>Fiyat sorgulanýyor...</Text>
+              <Text style={styles.helperText}>Fiyat sorgulanÄ±yor...</Text>
             ) : priceResult && priceResult.price !== null ? (
               <>
                 <View style={styles.scoreSummaryCard}>
@@ -596,7 +596,7 @@ export default function ProductResultScreen() {
                   onPress={() => setIsPriceDetailsOpen((current) => !current)}
                 >
                   <Text style={styles.inlineButtonText}>
-                    {isPriceDetailsOpen ? 'Detaylarý gizle' : 'Detaylarý göster'}
+                    {isPriceDetailsOpen ? 'DetaylarÄ± gizle' : 'DetaylarÄ± gÃ¶ster'}
                   </Text>
                 </Pressable>
 
@@ -610,7 +610,7 @@ export default function ProductResultScreen() {
 
                     {bestOffer && otherOffers.length > 0 ? (
                       <>
-                        <Text style={styles.label}>Diðer marketler</Text>
+                        <Text style={styles.label}>DiÄŸer marketler</Text>
                         {otherOffers.map((offer, index) => (
                           <View
                             key={`${offer.chainCode}-${offer.displayName}-${offer.price}-${index}`}
@@ -634,13 +634,13 @@ export default function ProductResultScreen() {
 
                     {!bestOffer && fallbackMarketPrices.length > 1 ? (
                       <>
-                        <Text style={styles.label}>Diðer fiyat seçenekleri</Text>
+                        <Text style={styles.label}>DiÄŸer fiyat seÃ§enekleri</Text>
                         {fallbackMarketPrices.slice(1, 6).map((marketOption, index) => (
                           <Text
                             key={`${marketOption.marketName}-${marketOption.price}-${index}`}
                             style={styles.helperText}
                           >
-                            {marketOption.marketName} ·{' '}
+                            {marketOption.marketName} Â·{' '}
                             {formatPriceForDisplay(marketOption.price, marketOption.currency)}
                           </Text>
                         ))}
@@ -649,7 +649,7 @@ export default function ProductResultScreen() {
 
                     <Text style={styles.helperText}>
                       {priceStatusLabel(priceResult.status)}
-                      {priceResult.updatedAt ? ` · Güncelleme: ${priceResult.updatedAt}` : ''}
+                      {priceResult.updatedAt ? ` Â· GÃ¼ncelleme: ${priceResult.updatedAt}` : ''}
                     </Text>
 
                     {priceResult.note ? (
@@ -672,7 +672,7 @@ export default function ProductResultScreen() {
           style={styles.sectionHeader}
           onPress={() => setIsSustainabilityOpen((current) => !current)}
         >
-          <Text style={styles.sectionTitle}>Sürdürülebilirlik Skoru</Text>
+          <Text style={styles.sectionTitle}>SÃ¼rdÃ¼rÃ¼lebilirlik Skoru</Text>
           <Text style={styles.sectionToggle}>{isSustainabilityOpen ? '-' : '+'}</Text>
         </Pressable>
 
@@ -681,7 +681,7 @@ export default function ProductResultScreen() {
             {sustainability ? (
               <>
                 <View style={styles.sustainabilitySummaryCard}>
-                  <Text style={styles.sustainabilitySummaryLabel}>Sürdürülebilirlik Skoru</Text>
+                  <Text style={styles.sustainabilitySummaryLabel}>SÃ¼rdÃ¼rÃ¼lebilirlik Skoru</Text>
 
                   <View style={styles.sustainabilityHeaderRow}>
                     <Text style={styles.sustainabilityGrade}>{sustainability.grade}</Text>
@@ -698,13 +698,13 @@ export default function ProductResultScreen() {
                   onPress={() => setIsSustainabilityDetailsOpen((current) => !current)}
                 >
                   <Text style={styles.inlineButtonText}>
-                    {isSustainabilityDetailsOpen ? 'Detaylarý gizle' : 'Detaylarý göster'}
+                    {isSustainabilityDetailsOpen ? 'DetaylarÄ± gizle' : 'DetaylarÄ± gÃ¶ster'}
                   </Text>
                 </Pressable>
 
                 {isSustainabilityDetailsOpen ? (
                   <>
-                    <Text style={styles.label}>Güven</Text>
+                    <Text style={styles.label}>GÃ¼ven</Text>
                     <Text style={styles.value}>
                       {getSustainabilityConfidenceLabel(sustainability.confidence)}
                     </Text>
@@ -716,10 +716,10 @@ export default function ProductResultScreen() {
 
                     {sustainability.explanations.length > 0 ? (
                       <>
-                        <Text style={styles.label}>Açýklama</Text>
+                        <Text style={styles.label}>AÃ§Ä±klama</Text>
                         {sustainability.explanations.slice(0, 3).map((explanation, index) => (
                           <Text key={`${explanation}-${index}`} style={styles.helperText}>
-                            • {explanation}
+                            â€¢ {explanation}
                           </Text>
                         ))}
                       </>
@@ -731,7 +731,7 @@ export default function ProductResultScreen() {
               </>
             ) : (
               <Text style={styles.helperText}>
-                Bu ürün için sürdürülebilirlik skoru henüz hesaplanamadý.
+                Bu Ã¼rÃ¼n iÃ§in sÃ¼rdÃ¼rÃ¼lebilirlik skoru henÃ¼z hesaplanamadÄ±.
               </Text>
             )}
           </View>
@@ -741,14 +741,14 @@ export default function ProductResultScreen() {
           style={styles.sectionHeader}
           onPress={() => setIsHealthOpen((current) => !current)}
         >
-          <Text style={styles.sectionTitle}>Saðlýk Skoru</Text>
+          <Text style={styles.sectionTitle}>SaÄŸlÄ±k Skoru</Text>
           <Text style={styles.sectionToggle}>{isHealthOpen ? '-' : '+'}</Text>
         </Pressable>
 
         {isHealthOpen ? (
           <View style={styles.row}>
             <View style={styles.scoreSummaryCard}>
-              <Text style={styles.scoreSummaryLabel}>Saðlýk Skoru</Text>
+              <Text style={styles.scoreSummaryLabel}>SaÄŸlÄ±k Skoru</Text>
               <Text style={styles.scoreSummaryValue}>{getHealthScoreDisplayValue(healthScore)}</Text>
               <Text style={styles.helperText}>{getHealthScoreStatusText(healthScore)}</Text>
             </View>
@@ -758,7 +758,7 @@ export default function ProductResultScreen() {
               onPress={() => setIsHealthDetailsOpen((current) => !current)}
             >
               <Text style={styles.inlineButtonText}>
-                {isHealthDetailsOpen ? 'Detaylarý gizle' : 'Detaylarý göster'}
+                {isHealthDetailsOpen ? 'DetaylarÄ± gizle' : 'DetaylarÄ± gÃ¶ster'}
               </Text>
             </Pressable>
 
@@ -775,14 +775,14 @@ export default function ProductResultScreen() {
           style={styles.sectionHeader}
           onPress={() => setIsContentOpen((current) => !current)}
         >
-          <Text style={styles.sectionTitle}>Ýçerik ve alerjenler</Text>
+          <Text style={styles.sectionTitle}>Ä°Ã§erik ve alerjenler</Text>
           <Text style={styles.sectionToggle}>{isContentOpen ? '-' : '+'}</Text>
         </Pressable>
 
         {isContentOpen ? (
           <View style={styles.row}>
             <View style={styles.scoreSummaryCard}>
-              <Text style={styles.scoreSummaryLabel}>Ýçerik/Alerjen Skoru</Text>
+              <Text style={styles.scoreSummaryLabel}>Ä°Ã§erik/Alerjen Skoru</Text>
               <Text style={styles.scoreSummaryValue}>{getContentScoreDisplayValue(contentScore)}</Text>
               <Text style={styles.helperText}>{getContentScoreStatusText(contentScore)}</Text>
             </View>
@@ -792,7 +792,7 @@ export default function ProductResultScreen() {
               onPress={() => setIsContentDetailsOpen((current) => !current)}
             >
               <Text style={styles.inlineButtonText}>
-                {isContentDetailsOpen ? 'Detaylarý gizle' : 'Detaylarý göster'}
+                {isContentDetailsOpen ? 'DetaylarÄ± gizle' : 'DetaylarÄ± gÃ¶ster'}
               </Text>
             </Pressable>
 
@@ -805,7 +805,7 @@ export default function ProductResultScreen() {
                 ) : null}
 
                 <Text style={styles.helperText}>
-                  Alerjen ve katký bilgileri ürün etiketine göre deðiþebilir. Son karar için ambalaj üzerindeki bilgileri kontrol edin.
+                  Alerjen ve katkÄ± bilgileri Ã¼rÃ¼n etiketine gÃ¶re deÄŸiÅŸebilir. Son karar iÃ§in ambalaj Ã¼zerindeki bilgileri kontrol edin.
                 </Text>
 
                 <Text style={styles.label}>Alerjenler</Text>
@@ -813,24 +813,24 @@ export default function ProductResultScreen() {
                   {displayAllergens.length > 0 ? displayAllergens.join(', ') : 'Bilinmiyor'}
                 </Text>
 
-                <Text style={styles.label}>Katký maddeleri</Text>
+                <Text style={styles.label}>KatkÄ± maddeleri</Text>
                 <Text style={styles.value}>
                   {displayAdditives.length > 0 ? displayAdditives.join(', ') : 'Bilinmiyor'}
                 </Text>
 
-                <Text style={styles.label}>Ýçindekiler</Text>
+                <Text style={styles.label}>Ä°Ã§indekiler</Text>
                 <Pressable
                   style={styles.inlineButton}
                   onPress={() => setIsIngredientsVisible((current) => !current)}
                 >
                   <Text style={styles.inlineButtonText}>
-                    {isIngredientsVisible ? 'Ýçindekileri gizle' : 'Ýçindekileri göster'}
+                    {isIngredientsVisible ? 'Ä°Ã§indekileri gizle' : 'Ä°Ã§indekileri gÃ¶ster'}
                   </Text>
                 </Pressable>
 
                 {isIngredientsVisible ? (
                   <Text style={styles.value}>
-                    {displayIngredients?.trim() || 'Ýçindekiler bilgisi bulunamadý.'}
+                    {displayIngredients?.trim() || 'Ä°Ã§indekiler bilgisi bulunamadÄ±.'}
                   </Text>
                 ) : null}
               </>
@@ -842,24 +842,24 @@ export default function ProductResultScreen() {
           style={styles.sectionHeader}
           onPress={() => setIsBasicInfoOpen((current) => !current)}
         >
-          <Text style={styles.sectionTitle}>Ürün detaylarý</Text>
+          <Text style={styles.sectionTitle}>ÃœrÃ¼n detaylarÄ±</Text>
           <Text style={styles.sectionToggle}>{isBasicInfoOpen ? '-' : '+'}</Text>
         </Pressable>
 
         {isBasicInfoOpen ? (
           <>
             <View style={styles.row}>
-              <Text style={styles.label}>Ürün adý</Text>
+              <Text style={styles.label}>ÃœrÃ¼n adÄ±</Text>
               <Text style={styles.value}>{displayProductName}</Text>
             </View>
 
             <View style={styles.row}>
-              <Text style={styles.label}>Barkod numarasý</Text>
+              <Text style={styles.label}>Barkod numarasÄ±</Text>
               <Text style={styles.value}>{displayBarcode}</Text>
             </View>
 
             <View style={styles.row}>
-              <Text style={styles.label}>Arama kaynaðý</Text>
+              <Text style={styles.label}>Arama kaynaÄŸÄ±</Text>
               <Text style={styles.value}>
                 {sourceLabelMap[result.searchSource] ?? result.searchSource}
               </Text>
@@ -875,7 +875,7 @@ export default function ProductResultScreen() {
               onPress={() => setIsRiskOpen((current) => !current)}
             >
               <Text style={styles.sectionTitle}>
-                RafSkoru Uyarýlarý ({riskResult.warnings.length})
+                RafSkoru UyarÄ±larÄ± ({riskResult.warnings.length})
               </Text>
               <Text style={styles.sectionToggle}>{isRiskOpen ? '-' : '+'}</Text>
             </Pressable>
@@ -902,7 +902,7 @@ export default function ProductResultScreen() {
                       </Text>
                       <Pressable style={styles.warningDetailButton} onPress={toggleDetail}>
                         <Text style={styles.warningDetailButtonText}>
-                          {isExpanded ? 'Detaylarý gizle' : 'Detaylarý göster'}
+                          {isExpanded ? 'DetaylarÄ± gizle' : 'DetaylarÄ± gÃ¶ster'}
                         </Text>
                       </Pressable>
                       {isExpanded ? (
@@ -922,15 +922,15 @@ export default function ProductResultScreen() {
         </Pressable>
 
         <Pressable style={styles.secondaryButton} onPress={() => router.push('/search')}>
-          <Text style={styles.secondaryButtonText}>Yeni ürün ara</Text>
+          <Text style={styles.secondaryButtonText}>Yeni Ã¼rÃ¼n ara</Text>
         </Pressable>
 
         <Pressable style={styles.secondaryButton} onPress={() => router.push('/photo-search')}>
-          <Text style={styles.secondaryButtonText}>Yeni fotoðraf çek</Text>
+          <Text style={styles.secondaryButtonText}>Yeni fotoÄŸraf Ã§ek</Text>
         </Pressable>
 
         <Pressable style={styles.secondaryButton} onPress={() => router.push('/')}>
-          <Text style={styles.secondaryButtonText}>Ana sayfaya dön</Text>
+          <Text style={styles.secondaryButtonText}>Ana sayfaya dÃ¶n</Text>
         </Pressable>
       </View>
     </ScrollView>
@@ -938,24 +938,24 @@ export default function ProductResultScreen() {
 }
 
 function getSustainabilityConfidenceLabel(confidence: 'low' | 'medium' | 'high'): string {
-  if (confidence === 'high') return 'Yüksek';
+  if (confidence === 'high') return 'YÃ¼ksek';
   if (confidence === 'medium') return 'Orta';
-  return 'Düþük';
+  return 'DÃ¼ÅŸÃ¼k';
 }
 
 function getSustainabilityCategoryLabel(categoryKey: string): string {
   const labels: Record<string, string> = {
-    plant_based: 'Bitkisel ürün',
-    staple_food: 'Temel gýda',
-    beverages: 'Ýçecek',
-    breakfast: 'Kahvaltýlýk',
-    baby_food: 'Bebek gýdasý',
-    dairy: 'Süt ürünü',
-    sauces_condiments: 'Sos / çeþni',
-    snacks: 'Atýþtýrmalýk',
-    sweets_chocolate: 'Tatlý / çikolata',
-    frozen_ready: 'Dondurulmuþ / hazýr gýda',
-    meat: 'Et ürünü',
+    plant_based: 'Bitkisel Ã¼rÃ¼n',
+    staple_food: 'Temel gÄ±da',
+    beverages: 'Ä°Ã§ecek',
+    breakfast: 'KahvaltÄ±lÄ±k',
+    baby_food: 'Bebek gÄ±dasÄ±',
+    dairy: 'SÃ¼t Ã¼rÃ¼nÃ¼',
+    sauces_condiments: 'Sos / Ã§eÅŸni',
+    snacks: 'AtÄ±ÅŸtÄ±rmalÄ±k',
+    sweets_chocolate: 'TatlÄ± / Ã§ikolata',
+    frozen_ready: 'DondurulmuÅŸ / hazÄ±r gÄ±da',
+    meat: 'Et Ã¼rÃ¼nÃ¼',
     unknown: 'Bilinmeyen kategori',
   };
 
@@ -963,9 +963,9 @@ function getSustainabilityCategoryLabel(categoryKey: string): string {
 }
 
 const riskLevelLabel: Record<RiskLevel, string> = {
-  low: 'Düþük risk',
+  low: 'DÃ¼ÅŸÃ¼k risk',
   medium: 'Orta risk',
-  high: 'Yüksek risk',
+  high: 'YÃ¼ksek risk',
   unknown: 'Bilinmiyor',
 };
 
