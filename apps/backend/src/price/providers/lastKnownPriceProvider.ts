@@ -61,7 +61,7 @@ export class LastKnownPriceProvider implements IPriceProvider {
       status: 'last_known',
       source: 'last_known',
       confidence: Math.min(row.result.confidence, 0.4),
-      note: 'Son bilinen fiyat. Güncel olmayabilir.',
+      note: 'Son bilinen fiyat. GÃ¼ncel olmayabilir.',
     };
   }
 }
