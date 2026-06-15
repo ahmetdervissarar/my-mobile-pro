@@ -9,7 +9,7 @@ const mockStoreLocator: StoreLocator = {
       {
         chainCode: 'MIGROS',
         displayName: 'Migros',
-        branchName: 'Test Þube',
+        branchName: 'Test Åžube',
         latitude: 36.8,
         longitude: 34.63,
         address: 'Test adres',
@@ -25,7 +25,7 @@ const offers = await enrichOffers(
       price: 42.5,
       currency: 'TRY',
       source: 'manual_beta',
-      productName: 'Test Süt 1 L',
+      productName: 'Test SÃ¼t 1 L',
       barcode: '8690000000000',
       productUrl: 'https://example.com/product',
       imageUrl: 'https://example.com/image.jpg',
@@ -58,7 +58,7 @@ assert.equal(offer.marketName, 'Migros Sanal Market');
 assert.equal(offer.price, 42.5);
 assert.equal(offer.currency, 'TRY');
 assert.equal(offer.source, 'manual_beta');
-assert.equal(offer.productName, 'Test Süt 1 L');
+assert.equal(offer.productName, 'Test SÃ¼t 1 L');
 assert.equal(offer.barcode, '8690000000000');
 assert.equal(offer.productUrl, 'https://example.com/product');
 assert.equal(offer.imageUrl, 'https://example.com/image.jpg');
