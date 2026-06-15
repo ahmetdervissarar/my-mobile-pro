@@ -464,6 +464,14 @@ export default function ProductResultScreen() {
   const productFactsVerificationReason =
     backendProductFacts?.verificationReason?.trim() ||
     'Bu ürün için ürün analiz verisi eksik. Skorlar kısmi veriyle yorumlanmalıdır.';
+
+  const isUnknownProduct =
+    !isPriceLoading &&
+    Boolean(normalizedInput.barcode) &&
+    priceResolution !== null &&
+    !backendProductFacts &&
+    priceResult?.rafScore?.status === 'unavailable' &&
+    (priceResult?.price ?? null) === null;
   return (
     <ScrollView
       style={styles.container}
@@ -537,6 +545,15 @@ export default function ProductResultScreen() {
             ) : null}
           </View>
         ) : null}
+        {isUnknownProduct ? (
+          <View style={styles.productFactsNoticeCard}>
+            <Text style={styles.productFactsNoticeTitle}>Ürün bulunamadı</Text>
+            <Text style={styles.productFactsNoticeText}>
+              Bu barkod için ürün verisi ve fiyat bulunamadı. RafSkoru hesaplanamıyor. Lütfen barkodu kontrol edin veya ürünü ada göre aratın.
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.rafScoreCard}>
           <Text style={styles.rafScoreLabel}>RAF SKORU</Text>
           <Text style={styles.rafScoreValue}>{getRafScoreDisplayValue(rafScore)}</Text>
