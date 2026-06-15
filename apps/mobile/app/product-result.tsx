@@ -474,8 +474,7 @@ export default function ProductResultScreen() {
     ? null
     : priceResolution?.result.imageUrl ?? result.imageUrl ?? capturedPhotoUri ?? null;
 
-  // Alternative recommendations are loaded here and rendered in a follow-up UI commit.
-  void alternativeRecommendations;
+  const topAlternativeRecommendation = alternativeRecommendations[0] ?? null;
   const priceResult = priceResolution?.result ?? null;
   const rafScore = priceResult?.rafScore ?? null;
   const priceScore = priceResult?.priceScore ?? null;
@@ -600,6 +599,34 @@ export default function ProductResultScreen() {
           <Text style={styles.rafScoreCaption}>{getRafScoreStatusText(rafScore)}</Text>
           <Text style={styles.rafScoreCaption}>{getRafScoreConfidenceText(rafScore)}</Text>
         </View>
+
+        {topAlternativeRecommendation ? (
+          <View style={styles.alternativeCard}>
+            <Text style={styles.alternativeLabel}>
+              {topAlternativeRecommendation.reasonLabel}
+            </Text>
+            <Text style={styles.alternativeProductName}>
+              {topAlternativeRecommendation.candidate.productName}
+            </Text>
+            <Text style={styles.alternativePrice}>
+              {formatPriceForDisplay(
+                topAlternativeRecommendation.candidate.price,
+                topAlternativeRecommendation.candidate.currency,
+              )}{' '}
+              · {topAlternativeRecommendation.candidate.marketName}
+            </Text>
+
+            {topAlternativeRecommendation.reasons.slice(0, 4).map((reason) => (
+              <Text key={reason} style={styles.alternativeReason}>
+                • {reason}
+              </Text>
+            ))}
+
+            <Text style={styles.helperText}>
+              Veri güveni: {getDataConfidenceLabel(topAlternativeRecommendation.confidenceLevel)}
+            </Text>
+          </View>
+        ) : null}
 
         <Pressable
           style={styles.sectionHeader}
@@ -994,6 +1021,12 @@ export default function ProductResultScreen() {
   );
 }
 
+function getDataConfidenceLabel(confidence: 'low' | 'medium' | 'high'): string {
+  if (confidence === 'high') return 'Yüksek';
+  if (confidence === 'medium') return 'Orta';
+  return 'Düşük';
+}
+
 function getSustainabilityConfidenceLabel(confidence: 'low' | 'medium' | 'high'): string {
   if (confidence === 'high') return 'Yüksek';
   if (confidence === 'medium') return 'Orta';
@@ -1133,6 +1166,34 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '500',
     color: '#92400E',
+  },
+  alternativeCard: {
+    borderRadius: 16,
+    padding: 14,
+    backgroundColor: '#FFF7ED',
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    gap: 6,
+  },
+  alternativeLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#C2410C',
+    letterSpacing: 0.5,
+  },
+  alternativeProductName: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#7C2D12',
+  },
+  alternativePrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#9A3412',
+  },
+  alternativeReason: {
+    fontSize: 12,
+    color: '#9A3412',
   },
   rafScoreCard: {
     borderRadius: 16,
