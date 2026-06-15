@@ -273,6 +273,7 @@ export interface PriceResult {
   status: PriceStatus;
   updatedAt: string;
   confidence: number;
+  overallConfidence?: DataConfidenceResult;
   note?: string;
   distanceText?: string;
   marketPrices?: MarketPriceOption[];
@@ -304,3 +305,84 @@ export interface PriceQuery {
 
 
 
+
+export type DataConfidenceLevel = 'low' | 'medium' | 'high';
+
+export interface DataConfidenceResult {
+  level: DataConfidenceLevel;
+  reasons: string[];
+}
+
+export type AlternativeCategoryKey =
+  | 'plant_based'
+  | 'staple_food'
+  | 'beverages'
+  | 'breakfast'
+  | 'baby_food'
+  | 'dairy'
+  | 'sauces_condiments'
+  | 'snacks'
+  | 'sweets_chocolate'
+  | 'frozen_ready'
+  | 'meat'
+  | 'unknown';
+
+export interface AlternativeCandidateScores {
+  rafScore: number;
+  priceScore: number;
+  healthScore: number;
+  contentScore: number;
+  sustainabilityScore?: number;
+}
+
+export interface AlternativeCandidateSignals {
+  allergens?: string[];
+  additives?: string[];
+  nutriScoreGrade?: 'A' | 'B' | 'C' | 'D' | 'E';
+  novaGroup?: 1 | 2 | 3 | 4;
+}
+
+export interface AlternativeCandidate {
+  id: string;
+  barcode?: string;
+  productName: string;
+  categoryKey: AlternativeCategoryKey;
+  categoryText?: string;
+  marketName: string;
+  chainCode: string;
+  price: number;
+  currency: 'TRY';
+  distanceMeters?: number;
+  distanceText?: string;
+  scores: AlternativeCandidateScores;
+  signals?: AlternativeCandidateSignals;
+  overallConfidence: DataConfidenceResult;
+}
+
+export interface AlternativeRecommendation {
+  candidate: AlternativeCandidate;
+  rankingScore: number;
+  reasonLabel: string;
+  rafScoreDelta: number | null;
+  priceDelta: number | null;
+  priceDeltaText?: string;
+  distanceText?: string;
+  reasons: string[];
+  confidenceLevel: DataConfidenceLevel;
+}
+
+export interface AlternativeRecommendationsResponse {
+  recommendations: AlternativeRecommendation[];
+}
+
+export interface AlternativeRecommendationsQuery {
+  categoryKey: AlternativeCategoryKey;
+  barcode?: string;
+  productName?: string;
+  price?: number | null;
+  rafScore?: number | null;
+  healthScore?: number | null;
+  contentScore?: number | null;
+  sustainabilityScore?: number | null;
+  limit?: number;
+}

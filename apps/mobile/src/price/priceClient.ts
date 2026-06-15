@@ -2,6 +2,8 @@ import type {
   PriceQuery,
   PriceResolveResponse,
   PriceResult,
+  AlternativeRecommendationsQuery,
+  AlternativeRecommendationsResponse,
 } from './types';
 
 export interface PriceClientOptions {
@@ -79,6 +81,64 @@ export class PriceClient {
     } catch (err) {
       const message = (err as Error)?.message ?? 'Bilinmeyen a\u011f hatas\u0131';
       return this.unavailable(query, message);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+
+  async fetchAlternatives(
+    query: AlternativeRecommendationsQuery,
+  ): Promise<AlternativeRecommendationsResponse> {
+    if (!query.categoryKey || query.categoryKey === 'unknown') {
+      return { recommendations: [] };
+    }
+
+    const params = new URLSearchParams();
+    params.set('categoryKey', query.categoryKey);
+
+    const setOptionalParam = (key: string, value: string | number | null | undefined): void => {
+      if (value !== undefined && value !== null && String(value).length > 0) {
+        params.set(key, String(value));
+      }
+    };
+
+    setOptionalParam('barcode', query.barcode);
+    setOptionalParam('productName', query.productName);
+    setOptionalParam('price', query.price);
+    setOptionalParam('rafScore', query.rafScore);
+    setOptionalParam('healthScore', query.healthScore);
+    setOptionalParam('contentScore', query.contentScore);
+    setOptionalParam('sustainabilityScore', query.sustainabilityScore);
+    setOptionalParam('limit', query.limit);
+
+    const url = `${this.baseUrl}/api/price/alternatives?${params.toString()}`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const res = await this.fetchImpl(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        return { recommendations: [] };
+      }
+
+      const data = (await res.json()) as AlternativeRecommendationsResponse;
+
+      if (!data || !Array.isArray(data.recommendations)) {
+        return { recommendations: [] };
+      }
+
+      return data;
+    } catch {
+      return { recommendations: [] };
     } finally {
       clearTimeout(timer);
     }
