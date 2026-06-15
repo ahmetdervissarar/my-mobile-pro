@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   AlternativeCandidate,
   AlternativeRecommendation,
   ScoreAlternativesInput,
@@ -177,6 +177,14 @@ export function scoreAlternatives(input: ScoreAlternativesInput): AlternativeRec
       };
     })
     .filter((recommendation) => recommendation.rankingScore > 0)
+    .filter((recommendation) => {
+      const improvesRafScore =
+        recommendation.rafScoreDelta !== null && recommendation.rafScoreDelta > 0;
+      const isNotMoreExpensive =
+        recommendation.priceDelta === null || recommendation.priceDelta <= 0;
+
+      return improvesRafScore && isNotMoreExpensive;
+    })
     .sort((a, b) => {
       if (b.rankingScore !== a.rankingScore) {
         return b.rankingScore - a.rankingScore;
