@@ -51,7 +51,7 @@ assert.equal(sustainabilityInput.processing, 'nova_4');
 
 const incompleteFacts = openFoodFactsInfoToProductFacts({
   barcode: '8690000000001',
-  productName: 'Eksik Veri Ürünü',
+  productName: 'Eksik Veri ÃœrÃ¼nÃ¼',
   imageUrl: 'https://example.com/missing.jpg',
   sourceUrl: 'https://world.openfoodfacts.org/product/8690000000001',
 });
