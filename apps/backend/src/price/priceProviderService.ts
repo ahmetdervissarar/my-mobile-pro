@@ -11,6 +11,7 @@ import { ManualBetaPriceProvider } from './providers/manualBetaPriceProvider.js'
 import { enrichOffers, pickBestOffer } from './enrich/index.js';
 import { calculateSustainabilityScore } from './sustainability/index.js';
 import { calculateRafScore } from './rafScore/index.js';
+import { resolveDataConfidence } from './confidence/index.js';
 import { calculatePriceScore } from './priceScore/index.js';
 import { calculateHealthScore, type HealthScoreInput } from './healthScore/index.js';
 import {
@@ -355,6 +356,11 @@ function attachPriceScore(result: PriceResult): void {
   });
 }
 
+
+function attachOverallConfidence(result: PriceResult): void {
+  result.overallConfidence = resolveDataConfidence(result);
+}
+
 function attachRafScore(result: PriceResult): void {
   result.rafScore = calculateRafScore({
     priceScore: result.priceScore?.score ?? null,
@@ -453,6 +459,7 @@ export class PriceProviderService {
           attachContentScore(result, query, productFacts);
           attachSustainabilityScore(result, query, productFacts);
           attachRafScore(result);
+    attachOverallConfidence(result);
 
           return {
             result,
@@ -475,6 +482,7 @@ export class PriceProviderService {
     attachContentScore(unavailableResult, query, productFacts);
     attachSustainabilityScore(unavailableResult, query, productFacts);
     attachRafScore(unavailableResult);
+    attachOverallConfidence(unavailableResult);
 
     return {
       result: unavailableResult,

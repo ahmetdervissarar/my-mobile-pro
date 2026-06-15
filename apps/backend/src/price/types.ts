@@ -5,6 +5,7 @@ import type { PriceScoreResult } from './priceScore/index.js';
 import type { HealthScoreResult } from './healthScore/index.js';
 import type { ContentScoreResult } from './contentScore/index.js';
 import type { ProductFacts } from './productFacts/index.js';
+import type { DataConfidenceResult } from './confidence/types.js';
 
 export type PriceSource =
   | 'manual_beta'
@@ -42,6 +43,7 @@ export interface PriceResult {
   status: PriceStatus;
   updatedAt: string;
   confidence: number;
+  overallConfidence?: DataConfidenceResult;
   note?: string;
   distanceText?: string;
   marketPrices?: MarketPriceOption[];
