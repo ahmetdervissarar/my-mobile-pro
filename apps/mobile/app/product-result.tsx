@@ -13,7 +13,7 @@ import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorag
 import { emptyUserSensitivityProfile } from '../src/userProfile/userProfileTypes';
 import type { UserSensitivityProfile } from '../src/userProfile/userProfileTypes';
 import { PriceClient, formatPriceForDisplay, priceStatusLabel } from '../src/price/priceClient';
-import type { EnrichedMarketOffer, PriceResolveResponse, ProductFacts } from '../src/price/types';
+import type { AlternativeCategoryKey, AlternativeRecommendation, EnrichedMarketOffer, PriceResolveResponse, ProductFacts } from '../src/price/types';
 import type { ProductResult, TrafficLightNutrition } from '../src/types/product';
 import {
   getRafScoreConfidenceText,
@@ -228,6 +228,7 @@ export default function ProductResultScreen() {
   const [priceResolution, setPriceResolution] = useState<PriceResolveResponse | null>(null);
   const [isPriceLoading, setIsPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
+  const [alternativeRecommendations, setAlternativeRecommendations] = useState<AlternativeRecommendation[]>([]);
 
   useEffect(() => {
     void loadUserSensitivityProfile()
@@ -369,6 +370,43 @@ export default function ProductResultScreen() {
   }, [normalizedInput]);
 
   useEffect(() => {
+    let isMounted = true;
+    const currentPriceResult = priceResolution?.result ?? null;
+    const categoryKey = currentPriceResult?.sustainability?.categoryKey;
+
+    if (!currentPriceResult || !categoryKey || categoryKey === 'unknown') {
+      setAlternativeRecommendations([]);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    void priceClient
+      .fetchAlternatives({
+        barcode: currentPriceResult.barcode,
+        productName: currentPriceResult.productName,
+        categoryKey: categoryKey as AlternativeCategoryKey,
+        price: currentPriceResult.price,
+        rafScore: currentPriceResult.rafScore?.score ?? null,
+        healthScore: currentPriceResult.healthScore?.score ?? null,
+        contentScore: currentPriceResult.contentScore?.score ?? null,
+        sustainabilityScore: currentPriceResult.sustainability?.score ?? null,
+        limit: 2,
+      })
+      .then((response) => {
+        if (!isMounted) return;
+        setAlternativeRecommendations(response.recommendations);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setAlternativeRecommendations([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [priceResolution]);
+  useEffect(() => {
     if (riskResult.warnings.length > 0) {
       setIsRiskOpen(true);
     }
@@ -436,6 +474,8 @@ export default function ProductResultScreen() {
     ? null
     : priceResolution?.result.imageUrl ?? result.imageUrl ?? capturedPhotoUri ?? null;
 
+  // Alternative recommendations are loaded here and rendered in a follow-up UI commit.
+  void alternativeRecommendations;
   const priceResult = priceResolution?.result ?? null;
   const rafScore = priceResult?.rafScore ?? null;
   const priceScore = priceResult?.priceScore ?? null;
