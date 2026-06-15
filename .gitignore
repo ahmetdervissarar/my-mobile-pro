@@ -34,3 +34,6 @@ dist-ssr
 apps/backend/.env
 
 apps/mobile/.env
+
+.env
+.env.*
