@@ -159,14 +159,14 @@ function getVerificationReason(missingFields: ProductFactsMissingField[]): strin
   if (missingFields.length === 0) return undefined;
 
   if (missingFields.includes('ingredientsText')) {
-    return 'OFF ürünü bulundu ancak içerik listesi eksik olduğu için doğrulama kuyruğuna alınmalı.';
+    return 'OFF Ã¼rÃ¼nÃ¼ bulundu ancak iÃ§erik listesi eksik olduÄŸu iÃ§in doÄŸrulama kuyruÄŸuna alÄ±nmalÄ±.';
   }
 
   if (missingFields.includes('nutrition')) {
-    return 'OFF ürünü bulundu ancak besin değerleri eksik olduğu için sağlık skoru sınırlı kalır.';
+    return 'OFF Ã¼rÃ¼nÃ¼ bulundu ancak besin deÄŸerleri eksik olduÄŸu iÃ§in saÄŸlÄ±k skoru sÄ±nÄ±rlÄ± kalÄ±r.';
   }
 
-  return 'OFF ürünü bulundu ancak skorlamada kullanılan bazı alanlar eksik.';
+  return 'OFF Ã¼rÃ¼nÃ¼ bulundu ancak skorlamada kullanÄ±lan bazÄ± alanlar eksik.';
 }
 
 function getConfidence(missingFields: ProductFactsMissingField[]): ProductFactsConfidence {
