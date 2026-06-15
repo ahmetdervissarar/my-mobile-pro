@@ -1,0 +1,290 @@
+﻿[
+  {
+    "id": "seed-dairy-001",
+    "productName": "Yarım Yağlı Süt 1 L",
+    "categoryKey": "dairy",
+    "categoryText": "Süt ve süt ürünleri",
+    "marketName": "Migros",
+    "chainCode": "MIGROS",
+    "price": 39.9,
+    "currency": "TRY",
+    "distanceMeters": 1100,
+    "distanceText": "1.1 km",
+    "scores": {
+      "rafScore": 78,
+      "priceScore": 82,
+      "healthScore": 76,
+      "contentScore": 80,
+      "sustainabilityScore": 70
+    },
+    "signals": {
+      "allergens": ["süt"],
+      "additives": [],
+      "nutriScoreGrade": "B",
+      "novaGroup": 1
+    },
+    "overallConfidence": {
+      "level": "medium",
+      "reasons": [
+        "Kapalı beta aday verisi.",
+        "Fiyat referans amaçlıdır."
+      ]
+    }
+  },
+  {
+    "id": "seed-dairy-002",
+    "productName": "Laktozsuz Süt 1 L",
+    "categoryKey": "dairy",
+    "categoryText": "Süt ve süt ürünleri",
+    "marketName": "CarrefourSA",
+    "chainCode": "CARREFOURSA",
+    "price": 44.5,
+    "currency": "TRY",
+    "distanceMeters": 1800,
+    "distanceText": "1.8 km",
+    "scores": {
+      "rafScore": 81,
+      "priceScore": 74,
+      "healthScore": 82,
+      "contentScore": 84,
+      "sustainabilityScore": 72
+    },
+    "signals": {
+      "allergens": ["süt"],
+      "additives": [],
+      "nutriScoreGrade": "B",
+      "novaGroup": 1
+    },
+    "overallConfidence": {
+      "level": "medium",
+      "reasons": [
+        "Kapalı beta aday verisi.",
+        "Ürün profili karşılaştırma için yeterli."
+      ]
+    }
+  },
+  {
+    "id": "seed-dairy-003",
+    "productName": "Kefir 1 L",
+    "categoryKey": "dairy",
+    "categoryText": "Süt ve süt ürünleri",
+    "marketName": "A101",
+    "chainCode": "A101",
+    "price": 49.9,
+    "currency": "TRY",
+    "distanceMeters": 900,
+    "distanceText": "900 m",
+    "scores": {
+      "rafScore": 84,
+      "priceScore": 70,
+      "healthScore": 88,
+      "contentScore": 86,
+      "sustainabilityScore": 74
+    },
+    "signals": {
+      "allergens": ["süt"],
+      "additives": [],
+      "nutriScoreGrade": "A",
+      "novaGroup": 1
+    },
+    "overallConfidence": {
+      "level": "medium",
+      "reasons": [
+        "Kapalı beta aday verisi.",
+        "Sağlık ve içerik karşılaştırması için uygun."
+      ]
+    }
+  },
+  {
+    "id": "seed-beverages-001",
+    "productName": "Şekersiz Maden Suyu 200 ml",
+    "categoryKey": "beverages",
+    "categoryText": "İçecek",
+    "marketName": "ŞOK",
+    "chainCode": "SOK",
+    "price": 9.5,
+    "currency": "TRY",
+    "distanceMeters": 600,
+    "distanceText": "600 m",
+    "scores": {
+      "rafScore": 86,
+      "priceScore": 84,
+      "healthScore": 90,
+      "contentScore": 88,
+      "sustainabilityScore": 68
+    },
+    "signals": {
+      "allergens": [],
+      "additives": [],
+      "nutriScoreGrade": "A",
+      "novaGroup": 1
+    },
+    "overallConfidence": {
+      "level": "medium",
+      "reasons": [
+        "Kapalı beta aday verisi.",
+        "Alternatif öneri testi için kullanılır."
+      ]
+    }
+  },
+  {
+    "id": "seed-beverages-002",
+    "productName": "Şekersiz Kola 1 L",
+    "categoryKey": "beverages",
+    "categoryText": "İçecek",
+    "marketName": "Migros",
+    "chainCode": "MIGROS",
+    "price": 34.9,
+    "currency": "TRY",
+    "distanceMeters": 1200,
+    "distanceText": "1.2 km",
+    "scores": {
+      "rafScore": 63,
+      "priceScore": 72,
+      "healthScore": 58,
+      "contentScore": 55,
+      "sustainabilityScore": 50
+    },
+    "signals": {
+      "allergens": [],
+      "additives": ["tatlandırıcı", "renklendirici"],
+      "nutriScoreGrade": "C",
+      "novaGroup": 4
+    },
+    "overallConfidence": {
+      "level": "medium",
+      "reasons": [
+        "Kapalı beta aday verisi.",
+        "İçerik sinyalleri sınırlı güvenle değerlendirilmiştir."
+      ]
+    }
+  },
+  {
+    "id": "seed-beverages-003",
+    "productName": "Meyve Suyu 1 L",
+    "categoryKey": "beverages",
+    "categoryText": "İçecek",
+    "marketName": "CarrefourSA",
+    "chainCode": "CARREFOURSA",
+    "price": 42.9,
+    "currency": "TRY",
+    "distanceMeters": 2100,
+    "distanceText": "2.1 km",
+    "scores": {
+      "rafScore": 55,
+      "priceScore": 60,
+      "healthScore": 52,
+      "contentScore": 58,
+      "sustainabilityScore": 57
+    },
+    "signals": {
+      "allergens": [],
+      "additives": [],
+      "nutriScoreGrade": "D",
+      "novaGroup": 3
+    },
+    "overallConfidence": {
+      "level": "medium",
+      "reasons": [
+        "Kapalı beta aday verisi.",
+        "Şeker hassasiyeti olan kullanıcılar için dikkat gerektirir."
+      ]
+    }
+  },
+  {
+    "id": "seed-snacks-001",
+    "productName": "Sade Kraker 100 g",
+    "categoryKey": "snacks",
+    "categoryText": "Atıştırmalık",
+    "marketName": "BİM",
+    "chainCode": "BIM",
+    "price": 18.5,
+    "currency": "TRY",
+    "distanceMeters": 700,
+    "distanceText": "700 m",
+    "scores": {
+      "rafScore": 61,
+      "priceScore": 80,
+      "healthScore": 54,
+      "contentScore": 60,
+      "sustainabilityScore": 55
+    },
+    "signals": {
+      "allergens": ["gluten"],
+      "additives": [],
+      "nutriScoreGrade": "C",
+      "novaGroup": 3
+    },
+    "overallConfidence": {
+      "level": "medium",
+      "reasons": [
+        "Kapalı beta aday verisi.",
+        "Fiyat karşılaştırması için kullanılabilir."
+      ]
+    }
+  },
+  {
+    "id": "seed-snacks-002",
+    "productName": "Yulaf Bar 40 g",
+    "categoryKey": "snacks",
+    "categoryText": "Atıştırmalık",
+    "marketName": "A101",
+    "chainCode": "A101",
+    "price": 14.9,
+    "currency": "TRY",
+    "distanceMeters": 950,
+    "distanceText": "950 m",
+    "scores": {
+      "rafScore": 72,
+      "priceScore": 76,
+      "healthScore": 70,
+      "contentScore": 74,
+      "sustainabilityScore": 64
+    },
+    "signals": {
+      "allergens": ["gluten"],
+      "additives": [],
+      "nutriScoreGrade": "B",
+      "novaGroup": 3
+    },
+    "overallConfidence": {
+      "level": "medium",
+      "reasons": [
+        "Kapalı beta aday verisi.",
+        "Atıştırmalık karşılaştırması için uygun."
+      ]
+    }
+  },
+  {
+    "id": "seed-snacks-003",
+    "productName": "Patates Cipsi 100 g",
+    "categoryKey": "snacks",
+    "categoryText": "Atıştırmalık",
+    "marketName": "Migros",
+    "chainCode": "MIGROS",
+    "price": 32.5,
+    "currency": "TRY",
+    "distanceMeters": 1500,
+    "distanceText": "1.5 km",
+    "scores": {
+      "rafScore": 43,
+      "priceScore": 55,
+      "healthScore": 35,
+      "contentScore": 42,
+      "sustainabilityScore": 48
+    },
+    "signals": {
+      "allergens": [],
+      "additives": ["aroma verici"],
+      "nutriScoreGrade": "D",
+      "novaGroup": 4
+    },
+    "overallConfidence": {
+      "level": "medium",
+      "reasons": [
+        "Kapalı beta aday verisi.",
+        "Ultra işlenmiş ürün karşılaştırması için kullanılır."
+      ]
+    }
+  }
+]
