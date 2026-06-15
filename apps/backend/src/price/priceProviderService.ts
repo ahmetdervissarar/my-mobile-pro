@@ -59,13 +59,13 @@ function normalizeTurkish(value: string): string {
   return value
     .trim()
     .toLocaleLowerCase('tr-TR')
-    .replaceAll('ç', 'c')
-    .replaceAll('ð', 'g')
-    .replaceAll('ý', 'i')
-    .replaceAll('i·', 'i')
-    .replaceAll('ö', 'o')
-    .replaceAll('þ', 's')
-    .replaceAll('ü', 'u');
+    .replaceAll('Ã§', 'c')
+    .replaceAll('ÄŸ', 'g')
+    .replaceAll('Ä±', 'i')
+    .replaceAll('iÂ·', 'i')
+    .replaceAll('Ã¶', 'o')
+    .replaceAll('ÅŸ', 's')
+    .replaceAll('Ã¼', 'u');
 }
 
 function inferBetaHealthInput(productName?: string): HealthScoreInput {
