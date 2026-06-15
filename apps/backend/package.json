@@ -11,7 +11,7 @@
     "smoke:product-facts": "tsx src/price/productFacts/adapters.smoke.ts",
     "smoke:offers": "tsx src/price/enrich/enrichOffers.smoke.ts",
     "smoke:price-service": "tsx src/price/priceProviderService.smoke.ts",
-    "smoke": "npm run smoke:product-facts && npm run smoke:offers && npm run smoke:price-service",
+    "smoke": "npm run audit:encoding && npm run smoke:product-facts && npm run smoke:offers && npm run smoke:price-service",
     "audit:encoding": "node ../../tools/encoding-audit.mjs",
     "audit:encoding:strict": "node ../../tools/encoding-audit.mjs --strict"
   },
