@@ -2,7 +2,24 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 
 import { PriceProviderService } from '../price/priceProviderService.js';
 import type { PriceQuery } from '../price/types.js';
+import { loadSeedAlternativeCandidates, scoreAlternatives } from '../price/alternatives/index.js';
+import type { SustainabilityCategoryKey } from '../price/sustainability/index.js';
 import type { ManualBetaPriceEntry } from '../price/providers/manualBetaPriceProvider.js';
+
+const SUSTAINABILITY_CATEGORY_KEYS = new Set<string>([
+  'plant_based',
+  'staple_food',
+  'beverages',
+  'breakfast',
+  'baby_food',
+  'dairy',
+  'sauces_condiments',
+  'snacks',
+  'sweets_chocolate',
+  'frozen_ready',
+  'meat',
+  'unknown',
+]);
 
 function requireAdminKey(req: Request, res: Response, next: NextFunction): void {
   const expected = process.env.ADMIN_API_KEY;
@@ -23,6 +40,24 @@ function requireAdminKey(req: Request, res: Response, next: NextFunction): void 
 }
 
 
+
+function parseOptionalNumber(value: unknown): number | undefined {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseCategoryKey(value: unknown): SustainabilityCategoryKey | undefined {
+  if (typeof value !== 'string' || !SUSTAINABILITY_CATEGORY_KEYS.has(value)) {
+    return undefined;
+  }
+
+  return value as SustainabilityCategoryKey;
+}
 function parseCoordinate(value: unknown, min: number, max: number): number | undefined {
   if (typeof value !== 'string' || value.trim().length === 0) {
     return undefined;
@@ -78,6 +113,35 @@ export function createPriceRouter(
         error: 'Fiyat sorgulanırken beklenmedik bir hata oluştu.',
       });
     }
+  });
+
+
+  router.get('/alternatives', (req: Request, res: Response) => {
+    const categoryKey = parseCategoryKey(req.query.categoryKey);
+
+    if (!categoryKey || categoryKey === 'unknown') {
+      return res.status(400).json({
+        error: 'Geçerli bir categoryKey parametresi gereklidir.',
+      });
+    }
+
+    const candidates = loadSeedAlternativeCandidates();
+    const recommendations = scoreAlternatives({
+      currentProduct: {
+        barcode: typeof req.query.barcode === 'string' ? req.query.barcode : undefined,
+        productName: typeof req.query.productName === 'string' ? req.query.productName : undefined,
+        categoryKey,
+        price: parseOptionalNumber(req.query.price),
+        rafScore: parseOptionalNumber(req.query.rafScore),
+        healthScore: parseOptionalNumber(req.query.healthScore),
+        contentScore: parseOptionalNumber(req.query.contentScore),
+        sustainabilityScore: parseOptionalNumber(req.query.sustainabilityScore),
+      },
+      candidates,
+      limit: parseOptionalNumber(req.query.limit),
+    });
+
+    return res.json({ recommendations });
   });
 
   router.post('/manual', requireAdminKey, (req: Request, res: Response) => {
