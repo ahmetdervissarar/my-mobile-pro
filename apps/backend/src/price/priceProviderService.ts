@@ -69,11 +69,40 @@ function normalizeTurkish(value: string): string {
     .replaceAll('ü', 'u');
 }
 
-function inferProductGroupKey(productName?: string | null): string | undefined {
+const DEMO_PRODUCT_GROUP_BY_BARCODE: Record<string, string> = {
+  '8691004000050': 'milk_1l',
+};
+
+const DEMO_EXACT_QUERY_PRODUCT_GROUPS: Record<string, string> = {
+  sut: 'milk_1l',
+  cips: 'chips_100g',
+  chips: 'chips_100g',
+};
+
+function inferProductGroupKey(
+  productName?: string | null,
+  barcode?: string | null,
+): string | undefined {
+  const normalizedBarcode = barcode?.trim();
+
+  if (normalizedBarcode) {
+    const barcodeProductGroupKey = DEMO_PRODUCT_GROUP_BY_BARCODE[normalizedBarcode];
+
+    if (barcodeProductGroupKey) {
+      return barcodeProductGroupKey;
+    }
+  }
+
   const normalizedName = normalizeTurkish(productName ?? '');
 
   if (!normalizedName) {
     return undefined;
+  }
+
+  const exactQueryProductGroupKey = DEMO_EXACT_QUERY_PRODUCT_GROUPS[normalizedName];
+
+  if (exactQueryProductGroupKey) {
+    return exactQueryProductGroupKey;
   }
 
   const hasOneLiterHint =
@@ -154,7 +183,10 @@ function attachProductGroupKey(
     productFacts?.productName?.trim() ||
     query.productName?.trim();
 
-  const productGroupKey = inferProductGroupKey(productName);
+  const productGroupKey = inferProductGroupKey(
+    productName,
+    result.barcode || productFacts?.barcode || query.barcode,
+  );
 
   if (productGroupKey) {
     result.productGroupKey = productGroupKey;
