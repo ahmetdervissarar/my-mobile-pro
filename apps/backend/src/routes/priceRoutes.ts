@@ -58,6 +58,16 @@ function parseCategoryKey(value: unknown): SustainabilityCategoryKey | undefined
 
   return value as SustainabilityCategoryKey;
 }
+
+function parseProductGroupKey(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+
+  return trimmed.length > 0 ? trimmed : undefined;
+}
 function parseCoordinate(value: unknown, min: number, max: number): number | undefined {
   if (typeof value !== 'string' || value.trim().length === 0) {
     return undefined;
@@ -125,12 +135,14 @@ export function createPriceRouter(
       });
     }
 
+    const productGroupKey = parseProductGroupKey(req.query.productGroupKey);
     const candidates = loadSeedAlternativeCandidates();
     const recommendations = scoreAlternatives({
       currentProduct: {
         barcode: typeof req.query.barcode === 'string' ? req.query.barcode : undefined,
         productName: typeof req.query.productName === 'string' ? req.query.productName : undefined,
         categoryKey,
+        productGroupKey,
         price: parseOptionalNumber(req.query.price),
         rafScore: parseOptionalNumber(req.query.rafScore),
         healthScore: parseOptionalNumber(req.query.healthScore),

@@ -147,9 +147,18 @@ function isSameProduct(current: ScoreAlternativesInput['currentProduct'], candid
 export function scoreAlternatives(input: ScoreAlternativesInput): AlternativeRecommendation[] {
   const limit = input.limit ?? DEFAULT_LIMIT;
   const current = input.currentProduct;
+  const currentProductGroupKey = current.productGroupKey?.trim();
+
+  if (!currentProductGroupKey) {
+    return [];
+  }
 
   return input.candidates
-    .filter((candidate) => candidate.categoryKey === current.categoryKey)
+    .filter(
+      (candidate) =>
+        candidate.categoryKey === current.categoryKey &&
+        candidate.productGroupKey === currentProductGroupKey,
+    )
     .filter((candidate) => !isSameProduct(current, candidate))
     .map((candidate): AlternativeRecommendation => {
       const rafScoreDelta =

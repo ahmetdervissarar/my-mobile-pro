@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 
 import { loadSeedAlternativeCandidates } from './candidateSource.js';
 import { scoreAlternatives } from './scoreAlternatives.js';
@@ -7,11 +7,32 @@ const candidates = loadSeedAlternativeCandidates();
 
 assert.ok(candidates.length >= 9);
 
+const milkAlternatives = scoreAlternatives({
+  currentProduct: {
+    productName: 'Test Süt 1 L',
+    categoryKey: 'dairy',
+    productGroupKey: 'milk_1l',
+    price: 46,
+    rafScore: 74,
+    healthScore: 70,
+    contentScore: 72,
+    sustainabilityScore: 65,
+  },
+  candidates,
+  limit: 3,
+});
+
+assert.equal(milkAlternatives.length, 2);
+assert.ok(milkAlternatives.every((recommendation) => recommendation.candidate.productGroupKey === 'milk_1l'));
+assert.ok(milkAlternatives.every((recommendation) => recommendation.candidate.id !== 'seed-dairy-003'));
+assert.ok(milkAlternatives.every((recommendation) => (recommendation.rafScoreDelta ?? 0) > 0));
+assert.ok(milkAlternatives.every((recommendation) => (recommendation.priceDelta ?? 0) <= 0));
+
 const snackAlternatives = scoreAlternatives({
   currentProduct: {
-    id: 'seed-snacks-003',
     productName: 'Patates Cipsi 100 g',
     categoryKey: 'snacks',
+    productGroupKey: 'chips_100g',
     price: 32.5,
     rafScore: 43,
     healthScore: 35,
@@ -22,13 +43,9 @@ const snackAlternatives = scoreAlternatives({
   limit: 2,
 });
 
-assert.equal(snackAlternatives.length, 2);
-assert.equal(snackAlternatives[0]?.candidate.id, 'seed-snacks-002');
-assert.ok((snackAlternatives[0]?.rafScoreDelta ?? 0) > 0);
-assert.ok((snackAlternatives[0]?.priceDelta ?? 0) < 0);
-assert.equal(snackAlternatives[0]?.priceDeltaText, '17,6 TL daha ucuz');
+assert.deepEqual(snackAlternatives, []);
 
-const beverageAlternatives = scoreAlternatives({
+const missingProductGroupAlternatives = scoreAlternatives({
   currentProduct: {
     productName: 'Meyve Suyu 1 L',
     categoryKey: 'beverages',
@@ -42,14 +59,13 @@ const beverageAlternatives = scoreAlternatives({
   limit: 2,
 });
 
-assert.equal(beverageAlternatives[0]?.candidate.id, 'seed-beverages-001');
-assert.equal(beverageAlternatives[0]?.reasonLabel, 'Daha iyi alternatif bulundu');
-assert.ok(beverageAlternatives[0]?.reasons.some((reason) => reason.includes('RafSkoru')));
+assert.deepEqual(missingProductGroupAlternatives, []);
 
 const emptyAlternatives = scoreAlternatives({
   currentProduct: {
     productName: 'Test Et Ürünü',
     categoryKey: 'meat',
+    productGroupKey: 'meat_product',
     price: 100,
     rafScore: 50,
   },

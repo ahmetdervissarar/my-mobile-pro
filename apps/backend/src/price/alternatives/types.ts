@@ -41,6 +41,7 @@ export interface AlternativeCurrentProduct {
   barcode?: string;
   productName?: string;
   categoryKey: SustainabilityCategoryKey;
+  productGroupKey?: string;
   price?: number | null;
   rafScore?: number | null;
   healthScore?: number | null;
