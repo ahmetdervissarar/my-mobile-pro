@@ -532,7 +532,28 @@ export default function ProductResultScreen() {
     ? null
     : priceResolution?.result.imageUrl ?? result.imageUrl ?? capturedPhotoUri ?? null;
 
-  const topAlternativeRecommendation = alternativeRecommendations[0] ?? null;
+  const visibleAlternativeRecommendations = useMemo(
+    () =>
+      alternativeRecommendations.filter((recommendation) => {
+        const candidateSignals = recommendation.candidate.signals;
+        const candidateRisk = evaluateProductRisks({
+          name: recommendation.candidate.productName,
+          allergens: candidateSignals?.allergens ?? [],
+          additives: candidateSignals?.additives ?? [],
+          hasAdditives: (candidateSignals?.additives ?? []).length > 0,
+          novaGroup: candidateSignals?.novaGroup ?? null,
+          nutriScore: candidateSignals?.nutriScoreGrade ?? null,
+          userProfile,
+        });
+
+        return !candidateRisk.warnings.some((warning) =>
+          CRITICAL_ALLERGEN_CODES.includes(warning.code),
+        );
+      }),
+    [alternativeRecommendations, userProfile],
+  );
+
+  const topAlternativeRecommendation = visibleAlternativeRecommendations[0] ?? null;
   const priceResult = priceResolution?.result ?? null;
   const rafScore = priceResult?.rafScore ?? null;
   const priceScore = priceResult?.priceScore ?? null;
