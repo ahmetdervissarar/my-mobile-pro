@@ -339,28 +339,56 @@ export default function ProductResultScreen() {
     }
 
     let isMounted = true;
+    const resolveStartedAt = Date.now();
+    const traceLabel = normalizedInput.barcode
+      ? `barcode=${normalizedInput.barcode}`
+      : `productName=${normalizedInput.productName ?? 'unknown'}`;
+
+    console.info(`[mobile-price-resolve] start ${traceLabel}`);
     setIsPriceLoading(true);
+
+    const locationStartedAt = Date.now();
 
     getUserLocationForPricing()
       .catch(() => null)
       .then((location) => {
+        console.info(
+          `[mobile-price-resolve] location ${Date.now() - locationStartedAt}ms found=${Boolean(location)}`,
+        );
+
         if (!isMounted) return undefined;
 
-        return priceClient.resolve({
-          barcode: normalizedInput.barcode,
-          productName: normalizedInput.productName,
-          location: location ?? undefined,
-        });
+        const backendStartedAt = Date.now();
+
+        return priceClient
+          .resolve({
+            barcode: normalizedInput.barcode,
+            productName: normalizedInput.productName,
+            location: location ?? undefined,
+          })
+          .then((response) => {
+            console.info(
+              `[mobile-price-resolve] backend ${Date.now() - backendStartedAt}ms total=${Date.now() - resolveStartedAt}ms`,
+            );
+
+            return response;
+          });
       })
       .then((response) => {
         if (isMounted && response) setPriceResolution(response);
       })
       .catch((err: unknown) => {
+        console.info(
+          `[mobile-price-resolve] error ${Date.now() - resolveStartedAt}ms message=${(err as Error)?.message ?? 'unknown'}`,
+        );
+
         if (isMounted) {
           setPriceError((err as Error)?.message ?? 'Fiyat alınamadı');
         }
       })
       .finally(() => {
+        console.info(`[mobile-price-resolve] finish ${Date.now() - resolveStartedAt}ms`);
+
         if (isMounted) setIsPriceLoading(false);
       });
 

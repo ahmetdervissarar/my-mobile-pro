@@ -484,15 +484,32 @@ export class PriceProviderService {
   }
 
   async resolve(query: PriceQuery): Promise<PriceResolveResponse> {
+    const resolveStartedAt = Date.now();
+    const traceLabel = query.barcode
+      ? `barcode=${query.barcode}`
+      : `productName=${query.productName ?? 'unknown'}`;
+
+    console.info(`[price-resolve] start ${traceLabel}`);
+
     const triedProviders: string[] = [];
+    const productFactsStartedAt = Date.now();
     const productFacts = await tryFetchProductFacts(query);
+
+    console.info(
+      `[price-resolve] productFacts ${Date.now() - productFactsStartedAt}ms found=${Boolean(productFacts)}`,
+    );
     for (const provider of this.chain) {
       if (!provider.isEnabled()) continue;
 
       triedProviders.push(provider.name);
 
       try {
+        const providerStartedAt = Date.now();
         const result = await provider.fetch(query);
+
+        console.info(
+          `[price-resolve] provider ${provider.name} ${Date.now() - providerStartedAt}ms price=${result?.price ?? 'null'}`,
+        );
 
         if (result && result.price !== null) {
           if (provider.name !== 'last_known') {
@@ -554,6 +571,8 @@ export class PriceProviderService {
           attachRafScore(result);
     attachOverallConfidence(result);
 
+          console.info(`[price-resolve] done ${Date.now() - resolveStartedAt}ms source=${result.source ?? 'unknown'}`);
+
           return {
             result,
             disclaimer: BETA_DISCLAIMER,
@@ -577,6 +596,8 @@ export class PriceProviderService {
     attachSustainabilityScore(unavailableResult, query, productFacts);
     attachRafScore(unavailableResult);
     attachOverallConfidence(unavailableResult);
+
+    console.info(`[price-resolve] unavailable ${Date.now() - resolveStartedAt}ms`);
 
     return {
       result: unavailableResult,
