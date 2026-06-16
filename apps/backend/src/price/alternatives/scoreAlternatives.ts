@@ -168,7 +168,7 @@ export function scoreAlternatives(input: ScoreAlternativesInput): AlternativeRec
 
       const priceDelta =
         current.price !== null && current.price !== undefined
-          ? candidate.price - current.price
+          ? roundScore(candidate.price - current.price)
           : null;
 
       const rankingScore = getCandidateRankingScore(candidate, input, rafScoreDelta, priceDelta);
