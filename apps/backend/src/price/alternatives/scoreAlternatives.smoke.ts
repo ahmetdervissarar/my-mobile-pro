@@ -49,6 +49,32 @@ assert.ok(snackAlternatives.every((recommendation) => recommendation.candidate.i
 assert.ok(snackAlternatives.every((recommendation) => (recommendation.rafScoreDelta ?? 0) > 0));
 assert.ok(snackAlternatives.every((recommendation) => (recommendation.priceDelta ?? 0) <= 0));
 
+const demoChipsAlternatives = scoreAlternatives({
+  currentProduct: {
+    productName: 'Cips',
+    categoryKey: 'snacks',
+    productGroupKey: 'chips_100g',
+    price: 32,
+    rafScore: 66,
+    healthScore: 32,
+    contentScore: 68,
+    sustainabilityScore: 50,
+  },
+  candidates,
+  limit: 3,
+});
+
+assert.equal(demoChipsAlternatives.length, 2);
+assert.deepEqual(
+  demoChipsAlternatives.map((recommendation) => recommendation.candidate.id),
+  ['seed-snacks-004', 'seed-snacks-005'],
+);
+assert.deepEqual(
+  demoChipsAlternatives.map((recommendation) => recommendation.rafScoreDelta),
+  [10, 5],
+);
+assert.ok(demoChipsAlternatives.every((recommendation) => (recommendation.priceDelta ?? 0) < 0));
+
 const missingProductGroupAlternatives = scoreAlternatives({
   currentProduct: {
     productName: 'Meyve Suyu 1 L',
