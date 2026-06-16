@@ -583,10 +583,12 @@ export default function ProductResultScreen() {
     backendProductFacts?.verificationReason?.trim() ||
     'Bu ürün için ürün analiz verisi eksik. Skorlar kısmi veriyle yorumlanmalıdır.';
 
+  const isBackendCompletedResolve = Boolean(priceResolution && priceResolution.triedProviders.length > 0);
   const isUnknownProduct =
     !isPriceLoading &&
     Boolean(normalizedInput.barcode) &&
     priceResolution !== null &&
+    isBackendCompletedResolve &&
     !backendProductFacts &&
     priceResult?.rafScore?.status === 'unavailable' &&
     (priceResult?.price ?? null) === null;

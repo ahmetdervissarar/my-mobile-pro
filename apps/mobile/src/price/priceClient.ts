@@ -17,6 +17,82 @@ const FALLBACK_DISCLAIMER =
   'Market, kampanya, konum ve stok durumuna g\u00f6re de\u011fi\u015febilir. ' +
   'Sat\u0131n alma \u00f6ncesinde g\u00fcncel market fiyat\u0131n\u0131 kontrol ediniz.';
 
+function createUnavailablePriceScore(reason: string): NonNullable<PriceResult['priceScore']> {
+  return {
+    score: null,
+    status: 'unavailable',
+    confidence: 'low',
+    label: 'Fiyat bulunamadı',
+    explanations: ['Fiyat verisi alınamadı: ' + reason],
+    reference: {
+      productPrice: null,
+      referencePrice: null,
+      lowestPrice: null,
+      highestPrice: null,
+      offerCount: 0,
+    },
+    disclaimer: FALLBACK_DISCLAIMER,
+  };
+}
+
+function createUnavailableHealthScore(): NonNullable<PriceResult['healthScore']> {
+  return {
+    score: null,
+    status: 'unavailable',
+    confidence: 'low',
+    label: 'Sağlık skoru hesaplanamadı',
+    grade: null,
+    factors: {
+      nutriScore: 0,
+      nova: 0,
+      trafficLight: 0,
+      category: 0,
+    },
+    explanations: ['Sağlık skoru için yeterli ürün verisi alınamadı.'],
+    disclaimer: 'Sağlık skoru karar destek amaçlıdır; veri bulunamadığında ürün etiketi kontrol edilmelidir.',
+  };
+}
+
+function createUnavailableContentScore(): NonNullable<PriceResult['contentScore']> {
+  return {
+    score: null,
+    status: 'unavailable',
+    confidence: 'low',
+    label: 'İçerik/Alerjen skoru hesaplanamadı',
+    factors: {
+      ingredientClarity: 0,
+      additiveRisk: 0,
+      allergenTransparency: 0,
+      processingHint: 0,
+      palmOil: 0,
+    },
+    explanations: ['İçerik, katkı veya alerjen verisi alınamadı.'],
+    disclaimer: 'İçerik/Alerjen skoru kritik alerjen uyarılarının yerine geçmez; ürün etiketi kontrol edilmelidir.',
+  };
+}
+
+function createUnavailableRafScore(): NonNullable<PriceResult['rafScore']> {
+  return {
+    score: null,
+    status: 'unavailable',
+    confidence: 'low',
+    weights: {
+      price: 35,
+      health: 30,
+      content: 20,
+      sustainability: 15,
+    },
+    components: [
+      { key: 'price', label: 'Fiyat', score: null, weight: 35, isAvailable: false },
+      { key: 'health', label: 'Sağlık', score: null, weight: 30, isAvailable: false },
+      { key: 'content', label: 'İçerik/Alerjen', score: null, weight: 20, isAvailable: false },
+      { key: 'sustainability', label: 'Sürdürülebilirlik', score: null, weight: 15, isAvailable: false },
+    ],
+    explanations: ['RafSkoru için gerekli veriler alınamadı.'],
+    disclaimer: 'RafSkoru karar destek amaçlı tahmini bir göstergedir.',
+  };
+}
+
 export class PriceClient {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
@@ -156,7 +232,11 @@ export class PriceClient {
       status: 'unavailable',
       updatedAt: new Date().toISOString(),
       confidence: 0,
-      note: `Fiyat al\u0131namad\u0131: ${reason}`,
+      note: `Fiyat alınamadı: ${reason}`,
+      priceScore: createUnavailablePriceScore(reason),
+      healthScore: createUnavailableHealthScore(),
+      contentScore: createUnavailableContentScore(),
+      rafScore: createUnavailableRafScore(),
     };
 
     return {
