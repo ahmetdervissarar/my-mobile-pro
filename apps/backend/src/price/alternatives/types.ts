@@ -23,6 +23,8 @@ export interface AlternativeCandidate {
   productName: string;
   categoryKey: SustainabilityCategoryKey;
   categoryText?: string;
+  productGroupKey: string;
+  packageSizeText?: string;
   marketName: string;
   chainCode: MarketChainCode;
   price: number;

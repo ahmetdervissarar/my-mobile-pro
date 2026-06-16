@@ -1,4 +1,4 @@
-﻿[
+[
   {
     "id": "seed-dairy-001",
     "productName": "Yarım Yağlı Süt 1 L",
@@ -18,7 +18,9 @@
       "sustainabilityScore": 70
     },
     "signals": {
-      "allergens": ["süt"],
+      "allergens": [
+        "süt"
+      ],
       "additives": [],
       "nutriScoreGrade": "B",
       "novaGroup": 1
@@ -29,7 +31,9 @@
         "Kapalı beta aday verisi.",
         "Fiyat referans amaçlıdır."
       ]
-    }
+    },
+    "productGroupKey": "milk_1l",
+    "packageSizeText": "1 L"
   },
   {
     "id": "seed-dairy-002",
@@ -50,7 +54,9 @@
       "sustainabilityScore": 72
     },
     "signals": {
-      "allergens": ["süt"],
+      "allergens": [
+        "süt"
+      ],
       "additives": [],
       "nutriScoreGrade": "B",
       "novaGroup": 1
@@ -61,7 +67,9 @@
         "Kapalı beta aday verisi.",
         "Ürün profili karşılaştırma için yeterli."
       ]
-    }
+    },
+    "productGroupKey": "milk_1l",
+    "packageSizeText": "1 L"
   },
   {
     "id": "seed-dairy-003",
@@ -82,7 +90,9 @@
       "sustainabilityScore": 74
     },
     "signals": {
-      "allergens": ["süt"],
+      "allergens": [
+        "süt"
+      ],
       "additives": [],
       "nutriScoreGrade": "A",
       "novaGroup": 1
@@ -93,7 +103,9 @@
         "Kapalı beta aday verisi.",
         "Sağlık ve içerik karşılaştırması için uygun."
       ]
-    }
+    },
+    "productGroupKey": "kefir_1l",
+    "packageSizeText": "1 L"
   },
   {
     "id": "seed-beverages-001",
@@ -125,7 +137,9 @@
         "Kapalı beta aday verisi.",
         "Alternatif öneri testi için kullanılır."
       ]
-    }
+    },
+    "productGroupKey": "mineral_water_200ml",
+    "packageSizeText": "200 ml"
   },
   {
     "id": "seed-beverages-002",
@@ -147,7 +161,10 @@
     },
     "signals": {
       "allergens": [],
-      "additives": ["tatlandırıcı", "renklendirici"],
+      "additives": [
+        "tatlandırıcı",
+        "renklendirici"
+      ],
       "nutriScoreGrade": "C",
       "novaGroup": 4
     },
@@ -157,7 +174,9 @@
         "Kapalı beta aday verisi.",
         "İçerik sinyalleri sınırlı güvenle değerlendirilmiştir."
       ]
-    }
+    },
+    "productGroupKey": "cola_1l",
+    "packageSizeText": "1 L"
   },
   {
     "id": "seed-beverages-003",
@@ -189,7 +208,9 @@
         "Kapalı beta aday verisi.",
         "Şeker hassasiyeti olan kullanıcılar için dikkat gerektirir."
       ]
-    }
+    },
+    "productGroupKey": "fruit_juice_1l",
+    "packageSizeText": "1 L"
   },
   {
     "id": "seed-snacks-001",
@@ -210,7 +231,9 @@
       "sustainabilityScore": 55
     },
     "signals": {
-      "allergens": ["gluten"],
+      "allergens": [
+        "gluten"
+      ],
       "additives": [],
       "nutriScoreGrade": "C",
       "novaGroup": 3
@@ -221,7 +244,9 @@
         "Kapalı beta aday verisi.",
         "Fiyat karşılaştırması için kullanılabilir."
       ]
-    }
+    },
+    "productGroupKey": "cracker_100g",
+    "packageSizeText": "100 g"
   },
   {
     "id": "seed-snacks-002",
@@ -242,7 +267,9 @@
       "sustainabilityScore": 64
     },
     "signals": {
-      "allergens": ["gluten"],
+      "allergens": [
+        "gluten"
+      ],
       "additives": [],
       "nutriScoreGrade": "B",
       "novaGroup": 3
@@ -253,7 +280,9 @@
         "Kapalı beta aday verisi.",
         "Atıştırmalık karşılaştırması için uygun."
       ]
-    }
+    },
+    "productGroupKey": "oat_bar_40g",
+    "packageSizeText": "40 g"
   },
   {
     "id": "seed-snacks-003",
@@ -275,7 +304,9 @@
     },
     "signals": {
       "allergens": [],
-      "additives": ["aroma verici"],
+      "additives": [
+        "aroma verici"
+      ],
       "nutriScoreGrade": "D",
       "novaGroup": 4
     },
@@ -285,6 +316,8 @@
         "Kapalı beta aday verisi.",
         "Ultra işlenmiş ürün karşılaştırması için kullanılır."
       ]
-    }
+    },
+    "productGroupKey": "chips_100g",
+    "packageSizeText": "100 g"
   }
 ]
