@@ -265,6 +265,7 @@ export interface ProductFacts {
 export interface PriceResult {
   productName: string;
   barcode?: string;
+  productGroupKey?: string;
   marketName: string;
   price: number | null;
   currency: string;
@@ -348,6 +349,8 @@ export interface AlternativeCandidate {
   productName: string;
   categoryKey: AlternativeCategoryKey;
   categoryText?: string;
+  productGroupKey: string;
+  packageSizeText?: string;
   marketName: string;
   chainCode: string;
   price: number;
@@ -377,6 +380,7 @@ export interface AlternativeRecommendationsResponse {
 
 export interface AlternativeRecommendationsQuery {
   categoryKey: AlternativeCategoryKey;
+  productGroupKey?: string;
   barcode?: string;
   productName?: string;
   price?: number | null;

@@ -90,7 +90,7 @@ export class PriceClient {
   async fetchAlternatives(
     query: AlternativeRecommendationsQuery,
   ): Promise<AlternativeRecommendationsResponse> {
-    if (!query.categoryKey || query.categoryKey === 'unknown') {
+    if (!query.categoryKey || query.categoryKey === 'unknown' || !query.productGroupKey) {
       return { recommendations: [] };
     }
 
@@ -103,6 +103,7 @@ export class PriceClient {
       }
     };
 
+    setOptionalParam('productGroupKey', query.productGroupKey);
     setOptionalParam('barcode', query.barcode);
     setOptionalParam('productName', query.productName);
     setOptionalParam('price', query.price);

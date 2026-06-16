@@ -373,8 +373,9 @@ export default function ProductResultScreen() {
     let isMounted = true;
     const currentPriceResult = priceResolution?.result ?? null;
     const categoryKey = currentPriceResult?.sustainability?.categoryKey;
+    const productGroupKey = currentPriceResult?.productGroupKey;
 
-    if (!currentPriceResult || !categoryKey || categoryKey === 'unknown') {
+    if (!currentPriceResult || !categoryKey || categoryKey === 'unknown' || !productGroupKey) {
       setAlternativeRecommendations([]);
       return () => {
         isMounted = false;
@@ -386,6 +387,7 @@ export default function ProductResultScreen() {
         barcode: currentPriceResult.barcode,
         productName: currentPriceResult.productName,
         categoryKey: categoryKey as AlternativeCategoryKey,
+        productGroupKey,
         price: currentPriceResult.price,
         rafScore: currentPriceResult.rafScore?.score ?? null,
         healthScore: currentPriceResult.healthScore?.score ?? null,
