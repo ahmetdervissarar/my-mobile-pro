@@ -332,11 +332,11 @@
     "distanceMeters": 1100,
     "distanceText": "1.1 km",
     "scores": {
-      "rafScore": 58,
+      "rafScore": 76,
       "priceScore": 78,
-      "healthScore": 50,
-      "contentScore": 55,
-      "sustainabilityScore": 50
+      "healthScore": 58,
+      "contentScore": 72,
+      "sustainabilityScore": 55
     },
     "signals": {
       "allergens": [],
@@ -368,11 +368,11 @@
     "distanceMeters": 950,
     "distanceText": "950 m",
     "scores": {
-      "rafScore": 52,
+      "rafScore": 71,
       "priceScore": 70,
-      "healthScore": 46,
-      "contentScore": 48,
-      "sustainabilityScore": 48
+      "healthScore": 52,
+      "contentScore": 70,
+      "sustainabilityScore": 52
     },
     "signals": {
       "allergens": [],
