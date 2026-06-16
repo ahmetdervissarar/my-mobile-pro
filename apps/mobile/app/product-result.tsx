@@ -339,6 +339,7 @@ export default function ProductResultScreen() {
     }
 
     let isMounted = true;
+    let latestAppliedRequest = 0;
     const resolveStartedAt = Date.now();
     const traceLabel = normalizedInput.barcode
       ? `barcode=${normalizedInput.barcode}`
@@ -346,6 +347,43 @@ export default function ProductResultScreen() {
 
     console.info(`[mobile-price-resolve] start ${traceLabel}`);
     setIsPriceLoading(true);
+
+    const applyPriceResolution = (requestOrder: number, response: PriceResolveResponse): void => {
+      if (!isMounted || requestOrder < latestAppliedRequest) {
+        return;
+      }
+
+      latestAppliedRequest = requestOrder;
+      setPriceResolution(response);
+    };
+
+    const initialBackendStartedAt = Date.now();
+
+    void priceClient
+      .resolve({
+        barcode: normalizedInput.barcode,
+        productName: normalizedInput.productName,
+      })
+      .then((response) => {
+        console.info(
+          `[mobile-price-resolve] initial backend ${Date.now() - initialBackendStartedAt}ms total=${Date.now() - resolveStartedAt}ms`,
+        );
+        applyPriceResolution(1, response);
+      })
+      .catch((err: unknown) => {
+        console.info(
+          `[mobile-price-resolve] initial error ${Date.now() - resolveStartedAt}ms message=${(err as Error)?.message ?? 'unknown'}`,
+        );
+
+        if (isMounted) {
+          setPriceError((err as Error)?.message ?? 'Fiyat alınamadı');
+        }
+      })
+      .finally(() => {
+        console.info(`[mobile-price-resolve] initial finish ${Date.now() - resolveStartedAt}ms`);
+
+        if (isMounted) setIsPriceLoading(false);
+      });
 
     const locationStartedAt = Date.now();
 
@@ -356,40 +394,30 @@ export default function ProductResultScreen() {
           `[mobile-price-resolve] location ${Date.now() - locationStartedAt}ms found=${Boolean(location)}`,
         );
 
-        if (!isMounted) return undefined;
+        if (!isMounted || !location) {
+          return undefined;
+        }
 
-        const backendStartedAt = Date.now();
+        const refinedBackendStartedAt = Date.now();
 
         return priceClient
           .resolve({
             barcode: normalizedInput.barcode,
             productName: normalizedInput.productName,
-            location: location ?? undefined,
+            location,
           })
           .then((response) => {
             console.info(
-              `[mobile-price-resolve] backend ${Date.now() - backendStartedAt}ms total=${Date.now() - resolveStartedAt}ms`,
+              `[mobile-price-resolve] refined backend ${Date.now() - refinedBackendStartedAt}ms total=${Date.now() - resolveStartedAt}ms`,
             );
 
-            return response;
+            applyPriceResolution(2, response);
           });
-      })
-      .then((response) => {
-        if (isMounted && response) setPriceResolution(response);
       })
       .catch((err: unknown) => {
         console.info(
-          `[mobile-price-resolve] error ${Date.now() - resolveStartedAt}ms message=${(err as Error)?.message ?? 'unknown'}`,
+          `[mobile-price-resolve] refined error ${Date.now() - resolveStartedAt}ms message=${(err as Error)?.message ?? 'unknown'}`,
         );
-
-        if (isMounted) {
-          setPriceError((err as Error)?.message ?? 'Fiyat alınamadı');
-        }
-      })
-      .finally(() => {
-        console.info(`[mobile-price-resolve] finish ${Date.now() - resolveStartedAt}ms`);
-
-        if (isMounted) setIsPriceLoading(false);
       });
 
     return () => {
