@@ -319,5 +319,77 @@
     },
     "productGroupKey": "chips_100g",
     "packageSizeText": "100 g"
+  },
+  {
+    "id": "seed-snacks-004",
+    "productName": "Fırınlanmış Patates Cipsi 100 g",
+    "categoryKey": "snacks",
+    "categoryText": "Atıştırmalıklar",
+    "marketName": "Migros",
+    "chainCode": "MIGROS",
+    "price": 29.9,
+    "currency": "TRY",
+    "distanceMeters": 1100,
+    "distanceText": "1.1 km",
+    "scores": {
+      "rafScore": 58,
+      "priceScore": 78,
+      "healthScore": 50,
+      "contentScore": 55,
+      "sustainabilityScore": 50
+    },
+    "signals": {
+      "allergens": [],
+      "additives": [
+        "aroma verici"
+      ],
+      "nutriScoreGrade": "C",
+      "novaGroup": 3
+    },
+    "overallConfidence": {
+      "level": "medium",
+      "reasons": [
+        "Kapalı beta aday verisi.",
+        "Aynı ürün grubu karşılaştırması için eklendi."
+      ]
+    },
+    "productGroupKey": "chips_100g",
+    "packageSizeText": "100 g"
+  },
+  {
+    "id": "seed-snacks-005",
+    "productName": "Az Tuzlu Patates Cipsi 100 g",
+    "categoryKey": "snacks",
+    "categoryText": "Atıştırmalıklar",
+    "marketName": "A101",
+    "chainCode": "A101",
+    "price": 31.5,
+    "currency": "TRY",
+    "distanceMeters": 950,
+    "distanceText": "950 m",
+    "scores": {
+      "rafScore": 52,
+      "priceScore": 70,
+      "healthScore": 46,
+      "contentScore": 48,
+      "sustainabilityScore": 48
+    },
+    "signals": {
+      "allergens": [],
+      "additives": [
+        "aroma verici"
+      ],
+      "nutriScoreGrade": "C",
+      "novaGroup": 3
+    },
+    "overallConfidence": {
+      "level": "medium",
+      "reasons": [
+        "Kapalı beta aday verisi.",
+        "Aynı ürün grubu karşılaştırması için eklendi."
+      ]
+    },
+    "productGroupKey": "chips_100g",
+    "packageSizeText": "100 g"
   }
 ]

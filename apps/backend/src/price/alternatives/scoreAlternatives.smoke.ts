@@ -5,7 +5,7 @@ import { scoreAlternatives } from './scoreAlternatives.js';
 
 const candidates = loadSeedAlternativeCandidates();
 
-assert.ok(candidates.length >= 9);
+assert.ok(candidates.length >= 11);
 
 const milkAlternatives = scoreAlternatives({
   currentProduct: {
@@ -40,10 +40,14 @@ const snackAlternatives = scoreAlternatives({
     sustainabilityScore: 48,
   },
   candidates,
-  limit: 2,
+  limit: 3,
 });
 
-assert.deepEqual(snackAlternatives, []);
+assert.equal(snackAlternatives.length, 2);
+assert.ok(snackAlternatives.every((recommendation) => recommendation.candidate.productGroupKey === 'chips_100g'));
+assert.ok(snackAlternatives.every((recommendation) => recommendation.candidate.id !== 'seed-snacks-002'));
+assert.ok(snackAlternatives.every((recommendation) => (recommendation.rafScoreDelta ?? 0) > 0));
+assert.ok(snackAlternatives.every((recommendation) => (recommendation.priceDelta ?? 0) <= 0));
 
 const missingProductGroupAlternatives = scoreAlternatives({
   currentProduct: {
