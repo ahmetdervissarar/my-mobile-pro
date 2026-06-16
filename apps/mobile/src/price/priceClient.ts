@@ -100,7 +100,7 @@ export class PriceClient {
 
   constructor(opts: PriceClientOptions) {
     this.baseUrl = opts.baseUrl.replace(/\/+$/, '');
-    this.timeoutMs = opts.timeoutMs ?? 8000;
+    this.timeoutMs = opts.timeoutMs ?? 4000;
     this.fetchImpl = opts.fetchImpl ?? fetch;
   }
 
