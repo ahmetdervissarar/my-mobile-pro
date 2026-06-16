@@ -35,6 +35,7 @@ export interface MarketPriceOption {
 export interface PriceResult {
   productName: string;
   barcode?: string;
+  productGroupKey?: string;
   marketName: string;
   price: number | null;
   currency: string;
