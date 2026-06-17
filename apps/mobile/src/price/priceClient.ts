@@ -93,6 +93,25 @@ function createUnavailableRafScore(): NonNullable<PriceResult['rafScore']> {
   };
 }
 
+function normalizePriceResolveError(err: unknown): string {
+  const errorName = (err as Error)?.name ?? '';
+  const message = (err as Error)?.message ?? '';
+
+  if (errorName === 'AbortError' || message.toLowerCase().includes('abort')) {
+    return 'Fiyat servisine zamanında ulaşılamadı.';
+  }
+
+  if (
+    message.toLowerCase().includes('network request failed') ||
+    message.toLowerCase().includes('failed to fetch') ||
+    message.toLowerCase().includes('networkerror')
+  ) {
+    return 'Fiyat servisine ulaşılamadı.';
+  }
+
+  return message || 'Bilinmeyen ağ hatası';
+}
+
 export class PriceClient {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
@@ -155,8 +174,7 @@ export class PriceClient {
 
       return data;
     } catch (err) {
-      const message = (err as Error)?.message ?? 'Bilinmeyen a\u011f hatas\u0131';
-      return this.unavailable(query, message);
+      return this.unavailable(query, normalizePriceResolveError(err));
     } finally {
       clearTimeout(timer);
     }
