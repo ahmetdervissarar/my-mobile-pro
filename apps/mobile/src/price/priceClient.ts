@@ -13,9 +13,9 @@ export interface PriceClientOptions {
 }
 
 const FALLBACK_DISCLAIMER =
-  'Bu fiyatlar kapal\u0131 beta test s\u00fcrecinde kullan\u0131lan referans fiyatlard\u0131r. ' +
-  'Market, kampanya, konum ve stok durumuna g\u00f6re de\u011fi\u015febilir. ' +
-  'Sat\u0131n alma \u00f6ncesinde g\u00fcncel market fiyat\u0131n\u0131 kontrol ediniz.';
+  'Bu fiyat bilgileri kapalı beta sürecinde sağlayıcı kaynaklardan alınır. ' +
+  'Market, kampanya, konum ve stok durumuna göre değişebilir. ' +
+  'Satın alma öncesinde güncel market fiyatını kontrol ediniz.';
 
 function createUnavailablePriceScore(reason: string): NonNullable<PriceResult['priceScore']> {
   return {
