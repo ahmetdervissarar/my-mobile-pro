@@ -374,7 +374,7 @@ export async function getFallbackProductSummary(
       searchSource: photoSource ? 'photo' : 'name',
       healthScore: 0,
       priceText: '',
-      imageUrl: photoSource || null,
+      imageUrl: photoSource && photoSource !== 'camera' ? photoSource : null,
       warnings: [],
       allergens: [],
       additives: [],

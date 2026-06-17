@@ -171,7 +171,7 @@ function createNeutralPendingResult(input: ProductSearchInput): ProductResult {
     searchSource: photoSource ? 'photo' : 'name',
     healthScore: 0,
     priceText: '',
-    imageUrl: photoSource ?? null,
+    imageUrl: photoSource && photoSource !== 'camera' ? photoSource : null,
     warnings: [],
     allergens: [],
     additives: [],
@@ -225,9 +225,9 @@ export default function ProductResultScreen() {
     return {
       barcode: undefined,
       productName: productName?.trim(),
-      photoSource: searchType === 'photo' ? 'camera' : undefined,
+      photoSource: searchType === 'photo' ? photoUri?.trim() || 'camera' : undefined,
     };
-  }, [barcode, productName, searchType]);
+  }, [barcode, productName, searchType, photoUri]);
 
   const [result, setResult] = useState(() => getInitialResult(normalizedInput));
   const [isBasicInfoOpen, setIsBasicInfoOpen] = useState(false);
@@ -623,7 +623,7 @@ export default function ProductResultScreen() {
               Fotoğrafla arama beta aşamasındadır
             </Text>
             <Text style={styles.photoBetaNoticeText}>
-              Kesin ürün sonucu için barkod okutmanız önerilir.
+              Fotoğraf sonucu henüz kesin ürün tanıma değildir. Sağlık, alerjen ve fiyat yorumu için barkod okutmanız önerilir.
             </Text>
           </View>
         ) : null}
