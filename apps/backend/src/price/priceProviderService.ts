@@ -25,7 +25,7 @@ import {
   productFactsToSustainabilityInput,
   type ProductFacts,
 } from './productFacts/index.js';
-import { inferProductGroupKey } from './productGroups/index.js';
+import { inferProductGroupKey, resolveProductGroup } from './productGroups/index.js';
 
 
 export interface PriceProviderServiceOptions {
@@ -80,14 +80,25 @@ function attachProductGroupKey(
     productFacts?.productName?.trim() ||
     query.productName?.trim();
 
-  const productGroupKey = inferProductGroupKey(
-    productName,
-    result.barcode || productFacts?.barcode || query.barcode,
-  );
+  const barcode = result.barcode || productFacts?.barcode || query.barcode;
 
-  if (productGroupKey) {
-    result.productGroupKey = productGroupKey;
+  const legacyProductGroupKey = inferProductGroupKey(productName, barcode);
+
+  if (legacyProductGroupKey) {
+    result.productGroupKey = legacyProductGroupKey;
   }
+
+  const resolution = resolveProductGroup({
+    productName,
+    barcode,
+  });
+
+  result.resolvedProductGroupKey = resolution.productGroupKey;
+  result.coarseGroup = resolution.coarseGroup;
+  result.groupConfidence = resolution.groupConfidence;
+  result.groupSource = resolution.groupSource;
+  result.packageSize = resolution.packageSize;
+  result.alternativesEligible = resolution.alternativesEligible;
 }
 
 function inferBetaHealthInput(productName?: string): HealthScoreInput {

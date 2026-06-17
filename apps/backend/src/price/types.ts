@@ -1,3 +1,5 @@
+import type { ProductGroupConfidence, ProductGroupSource, ProductPackageSize } from './productGroups/index.js';
+
 import type { EnrichedMarketOffer } from './stores/storeTypes.js';
 import type { SustainabilityResult } from './sustainability/index.js';
 import type { RafScoreResult } from './rafScore/index.js';
@@ -35,7 +37,23 @@ export interface MarketPriceOption {
 export interface PriceResult {
   productName: string;
   barcode?: string;
+  /**
+   * Legacy alternative key. Keep semantics frozen during migration.
+   * Examples: milk_1l, kefir_1l, chips_100g.
+   */
   productGroupKey?: string;
+
+  /**
+   * Canonical product group metadata for the new resolver.
+   * Examples: milk, kefir, chips.
+   */
+  resolvedProductGroupKey?: string | null;
+  coarseGroup?: string | null;
+  groupConfidence?: ProductGroupConfidence;
+  groupSource?: ProductGroupSource;
+  packageSize?: ProductPackageSize | null;
+  alternativesEligible?: boolean;
+
   marketName: string;
   price: number | null;
   currency: string;

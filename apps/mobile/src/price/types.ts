@@ -262,10 +262,42 @@ export interface ProductFacts {
   verifiedAt?: string | null;
 }
 
+export type ProductPackageUnit = 'ml' | 'l' | 'g' | 'kg' | 'unit';
+
+export type NormalizedPackageUnit = 'ml' | 'g' | 'unit';
+
+export interface ProductPackageSize {
+  value: number;
+  unit: ProductPackageUnit;
+  normalizedValue: number;
+  normalizedUnit: NormalizedPackageUnit;
+  text?: string;
+}
+
+export type ProductGroupConfidence = 'exact' | 'strong' | 'assisted' | 'unknown';
+
+export type ProductGroupSource = 'barcode' | 'name_rule' | 'off_assisted' | 'none';
+
 export interface PriceResult {
   productName: string;
   barcode?: string;
+  /**
+   * Legacy alternative key. Keep semantics frozen during migration.
+   * Examples: milk_1l, kefir_1l, chips_100g.
+   */
   productGroupKey?: string;
+
+  /**
+   * Canonical product group metadata for the new resolver.
+   * Examples: milk, kefir, chips.
+   */
+  resolvedProductGroupKey?: string | null;
+  coarseGroup?: string | null;
+  groupConfidence?: ProductGroupConfidence;
+  groupSource?: ProductGroupSource;
+  packageSize?: ProductPackageSize | null;
+  alternativesEligible?: boolean;
+
   marketName: string;
   price: number | null;
   currency: string;
