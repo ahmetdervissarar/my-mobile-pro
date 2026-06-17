@@ -396,7 +396,7 @@ export default function ProductResultScreen() {
         );
 
         if (isMounted) {
-          setPriceError((err as Error)?.message ?? 'Fiyat alınamadı');
+          setPriceError('Fiyat bilgisi şu anda alınamadı.');
         }
       })
       .finally(() => {

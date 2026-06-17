@@ -109,7 +109,7 @@ function normalizePriceResolveError(err: unknown): string {
     return 'Fiyat servisine ulaşılamadı.';
   }
 
-  return message || 'Bilinmeyen ağ hatası';
+  return 'Fiyat bilgisi şu anda alınamadı.';
 }
 
 export class PriceClient {
