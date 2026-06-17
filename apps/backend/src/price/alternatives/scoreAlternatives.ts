@@ -3,6 +3,7 @@ import type {
   AlternativeRecommendation,
   ScoreAlternativesInput,
 } from './types.js';
+import { normalizeAlternativeProductShape } from './alternativeProductShape.js';
 
 const DEFAULT_LIMIT = 3;
 
@@ -147,18 +148,22 @@ function isSameProduct(current: ScoreAlternativesInput['currentProduct'], candid
 export function scoreAlternatives(input: ScoreAlternativesInput): AlternativeRecommendation[] {
   const limit = input.limit ?? DEFAULT_LIMIT;
   const current = input.currentProduct;
-  const currentProductGroupKey = current.productGroupKey?.trim();
+  const currentShape = normalizeAlternativeProductShape(current);
+  const currentProductGroupKey = currentShape.rawProductGroupKey;
 
   if (!currentProductGroupKey) {
     return [];
   }
 
   return input.candidates
-    .filter(
-      (candidate) =>
+    .filter((candidate) => {
+      const candidateShape = normalizeAlternativeProductShape(candidate);
+
+      return (
         candidate.categoryKey === current.categoryKey &&
-        candidate.productGroupKey === currentProductGroupKey,
-    )
+        candidateShape.rawProductGroupKey === currentProductGroupKey
+      );
+    })
     .filter((candidate) => !isSameProduct(current, candidate))
     .map((candidate): AlternativeRecommendation => {
       const rafScoreDelta =

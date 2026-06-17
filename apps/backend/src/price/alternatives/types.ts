@@ -1,6 +1,7 @@
 ﻿import type { DataConfidenceLevel, DataConfidenceResult } from '../confidence/index.js';
 import type { SustainabilityCategoryKey } from '../sustainability/index.js';
 import type { MarketChainCode } from '../stores/storeTypes.js';
+import type { ProductPackageSize } from '../productGroups/index.js';
 
 export interface AlternativeCandidateScores {
   rafScore: number;
@@ -24,7 +25,9 @@ export interface AlternativeCandidate {
   categoryKey: SustainabilityCategoryKey;
   categoryText?: string;
   productGroupKey: string;
+  resolvedProductGroupKey?: string | null;
   packageSizeText?: string;
+  packageSize?: ProductPackageSize | null;
   marketName: string;
   chainCode: MarketChainCode;
   price: number;
@@ -42,6 +45,9 @@ export interface AlternativeCurrentProduct {
   productName?: string;
   categoryKey: SustainabilityCategoryKey;
   productGroupKey?: string;
+  resolvedProductGroupKey?: string | null;
+  packageSize?: ProductPackageSize | null;
+  alternativesEligible?: boolean;
   price?: number | null;
   rafScore?: number | null;
   healthScore?: number | null;
