@@ -5,7 +5,6 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { getFallbackProductSummary } from '../src/services/productService';
 import type { ProductSearchInput } from '../src/services/productService';
 import { getUserLocationForPricing } from '../src/services/locationService';
-import { fetchMarketPrices } from '../src/services/marketPriceService';
 import { evaluateProductRisks } from '../src/riskEngine/riskEngine';
 
 import type { ProductRiskResult, RiskLevel } from '../src/riskEngine/riskEngine';
@@ -243,9 +242,6 @@ export default function ProductResultScreen() {
   const [isRiskOpen, setIsRiskOpen] = useState(false);
   const [expandedWarnings, setExpandedWarnings] = useState<Set<string>>(new Set());
   const [isIngredientsVisible, setIsIngredientsVisible] = useState(false);
-  const [locationStatus, setLocationStatus] = useState<string | null>(null);
-  const [isLocationLoading, setIsLocationLoading] = useState(false);
-  const [marketPriceStatus, setMarketPriceStatus] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(
     emptyUserSensitivityProfile,
   );
@@ -336,8 +332,6 @@ export default function ProductResultScreen() {
     setIsRiskOpen(false);
     setExpandedWarnings(new Set());
     setIsIngredientsVisible(false);
-    setLocationStatus(null);
-    setMarketPriceStatus(null);
 
     let isMounted = true;
 
@@ -495,43 +489,6 @@ export default function ProductResultScreen() {
       setIsRiskOpen(true);
     }
   }, [riskResult.warnings.length]);
-
-  const handleFindPricesByLocation = async () => {
-    setIsLocationLoading(true);
-    setLocationStatus(null);
-    setMarketPriceStatus(null);
-
-    try {
-      const location = await getUserLocationForPricing();
-
-      if (!location) {
-        setLocationStatus('Konum izni verilmedi');
-        return;
-      }
-
-      setLocationStatus('Konum alındı');
-
-      const marketPrices = await fetchMarketPrices(
-        {
-          productName: result.name,
-          barcode: result.barcode !== 'Bilinmiyor' ? result.barcode : undefined,
-        },
-        location,
-      );
-
-      if (marketPrices.prices.length === 0) {
-        setMarketPriceStatus('Yakındaki market fiyatı bulunamadı');
-      } else {
-        const firstPrice = marketPrices.prices[0];
-        setMarketPriceStatus(`${firstPrice.marketName}: ${firstPrice.price} ${firstPrice.currency}`);
-      }
-    } catch {
-      setLocationStatus('Konum alınamadı');
-      setMarketPriceStatus('Market fiyatı sorgulanamadı');
-    } finally {
-      setIsLocationLoading(false);
-    }
-  };
 
   const CRITICAL_ALLERGEN_CODES = [
     'PROFILE_PEANUT_ALLERGEN_MATCH',
