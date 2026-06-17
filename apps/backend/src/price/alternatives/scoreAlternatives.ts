@@ -176,7 +176,7 @@ export function scoreAlternatives(input: ScoreAlternativesInput): AlternativeRec
       return {
         candidate,
         rankingScore,
-        reasonLabel: 'Daha iyi alternatif bulundu',
+        reasonLabel: 'Aynı ürün grubunda daha iyi seçenek',
         rafScoreDelta,
         priceDelta,
         priceDeltaText: formatPriceDelta(priceDelta),
