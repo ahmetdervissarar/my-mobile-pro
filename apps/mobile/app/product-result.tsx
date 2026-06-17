@@ -544,7 +544,7 @@ export default function ProductResultScreen() {
   const contentScore = priceResult?.contentScore ?? null;
   const sustainability = priceResult?.sustainability ?? null;
   const priceDisclaimer =
-    priceResolution?.disclaimer ?? 'Fiyat bilgisi sağlayıcı kaynaklara göre gösterilir.';
+    priceResolution?.disclaimer ?? 'Fiyat bilgisi sağlayıcı kaynaklara göre değişebilir. Satın alma öncesinde güncel market fiyatını kontrol ediniz.';
   const bestOffer = priceResult?.bestOffer ?? null;
   const offerOptions = priceResult?.offers ?? [];
   const otherOffers = bestOffer

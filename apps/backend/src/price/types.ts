@@ -75,7 +75,7 @@ export interface IPriceProvider {
 }
 
 export const BETA_DISCLAIMER =
-  'Bu fiyatlar kapalı beta test sürecinde kullanılan referans fiyatlardır. ' +
+  'Bu fiyat bilgileri kapalı beta sürecinde sağlayıcı kaynaklardan alınır. ' +
   'Market, kampanya, konum ve stok durumuna göre değişebilir. ' +
   'Satın alma öncesinde güncel market fiyatını kontrol ediniz.';
 
