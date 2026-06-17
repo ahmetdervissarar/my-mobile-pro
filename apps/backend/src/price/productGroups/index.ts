@@ -4,3 +4,5 @@ export { PRODUCT_GROUP_CATALOG, findProductGroupCatalogEntry } from './catalog.j
 export { arePackageSizesComparable, parsePackageSizeFromText } from './packageSize.js';
 export { resolveProductGroup } from './resolveProductGroup.js';
 export type { ProductGroupResolverInput } from './resolveProductGroup.js';
+export { getAlternativeSuppressionReason, logAlternativeSuppression } from './alternativeSuppression.js';
+export type { AlternativeSuppressionEvent, AlternativeSuppressionReason } from './alternativeSuppression.js';

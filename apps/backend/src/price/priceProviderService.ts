@@ -25,7 +25,7 @@ import {
   productFactsToSustainabilityInput,
   type ProductFacts,
 } from './productFacts/index.js';
-import { inferProductGroupKey, resolveProductGroup } from './productGroups/index.js';
+import { inferProductGroupKey, logAlternativeSuppression, resolveProductGroup } from './productGroups/index.js';
 
 
 export interface PriceProviderServiceOptions {
@@ -99,6 +99,12 @@ function attachProductGroupKey(
   result.groupSource = resolution.groupSource;
   result.packageSize = resolution.packageSize;
   result.alternativesEligible = resolution.alternativesEligible;
+
+  logAlternativeSuppression({
+    productName,
+    barcode,
+    resolution,
+  });
 }
 
 function inferBetaHealthInput(productName?: string): HealthScoreInput {
