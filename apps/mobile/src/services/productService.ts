@@ -382,8 +382,8 @@ export async function getFallbackProductSummary(
       nutriScore: null,
       novaGroup: null,
       trafficLight: null,
-      analysisStatus: 'ready',
-      analysisMessage: 'Ürün bilgileri doğrulanıyor.',
+      analysisStatus: 'not_found',
+      analysisMessage: 'Ürün bilgileri doğrulanıyor. Sağlık ve alerjen yorumu için güvenilir ürün verisi bekleniyor.',
     };
   } catch {
     return {
@@ -397,8 +397,8 @@ export async function getFallbackProductSummary(
       nutriScore: null,
       novaGroup: null,
       trafficLight: null,
-      analysisStatus: 'ready',
-      analysisMessage: 'Ürün bilgileri doğrulanıyor.',
+      analysisStatus: 'not_found',
+      analysisMessage: 'Ürün bilgileri doğrulanıyor. Sağlık ve alerjen yorumu için güvenilir ürün verisi bekleniyor.',
     };
   }
 }
