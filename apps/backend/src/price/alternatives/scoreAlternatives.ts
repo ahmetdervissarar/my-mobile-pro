@@ -162,6 +162,17 @@ function isSameProduct(current: ScoreAlternativesInput['currentProduct'], candid
   return false;
 }
 
+function hydrateAlternativeCandidateShape(candidate: AlternativeCandidate): AlternativeCandidate {
+  const shape = normalizeAlternativeProductShape(candidate);
+
+  return {
+    ...candidate,
+    resolvedProductGroupKey:
+      candidate.resolvedProductGroupKey ?? shape.canonicalProductGroupKey,
+    packageSize: candidate.packageSize ?? shape.packageSize,
+  };
+}
+
 function isLegacyAlternativeMatch(
   current: ScoreAlternativesInput['currentProduct'],
   candidate: AlternativeCandidate,
@@ -284,28 +295,35 @@ function scoreAlternativesWithMode(
     .filter((candidate) => isAlternativeMatch(current, candidate, mode))
     .filter((candidate) => !isSameProduct(current, candidate))
     .map((candidate): AlternativeRecommendation => {
+      const hydratedCandidate = hydrateAlternativeCandidateShape(candidate);
+
       const rafScoreDelta =
         current.rafScore !== null && current.rafScore !== undefined
-          ? candidate.scores.rafScore - current.rafScore
+          ? hydratedCandidate.scores.rafScore - current.rafScore
           : null;
 
       const priceDelta =
         current.price !== null && current.price !== undefined
-          ? roundScore(candidate.price - current.price)
+          ? roundScore(hydratedCandidate.price - current.price)
           : null;
 
-      const rankingScore = getCandidateRankingScore(candidate, input, rafScoreDelta, priceDelta);
+      const rankingScore = getCandidateRankingScore(
+        hydratedCandidate,
+        input,
+        rafScoreDelta,
+        priceDelta,
+      );
 
       return {
-        candidate,
+        candidate: hydratedCandidate,
         rankingScore,
         reasonLabel: 'Aynı ürün grubunda daha iyi seçenek',
         rafScoreDelta,
         priceDelta,
         priceDeltaText: formatPriceDelta(priceDelta),
-        distanceText: candidate.distanceText,
-        reasons: buildReasons(candidate, rafScoreDelta, priceDelta),
-        confidenceLevel: candidate.overallConfidence.level,
+        distanceText: hydratedCandidate.distanceText,
+        reasons: buildReasons(hydratedCandidate, rafScoreDelta, priceDelta),
+        confidenceLevel: hydratedCandidate.overallConfidence.level,
       };
     })
     .filter((recommendation) => recommendation.rankingScore > 0)

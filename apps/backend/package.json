@@ -12,7 +12,7 @@
     "smoke:offers": "tsx src/price/enrich/enrichOffers.smoke.ts",
     "smoke:price-service": "tsx src/price/priceProviderService.smoke.ts",
     "smoke:confidence": "tsx src/price/confidence/confidence.smoke.ts",
-    "smoke:alternatives": "tsx src/price/alternatives/scoreAlternatives.smoke.ts && tsx src/price/alternatives/alternativeProductShape.smoke.ts && tsx src/price/alternatives/scoreAlternativesCanonical.smoke.ts && tsx src/price/alternatives/alternativeMatchingParity.smoke.ts",
+    "smoke:alternatives": "tsx src/price/alternatives/scoreAlternatives.smoke.ts && tsx src/price/alternatives/alternativeProductShape.smoke.ts && tsx src/price/alternatives/scoreAlternativesCanonical.smoke.ts && tsx src/price/alternatives/alternativeMatchingParity.smoke.ts && tsx src/price/alternatives/alternativeRecommendationHydration.smoke.ts",
     "smoke": "npm run audit:encoding && npm run smoke:confidence && npm run smoke:alternatives && npm run smoke:product-facts && npm run smoke:offers && npm run smoke:price-service && npm run smoke:product-groups",
     "audit:encoding": "node ../../tools/encoding-audit.mjs",
     "audit:encoding:strict": "node ../../tools/encoding-audit.mjs --strict",
