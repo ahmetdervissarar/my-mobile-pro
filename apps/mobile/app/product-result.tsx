@@ -827,7 +827,9 @@ export default function ProductResultScreen() {
                 <Text style={styles.helperText}>{priceDisclaimer}</Text>
               </>
             ) : (
-              <Text style={styles.value}>{result.priceText}</Text>
+              <Text style={styles.helperText}>
+                {result.priceText?.trim() || 'Fiyat bilgisi henüz hazır değil.'}
+              </Text>
             )}
 
             {priceError ? <Text style={styles.helperText}>{priceError}</Text> : null}
