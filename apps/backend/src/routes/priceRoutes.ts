@@ -2,7 +2,7 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 
 import { PriceProviderService } from '../price/priceProviderService.js';
 import type { PriceQuery } from '../price/types.js';
-import { loadSeedAlternativeCandidates, scoreAlternatives } from '../price/alternatives/index.js';
+import { loadSeedAlternativeCandidates, normalizeAlternativeProductShape, scoreAlternatives } from '../price/alternatives/index.js';
 import type { SustainabilityCategoryKey } from '../price/sustainability/index.js';
 import type { ManualBetaPriceEntry } from '../price/providers/manualBetaPriceProvider.js';
 
@@ -57,6 +57,29 @@ function parseCategoryKey(value: unknown): SustainabilityCategoryKey | undefined
   }
 
   return value as SustainabilityCategoryKey;
+}
+
+function buildTransitionSafeAlternativeCurrentProduct(input: {
+  barcode?: string;
+  productName?: string;
+  categoryKey: SustainabilityCategoryKey;
+  productGroupKey: string;
+  price?: number | null;
+  rafScore?: number | null;
+  healthScore?: number | null;
+  contentScore?: number | null;
+  sustainabilityScore?: number | null;
+}) {
+  const shape = normalizeAlternativeProductShape(input);
+
+  return {
+    ...input,
+    resolvedProductGroupKey: input.productGroupKey
+      ? shape.canonicalProductGroupKey
+      : undefined,
+    packageSize: shape.packageSize ?? undefined,
+    alternativesEligible: Boolean(shape.canonicalProductGroupKey && shape.packageSize),
+  };
 }
 
 function parseProductGroupKey(value: unknown): string | undefined {
@@ -141,19 +164,25 @@ export function createPriceRouter(
       return res.json({ recommendations: [] });
     }
 
+    const currentProduct = buildTransitionSafeAlternativeCurrentProduct({
+      barcode: typeof req.query.barcode === 'string' ? req.query.barcode : undefined,
+      productName: typeof req.query.productName === 'string' ? req.query.productName : undefined,
+      categoryKey,
+      productGroupKey,
+      price: parseOptionalNumber(req.query.price),
+      rafScore: parseOptionalNumber(req.query.rafScore),
+      healthScore: parseOptionalNumber(req.query.healthScore),
+      contentScore: parseOptionalNumber(req.query.contentScore),
+      sustainabilityScore: parseOptionalNumber(req.query.sustainabilityScore),
+    });
+
+    if (currentProduct.alternativesEligible === false) {
+      return res.json({ recommendations: [] });
+    }
+
     const candidates = loadSeedAlternativeCandidates();
     const recommendations = scoreAlternatives({
-      currentProduct: {
-        barcode: typeof req.query.barcode === 'string' ? req.query.barcode : undefined,
-        productName: typeof req.query.productName === 'string' ? req.query.productName : undefined,
-        categoryKey,
-        productGroupKey,
-        price: parseOptionalNumber(req.query.price),
-        rafScore: parseOptionalNumber(req.query.rafScore),
-        healthScore: parseOptionalNumber(req.query.healthScore),
-        contentScore: parseOptionalNumber(req.query.contentScore),
-        sustainabilityScore: parseOptionalNumber(req.query.sustainabilityScore),
-      },
+      currentProduct,
       candidates,
       limit: parseOptionalNumber(req.query.limit),
     });
