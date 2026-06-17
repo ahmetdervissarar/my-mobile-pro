@@ -382,7 +382,9 @@ export interface AlternativeCandidate {
   categoryKey: AlternativeCategoryKey;
   categoryText?: string;
   productGroupKey: string;
+  resolvedProductGroupKey?: string | null;
   packageSizeText?: string;
+  packageSize?: ProductPackageSize | null;
   marketName: string;
   chainCode: string;
   price: number;

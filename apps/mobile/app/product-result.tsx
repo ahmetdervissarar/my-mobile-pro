@@ -451,7 +451,13 @@ export default function ProductResultScreen() {
     const categoryKey = currentPriceResult?.sustainability?.categoryKey;
     const productGroupKey = currentPriceResult?.productGroupKey;
 
-    if (!currentPriceResult || !categoryKey || categoryKey === 'unknown' || !productGroupKey) {
+    if (
+      !currentPriceResult ||
+      isExplicitlyAlternativesIneligible(currentPriceResult) ||
+      !categoryKey ||
+      categoryKey === 'unknown' ||
+      !productGroupKey
+    ) {
       setAlternativeRecommendations([]);
       return () => {
         isMounted = false;
@@ -490,7 +496,20 @@ export default function ProductResultScreen() {
     }
   }, [riskResult.warnings.length]);
 
-  const CRITICAL_ALLERGEN_CODES = [
+  function getTransitionSafeProductGroupKey(input: {
+  resolvedProductGroupKey?: string | null;
+  productGroupKey?: string | null;
+}): string | null {
+  return input.resolvedProductGroupKey ?? input.productGroupKey ?? null;
+}
+
+function isExplicitlyAlternativesIneligible(input: {
+  alternativesEligible?: boolean;
+}): boolean {
+  return input.alternativesEligible === false;
+}
+
+const CRITICAL_ALLERGEN_CODES = [
     'PROFILE_PEANUT_ALLERGEN_MATCH',
     'PROFILE_SOY_ALLERGEN_MATCH',
     'PROFILE_GLUTEN_ALLERGEN_MATCH',
@@ -514,15 +533,22 @@ export default function ProductResultScreen() {
   const displayImageUrl = isBackendBarcodeLoading
     ? null
     : priceResolution?.result.imageUrl ?? result.imageUrl ?? capturedPhotoUri ?? null;
-  const currentProductGroupKey = priceResolution?.result.productGroupKey;
+  const currentProductGroupKey = priceResolution?.result
+    ? getTransitionSafeProductGroupKey(priceResolution.result)
+    : null;
 
   const visibleAlternativeRecommendations = useMemo(
     () =>
       alternativeRecommendations.filter((recommendation) => {
-        if (
-          !currentProductGroupKey ||
-          recommendation.candidate.productGroupKey !== currentProductGroupKey
-        ) {
+        const candidateProductGroupKey = getTransitionSafeProductGroupKey(
+          recommendation.candidate,
+        );
+
+        if (!currentProductGroupKey || !candidateProductGroupKey) {
+          return false;
+        }
+
+        if (candidateProductGroupKey !== currentProductGroupKey) {
           return false;
         }
 
