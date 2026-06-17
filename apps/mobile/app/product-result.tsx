@@ -579,7 +579,7 @@ export default function ProductResultScreen() {
 
   const productFactsMissingText = formatProductFactsMissingFields(backendProductFacts);
   const shouldShowProductFactsNotice = Boolean(
-    backendProductFacts?.verificationNeeded || productFactsMissingText,
+    backendProductFacts && (backendProductFacts.verificationNeeded || productFactsMissingText),
   );
   const productFactsVerificationReason =
     backendProductFacts?.verificationReason?.trim() ||
