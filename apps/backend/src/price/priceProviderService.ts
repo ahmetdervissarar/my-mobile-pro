@@ -521,13 +521,15 @@ export class PriceProviderService {
       ? `barcode=${query.barcode}`
       : `productName=${query.productName ?? 'unknown'}`;
 
-    console.info(`[price-resolve] start ${traceLabel}`);
+    const shouldLogTiming = process.env.DEBUG_PRICE_RESOLVE === '1';
+
+    if (shouldLogTiming) console.info(`[price-resolve] start ${traceLabel}`);
 
     const triedProviders: string[] = [];
     const productFactsStartedAt = Date.now();
     const productFacts = await tryFetchProductFacts(query);
 
-    console.info(
+    if (shouldLogTiming) console.info(
       `[price-resolve] productFacts ${Date.now() - productFactsStartedAt}ms found=${Boolean(productFacts)}`,
     );
     for (const provider of this.chain) {
@@ -539,7 +541,7 @@ export class PriceProviderService {
         const providerStartedAt = Date.now();
         const result = await provider.fetch(query);
 
-        console.info(
+        if (shouldLogTiming) console.info(
           `[price-resolve] provider ${provider.name} ${Date.now() - providerStartedAt}ms price=${result?.price ?? 'null'}`,
         );
 
@@ -603,7 +605,7 @@ export class PriceProviderService {
           attachRafScore(result);
     attachOverallConfidence(result);
 
-          console.info(`[price-resolve] done ${Date.now() - resolveStartedAt}ms source=${result.source ?? 'unknown'}`);
+          if (shouldLogTiming) console.info(`[price-resolve] done ${Date.now() - resolveStartedAt}ms source=${result.source ?? 'unknown'}`);
 
           return {
             result,
@@ -629,7 +631,7 @@ export class PriceProviderService {
     attachRafScore(unavailableResult);
     attachOverallConfidence(unavailableResult);
 
-    console.info(`[price-resolve] unavailable ${Date.now() - resolveStartedAt}ms`);
+    if (shouldLogTiming) console.info(`[price-resolve] unavailable ${Date.now() - resolveStartedAt}ms`);
 
     return {
       result: unavailableResult,

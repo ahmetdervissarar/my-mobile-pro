@@ -345,7 +345,9 @@ export default function ProductResultScreen() {
       ? `barcode=${normalizedInput.barcode}`
       : `productName=${normalizedInput.productName ?? 'unknown'}`;
 
-    console.info(`[mobile-price-resolve] start ${traceLabel}`);
+    const shouldLogTiming = process.env.EXPO_PUBLIC_DEBUG_PRICE_RESOLVE === '1';
+
+    if (shouldLogTiming) console.info(`[mobile-price-resolve] start ${traceLabel}`);
     setIsPriceLoading(true);
 
     const applyPriceResolution = (requestOrder: number, response: PriceResolveResponse): void => {
@@ -365,13 +367,13 @@ export default function ProductResultScreen() {
         productName: normalizedInput.productName,
       })
       .then((response) => {
-        console.info(
+        if (shouldLogTiming) console.info(
           `[mobile-price-resolve] initial backend ${Date.now() - initialBackendStartedAt}ms total=${Date.now() - resolveStartedAt}ms`,
         );
         applyPriceResolution(1, response);
       })
       .catch((err: unknown) => {
-        console.info(
+        if (shouldLogTiming) console.info(
           `[mobile-price-resolve] initial error ${Date.now() - resolveStartedAt}ms message=${(err as Error)?.message ?? 'unknown'}`,
         );
 
@@ -380,7 +382,7 @@ export default function ProductResultScreen() {
         }
       })
       .finally(() => {
-        console.info(`[mobile-price-resolve] initial finish ${Date.now() - resolveStartedAt}ms`);
+        if (shouldLogTiming) console.info(`[mobile-price-resolve] initial finish ${Date.now() - resolveStartedAt}ms`);
 
         if (isMounted) setIsPriceLoading(false);
       });
@@ -390,7 +392,7 @@ export default function ProductResultScreen() {
     getUserLocationForPricing()
       .catch(() => null)
       .then((location) => {
-        console.info(
+        if (shouldLogTiming) console.info(
           `[mobile-price-resolve] location ${Date.now() - locationStartedAt}ms found=${Boolean(location)}`,
         );
 
@@ -407,7 +409,7 @@ export default function ProductResultScreen() {
             location,
           })
           .then((response) => {
-            console.info(
+            if (shouldLogTiming) console.info(
               `[mobile-price-resolve] refined backend ${Date.now() - refinedBackendStartedAt}ms total=${Date.now() - resolveStartedAt}ms`,
             );
 
@@ -415,7 +417,7 @@ export default function ProductResultScreen() {
           });
       })
       .catch((err: unknown) => {
-        console.info(
+        if (shouldLogTiming) console.info(
           `[mobile-price-resolve] refined error ${Date.now() - resolveStartedAt}ms message=${(err as Error)?.message ?? 'unknown'}`,
         );
       });
