@@ -221,6 +221,25 @@ function getRecommendationIds(recommendations: AlternativeRecommendation[]): str
   return recommendations.map((recommendation) => recommendation.candidate.id);
 }
 
+function buildCanonicalShadowInput(input: ScoreAlternativesInput): ScoreAlternativesInput {
+  const currentShape = normalizeAlternativeProductShape(input.currentProduct);
+
+  return {
+    ...input,
+    currentProduct: {
+      ...input.currentProduct,
+      resolvedProductGroupKey:
+        input.currentProduct.resolvedProductGroupKey ??
+        currentShape.canonicalProductGroupKey ??
+        undefined,
+      packageSize: input.currentProduct.packageSize ?? currentShape.packageSize ?? undefined,
+      alternativesEligible:
+        input.currentProduct.alternativesEligible ??
+        Boolean(currentShape.canonicalProductGroupKey && currentShape.packageSize),
+    },
+  };
+}
+
 function logCanonicalMatchingParityIfNeeded(
   input: ScoreAlternativesInput,
   mode: AlternativeMatchingMode,
@@ -232,8 +251,9 @@ function logCanonicalMatchingParityIfNeeded(
 
   const legacyRecommendations =
     mode === 'legacy' ? recommendations : scoreAlternativesWithMode(input, 'legacy');
+  const canonicalInput = buildCanonicalShadowInput(input);
   const canonicalRecommendations =
-    mode === 'canonical' ? recommendations : scoreAlternativesWithMode(input, 'canonical');
+    mode === 'canonical' ? recommendations : scoreAlternativesWithMode(canonicalInput, 'canonical');
 
   const legacyIds = getRecommendationIds(legacyRecommendations);
   const canonicalIds = getRecommendationIds(canonicalRecommendations);
