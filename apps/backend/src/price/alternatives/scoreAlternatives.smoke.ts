@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { loadSeedAlternativeCandidates } from './candidateSource.js';
 import { scoreAlternatives } from './scoreAlternatives.js';
 
+const previousCanonicalMatchingFlag = process.env.USE_CANONICAL_ALTERNATIVE_MATCHING;
+delete process.env.USE_CANONICAL_ALTERNATIVE_MATCHING;
+
 const candidates = loadSeedAlternativeCandidates();
 
 assert.ok(candidates.length >= 11);
@@ -103,5 +106,11 @@ const emptyAlternatives = scoreAlternatives({
 });
 
 assert.deepEqual(emptyAlternatives, []);
+
+if (previousCanonicalMatchingFlag === undefined) {
+  delete process.env.USE_CANONICAL_ALTERNATIVE_MATCHING;
+} else {
+  process.env.USE_CANONICAL_ALTERNATIVE_MATCHING = previousCanonicalMatchingFlag;
+}
 
 console.log('ALTERNATIVES_SMOKE_OK');
