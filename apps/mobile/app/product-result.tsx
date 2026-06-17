@@ -180,8 +180,8 @@ function createNeutralPendingResult(input: ProductSearchInput): ProductResult {
     nutriScore: null,
     novaGroup: null,
     trafficLight: null,
-    analysisStatus: 'ready',
-    analysisMessage: 'Ürün bilgileri doğrulanıyor.',
+    analysisStatus: 'not_found',
+    analysisMessage: 'Ürün bilgileri doğrulanıyor. Sağlık ve alerjen yorumu için güvenilir ürün verisi bekleniyor.',
   };
 }
 
