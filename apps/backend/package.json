@@ -16,7 +16,7 @@
     "smoke": "npm run audit:encoding && npm run smoke:confidence && npm run smoke:alternatives && npm run smoke:product-facts && npm run smoke:offers && npm run smoke:price-service && npm run smoke:product-groups",
     "audit:encoding": "node ../../tools/encoding-audit.mjs",
     "audit:encoding:strict": "node ../../tools/encoding-audit.mjs --strict",
-    "smoke:product-groups": "tsx src/price/productGroups/inferProductGroupKey.smoke.ts"
+    "smoke:product-groups": "tsx src/price/productGroups/inferProductGroupKey.smoke.ts && tsx src/price/productGroups/packageSize.smoke.ts"
   },
   "keywords": [],
   "author": "",
