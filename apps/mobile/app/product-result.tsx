@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { getFallbackProductSummary, getMockProductResult } from '../src/services/productService';
+import { getFallbackProductSummary } from '../src/services/productService';
 import type { ProductSearchInput } from '../src/services/productService';
 import { getUserLocationForPricing } from '../src/services/locationService';
 import { fetchMarketPrices } from '../src/services/marketPriceService';
@@ -161,6 +161,30 @@ function createBarcodePendingResult(barcode: string | undefined): ProductResult 
   };
 }
 
+function createNeutralPendingResult(input: ProductSearchInput): ProductResult {
+  const productName = input.productName?.trim();
+  const photoSource = input.photoSource?.trim();
+
+  return {
+    id: productName ? `name-pending-${productName}` : 'photo-pending',
+    name: productName || (photoSource ? 'Fotoğraftan ürün analizi bekleniyor' : 'Ürün analizi bekleniyor'),
+    barcode: '',
+    searchSource: photoSource ? 'photo' : 'name',
+    healthScore: 0,
+    priceText: '',
+    imageUrl: photoSource ?? null,
+    warnings: [],
+    allergens: [],
+    additives: [],
+    ingredients: null,
+    nutriScore: null,
+    novaGroup: null,
+    trafficLight: null,
+    analysisStatus: 'pending',
+    analysisMessage: 'Ürün bilgileri doğrulanıyor.',
+  };
+}
+
 function getInitialResult(input: ProductSearchInput): ProductResult {
   const barcode = input.barcode?.trim();
 
@@ -168,7 +192,7 @@ function getInitialResult(input: ProductSearchInput): ProductResult {
     return createBarcodePendingResult(barcode);
   }
 
-  return getMockProductResult(input);
+  return createNeutralPendingResult(input);
 }
 
 export default function ProductResultScreen() {

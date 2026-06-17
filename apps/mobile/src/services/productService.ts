@@ -363,9 +363,43 @@ export async function getFallbackProductSummary(
       // TODO: Barkod disi kaynaklar icin gercek API cagrisi buraya eklenecek.
     }
 
-    return getMockProductResult(input);
+    const productName = input.productName?.trim();
+    const photoSource = input.photoSource?.trim();
+
+    return {
+      ...fallbackProduct,
+      id: productName ? `p-name-pending-${productName}` : 'p-photo-pending',
+      name: productName || (photoSource ? 'Fotoğraftan ürün analizi bekleniyor' : 'Ürün analizi bekleniyor'),
+      barcode: 'Bilinmiyor',
+      searchSource: photoSource ? 'photo' : 'name',
+      healthScore: 0,
+      priceText: '',
+      imageUrl: photoSource || null,
+      warnings: [],
+      allergens: [],
+      additives: [],
+      ingredients: null,
+      nutriScore: null,
+      novaGroup: null,
+      trafficLight: null,
+      analysisStatus: 'pending',
+      analysisMessage: 'Ürün bilgileri doğrulanıyor.',
+    };
   } catch {
-    return getMockProductResult(input);
+    return {
+      ...fallbackProduct,
+      healthScore: 0,
+      priceText: '',
+      warnings: [],
+      allergens: [],
+      additives: [],
+      ingredients: null,
+      nutriScore: null,
+      novaGroup: null,
+      trafficLight: null,
+      analysisStatus: 'pending',
+      analysisMessage: 'Ürün bilgileri doğrulanıyor.',
+    };
   }
 }
 
