@@ -898,7 +898,7 @@ export default function ProductResultScreen() {
               </>
             ) : (
               <Text style={styles.helperText}>
-                Bu ürün için sürdürülebilirlik skoru henüz hesaplanamadı.
+                Bu ürün için sürdürülebilirlik verisi bulunamadı. Skor hesaplanamadı.
               </Text>
             )}
           </View>
