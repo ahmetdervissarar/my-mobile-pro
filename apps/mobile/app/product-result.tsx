@@ -514,10 +514,18 @@ export default function ProductResultScreen() {
   const displayImageUrl = isBackendBarcodeLoading
     ? null
     : priceResolution?.result.imageUrl ?? result.imageUrl ?? capturedPhotoUri ?? null;
+  const currentProductGroupKey = priceResolution?.result.productGroupKey;
 
   const visibleAlternativeRecommendations = useMemo(
     () =>
       alternativeRecommendations.filter((recommendation) => {
+        if (
+          !currentProductGroupKey ||
+          recommendation.candidate.productGroupKey !== currentProductGroupKey
+        ) {
+          return false;
+        }
+
         const candidateSignals = recommendation.candidate.signals;
         const candidateRisk = evaluateProductRisks({
           name: recommendation.candidate.productName,
@@ -533,7 +541,7 @@ export default function ProductResultScreen() {
           CRITICAL_ALLERGEN_CODES.includes(warning.code),
         );
       }),
-    [alternativeRecommendations, userProfile],
+    [alternativeRecommendations, currentProductGroupKey, userProfile],
   );
 
   const topAlternativeRecommendation = visibleAlternativeRecommendations[0] ?? null;

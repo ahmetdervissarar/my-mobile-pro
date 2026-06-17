@@ -136,6 +136,11 @@ export function createPriceRouter(
     }
 
     const productGroupKey = parseProductGroupKey(req.query.productGroupKey);
+
+    if (!productGroupKey) {
+      return res.json({ recommendations: [] });
+    }
+
     const candidates = loadSeedAlternativeCandidates();
     const recommendations = scoreAlternatives({
       currentProduct: {
