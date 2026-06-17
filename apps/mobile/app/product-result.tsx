@@ -827,6 +827,24 @@ export default function ProductResultScreen() {
                   </>
                 ) : null}
               </>
+            ) : priceResult ? (
+              <>
+                <View style={styles.scoreSummaryCard}>
+                  <Text style={styles.scoreSummaryLabel}>Fiyat Skoru</Text>
+                  <Text style={styles.scoreSummaryValue}>{getPriceScoreDisplayValue(priceScore)}</Text>
+                  <Text style={styles.helperText}>{getPriceScoreStatusText(priceScore)}</Text>
+                </View>
+
+                {priceResult.note ? (
+                  <Text style={styles.helperText}>{priceResult.note}</Text>
+                ) : (
+                  <Text style={styles.helperText}>
+                    Bu ürün için güncel fiyat verisi bulunamadı.
+                  </Text>
+                )}
+
+                <Text style={styles.helperText}>{priceDisclaimer}</Text>
+              </>
             ) : (
               <Text style={styles.value}>{result.priceText}</Text>
             )}
