@@ -1,3 +1,4 @@
+import { arePackageSizesComparable } from '../productGroups/index.js';
 import type {
   AlternativeCandidate,
   AlternativeRecommendation,
@@ -6,6 +7,22 @@ import type {
 import { normalizeAlternativeProductShape } from './alternativeProductShape.js';
 
 const DEFAULT_LIMIT = 3;
+const USE_CANONICAL_ALTERNATIVE_MATCHING = 'USE_CANONICAL_ALTERNATIVE_MATCHING';
+const SHADOW_CANONICAL_ALTERNATIVE_MATCHING = 'SHADOW_CANONICAL_ALTERNATIVE_MATCHING';
+
+type AlternativeMatchingMode = 'legacy' | 'canonical';
+
+function isEnabled(value: string | undefined): boolean {
+  return value === '1' || value?.toLowerCase() === 'true';
+}
+
+function getAlternativeMatchingMode(): AlternativeMatchingMode {
+  return isEnabled(process.env[USE_CANONICAL_ALTERNATIVE_MATCHING]) ? 'canonical' : 'legacy';
+}
+
+function shouldShadowCanonicalAlternativeMatching(): boolean {
+  return isEnabled(process.env[SHADOW_CANONICAL_ALTERNATIVE_MATCHING]);
+}
 
 function roundScore(value: number): number {
   return Math.round(value * 100) / 100;
@@ -145,25 +162,106 @@ function isSameProduct(current: ScoreAlternativesInput['currentProduct'], candid
   return false;
 }
 
-export function scoreAlternatives(input: ScoreAlternativesInput): AlternativeRecommendation[] {
-  const limit = input.limit ?? DEFAULT_LIMIT;
-  const current = input.currentProduct;
+function isLegacyAlternativeMatch(
+  current: ScoreAlternativesInput['currentProduct'],
+  candidate: AlternativeCandidate,
+): boolean {
   const currentShape = normalizeAlternativeProductShape(current);
+  const candidateShape = normalizeAlternativeProductShape(candidate);
   const currentProductGroupKey = currentShape.rawProductGroupKey;
 
-  if (!currentProductGroupKey) {
-    return [];
+  return Boolean(
+    currentProductGroupKey &&
+      candidate.categoryKey === current.categoryKey &&
+      candidateShape.rawProductGroupKey === currentProductGroupKey,
+  );
+}
+
+function isCanonicalAlternativeMatch(
+  current: ScoreAlternativesInput['currentProduct'],
+  candidate: AlternativeCandidate,
+): boolean {
+  if (current.alternativesEligible !== true) {
+    return false;
   }
 
-  return input.candidates
-    .filter((candidate) => {
-      const candidateShape = normalizeAlternativeProductShape(candidate);
+  if (candidate.categoryKey !== current.categoryKey) {
+    return false;
+  }
 
-      return (
-        candidate.categoryKey === current.categoryKey &&
-        candidateShape.rawProductGroupKey === currentProductGroupKey
-      );
-    })
+  const currentShape = normalizeAlternativeProductShape(current);
+  const candidateShape = normalizeAlternativeProductShape(candidate);
+
+  if (!currentShape.canonicalProductGroupKey || !candidateShape.canonicalProductGroupKey) {
+    return false;
+  }
+
+  if (currentShape.canonicalProductGroupKey !== candidateShape.canonicalProductGroupKey) {
+    return false;
+  }
+
+  if (!currentShape.packageSize || !candidateShape.packageSize) {
+    return false;
+  }
+
+  return arePackageSizesComparable(currentShape.packageSize, candidateShape.packageSize);
+}
+
+function isAlternativeMatch(
+  current: ScoreAlternativesInput['currentProduct'],
+  candidate: AlternativeCandidate,
+  mode: AlternativeMatchingMode,
+): boolean {
+  return mode === 'canonical'
+    ? isCanonicalAlternativeMatch(current, candidate)
+    : isLegacyAlternativeMatch(current, candidate);
+}
+
+function getRecommendationIds(recommendations: AlternativeRecommendation[]): string[] {
+  return recommendations.map((recommendation) => recommendation.candidate.id);
+}
+
+function logCanonicalMatchingParityIfNeeded(
+  input: ScoreAlternativesInput,
+  mode: AlternativeMatchingMode,
+  recommendations: AlternativeRecommendation[],
+): void {
+  if (!shouldShadowCanonicalAlternativeMatching()) {
+    return;
+  }
+
+  const legacyRecommendations =
+    mode === 'legacy' ? recommendations : scoreAlternativesWithMode(input, 'legacy');
+  const canonicalRecommendations =
+    mode === 'canonical' ? recommendations : scoreAlternativesWithMode(input, 'canonical');
+
+  const legacyIds = getRecommendationIds(legacyRecommendations);
+  const canonicalIds = getRecommendationIds(canonicalRecommendations);
+
+  if (JSON.stringify(legacyIds) === JSON.stringify(canonicalIds)) {
+    return;
+  }
+
+  console.info(
+    '[alternatives] canonical_matching_parity_mismatch',
+    JSON.stringify({
+      currentProductGroupKey: input.currentProduct.productGroupKey ?? null,
+      resolvedProductGroupKey: input.currentProduct.resolvedProductGroupKey ?? null,
+      legacyIds,
+      canonicalIds,
+    }),
+  );
+}
+
+function scoreAlternativesWithMode(
+  input: ScoreAlternativesInput,
+  mode: AlternativeMatchingMode,
+): AlternativeRecommendation[] {
+  const limit = input.limit ?? DEFAULT_LIMIT;
+  const current = input.currentProduct;
+
+  return input.candidates
+    .filter((candidate) => isAlternativeMatch(current, candidate, mode))
     .filter((candidate) => !isSameProduct(current, candidate))
     .map((candidate): AlternativeRecommendation => {
       const rafScoreDelta =
@@ -207,4 +305,13 @@ export function scoreAlternatives(input: ScoreAlternativesInput): AlternativeRec
       return a.candidate.price - b.candidate.price;
     })
     .slice(0, limit);
+}
+
+export function scoreAlternatives(input: ScoreAlternativesInput): AlternativeRecommendation[] {
+  const mode = getAlternativeMatchingMode();
+  const recommendations = scoreAlternativesWithMode(input, mode);
+
+  logCanonicalMatchingParityIfNeeded(input, mode, recommendations);
+
+  return recommendations;
 }
