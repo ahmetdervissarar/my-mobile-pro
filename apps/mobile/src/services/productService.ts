@@ -382,7 +382,7 @@ export async function getFallbackProductSummary(
       nutriScore: null,
       novaGroup: null,
       trafficLight: null,
-      analysisStatus: 'pending',
+      analysisStatus: 'ready',
       analysisMessage: 'Ürün bilgileri doğrulanıyor.',
     };
   } catch {
@@ -397,7 +397,7 @@ export async function getFallbackProductSummary(
       nutriScore: null,
       novaGroup: null,
       trafficLight: null,
-      analysisStatus: 'pending',
+      analysisStatus: 'ready',
       analysisMessage: 'Ürün bilgileri doğrulanıyor.',
     };
   }

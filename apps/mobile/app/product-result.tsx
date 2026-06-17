@@ -180,7 +180,7 @@ function createNeutralPendingResult(input: ProductSearchInput): ProductResult {
     nutriScore: null,
     novaGroup: null,
     trafficLight: null,
-    analysisStatus: 'pending',
+    analysisStatus: 'ready',
     analysisMessage: 'Ürün bilgileri doğrulanıyor.',
   };
 }
