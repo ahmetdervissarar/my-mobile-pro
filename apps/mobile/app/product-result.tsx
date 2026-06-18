@@ -579,6 +579,7 @@ const CRITICAL_ALLERGEN_CODES = [
   const sustainability = priceResult?.sustainability ?? null;
   const priceDisclaimer =
     priceResolution?.disclaimer ?? 'Fiyat bilgisi sağlayıcı kaynaklara göre değişebilir. Satın alma öncesinde güncel market fiyatını kontrol ediniz.';
+  const priceSourceMetaText = priceResult ? getPriceSourceMetaText(priceResult) : null;
   const bestOffer = priceResult?.bestOffer ?? null;
   const offerOptions = priceResult?.offers ?? [];
   const otherOffers = bestOffer
@@ -753,6 +754,10 @@ const CRITICAL_ALLERGEN_CODES = [
                   <Text style={styles.helperText}>{getPriceScoreStatusText(priceScore)}</Text>
                 </View>
 
+                {priceSourceMetaText ? (
+                  <Text style={styles.helperText}>{priceSourceMetaText}</Text>
+                ) : null}
+
                 {bestOffer ? (
                   <>
                     <Text style={styles.label}>En uygun fiyat</Text>
@@ -856,6 +861,10 @@ const CRITICAL_ALLERGEN_CODES = [
                   <Text style={styles.scoreSummaryValue}>{getPriceScoreDisplayValue(priceScore)}</Text>
                   <Text style={styles.helperText}>{getPriceScoreStatusText(priceScore)}</Text>
                 </View>
+
+                {priceSourceMetaText ? (
+                  <Text style={styles.helperText}>{priceSourceMetaText}</Text>
+                ) : null}
 
                 {priceResult.note ? (
                   <Text style={styles.helperText}>{priceResult.note}</Text>
@@ -1144,6 +1153,23 @@ const CRITICAL_ALLERGEN_CODES = [
       </View>
     </ScrollView>
   );
+}
+
+function getPriceSourceLabel(source: PriceResolveResponse['result']['source']): string {
+  if (source === 'manual_beta') return 'Beta manuel veri';
+  if (source === 'beta_reference') return 'Beta referans veri';
+  if (source === 'last_known') return 'Son bilinen fiyat';
+  if (source === 'retailer_scraper') return 'Market kaynaklı veri';
+  return 'Fiyat kaynağı yok';
+}
+
+function getPriceSourceMetaText(priceResult: PriceResolveResponse['result']): string {
+  const sourceText = `Fiyat kaynağı: ${getPriceSourceLabel(priceResult.source)}`;
+  const confidenceText = priceResult.overallConfidence
+    ? `Veri güveni: ${getDataConfidenceLabel(priceResult.overallConfidence.level)}`
+    : null;
+
+  return confidenceText ? `${sourceText} · ${confidenceText}` : sourceText;
 }
 
 function getDataConfidenceLabel(confidence: 'low' | 'medium' | 'high'): string {
