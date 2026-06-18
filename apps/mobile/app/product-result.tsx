@@ -141,6 +141,59 @@ function formatProductFactsMissingFields(productFacts: ProductFacts | null): str
 }
 
 
+type BetaFeedbackType =
+  | 'wrong_product'
+  | 'wrong_price'
+  | 'missing_price'
+  | 'wrong_score'
+  | 'unsafe_alternative'
+  | 'missing_alternative'
+  | 'other';
+
+function getBetaFeedbackLabel(type: BetaFeedbackType): string {
+  if (type === 'wrong_product') return 'Ürün hatalı';
+  if (type === 'wrong_price') return 'Fiyat hatalı';
+  if (type === 'missing_price') return 'Fiyat eksik';
+  if (type === 'wrong_score') return 'Puan hatalı';
+  if (type === 'unsafe_alternative') return 'Alternatif hatalı';
+  if (type === 'missing_alternative') return 'Alternatif eksik';
+  return 'Diğer';
+}
+
+async function submitBetaFeedback(input: {
+  feedbackType: BetaFeedbackType;
+  barcode?: string;
+  productName?: string;
+  rafScore?: number;
+  productGroupKey?: string;
+  resolvedProductGroupKey?: string | null;
+}): Promise<boolean> {
+  const apiBaseUrl = process.env.EXPO_PUBLIC_PRICE_API_URL ?? 'http://localhost:3001';
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/beta/feedback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        feedbackType: input.feedbackType,
+        severity: 'medium',
+        barcode: input.barcode,
+        productName: input.productName,
+        screen: 'product-result',
+        rafScore: input.rafScore,
+        productGroupKey: input.productGroupKey,
+        resolvedProductGroupKey: input.resolvedProductGroupKey,
+      }),
+    });
+
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 function getRafScoreComponentLabel(key: string): string {
   if (key === 'price') return 'Fiyat';
   if (key === 'health') return 'Sağlık';
@@ -616,6 +669,36 @@ const CRITICAL_ALLERGEN_CODES = [
   const priceDisclaimer =
     priceResolution?.disclaimer ?? 'Fiyat bilgisi sağlayıcı kaynaklara göre değişebilir. Satın alma öncesinde güncel market fiyatını kontrol ediniz.';
   const priceSourceMetaText = priceResult ? getPriceSourceMetaText(priceResult) : null;
+  const [submittedFeedbackType, setSubmittedFeedbackType] = useState<BetaFeedbackType | null>(null);
+  const [isSubmittingBetaFeedback, setIsSubmittingBetaFeedback] = useState(false);
+  const [betaFeedbackError, setBetaFeedbackError] = useState<string | null>(null);
+
+  async function handleBetaFeedbackPress(feedbackType: BetaFeedbackType): Promise<void> {
+    if (isSubmittingBetaFeedback) {
+      return;
+    }
+
+    setIsSubmittingBetaFeedback(true);
+    setBetaFeedbackError(null);
+
+    const accepted = await submitBetaFeedback({
+      feedbackType,
+      barcode: normalizedInput.barcode,
+      productName: displayProductName,
+      rafScore: typeof rafScore?.score === 'number' ? rafScore.score : undefined,
+      productGroupKey: priceResult?.productGroupKey,
+      resolvedProductGroupKey: priceResult?.resolvedProductGroupKey,
+    });
+
+    setIsSubmittingBetaFeedback(false);
+
+    if (accepted) {
+      setSubmittedFeedbackType(feedbackType);
+      return;
+    }
+
+    setBetaFeedbackError('Geri bildirim şu anda gönderilemedi.');
+  }
   const rafScoreExplanationItems = priceResult ? getRafScoreExplanationItems(priceResult) : [];
   const bestOffer = priceResult?.bestOffer ?? null;
   const offerOptions = priceResult?.offers ?? [];
@@ -1197,8 +1280,41 @@ const CRITICAL_ALLERGEN_CODES = [
         <View style={styles.productFactsNoticeCard}>
           <Text style={styles.productFactsNoticeTitle}>Beta geri bildirimi</Text>
           <Text style={styles.productFactsNoticeText}>
-            Ürün, fiyat veya alternatif önerisi hatalıysa ekran görüntüsüyle beta geri bildirim kanalından iletin. Öncelikli konular: ürün bulunamadı, yanlış ürün, yanlış fiyat, yanlış alternatif veya alerjen uyarısı.
+            Bu sonuçta hatalı gördüğünüz alanı işaretleyin. Geri bildirimler kapalı beta iyileştirmesi için kullanılır.
           </Text>
+
+          <View style={styles.betaFeedbackActions}>
+            {(['wrong_product', 'wrong_price', 'wrong_score', 'missing_alternative'] as BetaFeedbackType[]).map(
+              (feedbackType) => (
+                <Pressable
+                  key={feedbackType}
+                  style={[
+                    styles.betaFeedbackButton,
+                    submittedFeedbackType === feedbackType ? styles.betaFeedbackButtonSelected : null,
+                  ]}
+                  onPress={() => {
+                    void handleBetaFeedbackPress(feedbackType);
+                  }}
+                  disabled={isSubmittingBetaFeedback}
+                >
+                  <Text style={styles.betaFeedbackButtonText}>
+                    {submittedFeedbackType === feedbackType ? '✓ ' : ''}
+                    {getBetaFeedbackLabel(feedbackType)}
+                  </Text>
+                </Pressable>
+              ),
+            )}
+          </View>
+
+          {submittedFeedbackType ? (
+            <Text style={styles.betaFeedbackStatusText}>
+              Geri bildiriminiz alındı: {getBetaFeedbackLabel(submittedFeedbackType)}
+            </Text>
+          ) : null}
+
+          {betaFeedbackError ? (
+            <Text style={styles.betaFeedbackErrorText}>{betaFeedbackError}</Text>
+          ) : null}
         </View>
 
       <View style={styles.actions}>
@@ -1360,6 +1476,41 @@ const styles = StyleSheet.create({
   productBarcode: {
     fontSize: 12,
     color: '#6B7280',
+  },
+  betaFeedbackActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
+  },
+  betaFeedbackButton: {
+    borderWidth: 1,
+    borderColor: '#BFD8C5',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  betaFeedbackButtonSelected: {
+    borderColor: '#2DCC71',
+    backgroundColor: '#EAF8EF',
+  },
+  betaFeedbackButtonText: {
+    color: '#1F5C39',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  betaFeedbackStatusText: {
+    color: '#1F5C39',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 10,
+  },
+  betaFeedbackErrorText: {
+    color: '#B42318',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 10,
   },
   productFactsNoticeCard: {
     borderRadius: 14,
