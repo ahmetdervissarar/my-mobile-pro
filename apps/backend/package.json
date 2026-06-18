@@ -13,11 +13,12 @@
     "smoke:price-service": "tsx src/price/priceProviderService.smoke.ts",
     "smoke:confidence": "tsx src/price/confidence/confidence.smoke.ts",
     "smoke:alternatives": "tsx src/price/alternatives/scoreAlternatives.smoke.ts && tsx src/price/alternatives/alternativeProductShape.smoke.ts && tsx src/price/alternatives/scoreAlternativesCanonical.smoke.ts && tsx src/price/alternatives/alternativeRegistryGate.smoke.ts && tsx src/price/alternatives/alternativeMatchingParity.smoke.ts && tsx src/price/alternatives/alternativeRecommendationHydration.smoke.ts && tsx src/routes/priceRoutesAlternativesCanonical.smoke.ts && tsx src/routes/priceRoutesAlternativesParity.smoke.ts",
-    "smoke": "npm run audit:encoding && npm run smoke:confidence && npm run smoke:alternatives && npm run smoke:product-facts && npm run smoke:offers && npm run smoke:price-service && npm run smoke:product-groups",
+    "smoke": "npm run audit:encoding && npm run smoke:confidence && npm run smoke:beta-query-events && npm run smoke:alternatives && npm run smoke:product-facts && npm run smoke:offers && npm run smoke:price-service && npm run smoke:product-groups",
     "audit:encoding": "node ../../tools/encoding-audit.mjs",
     "audit:encoding:strict": "node ../../tools/encoding-audit.mjs --strict",
     "smoke:product-groups": "tsx src/price/productGroups/inferProductGroupKey.smoke.ts && tsx src/price/productGroups/packageSize.smoke.ts && tsx src/price/productGroups/registry.smoke.ts && tsx src/price/productGroups/resolveProductGroup.smoke.ts && tsx src/price/productGroups/alternativeSuppression.smoke.ts",
-    "manual:alternatives:canonical": "tsx src/price/alternatives/canonicalMatchingManualCheck.ts"
+    "manual:alternatives:canonical": "tsx src/price/alternatives/canonicalMatchingManualCheck.ts",
+    "smoke:beta-query-events": "tsx src/price/betaTelemetry/queryEvent.smoke.ts"
   },
   "keywords": [],
   "author": "",

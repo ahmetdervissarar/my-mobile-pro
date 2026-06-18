@@ -5,6 +5,7 @@ import type { PriceQuery } from '../price/types.js';
 import { loadSeedAlternativeCandidates, normalizeAlternativeProductShape, scoreAlternatives } from '../price/alternatives/index.js';
 import type { SustainabilityCategoryKey } from '../price/sustainability/index.js';
 import type { ManualBetaPriceEntry } from '../price/providers/manualBetaPriceProvider.js';
+import { buildAlternativesBetaQueryEvent, buildPriceResolveBetaQueryEvent, logBetaQueryEvent } from '../price/betaTelemetry/queryEvent.js';
 
 const SUSTAINABILITY_CATEGORY_KEYS = new Set<string>([
   'plant_based',
@@ -134,6 +135,14 @@ export function createPriceRouter(
       const { raw, ...resultPublic } = response.result;
       void raw;
 
+      logBetaQueryEvent(
+        buildPriceResolveBetaQueryEvent({
+          query,
+          result: resultPublic,
+          triedProviders: response.triedProviders,
+        }),
+      );
+
       return res.json({
         result: resultPublic,
         disclaimer: response.disclaimer,
@@ -141,6 +150,9 @@ export function createPriceRouter(
       });
     } catch (err) {
       console.error('[priceRoutes] resolve failed:', err);
+      logBetaQueryEvent(
+        buildPriceResolveBetaQueryEvent({ query, errorCode: 'resolve_failed' }),
+      );
 
       return res.status(500).json({
         error: 'Fiyat sorgulanırken beklenmedik bir hata oluştu.',
@@ -153,6 +165,18 @@ export function createPriceRouter(
     const categoryKey = parseCategoryKey(req.query.categoryKey);
 
     if (!categoryKey || categoryKey === 'unknown') {
+      logBetaQueryEvent(
+        buildAlternativesBetaQueryEvent({
+          query: {
+            barcode: typeof req.query.barcode === 'string' ? req.query.barcode : undefined,
+            productName: typeof req.query.productName === 'string' ? req.query.productName : undefined,
+          },
+          categoryKey: typeof req.query.categoryKey === 'string' ? req.query.categoryKey : undefined,
+          recommendationCount: 0,
+          suppressionReason: 'invalid_category',
+        }),
+      );
+
       return res.status(400).json({
         error: 'Geçerli bir categoryKey parametresi gereklidir.',
       });
@@ -161,6 +185,18 @@ export function createPriceRouter(
     const productGroupKey = parseProductGroupKey(req.query.productGroupKey);
 
     if (!productGroupKey) {
+      logBetaQueryEvent(
+        buildAlternativesBetaQueryEvent({
+          query: {
+            barcode: typeof req.query.barcode === 'string' ? req.query.barcode : undefined,
+            productName: typeof req.query.productName === 'string' ? req.query.productName : undefined,
+          },
+          categoryKey,
+          recommendationCount: 0,
+          suppressionReason: 'missing_product_group',
+        }),
+      );
+
       return res.json({ recommendations: [] });
     }
 
@@ -177,6 +213,21 @@ export function createPriceRouter(
     });
 
     if (currentProduct.alternativesEligible === false) {
+      logBetaQueryEvent(
+        buildAlternativesBetaQueryEvent({
+          query: {
+            barcode: typeof req.query.barcode === 'string' ? req.query.barcode : undefined,
+            productName: typeof req.query.productName === 'string' ? req.query.productName : undefined,
+          },
+          categoryKey,
+          productGroupKey,
+          resolvedProductGroupKey: currentProduct.resolvedProductGroupKey,
+          alternativesEligible: false,
+          recommendationCount: 0,
+          suppressionReason: 'not_alternatives_eligible',
+        }),
+      );
+
       return res.json({ recommendations: [] });
     }
 
@@ -186,6 +237,21 @@ export function createPriceRouter(
       candidates,
       limit: parseOptionalNumber(req.query.limit),
     });
+
+    logBetaQueryEvent(
+      buildAlternativesBetaQueryEvent({
+        query: {
+          barcode: typeof req.query.barcode === 'string' ? req.query.barcode : undefined,
+          productName: typeof req.query.productName === 'string' ? req.query.productName : undefined,
+        },
+        categoryKey,
+        productGroupKey,
+        resolvedProductGroupKey: currentProduct.resolvedProductGroupKey,
+        alternativesEligible: currentProduct.alternativesEligible,
+        recommendationCount: recommendations.length,
+        suppressionReason: recommendations.length === 0 ? 'no_safe_recommendation' : undefined,
+      }),
+    );
 
     return res.json({ recommendations });
   });
