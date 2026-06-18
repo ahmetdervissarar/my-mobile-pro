@@ -6,6 +6,7 @@ import { ManualBetaPriceProvider } from './price/providers/manualBetaPriceProvid
 import { PriceProviderService } from './price/priceProviderService.js';
 import { createPriceRouter } from './routes/priceRoutes.js';
 import { createSearchRouter } from './routes/searchRoutes.js';
+import { createBasketRouter } from './routes/basketRoutes.js';
 import { createBetaRouter } from './routes/betaRoutes.js';
 
 dotenv.config();
@@ -34,6 +35,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/price', createPriceRouter(priceService));
 app.use('/api/search', createSearchRouter());
+app.use('/api/basket', createBasketRouter());
 app.use('/api/beta', createBetaRouter());
 
 app.listen(PORT, () => {
