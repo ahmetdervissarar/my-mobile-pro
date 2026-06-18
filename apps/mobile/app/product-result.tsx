@@ -691,6 +691,13 @@ const CRITICAL_ALLERGEN_CODES = [
           </View>
         ) : null}
 
+        <View style={styles.productFactsNoticeCard}>
+          <Text style={styles.productFactsNoticeTitle}>Kapalı beta bilgilendirmesi</Text>
+          <Text style={styles.productFactsNoticeText}>
+            Fiyatlar beta/referans veri olabilir. Sağlık, içerik ve alerjen yorumları yardımcıdır; satın alma veya tüketim öncesinde ürün etiketi ve güncel market fiyatı esas alınmalıdır.
+          </Text>
+        </View>
+
         <View style={styles.rafScoreCard}>
           <Text style={styles.rafScoreLabel}>RAF SKORU</Text>
           <Text style={styles.rafScoreValue}>{getRafScoreDisplayValue(rafScore)}</Text>
