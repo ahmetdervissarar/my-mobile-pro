@@ -277,6 +277,8 @@ export function priceStatusLabel(status: PriceResult['status']): string {
       return 'Beta Referans';
     case 'last_known':
       return 'Son Bilinen';
+    case 'internal_test':
+      return 'İç Test';
     case 'unavailable':
       return 'Bulunamad\u0131';
   }
