@@ -610,6 +610,12 @@ const CRITICAL_ALLERGEN_CODES = [
     !backendProductFacts &&
     priceResult?.rafScore?.status === 'unavailable' &&
     (priceResult?.price ?? null) === null;
+  const shouldShowAlternativeUnavailableNotice = Boolean(
+    !isPriceLoading &&
+      priceResult &&
+      !isUnknownProduct &&
+      !topAlternativeRecommendation,
+  );
   return (
     <ScrollView
       style={styles.container}
@@ -730,6 +736,13 @@ const CRITICAL_ALLERGEN_CODES = [
 
             <Text style={styles.helperText}>
               Veri güveni: {getDataConfidenceLabel(topAlternativeRecommendation.confidenceLevel)}
+            </Text>
+          </View>
+        ) : shouldShowAlternativeUnavailableNotice ? (
+          <View style={styles.productFactsNoticeCard}>
+            <Text style={styles.productFactsNoticeTitle}>Güvenli alternatif gösterilmiyor</Text>
+            <Text style={styles.productFactsNoticeText}>
+              Bu ürün için kapalı beta sürecinde yalnızca aynı ürün grubunda ve güvenle karşılaştırılabilen alternatifler gösterilir. Yanlış yönlendirmemek için şu anda alternatif önerisi sunulmuyor.
             </Text>
           </View>
         ) : null}
