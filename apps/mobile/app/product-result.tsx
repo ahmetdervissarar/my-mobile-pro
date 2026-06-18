@@ -1133,6 +1133,12 @@ const CRITICAL_ALLERGEN_CODES = [
           </>
         ) : null}
       </View>
+        <View style={styles.productFactsNoticeCard}>
+          <Text style={styles.productFactsNoticeTitle}>Beta geri bildirimi</Text>
+          <Text style={styles.productFactsNoticeText}>
+            Ürün, fiyat veya alternatif önerisi hatalıysa ekran görüntüsüyle beta geri bildirim kanalından iletin. Öncelikli konular: ürün bulunamadı, yanlış ürün, yanlış fiyat, yanlış alternatif veya alerjen uyarısı.
+          </Text>
+        </View>
 
       <View style={styles.actions}>
         <Pressable style={styles.primaryButton} onPress={() => router.push('/barcode-scan')}>
