@@ -50,6 +50,7 @@ const validJson = (await validResponse.json()) as {
   basketProfile: {
     itemCount: number;
     coverage: string;
+    basketRafSkoru: number | null;
   };
   marketEvaluations: {
     status: string;
@@ -59,7 +60,8 @@ const validJson = (await validResponse.json()) as {
 
 assert.equal(validJson.ok, true);
 assert.equal(validJson.basketProfile.itemCount, 1);
-assert.equal(validJson.basketProfile.coverage, 'insufficient_data');
+assert.equal(validJson.basketProfile.coverage, 'partial');
+assert.equal(typeof validJson.basketProfile.basketRafSkoru, 'number');
 assert.equal(validJson.marketEvaluations.status, 'insufficient_data');
 assert.deepEqual(validJson.marketEvaluations.markets, []);
 
