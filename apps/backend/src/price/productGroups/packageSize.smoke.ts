@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
 import { arePackageSizesComparable, parsePackageSizeFromText } from './index.js';
 
@@ -59,5 +60,27 @@ assert.equal(
 );
 
 assert.equal(parsePackageSizeFromText('Bilinmeyen ürün'), null);
+
+
+const seedCandidates = JSON.parse(
+  fs.readFileSync(new URL('../../../data/seed-candidates.json', import.meta.url), 'utf8'),
+) as Array<{
+  id: string;
+  packageSizeText?: string;
+  packageSize?: unknown;
+}>;
+
+for (const candidate of seedCandidates) {
+  assert.ok(candidate.packageSizeText, `Expected seed candidate ${candidate.id} to have packageSizeText`);
+
+  const parsedPackageSize = parsePackageSizeFromText(candidate.packageSizeText);
+  assert.ok(parsedPackageSize, `Expected seed candidate ${candidate.id} packageSizeText to be parseable`);
+
+  assert.deepEqual(
+    candidate.packageSize,
+    parsedPackageSize,
+    `Expected seed candidate ${candidate.id} packageSize to match normalized packageSizeText`,
+  );
+}
 
 console.log('PRODUCT_GROUP_PACKAGE_SIZE_SMOKE_OK');
