@@ -38,9 +38,7 @@ import {
   getContentScoreStatusText,
 } from '../src/price/contentScoreDisplay';
 
-const priceClient = new PriceClient({
-  baseUrl: process.env.EXPO_PUBLIC_PRICE_API_URL ?? 'http://localhost:3001',
-});
+const priceClient = new PriceClient();
 
 function formatOfferStoreLabel(offer: EnrichedMarketOffer): string {
   const branchName = offer.store?.branchName?.trim();

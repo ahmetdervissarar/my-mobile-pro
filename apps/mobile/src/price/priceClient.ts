@@ -1,3 +1,5 @@
+import { getPriceApiBaseUrl } from '../api/config';
+
 import type {
   PriceQuery,
   PriceResolveResponse,
@@ -7,7 +9,7 @@ import type {
 } from './types';
 
 export interface PriceClientOptions {
-  baseUrl: string;
+  baseUrl?: string;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
 }
@@ -117,8 +119,8 @@ export class PriceClient {
   private readonly timeoutMs: number;
   private readonly fetchImpl: typeof fetch;
 
-  constructor(opts: PriceClientOptions) {
-    this.baseUrl = opts.baseUrl.replace(/\/+$/, '');
+  constructor(opts: PriceClientOptions = {}) {
+    this.baseUrl = (opts.baseUrl ?? getPriceApiBaseUrl()).replace(/\/+$/, '');
     this.timeoutMs = opts.timeoutMs ?? 4000;
     this.fetchImpl = opts.fetchImpl ?? fetch;
   }
