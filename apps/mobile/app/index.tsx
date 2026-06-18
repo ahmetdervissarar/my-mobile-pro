@@ -64,6 +64,24 @@ export default function HomeScreen() {
           <Text style={{ fontSize: 17, fontWeight: '600', color: '#111827' }}>Fotoğrafla ara</Text>
         </Pressable>
 
+        {__DEV__ ? (
+          <Pressable
+            onPress={() => router.push('/basket')}
+            style={{
+              alignItems: 'center',
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#4F46E5',
+              backgroundColor: '#EEF2FF',
+              paddingVertical: 14,
+            }}
+          >
+            <Text style={{ fontSize: 17, fontWeight: '600', color: '#3730A3' }}>
+              Sepet Test
+            </Text>
+          </Pressable>
+        ) : null}
+
         <Pressable
           onPress={() => router.push('/profile')}
           style={{
