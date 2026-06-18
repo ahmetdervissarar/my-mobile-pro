@@ -8,6 +8,7 @@ import {
 import { BetaReferencePriceProvider } from './providers/betaReferencePriceProvider.js';
 import { LastKnownPriceProvider } from './providers/lastKnownPriceProvider.js';
 import { ManualBetaPriceProvider } from './providers/manualBetaPriceProvider.js';
+import { OnlineTestPriceSeedProvider } from './providers/onlineTestPriceSeedProvider.js';
 import { enrichOffers, pickBestOffer } from './enrich/index.js';
 import { calculateSustainabilityScore } from './sustainability/index.js';
 import { calculateRafScore } from './rafScore/index.js';
@@ -414,6 +415,7 @@ export class PriceProviderService {
   public readonly manualBeta: ManualBetaPriceProvider;
 
   constructor(opts: PriceProviderServiceOptions = {}) {
+    const onlineTestSeed = new OnlineTestPriceSeedProvider();
     const manual = opts.manualBeta ?? new ManualBetaPriceProvider();
     const lastKnown = opts.lastKnown ?? new LastKnownPriceProvider();
     const betaRef = opts.betaReference ?? new BetaReferencePriceProvider();
@@ -423,6 +425,7 @@ export class PriceProviderService {
 
     this.chain = [
       ...(opts.extras ?? []),
+      ...(onlineTestSeed.isEnabled() ? [onlineTestSeed] : []),
       manual,
       lastKnown,
       betaRef,
