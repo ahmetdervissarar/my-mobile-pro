@@ -1,4 +1,4 @@
-import { arePackageSizesComparable } from '../productGroups/index.js';
+import { arePackageSizesComparable, findProductGroupRegistryEntry } from '../productGroups/index.js';
 import type {
   AlternativeCandidate,
   AlternativeRecommendation,
@@ -162,6 +162,30 @@ function isSameProduct(current: ScoreAlternativesInput['currentProduct'], candid
   return false;
 }
 
+function isRegistryEligibleForSameProductAlternatives(
+  current: ScoreAlternativesInput['currentProduct'],
+): boolean {
+  const currentShape = normalizeAlternativeProductShape(current);
+  const canonicalProductGroupKey =
+    currentShape.canonicalProductGroupKey ?? current.resolvedProductGroupKey ?? undefined;
+
+  if (!canonicalProductGroupKey) {
+    return false;
+  }
+
+  const registryEntry = findProductGroupRegistryEntry(canonicalProductGroupKey);
+
+  if (!registryEntry) {
+    return false;
+  }
+
+  if (registryEntry.riskLevel === 'restricted') {
+    return false;
+  }
+
+  return registryEntry.alternativeEligibility === 'enabled';
+}
+
 function hydrateAlternativeCandidateShape(candidate: AlternativeCandidate): AlternativeCandidate {
   const shape = normalizeAlternativeProductShape(candidate);
 
@@ -291,7 +315,12 @@ function scoreAlternativesWithMode(
   const limit = input.limit ?? DEFAULT_LIMIT;
   const current = input.currentProduct;
 
-  return input.candidates
+  
+  if (!isRegistryEligibleForSameProductAlternatives(current)) {
+    return [];
+  }
+
+return input.candidates
     .filter((candidate) => isAlternativeMatch(current, candidate, mode))
     .filter((candidate) => !isSameProduct(current, candidate))
     .map((candidate): AlternativeRecommendation => {
