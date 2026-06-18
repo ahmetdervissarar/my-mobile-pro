@@ -68,8 +68,13 @@ export default function SearchScreen() {
       return;
     }
 
-    setQuery(suggestion.label);
-    setSuggestions([]);
+    router.push({
+      pathname: '/product-group',
+      params: {
+        productGroupKey: suggestion.productGroupKey,
+        label: suggestion.label,
+      },
+    });
   };
 
   return (
