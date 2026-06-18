@@ -1,3 +1,4 @@
+import { getBetaFeedbackLabel, submitBetaFeedback, type BetaFeedbackType } from '../src/api/betaFeedbackClient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -140,59 +141,6 @@ function formatProductFactsMissingFields(productFacts: ProductFacts | null): str
     : visibleLabels.join(', ');
 }
 
-
-type BetaFeedbackType =
-  | 'wrong_product'
-  | 'wrong_price'
-  | 'missing_price'
-  | 'wrong_score'
-  | 'unsafe_alternative'
-  | 'missing_alternative'
-  | 'other';
-
-function getBetaFeedbackLabel(type: BetaFeedbackType): string {
-  if (type === 'wrong_product') return 'Ürün hatalı';
-  if (type === 'wrong_price') return 'Fiyat hatalı';
-  if (type === 'missing_price') return 'Fiyat eksik';
-  if (type === 'wrong_score') return 'Puan hatalı';
-  if (type === 'unsafe_alternative') return 'Alternatif hatalı';
-  if (type === 'missing_alternative') return 'Alternatif eksik';
-  return 'Diğer';
-}
-
-async function submitBetaFeedback(input: {
-  feedbackType: BetaFeedbackType;
-  barcode?: string;
-  productName?: string;
-  rafScore?: number;
-  productGroupKey?: string;
-  resolvedProductGroupKey?: string | null;
-}): Promise<boolean> {
-  const apiBaseUrl = process.env.EXPO_PUBLIC_PRICE_API_URL ?? 'http://localhost:3001';
-
-  try {
-    const response = await fetch(`${apiBaseUrl}/api/beta/feedback`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        feedbackType: input.feedbackType,
-        severity: 'medium',
-        barcode: input.barcode,
-        productName: input.productName,
-        screen: 'product-result',
-        rafScore: input.rafScore,
-        productGroupKey: input.productGroupKey,
-        resolvedProductGroupKey: input.resolvedProductGroupKey,
-      }),
-    });
-
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
 
 function getRafScoreComponentLabel(key: string): string {
   if (key === 'price') return 'Fiyat';
@@ -682,6 +630,7 @@ const CRITICAL_ALLERGEN_CODES = [
     setBetaFeedbackError(null);
 
     const accepted = await submitBetaFeedback({
+      apiBaseUrl: process.env.EXPO_PUBLIC_PRICE_API_URL ?? 'http://localhost:3001',
       feedbackType,
       barcode: normalizedInput.barcode,
       productName: displayProductName,
