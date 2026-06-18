@@ -1,3 +1,5 @@
+import { getPriceApiBaseUrl } from './config';
+
 export type BetaFeedbackType =
   | 'wrong_product'
   | 'wrong_price'
@@ -8,7 +10,6 @@ export type BetaFeedbackType =
   | 'other';
 
 export interface SubmitBetaFeedbackInput {
-  apiBaseUrl: string;
   feedbackType: BetaFeedbackType;
   barcode?: string;
   productName?: string;
@@ -29,7 +30,7 @@ export function getBetaFeedbackLabel(type: BetaFeedbackType): string {
 
 export async function submitBetaFeedback(input: SubmitBetaFeedbackInput): Promise<boolean> {
   try {
-    const response = await fetch(input.apiBaseUrl + '/api/beta/feedback', {
+    const response = await fetch(getPriceApiBaseUrl() + '/api/beta/feedback', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

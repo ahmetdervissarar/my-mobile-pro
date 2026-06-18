@@ -597,7 +597,6 @@ const CRITICAL_ALLERGEN_CODES = [
     setBetaFeedbackError(null);
 
     const accepted = await submitBetaFeedback({
-      apiBaseUrl: process.env.EXPO_PUBLIC_PRICE_API_URL ?? 'http://localhost:3001',
       feedbackType,
       barcode: normalizedInput.barcode,
       productName: displayProductName,
