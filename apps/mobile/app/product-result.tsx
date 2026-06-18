@@ -139,6 +139,42 @@ function formatProductFactsMissingFields(productFacts: ProductFacts | null): str
     ? visibleLabels.join(', ') + ' +' + remainingCount + ' alan'
     : visibleLabels.join(', ');
 }
+
+
+function getRafScoreComponentLabel(key: string): string {
+  if (key === 'price') return 'Fiyat';
+  if (key === 'health') return 'Sağlık';
+  if (key === 'content') return 'İçerik/alerjen';
+  if (key === 'sustainability') return 'Sürdürülebilirlik';
+  return key;
+}
+
+function formatRafScoreComponentWeight(weight: number): string {
+  const percent = weight <= 1 ? weight * 100 : weight;
+  return `%${Math.round(percent)}`;
+}
+
+function getRafScoreExplanationItems(priceResult: PriceResolveResponse['result']): string[] {
+  const rafScore = priceResult.rafScore;
+
+  if (!rafScore) {
+    return [];
+  }
+
+  if (rafScore.status === 'unavailable') {
+    return ['Bu ürün için RafSkoru hesaplanamadı; fiyat veya ürün analiz verisi eksik olabilir.'];
+  }
+
+  const componentItems = rafScore.components.slice(0, 4).map((component) => {
+    const scoreText =
+      typeof component.score === 'number' ? `${Math.round(component.score)}/100` : 'veri eksik';
+    const availabilityText = component.isAvailable ? '' : ' (kısmi/veri yok)';
+
+    return `${getRafScoreComponentLabel(component.key)}: ${scoreText}, genel skordaki ağırlık ${formatRafScoreComponentWeight(component.weight)}${availabilityText}.`;
+  });
+
+  return [...rafScore.explanations.slice(0, 2), ...componentItems].slice(0, 5);
+}
 function createBarcodePendingResult(barcode: string | undefined): ProductResult {
   return {
     id: barcode ? `barcode-pending-${barcode}` : 'barcode-pending',
@@ -580,6 +616,7 @@ const CRITICAL_ALLERGEN_CODES = [
   const priceDisclaimer =
     priceResolution?.disclaimer ?? 'Fiyat bilgisi sağlayıcı kaynaklara göre değişebilir. Satın alma öncesinde güncel market fiyatını kontrol ediniz.';
   const priceSourceMetaText = priceResult ? getPriceSourceMetaText(priceResult) : null;
+  const rafScoreExplanationItems = priceResult ? getRafScoreExplanationItems(priceResult) : [];
   const bestOffer = priceResult?.bestOffer ?? null;
   const offerOptions = priceResult?.offers ?? [];
   const otherOffers = bestOffer
@@ -711,6 +748,17 @@ const CRITICAL_ALLERGEN_CODES = [
           <Text style={styles.rafScoreCaption}>{getRafScoreStatusText(rafScore)}</Text>
           <Text style={styles.rafScoreCaption}>{getRafScoreConfidenceText(rafScore)}</Text>
         </View>
+
+        {rafScoreExplanationItems.length > 0 ? (
+          <View style={styles.productFactsNoticeCard}>
+            <Text style={styles.productFactsNoticeTitle}>RafSkoru neden bu puanı verdi?</Text>
+            {rafScoreExplanationItems.map((item) => (
+              <Text key={item} style={styles.productFactsNoticeText}>
+                • {item}
+              </Text>
+            ))}
+          </View>
+        ) : null}
 
         {topAlternativeRecommendation ? (
           <View style={styles.alternativeCard}>
