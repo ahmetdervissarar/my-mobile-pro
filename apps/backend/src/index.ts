@@ -5,6 +5,7 @@ import express from 'express';
 import { ManualBetaPriceProvider } from './price/providers/manualBetaPriceProvider.js';
 import { PriceProviderService } from './price/priceProviderService.js';
 import { createPriceRouter } from './routes/priceRoutes.js';
+import { createSearchRouter } from './routes/searchRoutes.js';
 import { createBetaRouter } from './routes/betaRoutes.js';
 
 dotenv.config();
@@ -32,6 +33,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/price', createPriceRouter(priceService));
+app.use('/api/search', createSearchRouter());
 app.use('/api/beta', createBetaRouter());
 
 app.listen(PORT, () => {
