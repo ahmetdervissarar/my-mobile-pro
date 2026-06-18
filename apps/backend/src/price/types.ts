@@ -13,13 +13,15 @@ export type PriceSource =
   | 'manual_beta'
   | 'beta_reference'
   | 'last_known'
-  | 'retailer_scraper';
+  | 'retailer_scraper'
+  | 'online_test_seed';
 
 export type PriceStatus =
   | 'live'
   | 'manual_beta'
   | 'beta_reference'
   | 'last_known'
+  | 'internal_test'
   | 'unavailable';
 
 export interface MarketPriceOption {
