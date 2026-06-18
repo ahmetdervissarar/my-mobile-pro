@@ -112,3 +112,115 @@ Required disclaimer areas:
 3. Add feedback/report issue entry point for closed beta.
 4. Re-test real device flow on home Wi-Fi with canonical matching enabled.
 5. Wait for Price2Spy/Tamara crawl analysis before committing to live price integration details.
+
+## Beta telemetry and feedback readiness
+
+The closed beta now has a minimal, privacy-conscious telemetry and feedback foundation.
+
+### Query telemetry
+
+Backend query events are available for the main price and alternatives flows.
+
+- Price resolve events are emitted from `/api/price/resolve`.
+- Alternative recommendation events are emitted from `/api/price/alternatives`.
+- Logging is disabled by default.
+- Logs are emitted only when `ENABLE_BETA_QUERY_LOGS=1`.
+
+The query event intentionally avoids raw personal or sensitive data:
+
+- Raw barcode is not logged; only SHA-256 hash and barcode length are kept.
+- Raw product name is not logged; only product-name presence and length are kept.
+- Raw location coordinates are not logged; only location presence is kept.
+- Alternative suppression reasons are tracked to understand beta gaps safely.
+
+Tracked outcomes include:
+
+- `resolved`
+- `unavailable`
+- `recommended`
+- `suppressed`
+- `invalid_request`
+- `error`
+
+Tracked alternative suppression reasons include:
+
+- `invalid_category`
+- `missing_product_group`
+- `not_alternatives_eligible`
+- `no_safe_recommendation`
+
+### Beta feedback
+
+Backend feedback intake is available at:
+
+```text
+POST /api/beta/feedback
+```
+
+The endpoint accepts structured beta feedback for product result issues such as:
+
+- wrong product
+- wrong price
+- missing price
+- wrong score
+- unsafe alternative
+- missing alternative
+- other
+
+Feedback logging is disabled by default and is emitted only when:
+
+```text
+ENABLE_BETA_FEEDBACK_LOGS=1
+```
+
+The feedback event also avoids raw sensitive data:
+
+- Raw barcode is not logged; only SHA-256 hash and barcode length are kept.
+- Raw product name is not logged; only product-name presence and length are kept.
+- Feedback message body is not logged; only message length is kept.
+- RafSkoru and product group keys may be included as structured diagnostic context.
+
+### Mobile feedback flow
+
+The mobile product result screen now allows closed beta users to mark common issue types directly from the result screen.
+
+Current mobile feedback buttons include:
+
+- wrong product
+- wrong price
+- wrong score
+- missing alternative
+
+The mobile app posts the selected issue to `/api/beta/feedback` and shows a lightweight accepted/error state to the user.
+
+### Smoke coverage
+
+The following checks protect the beta telemetry and feedback path:
+
+```text
+npm.cmd run smoke:beta-query-events
+npm.cmd run smoke:beta-query-events-route
+npm.cmd run smoke:beta-feedback
+npm.cmd run smoke:beta-feedback-route
+npm.cmd run smoke
+```
+
+These tests cover:
+
+- safe query event building
+- price route telemetry emission
+- safe beta feedback event building
+- feedback HTTP route behavior
+- integration into the main backend smoke chain
+
+### Closed beta operating note
+
+For local or controlled closed beta diagnostics, enable these flags only in the intended backend environment:
+
+```text
+ENABLE_BETA_QUERY_LOGS=1
+ENABLE_BETA_FEEDBACK_LOGS=1
+```
+
+These flags should remain off by default.
+
