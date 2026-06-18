@@ -24,7 +24,47 @@ function parseBasketResult(value: string): BasketEvaluateResponse | null {
 }
 
 function formatScore(value: number | null): string {
-  return typeof value === 'number' ? `${Math.round(value)}/100` : 'Hesaplanamadı';
+  return typeof value === 'number' ? `${Math.round(value)}/100` : 'Hazırlanıyor';
+}
+
+function formatCoverage(value: BasketEvaluateResponse['basketProfile']['coverage']): string {
+  if (value === 'full') {
+    return 'Tam';
+  }
+
+  if (value === 'partial') {
+    return 'Kısmi';
+  }
+
+  return 'Veri bekleniyor';
+}
+
+function formatMarketStatus(
+  value: BasketEvaluateResponse['marketEvaluations']['status'],
+): string {
+  if (value === 'real') {
+    return 'Gerçek veri';
+  }
+
+  if (value === 'demo') {
+    return 'Örnek veri';
+  }
+
+  return 'Veri bekleniyor';
+}
+
+function getMarketStatusMessage(
+  value: BasketEvaluateResponse['marketEvaluations']['status'],
+): string {
+  if (value === 'real') {
+    return 'Market fiyatı ve bulunurluk verisi bağlı. Market sıralaması gösterilebilir.';
+  }
+
+  if (value === 'demo') {
+    return 'Bu bölüm şu anda örnek verilerle çalışıyor. Gerçek fiyat gibi sunulmaz.';
+  }
+
+  return 'Market fiyatı ve bulunurluk verisi henüz bağlı değil. Bu nedenle market sıralaması gösterilmiyor.';
 }
 
 export default function BasketResultScreen() {
@@ -50,6 +90,17 @@ export default function BasketResultScreen() {
           }}
         >
           Sepet sonucu bulunamadı
+        </Text>
+
+        <Text
+          style={{
+            marginTop: 10,
+            color: '#6B7280',
+            fontSize: 14,
+            lineHeight: 21,
+          }}
+        >
+          Sepet sonucu okunamadı. Sepete dönüp tekrar deneyebilirsin.
         </Text>
 
         <Pressable
@@ -126,7 +177,7 @@ export default function BasketResultScreen() {
         <Text
           style={{
             color: '#111827',
-            fontSize: 36,
+            fontSize: basketProfile.basketRafSkoru === null ? 30 : 36,
             fontWeight: '900',
           }}
         >
@@ -140,8 +191,23 @@ export default function BasketResultScreen() {
             fontSize: 13,
           }}
         >
-          Kapsam: {basketProfile.coverage} • Ürün sayısı: {basketProfile.itemCount}
+          Kapsam: {formatCoverage(basketProfile.coverage)} • Ürün sayısı:{' '}
+          {basketProfile.itemCount}
         </Text>
+
+        {basketProfile.basketRafSkoru === null ? (
+          <Text
+            style={{
+              marginTop: 10,
+              color: '#4B5563',
+              fontSize: 13,
+              lineHeight: 20,
+            }}
+          >
+            Bu sepet için skor altyapısı hazır. Gerçek ürün ve market verisi
+            bağlandığında burada sepet skoru gösterilecek.
+          </Text>
+        ) : null}
       </View>
 
       <View
@@ -178,7 +244,7 @@ export default function BasketResultScreen() {
               }}
             >
               {item.type === 'product_group' ? 'Kategori niyeti' : 'Ürün'} •{' '}
-              {formatScore(item.score)}
+              {item.score === null ? 'Skor hazırlanıyor' : formatScore(item.score)}
             </Text>
           </View>
         ))}
@@ -207,11 +273,21 @@ export default function BasketResultScreen() {
             marginTop: 6,
             color: '#4338CA',
             fontSize: 13,
+            fontWeight: '700',
+          }}
+        >
+          Durum: {formatMarketStatus(marketEvaluations.status)}
+        </Text>
+
+        <Text
+          style={{
+            marginTop: 6,
+            color: '#4338CA',
+            fontSize: 13,
             lineHeight: 20,
           }}
         >
-          Durum: {marketEvaluations.status}. Gerçek market fiyatı ve bulunurluk
-          verisi bağlanana kadar market sıralaması gösterilmeyecek.
+          {getMarketStatusMessage(marketEvaluations.status)}
         </Text>
       </View>
 
