@@ -6,3 +6,6 @@ export { resolveProductGroup } from './resolveProductGroup.js';
 export type { ProductGroupResolverInput } from './resolveProductGroup.js';
 export { getAlternativeSuppressionReason, logAlternativeSuppression } from './alternativeSuppression.js';
 export type { AlternativeSuppressionEvent, AlternativeSuppressionReason } from './alternativeSuppression.js';
+
+export { PRODUCT_GROUP_REGISTRY, findProductGroupRegistryEntry } from './registry.js';
+export type { ProductGroupEligibility, ProductGroupPackageSizeCompatibility, ProductGroupPriceNormalizer, ProductGroupRegistryEntry, ProductGroupRiskLevel } from './registry.js';
