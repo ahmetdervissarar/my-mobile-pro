@@ -33,7 +33,14 @@
       ]
     },
     "productGroupKey": "milk_1l",
-    "packageSizeText": "1 L"
+    "packageSizeText": "1 L",
+    "packageSize": {
+      "value": 1,
+      "unit": "l",
+      "normalizedValue": 1000,
+      "normalizedUnit": "ml",
+      "text": "1 l"
+    }
   },
   {
     "id": "seed-dairy-002",
@@ -69,7 +76,14 @@
       ]
     },
     "productGroupKey": "milk_1l",
-    "packageSizeText": "1 L"
+    "packageSizeText": "1 L",
+    "packageSize": {
+      "value": 1,
+      "unit": "l",
+      "normalizedValue": 1000,
+      "normalizedUnit": "ml",
+      "text": "1 l"
+    }
   },
   {
     "id": "seed-dairy-003",
@@ -105,7 +119,14 @@
       ]
     },
     "productGroupKey": "kefir_1l",
-    "packageSizeText": "1 L"
+    "packageSizeText": "1 L",
+    "packageSize": {
+      "value": 1,
+      "unit": "l",
+      "normalizedValue": 1000,
+      "normalizedUnit": "ml",
+      "text": "1 l"
+    }
   },
   {
     "id": "seed-beverages-001",
@@ -139,7 +160,14 @@
       ]
     },
     "productGroupKey": "mineral_water_200ml",
-    "packageSizeText": "200 ml"
+    "packageSizeText": "200 ml",
+    "packageSize": {
+      "value": 200,
+      "unit": "ml",
+      "normalizedValue": 200,
+      "normalizedUnit": "ml",
+      "text": "200 ml"
+    }
   },
   {
     "id": "seed-beverages-002",
@@ -176,7 +204,14 @@
       ]
     },
     "productGroupKey": "cola_1l",
-    "packageSizeText": "1 L"
+    "packageSizeText": "1 L",
+    "packageSize": {
+      "value": 1,
+      "unit": "l",
+      "normalizedValue": 1000,
+      "normalizedUnit": "ml",
+      "text": "1 l"
+    }
   },
   {
     "id": "seed-beverages-003",
@@ -210,7 +245,14 @@
       ]
     },
     "productGroupKey": "fruit_juice_1l",
-    "packageSizeText": "1 L"
+    "packageSizeText": "1 L",
+    "packageSize": {
+      "value": 1,
+      "unit": "l",
+      "normalizedValue": 1000,
+      "normalizedUnit": "ml",
+      "text": "1 l"
+    }
   },
   {
     "id": "seed-snacks-001",
@@ -246,7 +288,14 @@
       ]
     },
     "productGroupKey": "cracker_100g",
-    "packageSizeText": "100 g"
+    "packageSizeText": "100 g",
+    "packageSize": {
+      "value": 100,
+      "unit": "g",
+      "normalizedValue": 100,
+      "normalizedUnit": "g",
+      "text": "100 g"
+    }
   },
   {
     "id": "seed-snacks-002",
@@ -282,7 +331,14 @@
       ]
     },
     "productGroupKey": "oat_bar_40g",
-    "packageSizeText": "40 g"
+    "packageSizeText": "40 g",
+    "packageSize": {
+      "value": 40,
+      "unit": "g",
+      "normalizedValue": 40,
+      "normalizedUnit": "g",
+      "text": "40 g"
+    }
   },
   {
     "id": "seed-snacks-003",
@@ -318,7 +374,14 @@
       ]
     },
     "productGroupKey": "chips_100g",
-    "packageSizeText": "100 g"
+    "packageSizeText": "100 g",
+    "packageSize": {
+      "value": 100,
+      "unit": "g",
+      "normalizedValue": 100,
+      "normalizedUnit": "g",
+      "text": "100 g"
+    }
   },
   {
     "id": "seed-snacks-004",
@@ -354,7 +417,14 @@
       ]
     },
     "productGroupKey": "chips_100g",
-    "packageSizeText": "100 g"
+    "packageSizeText": "100 g",
+    "packageSize": {
+      "value": 100,
+      "unit": "g",
+      "normalizedValue": 100,
+      "normalizedUnit": "g",
+      "text": "100 g"
+    }
   },
   {
     "id": "seed-snacks-005",
@@ -390,6 +460,13 @@
       ]
     },
     "productGroupKey": "chips_100g",
-    "packageSizeText": "100 g"
+    "packageSizeText": "100 g",
+    "packageSize": {
+      "value": 100,
+      "unit": "g",
+      "normalizedValue": 100,
+      "normalizedUnit": "g",
+      "text": "100 g"
+    }
   }
 ]
