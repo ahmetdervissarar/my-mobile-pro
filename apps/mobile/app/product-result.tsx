@@ -737,6 +737,9 @@ const CRITICAL_ALLERGEN_CODES = [
           <Text style={styles.compactBetaNoticeText}>
             Kapalı beta: fiyat ve skorlar yardımcı göstergedir; güncel market fiyatı ve ürün etiketi esas alınmalıdır.
           </Text>
+          <Text style={styles.compactBetaNoticeText}>
+            Gizlilik: profil tercihleri cihazda tutulur; konum yalnızca yakın market ve fiyat sorgusu için kullanılır.
+          </Text>
         </View>
 
         <View style={styles.rafScoreCard}>

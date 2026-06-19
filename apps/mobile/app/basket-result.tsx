@@ -531,6 +531,36 @@ export default function BasketResultScreen() {
         ) : null}
       </View>
 
+      <View
+        style={{
+          marginTop: 14,
+          borderRadius: 12,
+          backgroundColor: '#F9FAFB',
+          borderWidth: 1,
+          borderColor: '#E5E7EB',
+          padding: 12,
+        }}
+      >
+        <Text
+          style={{
+            color: '#374151',
+            fontSize: 12,
+            fontWeight: '800',
+          }}
+        >
+          Kapalı beta veri notu
+        </Text>
+        <Text
+          style={{
+            marginTop: 5,
+            color: '#6B7280',
+            fontSize: 11,
+            lineHeight: 16,
+          }}
+        >
+          Sepet skorları yardımcı göstergedir. Konum yalnızca yakın market ve fiyat karşılaştırması için kullanılır; beta sürecinde sonuçlar ürün etiketi ve güncel market fiyatıyla kontrol edilmelidir.
+        </Text>
+      </View>
       <Pressable
         onPress={() => router.back()}
         style={{
