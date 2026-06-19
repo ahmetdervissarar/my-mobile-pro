@@ -1,7 +1,7 @@
-﻿import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import type { BasketEvaluateResponse } from '../src/api/basketClient';
+import type { BasketEvaluateResponse, BasketMarketEvaluation } from '../src/api/basketClient';
 
 function getSingleParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) {
@@ -23,18 +23,13 @@ function parseBasketResult(value: string): BasketEvaluateResponse | null {
   }
 }
 
-function formatScore(value: number | null): string {
+function formatScore(value: number | null | undefined): string {
   return typeof value === 'number' ? `${Math.round(value)}/100` : 'Hazırlanıyor';
 }
 
 function formatCoverage(value: BasketEvaluateResponse['basketProfile']['coverage']): string {
-  if (value === 'full') {
-    return 'Tam';
-  }
-
-  if (value === 'partial') {
-    return 'Kısmi';
-  }
+  if (value === 'full') return 'Tam';
+  if (value === 'partial') return 'Kısmi';
 
   return 'Veri bekleniyor';
 }
@@ -42,29 +37,143 @@ function formatCoverage(value: BasketEvaluateResponse['basketProfile']['coverage
 function formatMarketStatus(
   value: BasketEvaluateResponse['marketEvaluations']['status'],
 ): string {
-  if (value === 'real') {
-    return 'Gerçek veri';
-  }
+  if (value === 'real') return 'Gerçek veri';
+  if (value === 'demo') return 'İç test fiyat verisi';
 
-  if (value === 'demo') {
-    return 'Örnek veri';
-  }
-
-  return 'Veri bekleniyor';
+  return 'Veri yetersiz';
 }
 
 function getMarketStatusMessage(
-  value: BasketEvaluateResponse['marketEvaluations']['status'],
+  marketEvaluations: BasketEvaluateResponse['marketEvaluations'],
 ): string {
-  if (value === 'real') {
-    return 'Market fiyatı ve bulunurluk verisi bağlı. Market sıralaması gösterilebilir.';
+  if (marketEvaluations.status === 'real') {
+    return 'Market fiyatı ve bulunurluk verisi bağlı. Tam kapsamlı marketler karşılaştırılıyor.';
   }
 
-  if (value === 'demo') {
-    return 'Bu bölüm şu anda örnek verilerle çalışıyor. Gerçek fiyat gibi sunulmaz.';
+  if (marketEvaluations.status === 'demo') {
+    return 'Bu bölüm iç test fiyat verisiyle çalışıyor. Eksik ürün olan marketler en ucuz market olarak seçilmez.';
   }
 
-  return 'Market fiyatı ve bulunurluk verisi henüz bağlı değil. Bu nedenle market sıralaması gösterilmiyor.';
+  return (
+    marketEvaluations.insufficientDataReason ??
+    'Hiçbir market sepetin tamamı için yeterli fiyat verisi sunmadı.'
+  );
+}
+
+function formatPriceEstimate(market: BasketMarketEvaluation): string {
+  if (!market.priceEstimate) {
+    return 'Tam sepet fiyatı yok';
+  }
+
+  const formatted = market.priceEstimate.amount.toLocaleString('tr-TR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  return `${formatted} TL`;
+}
+
+function formatAvailability(market: BasketMarketEvaluation): string {
+  return `${market.availability.available}/${market.availability.total} ürün fiyatlandı`;
+}
+
+function sortMarketsForDisplay(
+  markets: BasketMarketEvaluation[],
+): BasketMarketEvaluation[] {
+  return [...markets].sort((a, b) => {
+    const aHasFullPrice = a.priceEstimate ? 1 : 0;
+    const bHasFullPrice = b.priceEstimate ? 1 : 0;
+
+    if (aHasFullPrice !== bHasFullPrice) {
+      return bHasFullPrice - aHasFullPrice;
+    }
+
+    const aPrice = a.priceEstimate?.amount ?? Number.POSITIVE_INFINITY;
+    const bPrice = b.priceEstimate?.amount ?? Number.POSITIVE_INFINITY;
+
+    if (aPrice !== bPrice) {
+      return aPrice - bPrice;
+    }
+
+    return a.name.localeCompare(b.name, 'tr-TR');
+  });
+}
+
+function MarketHighlightCard({
+  title,
+  market,
+  helper,
+}: {
+  title: string;
+  market: BasketMarketEvaluation;
+  helper: string;
+}) {
+  return (
+    <View
+      style={{
+        marginTop: 12,
+        borderRadius: 14,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#C7D2FE',
+        padding: 14,
+      }}
+    >
+      <Text
+        style={{
+          color: '#4338CA',
+          fontSize: 12,
+          fontWeight: '800',
+          letterSpacing: 0.4,
+          textTransform: 'uppercase',
+        }}
+      >
+        {title}
+      </Text>
+
+      <View
+        style={{
+          marginTop: 8,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+        }}
+      >
+        <Text
+          style={{
+            flex: 1,
+            color: '#111827',
+            fontSize: 16,
+            fontWeight: '800',
+          }}
+        >
+          {market.name}
+        </Text>
+
+        <Text
+          style={{
+            color: '#111827',
+            fontSize: 20,
+            fontWeight: '900',
+          }}
+        >
+          {formatPriceEstimate(market)}
+        </Text>
+      </View>
+
+      <Text
+        style={{
+          marginTop: 6,
+          color: '#4F46E5',
+          fontSize: 12,
+          lineHeight: 18,
+        }}
+      >
+        {helper} • {formatAvailability(market)}
+      </Text>
+    </View>
+  );
 }
 
 export default function BasketResultScreen() {
@@ -128,6 +237,13 @@ export default function BasketResultScreen() {
   }
 
   const { basketProfile, marketEvaluations } = result;
+  const cheapestMarket = marketEvaluations.markets.find(
+    (market) => market.marketId === marketEvaluations.cheapestMarketId,
+  );
+  const bestRafScoreMarket = marketEvaluations.markets.find(
+    (market) => market.marketId === marketEvaluations.bestRafScoreMarketId,
+  );
+  const sortedMarkets = sortMarketsForDisplay(marketEvaluations.markets);
 
   return (
     <ScrollView
@@ -287,8 +403,132 @@ export default function BasketResultScreen() {
             lineHeight: 20,
           }}
         >
-          {getMarketStatusMessage(marketEvaluations.status)}
+          {getMarketStatusMessage(marketEvaluations)}
         </Text>
+
+        {cheapestMarket ? (
+          <MarketHighlightCard
+            title="En ucuz tam sepet"
+            market={cheapestMarket}
+            helper="Eksik ürün yok"
+          />
+        ) : null}
+
+        {bestRafScoreMarket && bestRafScoreMarket.marketId !== cheapestMarket?.marketId ? (
+          <MarketHighlightCard
+            title="En iyi sepet skoru"
+            market={bestRafScoreMarket}
+            helper={`Sepet skoru: ${formatScore(bestRafScoreMarket.marketBasketRafSkoru)}`}
+          />
+        ) : null}
+
+        {marketEvaluations.status === 'insufficient_data' ? (
+          <View
+            style={{
+              marginTop: 12,
+              borderRadius: 14,
+              backgroundColor: '#FFFFFF',
+              borderWidth: 1,
+              borderColor: '#C7D2FE',
+              padding: 14,
+            }}
+          >
+            <Text
+              style={{
+                color: '#3730A3',
+                fontSize: 13,
+                fontWeight: '800',
+              }}
+            >
+              Market sıralaması yapılmadı
+            </Text>
+            <Text
+              style={{
+                marginTop: 6,
+                color: '#4338CA',
+                fontSize: 12,
+                lineHeight: 18,
+              }}
+            >
+              Eksik ürün olan marketler yanlış biçimde “en ucuz” gösterilmez.
+            </Text>
+          </View>
+        ) : null}
+
+        {sortedMarkets.length > 0 ? (
+          <View
+            style={{
+              marginTop: 14,
+              gap: 8,
+            }}
+          >
+            <Text
+              style={{
+                color: '#3730A3',
+                fontSize: 13,
+                fontWeight: '800',
+              }}
+            >
+              Market kapsamı
+            </Text>
+
+            {sortedMarkets.slice(0, 5).map((market) => (
+              <View
+                key={market.marketId}
+                style={{
+                  borderRadius: 12,
+                  backgroundColor: '#FFFFFF',
+                  borderWidth: 1,
+                  borderColor: '#E0E7FF',
+                  padding: 12,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                  }}
+                >
+                  <Text
+                    style={{
+                      flex: 1,
+                      color: '#111827',
+                      fontSize: 13,
+                      fontWeight: '800',
+                    }}
+                  >
+                    {market.name}
+                  </Text>
+
+                  <Text
+                    style={{
+                      color: market.priceEstimate ? '#111827' : '#6B7280',
+                      fontSize: 13,
+                      fontWeight: '800',
+                    }}
+                  >
+                    {formatPriceEstimate(market)}
+                  </Text>
+                </View>
+
+                <Text
+                  style={{
+                    marginTop: 4,
+                    color: '#4F46E5',
+                    fontSize: 11,
+                    lineHeight: 16,
+                  }}
+                >
+                  {formatAvailability(market)}
+                  {market.availability.missing.length > 0
+                    ? ` • Eksik: ${market.availability.missing.slice(0, 2).join(', ')}`
+                    : ' • Tam kapsam'}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </View>
 
       <Pressable

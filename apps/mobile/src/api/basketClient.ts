@@ -1,4 +1,4 @@
-﻿import { getPriceApiBaseUrl } from './config';
+import { getPriceApiBaseUrl } from './config';
 
 export type BasketItem = ProductGroupBasketItem | ProductBasketItem;
 
@@ -88,6 +88,9 @@ export interface BasketEvaluateResponse {
   marketEvaluations: {
     status: 'real' | 'demo' | 'insufficient_data';
     markets: BasketMarketEvaluation[];
+    cheapestMarketId?: string | null;
+    bestRafScoreMarketId?: string | null;
+    insufficientDataReason?: string;
   };
 }
 
