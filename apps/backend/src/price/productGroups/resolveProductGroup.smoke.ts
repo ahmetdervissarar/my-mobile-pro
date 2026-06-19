@@ -69,6 +69,19 @@ const invalidProviderHint = resolveProductGroup({
 assert.equal(invalidProviderHint.productGroupKey, null);
 assert.equal(invalidProviderHint.groupConfidence, 'unknown');
 assert.equal(invalidProviderHint.alternativesEligible, false);
+const babyFormula = resolveProductGroup({ productName: 'Bebek maması 400 g' });
+assert.equal(babyFormula.productGroupKey, 'baby_formula');
+assert.equal(babyFormula.coarseGroup, 'baby_food');
+assert.equal(babyFormula.groupConfidence, 'strong');
+assert.equal(babyFormula.alternativesEligible, false);
+
+const babyFormulaProviderHint = resolveProductGroup({
+  productName: 'Bilinmeyen hassas test ürünü 400 g',
+  candidateGroupKey: 'baby_formula',
+});
+assert.equal(babyFormulaProviderHint.productGroupKey, 'baby_formula');
+assert.equal(babyFormulaProviderHint.groupSource, 'provider_hint');
+assert.equal(babyFormulaProviderHint.alternativesEligible, false);
 const unknown = resolveProductGroup({ productName: 'Bilinmeyen ithal sos' });
 assert.equal(unknown.productGroupKey, null);
 assert.equal(unknown.groupConfidence, 'unknown');

@@ -72,7 +72,8 @@ export const PRODUCT_GROUP_CATALOG: ProductGroupCatalogEntry[] = [
     exclude: ['maden suyu', 'soda', 'kola', 'cola', 'gazoz', 'meyve suyu', 'nektar', 'sut', 'süt', 'ayran', 'kefir'],
     offHints: ['en:waters', 'en:spring-waters'],
     packageUnits: ['ml', 'l'],
-  },  {
+  },
+  {
     key: 'sparkling_water',
     coarseGroup: 'water_beverage',
     include: ['maden suyu', 'soda', 'sparkling water'],
@@ -103,6 +104,7 @@ export const PRODUCT_GROUP_CATALOG: ProductGroupCatalogEntry[] = [
     exclude: ['sut', 'milk', 'kefir', 'ayran', 'yogurt', 'yoğurt'],
     offHints: ['en:baby-formulas', 'en:baby-foods'],
     packageUnits: ['g', 'kg'],
+    alternativesEligible: false,
   },
 ];
 

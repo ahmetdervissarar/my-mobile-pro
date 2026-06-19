@@ -68,12 +68,16 @@ function hasOffHint(
   );
 }
 
+function isCatalogEntryAlternativesEligible(entry: ProductGroupCatalogEntry): boolean {
+  return entry.alternativesEligible !== false;
+}
+
 function resolveFromEntry(
   entry: ProductGroupCatalogEntry,
   input: ProductGroupResolverInput,
   source: ProductGroupResolution['groupSource'],
   confidence: ProductGroupResolution['groupConfidence'],
-  alternativesEligible: boolean,
+  allowAlternatives: boolean,
 ): ProductGroupResolution {
   return {
     productGroupKey: entry.key,
@@ -81,7 +85,7 @@ function resolveFromEntry(
     groupConfidence: confidence,
     groupSource: source,
     packageSize: parsePackageSizeFromText(input.productName),
-    alternativesEligible,
+    alternativesEligible: allowAlternatives && isCatalogEntryAlternativesEligible(entry),
     ruleId: entry.key,
   };
 }

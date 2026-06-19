@@ -31,4 +31,5 @@ export interface ProductGroupCatalogEntry {
   exclude: string[];
   offHints?: string[];
   packageUnits?: ProductPackageUnit[];
+  alternativesEligible?: boolean;
 }
