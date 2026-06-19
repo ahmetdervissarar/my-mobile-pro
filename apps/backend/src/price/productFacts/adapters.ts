@@ -14,10 +14,16 @@ function getAdditiveRiskLevel(
 }
 
 function getAllergenDataStatus(
-  allergens: ProductFacts['allergens'],
+  facts: ProductFacts,
 ): ContentScoreInput['allergenDataStatus'] {
-  if (!Array.isArray(allergens)) return null;
-  return allergens.length > 0 ? 'contains_allergen' : 'clear';
+  if (facts.allergenInfo?.dataStatus === 'unknown') return 'unknown';
+
+  const declaredCount = facts.allergenInfo?.declaredAllergens.length ?? facts.allergens?.length ?? 0;
+  const traceCount = facts.allergenInfo?.traceAllergens.length ?? facts.traceAllergens?.length ?? 0;
+
+  if (declaredCount > 0 || traceCount > 0) return 'contains_allergen';
+
+  return 'unknown';
 }
 
 function hasPalmOil(ingredientsText: ProductFacts['ingredientsText']): boolean | null {
@@ -46,7 +52,7 @@ export function productFactsToContentScoreInput(facts: ProductFacts): ContentSco
     ingredientsText: facts.ingredientsText ?? null,
     additives: facts.additives ?? null,
     additiveRiskLevel: getAdditiveRiskLevel(facts.additives),
-    allergenDataStatus: getAllergenDataStatus(facts.allergens),
+    allergenDataStatus: getAllergenDataStatus(facts),
     hasPalmOil: hasPalmOil(facts.ingredientsText),
     isUltraProcessedHint: facts.novaGroup === 4 ? true : null,
   };

@@ -14,6 +14,7 @@ interface OpenFoodFactsApiResponse {
     nova_group?: number;
     ingredients_text?: string;
     allergens_tags?: string[];
+    traces_tags?: string[];
     additives_tags?: string[];
     nutriments?: {
       fat_100g?: unknown;
@@ -102,6 +103,7 @@ function buildOpenFoodFactsEndpoint(barcode: string): string {
     'nova_group',
     'ingredients_text',
     'allergens_tags',
+    'traces_tags',
     'additives_tags',
     'nutriments',
   ].join(',');
@@ -127,6 +129,7 @@ function mapApiResponseToInfoLike(
     imageUrl: data.product.image_url ?? data.product.image_front_url ?? null,
     ingredientsText: data.product.ingredients_text ?? null,
     allergens: Array.isArray(data.product.allergens_tags) ? parseTagList(data.product.allergens_tags) : null,
+    traceAllergens: Array.isArray(data.product.traces_tags) ? parseTagList(data.product.traces_tags) : null,
     nutriScore: data.product.nutriscore_grade ?? null,
     novaGroup: data.product.nova_group ?? null,
     additives: Array.isArray(data.product.additives_tags) ? parseTagList(data.product.additives_tags) : null,

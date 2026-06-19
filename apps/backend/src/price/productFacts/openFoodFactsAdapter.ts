@@ -14,6 +14,7 @@ export interface OpenFoodFactsProductInfoLike {
   imageUrl?: string | null;
   ingredientsText?: string | null;
   allergens?: string[] | null;
+  traceAllergens?: string[] | null;
   nutriScore?: string | null;
   novaGroup?: number | null;
   additives?: string[] | null;
@@ -59,6 +60,20 @@ function normalizeStringList(value: string[] | null | undefined): string[] {
   return value
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function buildAllergenInfo(
+  declaredAllergens: string[],
+  traceAllergens: string[],
+): ProductFacts['allergenInfo'] {
+  const hasStructuredAllergenData = declaredAllergens.length > 0 || traceAllergens.length > 0;
+
+  return {
+    dataStatus: hasStructuredAllergenData ? 'present' : 'unknown',
+    declaredAllergens,
+    traceAllergens,
+    source: hasStructuredAllergenData ? 'off_structured' : 'none',
+  };
 }
 
 function normalizeNutriScoreGrade(
@@ -146,7 +161,7 @@ function getMissingFields(facts: ProductFacts): ProductFactsMissingField[] {
   if (!facts.productName?.trim()) missingFields.push('productName');
   if (!facts.imageUrl?.trim()) missingFields.push('imageUrl');
   if (!facts.ingredientsText?.trim()) missingFields.push('ingredientsText');
-  if (!Array.isArray(facts.allergens)) missingFields.push('allergens');
+  if (facts.allergenInfo?.dataStatus !== 'present') missingFields.push('allergens');
   if (!hasAnyTrafficLightValue(facts.trafficLight)) missingFields.push('nutrition');
   if (!facts.nutriScoreGrade) missingFields.push('nutriScoreGrade');
   if (!facts.novaGroup) missingFields.push('novaGroup');
@@ -189,12 +204,17 @@ function hasMeaningfulFoodFacts(facts: ProductFacts): boolean {
 export function openFoodFactsInfoToProductFacts(
   input: OpenFoodFactsProductInfoLike,
 ): ProductFacts {
+  const declaredAllergens = normalizeStringList(input.allergens);
+  const traceAllergens = normalizeStringList(input.traceAllergens);
+
   const facts: ProductFacts = {
     barcode: normalizeText(input.barcode),
     productName: normalizeText(input.productName),
     imageUrl: normalizeText(input.imageUrl),
     ingredientsText: normalizeText(input.ingredientsText),
-    allergens: Array.isArray(input.allergens) ? normalizeStringList(input.allergens) : undefined,
+    allergens: Array.isArray(input.allergens) ? declaredAllergens : undefined,
+    traceAllergens: Array.isArray(input.traceAllergens) ? traceAllergens : undefined,
+    allergenInfo: buildAllergenInfo(declaredAllergens, traceAllergens),
     additives: Array.isArray(input.additives) ? normalizeStringList(input.additives) : undefined,
     nutriScoreGrade: normalizeNutriScoreGrade(input.nutriScore),
     novaGroup: normalizeNovaGroup(input.novaGroup),

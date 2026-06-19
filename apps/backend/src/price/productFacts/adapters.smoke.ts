@@ -26,6 +26,13 @@ const facts: ProductFacts = {
   ingredientsText: 'Milk, palm oil, E330, E407, E202',
   additives: ['E330', 'E407', 'E202'],
   allergens: ['milk'],
+  traceAllergens: [],
+  allergenInfo: {
+    dataStatus: 'present',
+    declaredAllergens: ['milk'],
+    traceAllergens: [],
+    source: 'off_structured',
+  },
   dataSource: 'off',
   isComplete: true,
 };
@@ -63,9 +70,13 @@ assert.ok(incompleteFacts.missingFields?.includes('ingredientsText'));
 assert.ok(incompleteFacts.missingFields?.includes('nutrition'));
 assert.ok(incompleteFacts.missingFields?.includes('allergens'));
 assert.equal(incompleteFacts.confidence, 'low');
+assert.equal(incompleteFacts.allergenInfo?.dataStatus, 'unknown');
+assert.deepEqual(incompleteFacts.allergenInfo?.declaredAllergens, []);
+assert.deepEqual(incompleteFacts.allergenInfo?.traceAllergens, []);
+assert.equal(incompleteFacts.allergenInfo?.source, 'none');
 
 const incompleteContentInput = productFactsToContentScoreInput(incompleteFacts);
-assert.equal(incompleteContentInput.allergenDataStatus, null);
+assert.equal(incompleteContentInput.allergenDataStatus, 'unknown');
 assert.equal(incompleteContentInput.additiveRiskLevel, null);
 
 const incompleteContentScore = calculateContentScore(incompleteContentInput);
@@ -90,6 +101,17 @@ assert.equal(
   false,
 );
 assert.equal(incompleteFacts.sourceUrl, 'https://world.openfoodfacts.org/product/8690000000001');
+
+const traceOnlyFacts = openFoodFactsInfoToProductFacts({
+  barcode: '8690000000002',
+  productName: 'Eser Alerjen Ürünü',
+  traceAllergens: ['nuts'],
+});
+
+assert.equal(traceOnlyFacts.allergenInfo?.dataStatus, 'present');
+assert.deepEqual(traceOnlyFacts.allergenInfo?.declaredAllergens, []);
+assert.deepEqual(traceOnlyFacts.allergenInfo?.traceAllergens, ['nuts']);
+assert.equal(productFactsToContentScoreInput(traceOnlyFacts).allergenDataStatus, 'contains_allergen');
 
 console.log('PRODUCT_FACTS_ADAPTERS_SMOKE_OK');
 
