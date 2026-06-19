@@ -11,7 +11,7 @@ import { ManualBetaPriceProvider } from './providers/manualBetaPriceProvider.js'
 import { OnlineTestPriceSeedProvider } from './providers/onlineTestPriceSeedProvider.js';
 import { enrichOffers, pickBestOffer } from './enrich/index.js';
 import { calculateSustainabilityScore } from './sustainability/index.js';
-import { calculateRafScore } from './rafScore/index.js';
+import { buildRafScoreReasons, calculateRafScore } from './rafScore/index.js';
 import { resolveDataConfidence } from './confidence/index.js';
 import { calculatePriceScore } from './priceScore/index.js';
 import { calculateHealthScore, type HealthScoreInput } from './healthScore/index.js';
@@ -450,6 +450,19 @@ function attachRafScore(result: PriceResult): void {
   });
 }
 
+function attachRafScoreReasons(result: PriceResult): void {
+  if (!result.rafScore) {
+    return;
+  }
+
+  result.rafScore.reasons = buildRafScoreReasons({
+    rafScore: result.rafScore,
+    priceConfidence: result.priceConfidence,
+    allergenInfo: result.productFacts?.allergenInfo,
+    overallConfidence: result.overallConfidence,
+  });
+}
+
 export class PriceProviderService {
   private readonly chain: IPriceProvider[];
   private readonly lastKnown: LastKnownPriceProvider;
@@ -561,8 +574,12 @@ export class PriceProviderService {
           attachContentScore(result, query, productFacts);
           attachSustainabilityScore(result, query, productFacts);
           attachRafScore(result);
-              attachPriceConfidence(result);
+
+          attachPriceConfidence(result);
+
           attachOverallConfidence(result);
+
+          attachRafScoreReasons(result);
 
           if (shouldLogTiming) console.info(`[price-resolve] done ${Date.now() - resolveStartedAt}ms source=${result.source ?? 'unknown'}`);
 
@@ -588,8 +605,12 @@ export class PriceProviderService {
     attachContentScore(unavailableResult, query, productFacts);
     attachSustainabilityScore(unavailableResult, query, productFacts);
     attachRafScore(unavailableResult);
-        attachPriceConfidence(unavailableResult);
+
+    attachPriceConfidence(unavailableResult);
+
     attachOverallConfidence(unavailableResult);
+
+    attachRafScoreReasons(unavailableResult);
 
     if (shouldLogTiming) console.info(`[price-resolve] unavailable ${Date.now() - resolveStartedAt}ms`);
 

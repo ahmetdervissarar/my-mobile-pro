@@ -8,6 +8,32 @@ export type RafScoreConfidence = 'low' | 'medium' | 'high';
 
 export type RafScoreStatus = 'ready' | 'partial' | 'unavailable';
 
+export type RafScoreReasonSeverity =
+  | 'positive'
+  | 'neutral'
+  | 'warning'
+  | 'negative';
+
+export type RafScoreReasonCategory =
+  | 'price'
+  | 'health'
+  | 'content'
+  | 'allergen'
+  | 'sustainability'
+  | 'data_quality';
+
+export interface RafScoreReason {
+  code: string;
+  category: RafScoreReasonCategory;
+  severity: RafScoreReasonSeverity;
+  params?: Record<string, string | number | boolean | null>;
+  /**
+   * Optional forward-compatibility fallback only.
+   * Mobile should prefer code + params localization.
+   */
+  message?: string;
+}
+
 export interface RafScoreWeights {
   price: number;
   health: number;
@@ -37,5 +63,6 @@ export interface RafScoreResult {
   weights: RafScoreWeights;
   components: RafScoreComponent[];
   explanations: string[];
+  reasons?: RafScoreReason[];
   disclaimer: string;
 }
