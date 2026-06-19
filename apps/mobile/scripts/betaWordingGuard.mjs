@@ -1,0 +1,74 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const mobileRoot = resolve(__dirname, '..');
+
+function readMobileFile(relativePath) {
+  return readFileSync(resolve(mobileRoot, relativePath), 'utf8');
+}
+
+function assertIncludes(fileName, content, expectedText) {
+  assert.ok(
+    content.includes(expectedText),
+    `${fileName} must include user-facing wording fragment: ${expectedText}`,
+  );
+}
+
+function assertAnyIncludes(fileName, content, expectedTexts) {
+  assert.ok(
+    expectedTexts.some((text) => content.includes(text)),
+    `${fileName} must include at least one wording fragment: ${expectedTexts.join(' | ')}`,
+  );
+}
+
+function assertNotIncludes(fileName, content, forbiddenText) {
+  assert.ok(
+    !content.includes(forbiddenText),
+    `${fileName} must not include user-facing wording: ${forbiddenText}`,
+  );
+}
+
+const productResult = readMobileFile('app/product-result.tsx');
+const basketResult = readMobileFile('app/basket-result.tsx');
+const priceClient = readMobileFile('src/price/priceClient.ts');
+
+// Product result: beta/reference + privacy wording must remain visible.
+assertIncludes('product-result.tsx', productResult, 'Fiyatlar');
+assertIncludes('product-result.tsx', productResult, 'beta');
+assertIncludes('product-result.tsx', productResult, 'referans');
+assertIncludes('product-result.tsx', productResult, 'Gizlilik');
+assertIncludes('product-result.tsx', productResult, 'profil tercihleri');
+assertIncludes('product-result.tsx', productResult, 'cihazda tutulur');
+assertIncludes('product-result.tsx', productResult, 'konum');
+assertIncludes('product-result.tsx', productResult, 'yakın market');
+assertIncludes('product-result.tsx', productResult, 'fiyat sorgusu');
+
+// Basket result: beta/insufficient-data/partial-coverage wording must remain visible.
+assertIncludes('basket-result.tsx', basketResult, 'Beta fiyat verisi');
+assertIncludes('basket-result.tsx', basketResult, 'Veri yetersiz');
+assertIncludes('basket-result.tsx', basketResult, 'Eksik ürün olan marketler');
+assertIncludes('basket-result.tsx', basketResult, 'en ucuz market olarak seçilmez');
+assertIncludes('basket-result.tsx', basketResult, 'Tam sepet fiyatı yok');
+assertIncludes('basket-result.tsx', basketResult, 'Market sıralaması yapılmadı');
+assertIncludes('basket-result.tsx', basketResult, 'yanlış biçimde');
+assertIncludes('basket-result.tsx', basketResult, 'Kapalı beta veri notu');
+
+// Price source label: internal_test should be shown as Beta, not İç Test.
+assertIncludes('priceClient.ts', priceClient, 'internal_test');
+assertAnyIncludes('priceClient.ts', priceClient, ['Beta', 'beta']);
+
+for (const [fileName, content] of [
+  ['product-result.tsx', productResult],
+  ['basket-result.tsx', basketResult],
+  ['priceClient.ts', priceClient],
+]) {
+  assertNotIncludes(fileName, content, 'İç Test');
+  assertNotIncludes(fileName, content, 'İç test');
+  assertNotIncludes(fileName, content, 'qanlış');
+  assertNotIncludes(fileName, content, 'qanlÄ±ÅŸ');
+}
+
+console.log('MOBILE_BETA_WORDING_GUARD_OK');
