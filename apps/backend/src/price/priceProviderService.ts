@@ -402,13 +402,23 @@ function attachPriceScore(result: PriceResult): void {
 function attachPriceConfidence(result: PriceResult): void {
   const hasPrice = result.price !== null && Number.isFinite(result.price);
 
+  const isSynthetic =
+    result.source === 'online_test_seed' ||
+    result.source === 'manual_beta' ||
+    result.source === 'beta_reference' ||
+    result.status === 'internal_test' ||
+    result.status === 'manual_beta' ||
+    result.status === 'beta_reference';
+
   const status = !hasPrice || result.status === 'unavailable'
     ? 'not_found'
-    : result.status === 'live'
-      ? 'live'
-      : result.status === 'last_known'
-        ? 'recent'
-        : 'beta_reference';
+    : isSynthetic
+      ? 'beta_reference'
+      : result.status === 'live'
+        ? 'live'
+        : result.status === 'last_known'
+          ? 'recent'
+          : 'beta_reference';
 
   const source = result.source === 'retailer_scraper'
     ? 'live_api'
@@ -419,14 +429,6 @@ function attachPriceConfidence(result: PriceResult): void {
         : result.source === 'last_known'
           ? 'last_known'
           : null;
-
-  const isSynthetic =
-    result.source === 'online_test_seed' ||
-    result.source === 'manual_beta' ||
-    result.source === 'beta_reference' ||
-    result.status === 'internal_test' ||
-    result.status === 'manual_beta' ||
-    result.status === 'beta_reference';
 
   result.priceConfidence = {
     status,

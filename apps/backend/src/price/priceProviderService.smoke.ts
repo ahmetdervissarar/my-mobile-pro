@@ -1,6 +1,7 @@
-import { strict as assert } from 'node:assert';
+﻿import { strict as assert } from 'node:assert';
 
 import { PriceProviderService } from './priceProviderService.js';
+import type { IPriceProvider, PriceQuery, PriceResult } from './types.js';
 
 const originalFetch = globalThis.fetch;
 
@@ -17,6 +18,28 @@ globalThis.fetch = (async () =>
       },
     },
   )) as typeof fetch;
+
+class SyntheticLiveProvider implements IPriceProvider {
+  readonly name = 'manual_beta' as const;
+
+  isEnabled(): boolean {
+    return true;
+  }
+
+  async fetch(query: PriceQuery): Promise<PriceResult> {
+    return {
+      productName: query.productName ?? 'Sentetik canlı görünen test ürünü',
+      barcode: query.barcode,
+      marketName: 'Manual Beta',
+      price: 10,
+      currency: 'TRY',
+      source: 'manual_beta',
+      status: 'live',
+      updatedAt: '2026-06-19T09:00:00.000Z',
+      confidence: 0.95,
+    };
+  }
+}
 
 try {
   const service = new PriceProviderService();
@@ -48,14 +71,32 @@ try {
   assert.equal(sustainabilityComponent?.score, null);
 
   if (response.result.priceConfidence?.isSynthetic) {
-  assert.notEqual(
-    response.result.priceConfidence.status,
-    'live',
-    'synthetic price must never be rendered as live',
-  );
-}
+    assert.notEqual(
+      response.result.priceConfidence.status,
+      'live',
+      'synthetic price must never be rendered as live',
+    );
+  }
 
-console.log('PRICE_PROVIDER_SERVICE_SMOKE_OK');
+  const syntheticService = new PriceProviderService({
+    extras: [new SyntheticLiveProvider()],
+  });
+
+  const syntheticResponse = await syntheticService.resolve({
+    barcode: '9999999999999',
+    productName: 'Sentetik canlı görünen test ürünü',
+  });
+
+  assert.equal(syntheticResponse.result.priceConfidence?.isSynthetic, true);
+  assert.equal(syntheticResponse.result.priceConfidence?.source, 'manual_beta');
+  assert.equal(
+    syntheticResponse.result.priceConfidence?.status,
+    'beta_reference',
+    'synthetic provider data must be downgraded to beta_reference even if provider reports live',
+  );
+  assert.notEqual(syntheticResponse.result.priceConfidence?.status, 'live');
+
+  console.log('PRICE_PROVIDER_SERVICE_SMOKE_OK');
 } finally {
   globalThis.fetch = originalFetch;
 }
