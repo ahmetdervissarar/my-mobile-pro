@@ -38,7 +38,7 @@ function formatMarketStatus(
   value: BasketEvaluateResponse['marketEvaluations']['status'],
 ): string {
   if (value === 'real') return 'Gerçek veri';
-  if (value === 'demo') return 'İç test fiyat verisi';
+  if (value === 'demo') return 'Beta fiyat verisi';
 
   return 'Veri yetersiz';
 }
@@ -51,7 +51,7 @@ function getMarketStatusMessage(
   }
 
   if (marketEvaluations.status === 'demo') {
-    return 'Bu bölüm iç test fiyat verisiyle çalışıyor. Eksik ürün olan marketler en ucuz market olarak seçilmez.';
+    return 'Bu bölüm beta fiyat verisiyle çalışıyor. Eksik ürün olan marketler en ucuz market olarak seçilmez.';
   }
 
   return (

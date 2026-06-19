@@ -278,7 +278,7 @@ export function priceStatusLabel(status: PriceResult['status']): string {
     case 'last_known':
       return 'Son Bilinen';
     case 'internal_test':
-      return 'İç Test';
+      return 'Beta';
     case 'unavailable':
       return 'Bulunamad\u0131';
   }

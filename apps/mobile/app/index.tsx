@@ -1,4 +1,4 @@
-﻿import { router } from 'expo-router';
+import { router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 export default function HomeScreen() {
@@ -77,7 +77,7 @@ export default function HomeScreen() {
             }}
           >
             <Text style={{ fontSize: 17, fontWeight: '600', color: '#3730A3' }}>
-              Sepet Test
+              Sepet
             </Text>
           </Pressable>
         ) : null}
