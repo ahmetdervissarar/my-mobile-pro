@@ -308,6 +308,7 @@ export default function ProductResultScreen() {
   const [isHealthOpen, setIsHealthOpen] = useState(false);
   const [isContentOpen, setIsContentOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(false);
+  const [isRafScoreReasonsOpen, setIsRafScoreReasonsOpen] = useState(false);
   const [isSustainabilityOpen, setIsSustainabilityOpen] = useState(false);
   const [isPriceDetailsOpen, setIsPriceDetailsOpen] = useState(false);
   const [isSustainabilityDetailsOpen, setIsSustainabilityDetailsOpen] = useState(false);
@@ -398,6 +399,7 @@ export default function ProductResultScreen() {
     setIsHealthOpen(false);
     setIsContentOpen(false);
     setIsPriceOpen(false);
+    setIsRafScoreReasonsOpen(false);
     setIsSustainabilityOpen(false);
     setIsPriceDetailsOpen(false);
     setIsSustainabilityDetailsOpen(false);
@@ -933,12 +935,29 @@ const CRITICAL_ALLERGEN_CODES = [
 
         {rafScoreExplanationItems.length > 0 ? (
           <View style={styles.productFactsNoticeCard}>
-            <Text style={styles.productFactsNoticeTitle}>RafSkoru neden bu puanı verdi?</Text>
-            {rafScoreExplanationItems.map((item) => (
-              <Text key={item} style={styles.productFactsNoticeText}>
-                • {item}
+            <Pressable
+              style={styles.reasonAccordionHeader}
+              onPress={() => setIsRafScoreReasonsOpen((current) => !current)}
+            >
+              <Text style={styles.productFactsNoticeTitle}>Neden bu skor?</Text>
+              <Text style={styles.reasonAccordionToggle}>
+                {isRafScoreReasonsOpen ? '-' : '+'}
               </Text>
-            ))}
+            </Pressable>
+
+            <Text style={styles.productFactsNoticeText}>
+              Skoru etkileyen başlıca nedenler backend değerlendirmesine göre gösterilir.
+            </Text>
+
+            {isRafScoreReasonsOpen ? (
+              <View style={styles.reasonList}>
+                {rafScoreExplanationItems.map((item) => (
+                  <Text key={item} style={styles.productFactsNoticeText}>
+                    • {item}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
           </View>
         ) : null}
 
@@ -1780,6 +1799,20 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '500',
     color: '#92400E',
+  },
+  reasonAccordionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  reasonAccordionToggle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#92400E',
+  },
+  reasonList: {
+    gap: 4,
   },
   allergenNoticeCard: {
     borderRadius: 12,

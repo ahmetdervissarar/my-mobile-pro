@@ -34,6 +34,7 @@ function assertNotIncludes(fileName, content, forbiddenText) {
 const productResult = readMobileFile('app/product-result.tsx');
 const basketResult = readMobileFile('app/basket-result.tsx');
 const priceClient = readMobileFile('src/price/priceClient.ts');
+const rafScoreExplanation = readMobileFile('src/price/rafScoreExplanation.ts');
 
 // Product result: beta/reference + privacy wording must remain visible.
 assertIncludes('product-result.tsx', productResult, 'Fiyatlar');
@@ -73,6 +74,17 @@ assertIncludes('search.tsx', searchScreen, 'useLocalSearchParams');
 assertIncludes('search.tsx', searchScreen, 'initialQuery');
 
 // Price source label: internal_test should be shown as Beta, not İç Test.
+assertIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'price_missing');
+assertIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'price_beta_reference');
+assertIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'allergen_data_unknown');
+assertIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'data_low_confidence');
+
+assertNotIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'sağlıksız');
+assertNotIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'alerjensiz');
+assertNotIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'ucuz');
+assertNotIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'pahalı');
+assertNotIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'çevreye zararlı');
+
 assertIncludes('priceClient.ts', priceClient, 'internal_test');
 assertAnyIncludes('priceClient.ts', priceClient, ['Beta', 'beta']);
 
