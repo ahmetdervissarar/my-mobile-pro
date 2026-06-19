@@ -56,9 +56,19 @@ assertIncludes('basket-result.tsx', basketResult, 'Market sıralaması yapılmad
 assertIncludes('basket-result.tsx', basketResult, 'yanlış biçimde');
 assertIncludes('basket-result.tsx', basketResult, 'Kapalı beta veri notu');
 
+assertIncludes('product-result.tsx', productResult, 'Ürün bulunamadı');
+assertIncludes('product-result.tsx', productResult, 'Ürün adını yazarak ara');
+assertIncludes('product-result.tsx', productResult, 'Ürün fotoğrafı ile dene');
+assertIncludes('product-result.tsx', productResult, 'Ürünü beta verisine katkı olarak gönder');
+assertIncludes('product-result.tsx', productResult, 'product_contribution');
+
 // Price source label: internal_test should be shown as Beta, not İç Test.
 assertIncludes('priceClient.ts', priceClient, 'internal_test');
 assertAnyIncludes('priceClient.ts', priceClient, ['Beta', 'beta']);
+
+const betaFeedbackClient = readMobileFile('src/api/betaFeedbackClient.ts');
+assertIncludes('betaFeedbackClient.ts', betaFeedbackClient, 'product_contribution');
+assertIncludes('betaFeedbackClient.ts', betaFeedbackClient, 'Ürün katkısı');
 
 for (const [fileName, content] of [
   ['product-result.tsx', productResult],

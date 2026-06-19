@@ -7,6 +7,7 @@ export const betaFeedbackTypes = [
   'wrong_score',
   'unsafe_alternative',
   'missing_alternative',
+  'product_contribution',
   'other',
 ] as const;
 

@@ -7,6 +7,7 @@ export type BetaFeedbackType =
   | 'wrong_score'
   | 'unsafe_alternative'
   | 'missing_alternative'
+  | 'product_contribution'
   | 'other';
 
 export interface SubmitBetaFeedbackInput {
@@ -25,6 +26,7 @@ export function getBetaFeedbackLabel(type: BetaFeedbackType): string {
   if (type === 'wrong_score') return 'Puan hatalı';
   if (type === 'unsafe_alternative') return 'Alternatif hatalı';
   if (type === 'missing_alternative') return 'Alternatif eksik';
+  if (type === 'product_contribution') return 'Ürün katkısı';
   return 'Diğer';
 }
 

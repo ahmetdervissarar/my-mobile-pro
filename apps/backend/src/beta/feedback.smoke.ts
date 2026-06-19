@@ -1,4 +1,4 @@
-﻿import assert from 'node:assert/strict';
+import assert from 'node:assert/strict';
 
 import { buildBetaFeedbackEvent } from './feedback.js';
 
@@ -43,6 +43,22 @@ if (defaultSeverity.ok) {
   assert.equal(defaultSeverity.event.messageLength, 0);
 }
 
+
+const productContribution = buildBetaFeedbackEvent({
+  feedbackType: 'product_contribution',
+  severity: 'medium',
+  barcode: '8690000000001',
+  productName: 'Bulunamayan beta ürünü',
+  screen: 'product-result',
+});
+
+assert.equal(productContribution.ok, true);
+
+if (productContribution.ok) {
+  assert.equal(productContribution.event.feedbackType, 'product_contribution');
+  assert.equal(productContribution.event.context.hasBarcode, true);
+  assert.equal(productContribution.event.context.hasProductName, true);
+}
 const invalidType = buildBetaFeedbackEvent({
   feedbackType: 'bad_type',
 });

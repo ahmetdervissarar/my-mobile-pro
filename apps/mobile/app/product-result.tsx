@@ -728,8 +728,34 @@ const CRITICAL_ALLERGEN_CODES = [
           <View style={styles.productFactsNoticeCard}>
             <Text style={styles.productFactsNoticeTitle}>Ürün bulunamadı</Text>
             <Text style={styles.productFactsNoticeText}>
-              Bu barkod için ürün verisi ve fiyat bulunamadı. RafSkoru hesaplanamıyor. Lütfen barkodu kontrol edin veya ürünü ada göre aratın.
+              Bu barkod için ürün verisi ve fiyat bulunamadı. RafSkoru hesaplanamıyor. Aşağıdaki seçeneklerden biriyle devam edebilirsin.
             </Text>
+
+            <View style={{ marginTop: 10, gap: 8 }}>
+              <Pressable
+                style={styles.inlineButton}
+                onPress={() => router.push('/search')}
+              >
+                <Text style={styles.inlineButtonText}>Ürün adını yazarak ara</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.inlineButton}
+                onPress={() => router.push('/photo-search')}
+              >
+                <Text style={styles.inlineButtonText}>Ürün fotoğrafı ile dene</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.inlineButton}
+                disabled={isSubmittingBetaFeedback}
+                onPress={() => void handleBetaFeedbackPress('product_contribution')}
+              >
+                <Text style={styles.inlineButtonText}>
+                  Ürünü beta verisine katkı olarak gönder
+                </Text>
+              </Pressable>
+            </View>
           </View>
         ) : null}
 
