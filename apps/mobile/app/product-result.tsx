@@ -235,7 +235,7 @@ export default function ProductResultScreen() {
   const [isBasicInfoOpen, setIsBasicInfoOpen] = useState(false);
   const [isHealthOpen, setIsHealthOpen] = useState(false);
   const [isContentOpen, setIsContentOpen] = useState(false);
-  const [isPriceOpen, setIsPriceOpen] = useState(true);
+  const [isPriceOpen, setIsPriceOpen] = useState(false);
   const [isSustainabilityOpen, setIsSustainabilityOpen] = useState(false);
   const [isPriceDetailsOpen, setIsPriceDetailsOpen] = useState(false);
   const [isSustainabilityDetailsOpen, setIsSustainabilityDetailsOpen] = useState(false);
@@ -325,7 +325,7 @@ export default function ProductResultScreen() {
     setIsBasicInfoOpen(false);
     setIsHealthOpen(false);
     setIsContentOpen(false);
-    setIsPriceOpen(true);
+    setIsPriceOpen(false);
     setIsSustainabilityOpen(false);
     setIsPriceDetailsOpen(false);
     setIsSustainabilityDetailsOpen(false);
@@ -745,6 +745,43 @@ const CRITICAL_ALLERGEN_CODES = [
           <Text style={styles.rafScoreCaption}>{getRafScoreStatusText(rafScore)}</Text>
           <Text style={styles.rafScoreCaption}>{getRafScoreConfidenceText(rafScore)}</Text>
         </View>
+
+        {isPriceLoading ? (
+          <View style={styles.bestPriceSummaryCard}>
+            <Text style={styles.bestPriceSummaryLabel}>EN İYİ FİYAT</Text>
+            <Text style={styles.bestPriceSummaryMeta}>Fiyatlar sorgulanıyor...</Text>
+          </View>
+        ) : priceResult && priceResult.price !== null ? (
+          <View style={styles.bestPriceSummaryCard}>
+            <Text style={styles.bestPriceSummaryLabel}>EN İYİ FİYAT</Text>
+            <View style={styles.bestPriceSummaryRow}>
+              <Text style={styles.bestPriceSummaryMarket}>
+                {bestOffer ? formatOfferStoreLabel(bestOffer) : priceResult.marketName}
+              </Text>
+              <Text style={styles.bestPriceSummaryPrice}>
+                {formatPriceForDisplay(
+                  bestOffer?.price ?? priceResult.price,
+                  bestOffer?.currency ?? priceResult.currency,
+                )}
+              </Text>
+            </View>
+            {bestOffer ? (
+              <Text style={styles.bestPriceSummaryMeta}>
+                {formatOfferDistanceLabel(bestOffer)}
+              </Text>
+            ) : null}
+            {priceSourceMetaText ? (
+              <Text style={styles.bestPriceSummaryMeta}>{priceSourceMetaText}</Text>
+            ) : null}
+          </View>
+        ) : priceResult ? (
+          <View style={styles.bestPriceSummaryCard}>
+            <Text style={styles.bestPriceSummaryLabel}>EN İYİ FİYAT</Text>
+            <Text style={styles.bestPriceSummaryMeta}>
+              Bu ürün için fiyat verisi bulunamadı.
+            </Text>
+          </View>
+        ) : null}
 
         {rafScoreExplanationItems.length > 0 ? (
           <View style={styles.productFactsNoticeCard}>
@@ -1533,6 +1570,42 @@ const styles = StyleSheet.create({
   rafScoreCaption: {
     fontSize: 12,
     color: '#047857',
+  },
+  bestPriceSummaryCard: {
+    borderRadius: 16,
+    padding: 14,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    gap: 6,
+  },
+  bestPriceSummaryLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1D4ED8',
+    letterSpacing: 0.7,
+  },
+  bestPriceSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  bestPriceSummaryMarket: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#1E3A8A',
+  },
+  bestPriceSummaryPrice: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#1E40AF',
+  },
+  bestPriceSummaryMeta: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: '#2563EB',
   },
   sustainabilitySummaryCard: {
     borderRadius: 14,
