@@ -62,6 +62,11 @@ assertIncludes('product-result.tsx', productResult, 'Ürün fotoğrafı ile dene
 assertIncludes('product-result.tsx', productResult, 'Ürünü beta verisine katkı olarak gönder');
 assertIncludes('product-result.tsx', productResult, 'product_contribution');
 assertIncludes('product-result.tsx', productResult, 'initialQuery');
+assertIncludes('product-result.tsx', productResult, 'priceConfidence');
+assertIncludes('product-result.tsx', productResult, 'Canlı fiyat');
+assertIncludes('product-result.tsx', productResult, 'Son güncelleme');
+assertIncludes('product-result.tsx', productResult, 'Beta referans fiyat');
+assertIncludes('product-result.tsx', productResult, 'Fiyat bulunamadı');
 
 const searchScreen = readMobileFile('app/search.tsx');
 assertIncludes('search.tsx', searchScreen, 'useLocalSearchParams');

@@ -582,6 +582,7 @@ const CRITICAL_ALLERGEN_CODES = [
   const priceDisclaimer =
     priceResolution?.disclaimer ?? 'Fiyat bilgisi sağlayıcı kaynaklara göre değişebilir. Satın alma öncesinde güncel market fiyatını kontrol ediniz.';
   const priceSourceMetaText = priceResult ? getPriceSourceMetaText(priceResult) : null;
+  const priceConfidenceBadge = priceResult ? getPriceConfidenceBadge(priceResult) : null;
   const [submittedFeedbackType, setSubmittedFeedbackType] = useState<BetaFeedbackType | null>(null);
   const [isSubmittingBetaFeedback, setIsSubmittingBetaFeedback] = useState(false);
   const [betaFeedbackError, setBetaFeedbackError] = useState<string | null>(null);
@@ -789,7 +790,26 @@ const CRITICAL_ALLERGEN_CODES = [
           </View>
         ) : priceResult && priceResult.price !== null ? (
           <View style={styles.bestPriceSummaryCard}>
-            <Text style={styles.bestPriceSummaryLabel}>EN İYİ FİYAT</Text>
+            <View style={styles.bestPriceSummaryHeaderRow}>
+              <Text style={styles.bestPriceSummaryLabel}>EN İYİ FİYAT</Text>
+              {priceConfidenceBadge ? (
+                <View
+                  style={[
+                    styles.priceConfidenceBadge,
+                    getPriceConfidenceBadgeStyle(priceConfidenceBadge.tone),
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.priceConfidenceBadgeText,
+                      getPriceConfidenceBadgeTextStyle(priceConfidenceBadge.tone),
+                    ]}
+                  >
+                    {priceConfidenceBadge.label}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
             <View style={styles.bestPriceSummaryRow}>
               <Text style={styles.bestPriceSummaryMarket}>
                 {bestOffer ? formatOfferStoreLabel(bestOffer) : priceResult.marketName}
@@ -812,7 +832,26 @@ const CRITICAL_ALLERGEN_CODES = [
           </View>
         ) : priceResult ? (
           <View style={styles.bestPriceSummaryCard}>
-            <Text style={styles.bestPriceSummaryLabel}>EN İYİ FİYAT</Text>
+            <View style={styles.bestPriceSummaryHeaderRow}>
+              <Text style={styles.bestPriceSummaryLabel}>EN İYİ FİYAT</Text>
+              {priceConfidenceBadge ? (
+                <View
+                  style={[
+                    styles.priceConfidenceBadge,
+                    getPriceConfidenceBadgeStyle(priceConfidenceBadge.tone),
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.priceConfidenceBadgeText,
+                      getPriceConfidenceBadgeTextStyle(priceConfidenceBadge.tone),
+                    ]}
+                  >
+                    {priceConfidenceBadge.label}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
             <Text style={styles.bestPriceSummaryMeta}>
               Bu ürün için fiyat verisi bulunamadı.
             </Text>
@@ -1343,6 +1382,98 @@ function getPriceSourceMetaText(priceResult: PriceResolveResponse['result']): st
   return confidenceText ? `${sourceText} · ${confidenceText}` : sourceText;
 }
 
+
+type PriceConfidenceBadgeTone = 'live' | 'recent' | 'beta' | 'missing';
+
+function formatObservedAtRelativeLabel(observedAt: string | null): string {
+  if (!observedAt) {
+    return 'son güncelleme bilinmiyor';
+  }
+
+  const observedDate = new Date(observedAt);
+
+  if (Number.isNaN(observedDate.getTime())) {
+    return 'son güncelleme bilinmiyor';
+  }
+
+  const now = new Date();
+  const observedStart = new Date(
+    observedDate.getFullYear(),
+    observedDate.getMonth(),
+    observedDate.getDate(),
+  );
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffDays = Math.max(
+    0,
+    Math.floor((todayStart.getTime() - observedStart.getTime()) / 86_400_000),
+  );
+
+  if (diffDays === 0) return 'bugün';
+  if (diffDays === 1) return 'dün';
+  return `${diffDays} gün önce`;
+}
+
+function getPriceConfidenceBadge(priceResult: PriceResolveResponse['result']): {
+  label: string;
+  tone: PriceConfidenceBadgeTone;
+} {
+  const confidence = priceResult.priceConfidence;
+
+  if (!confidence) {
+    return priceResult.price === null
+      ? { label: 'Fiyat bulunamadı', tone: 'missing' }
+      : { label: 'Beta referans fiyat', tone: 'beta' };
+  }
+
+  if (confidence.status === 'live' && !confidence.isSynthetic) {
+    return { label: 'Canlı fiyat', tone: 'live' };
+  }
+
+  if (confidence.status === 'recent') {
+    return {
+      label: `Son güncelleme: ${formatObservedAtRelativeLabel(confidence.observedAt)}`,
+      tone: 'recent',
+    };
+  }
+
+  if (confidence.status === 'not_found') {
+    return { label: 'Fiyat bulunamadı', tone: 'missing' };
+  }
+
+  return { label: 'Beta referans fiyat', tone: 'beta' };
+}
+
+function getPriceConfidenceBadgeStyle(tone: PriceConfidenceBadgeTone) {
+  if (tone === 'live') {
+    return { backgroundColor: '#ECFDF5', borderColor: '#86EFAC' };
+  }
+
+  if (tone === 'recent') {
+    return { backgroundColor: '#EFF6FF', borderColor: '#93C5FD' };
+  }
+
+  if (tone === 'missing') {
+    return { backgroundColor: '#F9FAFB', borderColor: '#D1D5DB' };
+  }
+
+  return { backgroundColor: '#FFFBEB', borderColor: '#FCD34D' };
+}
+
+function getPriceConfidenceBadgeTextStyle(tone: PriceConfidenceBadgeTone) {
+  if (tone === 'live') {
+    return { color: '#166534' };
+  }
+
+  if (tone === 'recent') {
+    return { color: '#1D4ED8' };
+  }
+
+  if (tone === 'missing') {
+    return { color: '#4B5563' };
+  }
+
+  return { color: '#92400E' };
+}
 function getDataConfidenceLabel(confidence: 'low' | 'medium' | 'high'): string {
   if (confidence === 'high') return 'Yüksek';
   if (confidence === 'medium') return 'Orta';
@@ -1620,6 +1751,22 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1D4ED8',
     letterSpacing: 0.7,
+  },
+  bestPriceSummaryHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  priceConfidenceBadge: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  priceConfidenceBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
   bestPriceSummaryRow: {
     flexDirection: 'row',
