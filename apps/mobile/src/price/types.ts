@@ -80,7 +80,6 @@ export interface HealthScoreResult {
     category: number;
   };
   explanations: string[];
-  reasons?: RafScoreReason[];
   disclaimer: string;
 }
 
@@ -193,6 +192,7 @@ export interface RafScoreResult {
   weights: RafScoreWeights;
   components: RafScoreComponent[];
   explanations: string[];
+  reasons?: RafScoreReason[];
   disclaimer: string;
 }
 
