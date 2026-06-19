@@ -93,6 +93,9 @@ export interface BasketMarketEvaluation {
 export interface BasketMarketEvaluations {
   status: MarketEvaluationStatus;
   markets: BasketMarketEvaluation[];
+  cheapestMarketId?: string | null;
+  bestRafScoreMarketId?: string | null;
+  insufficientDataReason?: string;
 }
 
 export interface BasketEvaluateResponse {

@@ -82,6 +82,7 @@ export interface PriceResult {
 export interface PriceQuery {
   barcode?: string;
   productName?: string;
+  productGroupKey?: string;
   location?: {
     lat: number;
     lng: number;

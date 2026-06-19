@@ -1,4 +1,5 @@
-﻿import assert from 'node:assert/strict';
+process.env.USE_ONLINE_TEST_PRICE_SEED = '1';
+import assert from 'node:assert/strict';
 
 import express from 'express';
 
@@ -54,7 +55,16 @@ const validJson = (await validResponse.json()) as {
   };
   marketEvaluations: {
     status: string;
-    markets: unknown[];
+    markets: Array<{
+      marketId: string;
+      priceEstimate?: {
+        amount: number;
+        currency: string;
+        coversItemCount: number;
+      };
+    }>;
+    cheapestMarketId?: string | null;
+    bestRafScoreMarketId?: string | null;
   };
 };
 
@@ -62,8 +72,17 @@ assert.equal(validJson.ok, true);
 assert.equal(validJson.basketProfile.itemCount, 1);
 assert.equal(validJson.basketProfile.coverage, 'partial');
 assert.equal(typeof validJson.basketProfile.basketRafSkoru, 'number');
-assert.equal(validJson.marketEvaluations.status, 'insufficient_data');
-assert.deepEqual(validJson.marketEvaluations.markets, []);
+assert.equal(validJson.marketEvaluations.status, 'demo');
+assert.ok(validJson.marketEvaluations.markets.length > 0);
+assert.ok(validJson.marketEvaluations.cheapestMarketId);
+assert.ok(validJson.marketEvaluations.bestRafScoreMarketId);
+assert.ok(
+  validJson.marketEvaluations.markets.some((market) =>
+    market.marketId === validJson.marketEvaluations.cheapestMarketId &&
+    market.priceEstimate &&
+    market.priceEstimate.coversItemCount === validJson.basketProfile.itemCount,
+  ),
+);
 
 const invalidResponse = await post('/api/basket/evaluate', {
   items: 'rice',
