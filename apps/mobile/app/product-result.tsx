@@ -141,6 +141,78 @@ function formatProductFactsMissingFields(productFacts: ProductFacts | null): str
 }
 
 
+
+
+type AllergenNoticeTone = 'warning' | 'info';
+
+function formatAllergenTagList(items: string[]): string {
+  return items
+    .map((item) => item.replace(/^en:/, '').replace(/-/g, ' '))
+    .filter(Boolean)
+    .join(', ');
+}
+
+function getAllergenNotice(productFacts: PriceResolveResponse['result']['productFacts'] | null | undefined): {
+  title: string;
+  message: string;
+  meta: string | null;
+  tone: AllergenNoticeTone;
+} {
+  const allergenInfo = productFacts?.allergenInfo;
+
+  if (!allergenInfo || allergenInfo.dataStatus === 'unknown') {
+    return {
+      title: 'Alerjen verisi eksik',
+      message: 'Bu ürün için alerjen verisi eksik. Etiketi mutlaka kontrol edin.',
+      meta: null,
+      tone: 'warning',
+    };
+  }
+
+  const declaredAllergens = allergenInfo.declaredAllergens ?? [];
+  const traceAllergens = allergenInfo.traceAllergens ?? [];
+
+  const metaParts = [
+    declaredAllergens.length > 0
+      ? `Beyan edilen alerjenler: ${formatAllergenTagList(declaredAllergens)}`
+      : null,
+    traceAllergens.length > 0
+      ? `Eser miktarda içerebilir: ${formatAllergenTagList(traceAllergens)}`
+      : null,
+  ].filter(Boolean);
+
+  return {
+    title: 'Alerjen bilgisi mevcut',
+    message: 'Bu üründe yapılandırılmış alerjen bilgisi bulundu. Profil eşleşmesi sonraki aşamada değerlendirilecek; etiket bilgisi esastır.',
+    meta: metaParts.length > 0 ? metaParts.join(' · ') : null,
+    tone: 'info',
+  };
+}
+
+function getAllergenNoticeCardStyle(tone: AllergenNoticeTone) {
+  if (tone === 'warning') {
+    return { backgroundColor: '#FFFBEB', borderColor: '#FCD34D' };
+  }
+
+  return { backgroundColor: '#F9FAFB', borderColor: '#D1D5DB' };
+}
+
+function getAllergenNoticeTitleStyle(tone: AllergenNoticeTone) {
+  if (tone === 'warning') {
+    return { color: '#92400E' };
+  }
+
+  return { color: '#374151' };
+}
+
+function getAllergenNoticeTextStyle(tone: AllergenNoticeTone) {
+  if (tone === 'warning') {
+    return { color: '#78350F' };
+  }
+
+  return { color: '#4B5563' };
+}
+
 function createBarcodePendingResult(barcode: string | undefined): ProductResult {
   return {
     id: barcode ? `barcode-pending-${barcode}` : 'barcode-pending',
@@ -628,6 +700,7 @@ const CRITICAL_ALLERGEN_CODES = [
     : null;
 
   const productFactsMissingText = formatProductFactsMissingFields(backendProductFacts);
+  const allergenNotice = getAllergenNotice(backendProductFacts);
   const shouldShowProductFactsNotice = Boolean(
     backendProductFacts && (backendProductFacts.verificationNeeded || productFactsMissingText),
   );
@@ -1196,6 +1269,40 @@ const CRITICAL_ALLERGEN_CODES = [
                   Alerjen ve katkı bilgileri ürün etiketine göre değişebilir. Son karar için ambalaj üzerindeki bilgileri kontrol edin.
                 </Text>
 
+                <View
+                  style={[
+                    styles.allergenNoticeCard,
+                    getAllergenNoticeCardStyle(allergenNotice.tone),
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.allergenNoticeTitle,
+                      getAllergenNoticeTitleStyle(allergenNotice.tone),
+                    ]}
+                  >
+                    {allergenNotice.title}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.allergenNoticeText,
+                      getAllergenNoticeTextStyle(allergenNotice.tone),
+                    ]}
+                  >
+                    {allergenNotice.message}
+                  </Text>
+                  {allergenNotice.meta ? (
+                    <Text
+                      style={[
+                        styles.allergenNoticeMeta,
+                        getAllergenNoticeTextStyle(allergenNotice.tone),
+                      ]}
+                    >
+                      {allergenNotice.meta}
+                    </Text>
+                  ) : null}
+                </View>
+
                 <Text style={styles.label}>Alerjenler</Text>
                 <Text style={styles.value}>
                   {displayAllergens.length > 0 ? displayAllergens.join(', ') : 'Bilinmiyor'}
@@ -1673,6 +1780,25 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '500',
     color: '#92400E',
+  },
+  allergenNoticeCard: {
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    gap: 4,
+  },
+  allergenNoticeTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  allergenNoticeText: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  allergenNoticeMeta: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '600',
   },
   compactBetaNoticeCard: {
     borderRadius: 12,
