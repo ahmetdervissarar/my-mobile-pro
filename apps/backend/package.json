@@ -13,7 +13,7 @@
     "smoke:price-service": "tsx src/price/priceProviderService.smoke.ts",
     "smoke:confidence": "tsx src/price/confidence/confidence.smoke.ts",
     "smoke:alternatives": "tsx src/price/alternatives/scoreAlternatives.smoke.ts && tsx src/price/alternatives/alternativeProductShape.smoke.ts && tsx src/price/alternatives/scoreAlternativesCanonical.smoke.ts && tsx src/price/alternatives/alternativeRegistryGate.smoke.ts && tsx src/price/alternatives/alternativeMatchingParity.smoke.ts && tsx src/price/alternatives/alternativeRecommendationHydration.smoke.ts && tsx src/routes/priceRoutesAlternativesCanonical.smoke.ts && tsx src/routes/priceRoutesAlternativesParity.smoke.ts",
-    "smoke": "npm run audit:encoding && npm run smoke:confidence && npm run smoke:beta-query-events && npm run smoke:beta-query-events-route && npm run smoke:beta-feedback && npm run smoke:beta-feedback-route && npm run smoke:alternatives && npm run smoke:product-facts && npm run smoke:offers && npm run smoke:online-test-price-seed && npm run smoke:price-service && npm run smoke:product-groups && npm run smoke:search-suggestions && npm run smoke:basket-scoring && npm run smoke:basket-evaluation",
+    "smoke": "npm run audit:encoding && npm run smoke:confidence && npm run smoke:beta-query-events && npm run smoke:beta-query-events-route && npm run smoke:beta-feedback && npm run smoke:beta-feedback-route && npm run smoke:alternatives && npm run smoke:product-facts && npm run smoke:offers && npm run smoke:online-test-price-seed && npm run smoke:online-test-price-seed-leakage && npm run smoke:price-service && npm run smoke:product-groups && npm run smoke:search-suggestions && npm run smoke:basket-scoring && npm run smoke:basket-evaluation",
     "audit:encoding": "node ../../tools/encoding-audit.mjs",
     "audit:encoding:strict": "node ../../tools/encoding-audit.mjs --strict",
     "smoke:product-groups": "tsx src/price/productGroups/inferProductGroupKey.smoke.ts && tsx src/price/productGroups/packageSize.smoke.ts && tsx src/price/productGroups/registry.smoke.ts && tsx src/price/productGroups/resolveProductGroup.smoke.ts && tsx src/price/productGroups/alternativeSuppression.smoke.ts && tsx src/price/productGroups/closedBetaValidation.smoke.ts",
@@ -26,6 +26,7 @@
     "smoke:basket-scoring": "tsx src/basket/basketScoring.smoke.ts",
     "smoke:basket-evaluation": "tsx src/basket/basketEvaluation.smoke.ts && tsx src/routes/basketRoutes.smoke.ts",
     "smoke:online-test-price-seed": "tsx src/price/providers/onlineTestPriceSeedProvider.smoke.ts",
+    "smoke:online-test-price-seed-leakage": "tsx src/price/providers/onlineTestPriceSeedLeakage.smoke.ts",
     "smoke:closed-beta-validation": "tsx src/price/productGroups/closedBetaValidation.smoke.ts"
   },
   "keywords": [],
