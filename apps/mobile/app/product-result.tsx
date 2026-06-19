@@ -233,10 +233,10 @@ export default function ProductResultScreen() {
 
   const [result, setResult] = useState(() => getInitialResult(normalizedInput));
   const [isBasicInfoOpen, setIsBasicInfoOpen] = useState(false);
-  const [isHealthOpen, setIsHealthOpen] = useState(true);
-  const [isContentOpen, setIsContentOpen] = useState(true);
+  const [isHealthOpen, setIsHealthOpen] = useState(false);
+  const [isContentOpen, setIsContentOpen] = useState(false);
   const [isPriceOpen, setIsPriceOpen] = useState(true);
-  const [isSustainabilityOpen, setIsSustainabilityOpen] = useState(true);
+  const [isSustainabilityOpen, setIsSustainabilityOpen] = useState(false);
   const [isPriceDetailsOpen, setIsPriceDetailsOpen] = useState(false);
   const [isSustainabilityDetailsOpen, setIsSustainabilityDetailsOpen] = useState(false);
   const [isHealthDetailsOpen, setIsHealthDetailsOpen] = useState(false);
@@ -323,10 +323,10 @@ export default function ProductResultScreen() {
   useEffect(() => {
     setResult(getInitialResult(normalizedInput));
     setIsBasicInfoOpen(false);
-    setIsHealthOpen(true);
-    setIsContentOpen(true);
+    setIsHealthOpen(false);
+    setIsContentOpen(false);
     setIsPriceOpen(true);
-    setIsSustainabilityOpen(true);
+    setIsSustainabilityOpen(false);
     setIsPriceDetailsOpen(false);
     setIsSustainabilityDetailsOpen(false);
     setIsHealthDetailsOpen(false);
@@ -1256,6 +1256,7 @@ function getPriceSourceLabel(source: PriceResolveResponse['result']['source']): 
   if (source === 'beta_reference') return 'Beta referans veri';
   if (source === 'last_known') return 'Son bilinen fiyat';
   if (source === 'retailer_scraper') return 'Market kaynaklı veri';
+  if (source === 'online_test_seed') return 'İç test online fiyatı';
   return 'Fiyat kaynağı yok';
 }
 
