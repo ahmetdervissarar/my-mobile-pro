@@ -65,12 +65,14 @@ try {
 
   assert.notEqual(disabledResponse.result.source, 'online_test_seed');
   assert.notEqual(disabledResponse.result.status, 'internal_test');
-  assert.equal(
-    disabledResponse.result.marketPrices?.some((marketPrice) =>
-      marketPrice.id.startsWith('online-test-seed:'),
-    ) ?? false,
-    false,
-  );
+  const leakedSeedMarketPrice =
+    disabledResponse.result.marketPrices?.some(
+      (marketPrice) =>
+        typeof marketPrice.id === 'string' &&
+        marketPrice.id.startsWith('online-test-seed:'),
+    ) ?? false;
+
+  assert.equal(leakedSeedMarketPrice, false);
 
   process.env.USE_ONLINE_TEST_PRICE_SEED = '1';
   process.env.NODE_ENV = 'production';
@@ -82,10 +84,8 @@ try {
     /USE_ONLINE_TEST_PRICE_SEED cannot be enabled/,
   );
 
-  const productionService = new PriceProviderService();
-
-  await assert.rejects(
-    () => productionService.resolve({ productName: seededProduct.productName }),
+  assert.throws(
+    () => new PriceProviderService(),
     /USE_ONLINE_TEST_PRICE_SEED cannot be enabled/,
   );
 } finally {
