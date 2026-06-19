@@ -1,7 +1,19 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 
 import { calculateRafScore } from './rafScoreCalculator.js';
 import { buildRafScoreReasons } from './reasons.js';
+
+const unavailableReasons = buildRafScoreReasons({
+  rafScore: null,
+});
+
+assert.deepEqual(unavailableReasons, [
+  {
+    code: 'raf_score_unavailable',
+    category: 'data_quality',
+    severity: 'warning',
+  },
+]);
 
 const partialScore = calculateRafScore({
   priceScore: null,
@@ -102,5 +114,60 @@ assert.ok(
     (reason) => reason.severity !== 'warning' || reason.category !== 'data_quality',
   ),
 );
+
+const betaReferenceReasons = buildRafScoreReasons({
+  rafScore: completeScore,
+  priceConfidence: {
+    status: 'beta_reference',
+    source: 'manual_beta',
+    observedAt: null,
+    isSynthetic: true,
+  },
+  allergenInfo: {
+    dataStatus: 'present',
+    declaredAllergens: [],
+    traceAllergens: [],
+    source: 'off_structured',
+  },
+  overallConfidence: {
+    level: 'high',
+    reasons: [],
+  },
+});
+
+const betaReferenceCodes = betaReferenceReasons.map((reason) => reason.code);
+assert.ok(betaReferenceCodes.includes('price_beta_reference'));
+assert.ok(!betaReferenceCodes.includes('price_live_available'));
+
+const lowPriceScore = calculateRafScore({
+  priceScore: 35,
+  healthScore: 82,
+  contentScore: 74,
+  sustainabilityScore: 81,
+});
+
+const lowPriceReasons = buildRafScoreReasons({
+  rafScore: lowPriceScore,
+  priceConfidence: {
+    status: 'beta_reference',
+    source: 'manual_beta',
+    observedAt: null,
+    isSynthetic: true,
+  },
+  allergenInfo: {
+    dataStatus: 'present',
+    declaredAllergens: [],
+    traceAllergens: [],
+    source: 'off_structured',
+  },
+  overallConfidence: {
+    level: 'high',
+    reasons: [],
+  },
+});
+
+const lowPriceCodes = lowPriceReasons.map((reason) => reason.code);
+assert.ok(lowPriceCodes.includes('price_low_score'));
+assert.ok(!lowPriceCodes.includes('price_beta_reference'));
 
 console.log('RAF_SCORE_REASONS_SMOKE_OK');
