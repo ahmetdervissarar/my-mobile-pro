@@ -97,7 +97,7 @@ try {
   assert.notEqual(syntheticResponse.result.priceConfidence?.status, 'live');
 
   const grainResponse = await syntheticService.resolve({
-    productName: 'Pirin?',
+    productName: 'Pirinc',
   });
 
   assert.equal(
