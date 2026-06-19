@@ -72,7 +72,8 @@ export const PRODUCT_GROUP_CATALOG: ProductGroupCatalogEntry[] = [
     exclude: ['bulgur', 'makarna', 'pasta', 'noodle', 'sehriye', 'şehriye', 'un', 'flour'],
     offHints: ['en:rices', 'en:grains'],
     packageUnits: ['g', 'kg'],
-  },  {
+  },
+  {
     key: 'water',
     coarseGroup: 'water_beverage',
     include: ['dogal kaynak suyu', 'doğal kaynak suyu', 'kaynak suyu', 'icme suyu', 'içme suyu', 'water'],
