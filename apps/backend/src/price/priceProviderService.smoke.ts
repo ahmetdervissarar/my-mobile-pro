@@ -1,4 +1,4 @@
-﻿import { strict as assert } from 'node:assert';
+import { strict as assert } from 'node:assert';
 
 import { PriceProviderService } from './priceProviderService.js';
 import type { IPriceProvider, PriceQuery, PriceResult } from './types.js';
@@ -95,6 +95,21 @@ try {
     'synthetic provider data must be downgraded to beta_reference even if provider reports live',
   );
   assert.notEqual(syntheticResponse.result.priceConfidence?.status, 'live');
+
+  const grainResponse = await syntheticService.resolve({
+    productName: 'Pirin?',
+  });
+
+  assert.equal(
+    grainResponse.result.contentScore?.factors.allergenTransparency,
+    40,
+    'grain fallback without explicit allergen evidence must stay unknown, not clear',
+  );
+  assert.notEqual(
+    grainResponse.result.contentScore?.factors.allergenTransparency,
+    100,
+    'grain fallback without explicit allergen evidence must not receive clear allergen score',
+  );
 
   console.log('PRICE_PROVIDER_SERVICE_SMOKE_OK');
 } finally {
