@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
@@ -6,7 +6,12 @@ import { fetchSearchSuggestions, type SearchSuggestion } from '../src/api/produc
 
 export default function SearchScreen() {
   const router = useRouter();
-  const [query, setQuery] = useState('');
+  const params = useLocalSearchParams<{ initialQuery?: string | string[] }>();
+  const initialQueryParam = params.initialQuery;
+  const initialQuery = Array.isArray(initialQueryParam)
+    ? initialQueryParam[0] ?? ''
+    : initialQueryParam ?? '';
+  const [query, setQuery] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
 

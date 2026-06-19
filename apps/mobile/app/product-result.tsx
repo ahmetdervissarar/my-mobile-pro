@@ -734,7 +734,14 @@ const CRITICAL_ALLERGEN_CODES = [
             <View style={{ marginTop: 10, gap: 8 }}>
               <Pressable
                 style={styles.inlineButton}
-                onPress={() => router.push('/search')}
+                onPress={() =>
+                  router.push({
+                    pathname: '/search',
+                    params: {
+                      initialQuery: normalizedInput.productName ?? '',
+                    },
+                  })
+                }
               >
                 <Text style={styles.inlineButtonText}>Ürün adını yazarak ara</Text>
               </Pressable>

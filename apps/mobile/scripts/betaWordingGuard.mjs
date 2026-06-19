@@ -61,6 +61,11 @@ assertIncludes('product-result.tsx', productResult, 'Ürün adını yazarak ara'
 assertIncludes('product-result.tsx', productResult, 'Ürün fotoğrafı ile dene');
 assertIncludes('product-result.tsx', productResult, 'Ürünü beta verisine katkı olarak gönder');
 assertIncludes('product-result.tsx', productResult, 'product_contribution');
+assertIncludes('product-result.tsx', productResult, 'initialQuery');
+
+const searchScreen = readMobileFile('app/search.tsx');
+assertIncludes('search.tsx', searchScreen, 'useLocalSearchParams');
+assertIncludes('search.tsx', searchScreen, 'initialQuery');
 
 // Price source label: internal_test should be shown as Beta, not İç Test.
 assertIncludes('priceClient.ts', priceClient, 'internal_test');
