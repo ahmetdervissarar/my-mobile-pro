@@ -255,6 +255,17 @@ export type ProductFactsMissingField =
 
 export type ProductFactsConfidence = 'low' | 'medium' | 'high';
 
+export type ProductFactsAllergenDataStatus = 'present' | 'unknown';
+
+export type ProductFactsAllergenInfoSource = 'off_structured' | 'none';
+
+export interface ProductFactsAllergenInfo {
+  dataStatus: ProductFactsAllergenDataStatus;
+  declaredAllergens: string[];
+  traceAllergens: string[];
+  source: ProductFactsAllergenInfoSource;
+}
+
 export interface ProductFactsTrafficLight {
   sugar?: ProductFactsTrafficLightValue | null;
   salt?: ProductFactsTrafficLightValue | null;
@@ -272,6 +283,8 @@ export interface ProductFacts {
   ingredientsText?: string | null;
   additives?: string[];
   allergens?: string[];
+  traceAllergens?: string[];
+  allergenInfo?: ProductFactsAllergenInfo;
   dataSource: ProductFactsSource;
   isComplete: boolean;
   missingFields?: ProductFactsMissingField[];
