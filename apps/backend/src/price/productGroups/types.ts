@@ -12,7 +12,7 @@ export interface ProductPackageSize {
 
 export type ProductGroupConfidence = 'exact' | 'strong' | 'assisted' | 'unknown';
 
-export type ProductGroupSource = 'barcode' | 'name_rule' | 'off_assisted' | 'none';
+export type ProductGroupSource = 'barcode' | 'name_rule' | 'off_assisted' | 'provider_hint' | 'none';
 
 export interface ProductGroupResolution {
   productGroupKey: string | null;

@@ -6,6 +6,7 @@ export interface ProductGroupResolverInput {
   productName?: string | null;
   barcode?: string | null;
   offCategories?: string[] | null;
+  candidateGroupKey?: string | null;
 }
 
 const BARCODE_GROUP_OVERRIDES: Record<string, string> = {
@@ -121,6 +122,15 @@ export function resolveProductGroup(input: ProductGroupResolverInput): ProductGr
     if (hasOffHint(input.offCategories, entry)) {
       return resolveFromEntry(entry, input, 'off_assisted', 'assisted', false);
     }
+  }
+
+  const candidateGroupKey = input.candidateGroupKey?.trim();
+  const candidateEntry = candidateGroupKey
+    ? findProductGroupCatalogEntry(candidateGroupKey)
+    : undefined;
+
+  if (candidateEntry) {
+    return resolveFromEntry(candidateEntry, input, 'provider_hint', 'assisted', true);
   }
 
   return emptyResolution();

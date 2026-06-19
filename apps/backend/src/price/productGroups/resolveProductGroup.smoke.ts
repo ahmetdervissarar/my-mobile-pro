@@ -45,6 +45,30 @@ assert.equal(offOnly.groupConfidence, 'assisted');
 assert.equal(offOnly.groupSource, 'off_assisted');
 assert.equal(offOnly.alternativesEligible, false);
 
+const water = resolveProductGroup({ productName: 'Abant Doğal Kaynak Suyu Su 0,5 L' });
+assert.equal(water.productGroupKey, 'water');
+assert.equal(water.coarseGroup, 'water_beverage');
+assert.equal(water.groupConfidence, 'strong');
+assert.equal(water.groupSource, 'name_rule');
+assert.equal(water.alternativesEligible, true);
+
+const providerHint = resolveProductGroup({
+  productName: 'Bilinmeyen seed ürünü 500 ml',
+  candidateGroupKey: 'water',
+});
+assert.equal(providerHint.productGroupKey, 'water');
+assert.equal(providerHint.coarseGroup, 'water_beverage');
+assert.equal(providerHint.groupConfidence, 'assisted');
+assert.equal(providerHint.groupSource, 'provider_hint');
+assert.equal(providerHint.alternativesEligible, true);
+
+const invalidProviderHint = resolveProductGroup({
+  productName: 'Bilinmeyen seed ürünü 500 ml',
+  candidateGroupKey: 'unknown_seed_group',
+});
+assert.equal(invalidProviderHint.productGroupKey, null);
+assert.equal(invalidProviderHint.groupConfidence, 'unknown');
+assert.equal(invalidProviderHint.alternativesEligible, false);
 const unknown = resolveProductGroup({ productName: 'Bilinmeyen ithal sos' });
 assert.equal(unknown.productGroupKey, null);
 assert.equal(unknown.groupConfidence, 'unknown');

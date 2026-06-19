@@ -83,6 +83,7 @@ function attachProductGroupKey(
 
   const barcode = result.barcode || productFacts?.barcode || query.barcode;
 
+  const providerProductGroupKey = result.productGroupKey?.trim();
   const legacyProductGroupKey = inferProductGroupKey(productName, barcode);
 
   if (legacyProductGroupKey) {
@@ -92,6 +93,7 @@ function attachProductGroupKey(
   const resolution = resolveProductGroup({
     productName,
     barcode,
+    candidateGroupKey: providerProductGroupKey ?? legacyProductGroupKey,
   });
 
   result.resolvedProductGroupKey = resolution.productGroupKey;

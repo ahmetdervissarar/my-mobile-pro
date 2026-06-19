@@ -66,6 +66,13 @@ export const PRODUCT_GROUP_CATALOG: ProductGroupCatalogEntry[] = [
     packageUnits: ['g'],
   },
   {
+    key: 'water',
+    coarseGroup: 'water_beverage',
+    include: ['dogal kaynak suyu', 'doğal kaynak suyu', 'kaynak suyu', 'icme suyu', 'içme suyu', 'water'],
+    exclude: ['maden suyu', 'soda', 'kola', 'cola', 'gazoz', 'meyve suyu', 'nektar', 'sut', 'süt', 'ayran', 'kefir'],
+    offHints: ['en:waters', 'en:spring-waters'],
+    packageUnits: ['ml', 'l'],
+  },  {
     key: 'sparkling_water',
     coarseGroup: 'water_beverage',
     include: ['maden suyu', 'soda', 'sparkling water'],
