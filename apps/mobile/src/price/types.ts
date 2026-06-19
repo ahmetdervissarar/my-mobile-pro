@@ -12,6 +12,25 @@ export type PriceStatus =
   | 'last_known'
   | 'internal_test'
   | 'unavailable';
+export type PriceConfidenceStatus =
+  | 'live'
+  | 'recent'
+  | 'beta_reference'
+  | 'not_found';
+
+export type PriceConfidenceSource =
+  | 'live_api'
+  | 'seed'
+  | 'manual_beta'
+  | 'last_known'
+  | null;
+
+export interface PriceConfidence {
+  status: PriceConfidenceStatus;
+  source: PriceConfidenceSource;
+  observedAt: string | null;
+  isSynthetic: boolean;
+}
 
 export type MarketChainCode =
   | 'BIM'
@@ -308,6 +327,7 @@ export interface PriceResult {
   status: PriceStatus;
   updatedAt: string;
   confidence: number;
+    priceConfidence?: PriceConfidence;
   overallConfidence?: DataConfidenceResult;
   note?: string;
   distanceText?: string;

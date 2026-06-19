@@ -35,6 +35,10 @@ try {
   assert.equal(response.result.contentScore?.status, 'unavailable');
   assert.equal(response.result.contentScore?.score, null);
   assert.equal(response.result.overallConfidence?.level, 'low');
+  assert.equal(response.result.priceConfidence?.status, 'not_found');
+  assert.equal(response.result.priceConfidence?.source, null);
+  assert.equal(response.result.priceConfidence?.observedAt, null);
+  assert.equal(response.result.priceConfidence?.isSynthetic, false);
 
   const sustainabilityComponent = response.result.rafScore?.components.find(
     (component) => component.key === 'sustainability',
@@ -43,7 +47,15 @@ try {
   assert.equal(sustainabilityComponent?.isAvailable, false);
   assert.equal(sustainabilityComponent?.score, null);
 
-  console.log('PRICE_PROVIDER_SERVICE_SMOKE_OK');
+  if (response.result.priceConfidence?.isSynthetic) {
+  assert.notEqual(
+    response.result.priceConfidence.status,
+    'live',
+    'synthetic price must never be rendered as live',
+  );
+}
+
+console.log('PRICE_PROVIDER_SERVICE_SMOKE_OK');
 } finally {
   globalThis.fetch = originalFetch;
 }

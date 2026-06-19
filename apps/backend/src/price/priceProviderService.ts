@@ -398,6 +398,45 @@ function attachPriceScore(result: PriceResult): void {
 }
 
 
+
+function attachPriceConfidence(result: PriceResult): void {
+  const hasPrice = result.price !== null && Number.isFinite(result.price);
+
+  const status = !hasPrice || result.status === 'unavailable'
+    ? 'not_found'
+    : result.status === 'live'
+      ? 'live'
+      : result.status === 'last_known'
+        ? 'recent'
+        : 'beta_reference';
+
+  const source = result.source === 'retailer_scraper'
+    ? 'live_api'
+    : result.source === 'online_test_seed'
+      ? 'seed'
+      : result.source === 'manual_beta'
+        ? 'manual_beta'
+        : result.source === 'last_known'
+          ? 'last_known'
+          : null;
+
+  const isSynthetic =
+    result.source === 'online_test_seed' ||
+    result.source === 'manual_beta' ||
+    result.source === 'beta_reference' ||
+    result.status === 'internal_test' ||
+    result.status === 'manual_beta' ||
+    result.status === 'beta_reference';
+
+  result.priceConfidence = {
+    status,
+    source,
+    observedAt: status === 'not_found'
+      ? null
+      : result.bestOffer?.observedAt ?? result.updatedAt ?? null,
+    isSynthetic,
+  };
+}
 function attachOverallConfidence(result: PriceResult): void {
   result.overallConfidence = resolveDataConfidence(result);
 }
@@ -522,7 +561,8 @@ export class PriceProviderService {
           attachContentScore(result, query, productFacts);
           attachSustainabilityScore(result, query, productFacts);
           attachRafScore(result);
-    attachOverallConfidence(result);
+              attachPriceConfidence(result);
+          attachOverallConfidence(result);
 
           if (shouldLogTiming) console.info(`[price-resolve] done ${Date.now() - resolveStartedAt}ms source=${result.source ?? 'unknown'}`);
 
@@ -548,6 +588,7 @@ export class PriceProviderService {
     attachContentScore(unavailableResult, query, productFacts);
     attachSustainabilityScore(unavailableResult, query, productFacts);
     attachRafScore(unavailableResult);
+        attachPriceConfidence(unavailableResult);
     attachOverallConfidence(unavailableResult);
 
     if (shouldLogTiming) console.info(`[price-resolve] unavailable ${Date.now() - resolveStartedAt}ms`);
