@@ -733,10 +733,9 @@ const CRITICAL_ALLERGEN_CODES = [
           </View>
         ) : null}
 
-        <View style={styles.productFactsNoticeCard}>
-          <Text style={styles.productFactsNoticeTitle}>Kapalı beta bilgilendirmesi</Text>
-          <Text style={styles.productFactsNoticeText}>
-            Fiyatlar beta/referans veri olabilir. Sağlık, içerik ve alerjen yorumları yardımcıdır; satın alma veya tüketim öncesinde ürün etiketi ve güncel market fiyatı esas alınmalıdır.
+        <View style={styles.compactBetaNoticeCard}>
+          <Text style={styles.compactBetaNoticeText}>
+            Kapalı beta: fiyat ve skorlar yardımcı göstergedir; güncel market fiyatı ve ürün etiketi esas alınmalıdır.
           </Text>
         </View>
 
@@ -1470,6 +1469,19 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '500',
     color: '#92400E',
+  },
+  compactBetaNoticeCard: {
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  compactBetaNoticeText: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: '#6B7280',
   },
   alternativeCard: {
     borderRadius: 16,
