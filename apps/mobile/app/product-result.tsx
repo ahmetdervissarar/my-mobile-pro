@@ -667,7 +667,9 @@ const CRITICAL_ALLERGEN_CODES = [
             />
           ) : (
             <View style={styles.productImagePlaceholder}>
-              <Text style={styles.helperText}>Ürün görseli bulunamadı</Text>
+              <Text style={styles.productImagePlaceholderIcon}>▦</Text>
+              <Text style={styles.productImagePlaceholderTitle}>Görsel yok</Text>
+              <Text style={styles.productImagePlaceholderText}>Ürün verisi bekleniyor</Text>
             </View>
           )}
 
@@ -1375,8 +1377,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
     paddingHorizontal: 8,
+    gap: 2,
+  },
+  productImagePlaceholderIcon: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#9CA3AF',
+  },
+  productImagePlaceholderTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  productImagePlaceholderText: {
+    fontSize: 9,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
   productHeroInfo: {
     flex: 1,
