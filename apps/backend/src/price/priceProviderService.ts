@@ -284,7 +284,7 @@ function inferBetaContentInput(productName?: string): ContentScoreInput {
       additiveRiskLevel: 'none',
       allergenDataStatus: normalizedName.includes('makarna')
         ? 'contains_allergen'
-        : 'clear',
+        : 'unknown',
       hasPalmOil: false,
       isUltraProcessedHint: false,
     };
