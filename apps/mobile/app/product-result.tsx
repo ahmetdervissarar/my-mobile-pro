@@ -822,9 +822,9 @@ const CRITICAL_ALLERGEN_CODES = [
           </View>
         ) : shouldShowAlternativeUnavailableNotice ? (
           <View style={styles.productFactsNoticeCard}>
-            <Text style={styles.productFactsNoticeTitle}>Güvenli alternatif gösterilmiyor</Text>
+            <Text style={styles.productFactsNoticeTitle}>Alternatif önerisi yok</Text>
             <Text style={styles.productFactsNoticeText}>
-              Bu ürün için kapalı beta sürecinde yalnızca aynı ürün grubunda ve güvenle karşılaştırılabilen alternatifler gösterilir. Yanlış yönlendirmemek için şu anda alternatif önerisi sunulmuyor.
+              Bu ürün grubunda güvenle karşılaştırılabilen daha iyi bir alternatif bulunamadı. Yanlış yönlendirmemek için alternatif önerisi gösterilmiyor.
             </Text>
           </View>
         ) : null}
@@ -1044,7 +1044,7 @@ const CRITICAL_ALLERGEN_CODES = [
               </>
             ) : (
               <Text style={styles.helperText}>
-                Bu ürün için sürdürülebilirlik verisi bulunamadı. Skor hesaplanamadı.
+                Bu ürün için sürdürülebilirlik verisi eksik. RafSkoru mevcut fiyat ve ürün verileriyle kısmi gösterilir.
               </Text>
             )}
           </View>
@@ -1294,7 +1294,7 @@ function getPriceSourceLabel(source: PriceResolveResponse['result']['source']): 
   if (source === 'beta_reference') return 'Beta referans veri';
   if (source === 'last_known') return 'Son bilinen fiyat';
   if (source === 'retailer_scraper') return 'Market kaynaklı veri';
-  if (source === 'online_test_seed') return 'İç test online fiyatı';
+  if (source === 'online_test_seed') return 'Beta fiyat verisi';
   return 'Fiyat kaynağı yok';
 }
 
