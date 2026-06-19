@@ -45,6 +45,20 @@ assert.equal(offOnly.groupConfidence, 'assisted');
 assert.equal(offOnly.groupSource, 'off_assisted');
 assert.equal(offOnly.alternativesEligible, false);
 
+const rice = resolveProductGroup({ productName: 'Migros Osmancık Pirinç 1 kg' });
+assert.equal(rice.productGroupKey, 'rice');
+assert.equal(rice.coarseGroup, 'staple_grain');
+assert.equal(rice.groupConfidence, 'strong');
+assert.equal(rice.groupSource, 'name_rule');
+assert.equal(rice.alternativesEligible, true);
+
+const riceProviderHint = resolveProductGroup({
+  productName: 'Bilinmeyen seed pirinç ürünü 1 kg',
+  candidateGroupKey: 'rice',
+});
+assert.equal(riceProviderHint.productGroupKey, 'rice');
+assert.equal(riceProviderHint.coarseGroup, 'staple_grain');
+assert.equal(riceProviderHint.alternativesEligible, true);
 const water = resolveProductGroup({ productName: 'Abant Doğal Kaynak Suyu Su 0,5 L' });
 assert.equal(water.productGroupKey, 'water');
 assert.equal(water.coarseGroup, 'water_beverage');
