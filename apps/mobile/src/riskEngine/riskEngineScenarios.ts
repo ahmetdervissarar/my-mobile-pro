@@ -924,4 +924,138 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
     ],
   },
 
+  // ── Senaryo 29 (ADR-004) ──────────────────────────────────────────────────────
+  {
+    id: "scenario-29",
+    title: "Yalnız iz/trace süt beyanı + süt alerjisi profili",
+    description:
+      "Üründe declared allergens boş, yalnız traceAllergens=['milk'] var " +
+      "('içerebilir: süt'). Profilde süt alerjisi tanımlı. " +
+      "Beklenen: PROFILE_MILK_TRACE_MATCH tetiklenir; PROFILE_MILK_ALLERGEN_MATCH " +
+      "tetiklenmez (declared beyan yok). Trace beyanı mevcut olduğu için " +
+      "MISSING_ALLERGEN_INFO / PROFILE_ALLERGEN_INFO_MISSING tetiklenmez.",
+    input: {
+      name: "kraker",
+      ingredients: "mısır unu, bitkisel yağ, tuz",
+      allergens: [],
+      traceAllergens: ["milk"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["milk"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_MILK_TRACE_MATCH",
+    ],
+  },
+
+  // ── Senaryo 30 (ADR-004) ──────────────────────────────────────────────────────
+  {
+    id: "scenario-30",
+    title: "Declared gluten + trace fıstık, ikisi de farklı profil anahtarıyla eşleşiyor",
+    description:
+      "Üründe allergens=['gluten'] (declared) ve traceAllergens=['peanuts'] (trace) var. " +
+      "Profilde hem gluten_wheat hem peanut tanımlı. " +
+      "Beklenen: PROFILE_GLUTEN_ALLERGEN_MATCH (declared) VE PROFILE_PEANUT_TRACE_MATCH " +
+      "(trace) birlikte, ayrı kodlarla tetiklenir; birbirini bastırmaz.",
+    input: {
+      name: "atıştırmalık",
+      ingredients: "buğday unu, bitkisel yağ",
+      allergens: ["gluten"],
+      traceAllergens: ["peanuts"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["gluten_wheat", "peanut"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_PEANUT_TRACE_MATCH",
+      "PROFILE_GLUTEN_ALLERGEN_MATCH",
+    ],
+  },
+
+  // ── Senaryo 31 (ADR-004) ──────────────────────────────────────────────────────
+  {
+    id: "scenario-31",
+    title: "Trace beyanı var ama profil anahtarı eşleşmiyor → eksik bilgi uyarısı bastırılır, eşleşme yok",
+    description:
+      "Üründe traceAllergens=['sesame-seeds'] var (OFF genel etiketi biçiminde). " +
+      "Profilde yalnız 'fish' tanımlı; susam yok. " +
+      "Beklenen: PROFILE_SESAME_TRACE_MATCH tetiklenmez (profilde susam yok); " +
+      "MISSING_ALLERGEN_INFO de tetiklenmez (trace beyanı mevcut olduğu için 'eksik' değil).",
+    input: {
+      name: "kraker",
+      ingredients: "un, tuz",
+      allergens: [],
+      traceAllergens: ["sesame-seeds"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["fish"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [],
+  },
+
+  // ── Senaryo 32 (ADR-004) ──────────────────────────────────────────────────────
+  {
+    id: "scenario-32",
+    title: "OFF genel etiketi 'nuts' (tür belirtilmemiş) + ağaç yemişleri profil eşleşmesi",
+    description:
+      "Üründe declared allergens=['nuts'] var (OFF'un genel, türü belirtmeyen etiketi). " +
+      "Profilde tree_nuts tanımlı. Öncesinde TREE_NUTS_KEYWORDS yalnız belirli tür adları " +
+      "içeriyordu (fındık, badem, ceviz…); genel 'nuts' etiketi eşleşmiyordu (ADR-004 düzeltmesi). " +
+      "Beklenen: PROFILE_TREE_NUTS_ALLERGEN_MATCH tetiklenir.",
+    input: {
+      name: "kuruyemiş karışımı",
+      ingredients: "kuruyemişler, tuz",
+      allergens: ["nuts"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["tree_nuts"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_TREE_NUTS_ALLERGEN_MATCH",
+    ],
+  },
+
+  // ── Senaryo 33 (ADR-004) ──────────────────────────────────────────────────────
+  {
+    id: "scenario-33",
+    title: "OFF genel etiketleri 'crustaceans'/'molluscs' + kabuklu deniz ürünü profil eşleşmesi",
+    description:
+      "Üründe traceAllergens=['crustaceans','molluscs'] var (OFF'un iki ayrı genel etiketi; " +
+      "shellfish birleşimi allergen-safety skill'inde kesinleşmiş sayılmaz, bkz. ADR-004). " +
+      "Profilde shellfish tanımlı. Öncesinde SHELLFISH_KEYWORDS bu iki OFF etiketini " +
+      "tanımıyordu. Beklenen: PROFILE_SHELLFISH_TRACE_MATCH tetiklenir.",
+    input: {
+      name: "deniz mahsulleri çorbası",
+      ingredients: "su, sebze, baharat",
+      allergens: [],
+      traceAllergens: ["crustaceans", "molluscs"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["shellfish"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_SHELLFISH_TRACE_MATCH",
+    ],
+  },
+
 ];

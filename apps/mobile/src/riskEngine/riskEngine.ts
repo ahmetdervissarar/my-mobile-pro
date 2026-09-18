@@ -4,6 +4,10 @@
  *
  * Sorumluluk: Ürün bilgilerine göre risk seviyesi ve uyarı listesi üretmek.
  * Bu dosya saf bir hesaplama katmanıdır — UI'a, API'ye ve fiyat sistemine dokunmaz.
+ *
+ * 2026-09-18 (ADR-004): declared_contains ("içerir") ile trace_may_contain ("içerebilir")
+ * profil eşleşmesi ayrı kod ve alanlarla eklendi (proje sahibi onayı; allergen-safety-reviewer
+ * F2 bulgusunun kapatılması). Bkz. docs/decisions/ADR-004-trace-allergen-profile-matching.md.
  */
 
 import type { TrafficLightNutrition } from "../types/product";
@@ -46,10 +50,21 @@ export interface ProductRiskInput {
   name?: string | null;
   /** Ürünün içindekiler listesi (ham metin) */
   ingredients?: string | null;
-  /** Alerjen bilgisi metni (ham string form) */
+  /** Alerjen bilgisi metni (ham string form) — "içerir" beyanı */
   allergenInfo?: string | null;
-  /** Alerjen listesi (dizi form — product-result ekranından gelir) */
+  /** Alerjen listesi (dizi form — product-result ekranından gelir) — "içerir" beyanı */
   allergens?: string[];
+  /**
+   * Eser / çapraz bulaşma ("içerebilir") beyanı metni (ham string form).
+   * `allergenInfo` ile KARIŞTIRILMAZ — declared_contains ile trace_may_contain ayrı
+   * durumlardır (ADR-004, allergen-safety skill). "İçerir" kesinliği taşımaz.
+   */
+  traceAllergenInfo?: string | null;
+  /**
+   * Eser / çapraz bulaşma ("içerebilir") alerjen listesi (dizi form).
+   * `allergens` ile KARIŞTIRILMAZ (ADR-004).
+   */
+  traceAllergens?: string[];
   /** Katkı maddesi içerip içermediğini belirten bayrak */
   hasAdditives?: boolean | null;
   /** Katkı maddesi listesi (dizi form — product-result ekranından gelir) */
@@ -84,14 +99,23 @@ const PRIORITY_ORDER: string[] = [
   // 1. Profil bazlı uyarılar
   "PROFILE_ALLERGEN_INFO_MISSING",
   "PROFILE_PEANUT_ALLERGEN_MATCH",
+  "PROFILE_PEANUT_TRACE_MATCH",
   "PROFILE_SOY_ALLERGEN_MATCH",
+  "PROFILE_SOY_TRACE_MATCH",
   "PROFILE_GLUTEN_ALLERGEN_MATCH",
+  "PROFILE_GLUTEN_TRACE_MATCH",
   "PROFILE_MILK_ALLERGEN_MATCH",
+  "PROFILE_MILK_TRACE_MATCH",
   "PROFILE_LACTOSE_ALLERGEN_MATCH",
+  "PROFILE_LACTOSE_TRACE_MATCH",
   "PROFILE_TREE_NUTS_ALLERGEN_MATCH",
+  "PROFILE_TREE_NUTS_TRACE_MATCH",
   "PROFILE_SESAME_ALLERGEN_MATCH",
+  "PROFILE_SESAME_TRACE_MATCH",
   "PROFILE_FISH_ALLERGEN_MATCH",
+  "PROFILE_FISH_TRACE_MATCH",
   "PROFILE_SHELLFISH_ALLERGEN_MATCH",
+  "PROFILE_SHELLFISH_TRACE_MATCH",
   "PROFILE_EGG_PRECAUTION",
   "PROFILE_BLOOD_SUGAR_PRECAUTION",
   "PROFILE_SODIUM_PRECAUTION",
@@ -160,6 +184,22 @@ function productContainsAny(product: ProductRiskInput, keywords: string[]): bool
       product.ingredients ?? "",
       product.allergenInfo ?? "",
       (product.allergens ?? []).join(" "),
+    ].join(" "),
+  );
+
+  return keywords.some((kw) => combined.includes(normalizeText(kw)));
+}
+
+/**
+ * productContainsAny ile aynı eşleştirme, yalnız eser/çapraz bulaşma ("içerebilir") alanları
+ * için (`traceAllergenInfo`, `traceAllergens`). İçindekiler metni burada TARANMAZ — trace
+ * beyanı declared beyandan ayrı, kendi alanında taşınır (ADR-004).
+ */
+function productTraceContainsAny(product: ProductRiskInput, keywords: string[]): boolean {
+  const combined = normalizeText(
+    [
+      product.traceAllergenInfo ?? "",
+      (product.traceAllergens ?? []).join(" "),
     ].join(" "),
   );
 
@@ -254,6 +294,8 @@ const LACTOSE_KEYWORDS = [
 /**
  * Ağaç yemişleri (tree nuts) arama terimleri.
  * Yer fıstığı (peanut/groundnut) bu listeye dahil değildir; ayrı kural kapsar.
+ * "nuts": OFF'un genel etiketi (ör. `allergens_tags: ["nuts"]`); belirli fındık/badem
+ * türü belirtilmeden gelebilir (ADR-004).
  */
 const TREE_NUTS_KEYWORDS = [
   "fındık ezmesi",
@@ -271,6 +313,7 @@ const TREE_NUTS_KEYWORDS = [
   "pistachio",
   "pecan",
   "macadamia",
+  "nuts",
 ];
 
 /** Susam / sesame arama terimleri. */
@@ -297,7 +340,12 @@ const FISH_KEYWORDS = [
   "fish",
 ];
 
-/** Kabuklu deniz ürünleri alerjisi arama terimleri. */
+/**
+ * Kabuklu deniz ürünleri alerjisi arama terimleri.
+ * "crustaceans", "molluscs": OFF'un iki ayrı genel etiketi; bu üründe tek `shellfish`
+ * profil anahtarına eşlenir. Bu birleştirme kesinleşmiş sayılmaz — mevzuat/gıda uzmanı
+ * incelemesi gerektirir (allergen-safety skill, ADR-004).
+ */
 const SHELLFISH_KEYWORDS = [
   "kabuklu deniz ürünü",
   "shellfish",
@@ -315,6 +363,8 @@ const SHELLFISH_KEYWORDS = [
   "ahtapot",
   "squid",
   "kalamar",
+  "crustaceans",
+  "molluscs",
 ];
 
 // ─── Yardımcı Fonksiyonlar ────────────────────────────────────────────────────
@@ -387,9 +437,15 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
   }
 
   // ── Kural 2: Alerjen bilgisi eksikse ─────────────────────────────────────
-  const hasAllergenInfo =
+  // "Eksik" yalnız hiçbir beyan (ne içerir ne içerebilir) yokken doğrudur; yalnız
+  // eser/çapraz bulaşma (trace) beyanı olan ürün "eksik" değildir (ADR-004).
+  const hasDeclaredAllergenInfo =
     (typeof product.allergenInfo === "string" && product.allergenInfo.trim().length > 0) ||
     ((product.allergens ?? []).length > 0);
+  const hasTraceAllergenInfo =
+    (typeof product.traceAllergenInfo === "string" && product.traceAllergenInfo.trim().length > 0) ||
+    ((product.traceAllergens ?? []).length > 0);
+  const hasAllergenInfo = hasDeclaredAllergenInfo || hasTraceAllergenInfo;
 
   if (!hasAllergenInfo) {
     warnings.push({
@@ -540,6 +596,24 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
       });
     }
 
+    // ── Profil Kural A2b: Fıstık alerjisi + eser/çapraz bulaşma beyanı (ADR-004) ──
+    // declared_contains ile trace_may_contain ayrı durumlardır; ayrı kod, aynı önem.
+    if (
+      profile.allergens.includes("peanut") &&
+      productTraceContainsAny(product, PEANUT_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_PEANUT_TRACE_MATCH",
+        title: "Fıstık için çapraz bulaşma uyarısı",
+        message:
+          "Bu üründe fıstık/yer fıstığı için eser miktarda içerebilir / çapraz bulaşma beyanı bulunuyor. " +
+          "Bu, kesin içerik bilgisi değildir; ancak profilinizde fıstık alerjisi tanımlı olduğu için " +
+          "ürünü tüketmeden önce ambalajdaki alerjen ve çapraz bulaşma beyanını dikkatle kontrol " +
+          "etmeniz önerilir. Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
     // ── Profil Kural A3: Soya alerjisi + içerikte soya beyanı ────────────────
     if (
       profile.allergens.includes("soy") &&
@@ -553,6 +627,23 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
           "Profilinizde soya alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
           "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
           "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A3b: Soya alerjisi + eser/çapraz bulaşma beyanı (ADR-004) ───
+    if (
+      profile.allergens.includes("soy") &&
+      productTraceContainsAny(product, SOY_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_SOY_TRACE_MATCH",
+        title: "Soya için çapraz bulaşma uyarısı",
+        message:
+          "Bu üründe soya için eser miktarda içerebilir / çapraz bulaşma beyanı bulunuyor. " +
+          "Bu, kesin içerik bilgisi değildir; ancak profilinizde soya alerjisi tanımlı olduğu için " +
+          "ürünü tüketmeden önce ambalajdaki alerjen ve çapraz bulaşma beyanını dikkatle kontrol " +
+          "etmeniz önerilir. Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
         level: "high",
       });
     }
@@ -574,6 +665,23 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
       });
     }
 
+    // ── Profil Kural A4b: Gluten hassasiyeti + eser/çapraz bulaşma beyanı (ADR-004) ─
+    if (
+      profile.allergens.includes("gluten_wheat") &&
+      productTraceContainsAny(product, GLUTEN_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_GLUTEN_TRACE_MATCH",
+        title: "Gluten / buğday için çapraz bulaşma uyarısı",
+        message:
+          "Bu üründe gluten/buğday için eser miktarda içerebilir / çapraz bulaşma beyanı bulunuyor. " +
+          "Bu, kesin içerik bilgisi değildir; ancak profilinizde gluten/buğday hassasiyeti tanımlı " +
+          "olduğu için ürünü tüketmeden önce ambalajdaki alerjen ve çapraz bulaşma beyanını dikkatle " +
+          "kontrol etmeniz önerilir. Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
     // ── Profil Kural A5: Süt alerjisi + içerikte süt/kazein/whey beyanı ──────
     if (
       profile.allergens.includes("milk") &&
@@ -591,6 +699,23 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
       });
     }
 
+    // ── Profil Kural A5b: Süt alerjisi + eser/çapraz bulaşma beyanı (ADR-004) ────
+    if (
+      profile.allergens.includes("milk") &&
+      productTraceContainsAny(product, MILK_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_MILK_TRACE_MATCH",
+        title: "Süt için çapraz bulaşma uyarısı",
+        message:
+          "Bu üründe süt için eser miktarda içerebilir / çapraz bulaşma beyanı bulunuyor. " +
+          "Bu, kesin içerik bilgisi değildir; ancak profilinizde süt alerjisi tanımlı olduğu için " +
+          "ürünü tüketmeden önce ambalajdaki alerjen ve çapraz bulaşma beyanını dikkatle kontrol " +
+          "etmeniz önerilir. Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
     // ── Profil Kural A6: Laktoz hassasiyeti + içerikte laktoz/süt beyanı ─────
     if (
       profile.allergens.includes("lactose") &&
@@ -604,6 +729,23 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
           "Profilinizde laktoz hassasiyeti tanımlı olduğu için ürünü tüketmeden önce " +
           "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
           "Bu uyarı tıbbi hüküm niteliği taşımaz; porsiyon ve içerik bilgisiyle birlikte değerlendirilmelidir.",
+        level: "medium",
+      });
+    }
+
+    // ── Profil Kural A6b: Laktoz hassasiyeti + eser/çapraz bulaşma beyanı (ADR-004) ─
+    if (
+      profile.allergens.includes("lactose") &&
+      productTraceContainsAny(product, LACTOSE_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_LACTOSE_TRACE_MATCH",
+        title: "Laktoz için çapraz bulaşma uyarısı",
+        message:
+          "Bu üründe laktoz/süt için eser miktarda içerebilir / çapraz bulaşma beyanı bulunuyor. " +
+          "Bu, kesin içerik bilgisi değildir; ancak profilinizde laktoz hassasiyeti tanımlı olduğu için " +
+          "ürünü tüketmeden önce ambalajdaki alerjen ve çapraz bulaşma beyanını dikkatle kontrol " +
+          "etmeniz önerilir. Bu uyarı tıbbi hüküm niteliği taşımaz; porsiyon ve içerik bilgisiyle birlikte değerlendirilmelidir.",
         level: "medium",
       });
     }
@@ -626,6 +768,24 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
       });
     }
 
+    // ── Profil Kural A7b: Ağaç yemişleri + eser/çapraz bulaşma beyanı (ADR-004) ──
+    if (
+      profile.allergens.includes("tree_nuts") &&
+      productTraceContainsAny(product, TREE_NUTS_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_TREE_NUTS_TRACE_MATCH",
+        title: "Ağaç yemişleri için çapraz bulaşma uyarısı",
+        message:
+          "Bu üründe fındık, badem, ceviz veya diğer ağaç yemişleri için eser miktarda içerebilir / " +
+          "çapraz bulaşma beyanı bulunuyor. Bu, kesin içerik bilgisi değildir; ancak profilinizde " +
+          "ağaç yemişleri hassasiyeti tanımlı olduğu için ürünü tüketmeden önce ambalajdaki alerjen " +
+          "ve çapraz bulaşma beyanını dikkatle kontrol etmeniz önerilir. Bu uyarı tıbbi hüküm " +
+          "niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
     // ── Profil Kural A8: Susam alerjisi + içerikte susam/tahin beyanı ─────────
     if (
       profile.allergens.includes("sesame") &&
@@ -639,6 +799,23 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
           "Profilinizde susam alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
           "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
           "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A8b: Susam alerjisi + eser/çapraz bulaşma beyanı (ADR-004) ──
+    if (
+      profile.allergens.includes("sesame") &&
+      productTraceContainsAny(product, SESAME_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_SESAME_TRACE_MATCH",
+        title: "Susam için çapraz bulaşma uyarısı",
+        message:
+          "Bu üründe susam için eser miktarda içerebilir / çapraz bulaşma beyanı bulunuyor. " +
+          "Bu, kesin içerik bilgisi değildir; ancak profilinizde susam alerjisi tanımlı olduğu için " +
+          "ürünü tüketmeden önce ambalajdaki alerjen ve çapraz bulaşma beyanını dikkatle kontrol " +
+          "etmeniz önerilir. Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
         level: "high",
       });
     }
@@ -660,6 +837,23 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
       });
     }
 
+    // ── Profil Kural A9b: Balık alerjisi + eser/çapraz bulaşma beyanı (ADR-004) ──
+    if (
+      profile.allergens.includes("fish") &&
+      productTraceContainsAny(product, FISH_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_FISH_TRACE_MATCH",
+        title: "Balık için çapraz bulaşma uyarısı",
+        message:
+          "Bu üründe balık için eser miktarda içerebilir / çapraz bulaşma beyanı bulunuyor. " +
+          "Bu, kesin içerik bilgisi değildir; ancak profilinizde balık alerjisi tanımlı olduğu için " +
+          "ürünü tüketmeden önce ambalajdaki alerjen ve çapraz bulaşma beyanını dikkatle kontrol " +
+          "etmeniz önerilir. Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
     // ── Profil Kural A10: Kabuklu deniz ürünleri alerjisi + içerikte beyan ────
     if (
       profile.allergens.includes("shellfish") &&
@@ -673,6 +867,24 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
           "içerik ya da alerjen beyanı bulunuyor. " +
           "Profilinizde kabuklu deniz ürünleri alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
           "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A10b: Kabuklu deniz ürünleri + eser/çapraz bulaşma (ADR-004) ─
+    if (
+      profile.allergens.includes("shellfish") &&
+      productTraceContainsAny(product, SHELLFISH_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_SHELLFISH_TRACE_MATCH",
+        title: "Kabuklu deniz ürünleri için çapraz bulaşma uyarısı",
+        message:
+          "Bu üründe karides, yengeç, midye veya diğer kabuklu deniz ürünleri için eser miktarda " +
+          "içerebilir / çapraz bulaşma beyanı bulunuyor. Bu, kesin içerik bilgisi değildir; ancak " +
+          "profilinizde kabuklu deniz ürünleri alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
+          "ambalajdaki alerjen ve çapraz bulaşma beyanını dikkatle kontrol etmeniz önerilir. " +
           "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
         level: "high",
       });
