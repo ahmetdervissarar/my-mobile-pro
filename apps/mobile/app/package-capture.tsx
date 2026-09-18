@@ -340,8 +340,8 @@ export default function PackageCaptureScreen() {
         // Kamera izni gerekçesi önce gösterilir; OS izin isteği yalnız butona basınca tetiklenir.
         <View style={[styles.cameraWrapper, styles.rationaleBox]}>
           <Text style={styles.rationaleText}>
-            Bu adımda ambalajın fotoğrafını çekmek için kamera erişimi gerekir. Fotoğraf yalnız bu
-            cihazda, geçici olarak tutulur; bu sürümde hiçbir yere gönderilmez.
+            Bu adımda ambalajın fotoğrafını çekmek için kamera erişimi gerekir. Fotoğraf uygulamanın özel
+            depolama alanında tutulur; uygulama tarafından sunucuya gönderilmez.
           </Text>
           <Pressable style={styles.primaryButton} accessibilityRole="button" accessibilityLabel="Kamera izni ver" onPress={() => void requestPermission()}>
             <Text style={styles.primaryButtonText}>Kamera izni ver</Text>

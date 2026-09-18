@@ -69,6 +69,15 @@ Bu görev fiyat araştırması değildir; fiyat sağlayıcıları, ağırlıklar
     Durum (aynı / yalnız ambalajda / çatışmalı / okunamıyor / veri yok; ikon + metin, `deriveFieldComparison`)
     → Karar. Üstte "İncelenen alan: n / toplam". Alerjen bloğu kayıtlı beyanı da gösterir, otomatik
     karşılaştırmaz. CTA: "Yerel aday olarak kaydet — doğrulanmış ürün değildir." Senaryo 17 (17/17).
+13. **Düzeltme turu (aynı gün):** (a) lockfile yalnız `expo-file-system` kök bağımlılığı + kayıt güncellemesi
+    (npm'in eklediği `react-dom`/`scheduler`/metadata sapmaları geri alındı); (b) snapshot güncelliği 24 saat
+    (`isSnapshotFresh`): taze → kullan; eski → önce backend `resolve` ile yenile (yalnız OFF kaynaklıysa
+    `backend_resolve`, aksi hâlde `none`); backend başarısızsa eski snapshot "ESKİ CİHAZ KAYDI" etiketiyle
+    kullanılır, güncel gibi gösterilmez; (c) `review.ts::existingText` yalnız `selectedEvidenceId/selectedSource/
+    value` okur — ikinci kaynak seçimi yok (senaryo 18, iki sağlayıcı sırası); (d) alerjen bloğu "Mevcut kaynak
+    beyanı" ve "Ambalaj adayı" durumlarını ayrı gösterir; otomatik kıyaslanamayan çift "İnsan karşılaştırması
+    gerekli" (çatışma değil); kalıcı fotoğraf metni "uygulamanın özel depolama alanında; uygulama tarafından
+    sunucuya gönderilmez"; silme kontrolü kaydedilmiş aday özetinde de erişilebilir.
 
 ## Reddedilen / ertelenen seçenekler (ayrıntı ve tablo: araştırma raporu)
 

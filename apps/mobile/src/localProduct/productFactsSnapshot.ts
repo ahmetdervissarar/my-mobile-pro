@@ -18,6 +18,14 @@ import type { ProductFactsWire } from './types';
 const STORAGE_KEY = 'rafskoru:productFactsSnapshot:v1';
 const MAX_ENTRIES = 50;
 
+/** Güncellik sınırı: 24 saat. Daha eski snapshot "eski cihaz kaydı"dır; backend'in önüne geçmez. */
+export const SNAPSHOT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+export function isSnapshotFresh(snapshot: ProductFactsSnapshot, now = Date.now()): boolean {
+  const savedAt = Date.parse(snapshot.savedAt);
+  return Number.isFinite(savedAt) && now - savedAt >= 0 && now - savedAt <= SNAPSHOT_MAX_AGE_MS;
+}
+
 export interface ProductFactsSnapshot {
   gtin: string;
   facts: ProductFactsWire;

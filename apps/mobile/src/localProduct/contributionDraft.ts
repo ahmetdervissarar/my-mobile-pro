@@ -26,7 +26,7 @@ export const PHOTO_TEMPORARY_STORAGE_NOTICE =
   'Çekilen fotoğraf şimdilik geçici önbellek dosyasıdır; taslağı kaydettiğinde bu cihazdaki RafSkoru klasörüne kopyalanır.';
 
 export const PHOTO_PERSISTENT_STORAGE_NOTICE =
-  'Fotoğraflar yalnız bu cihazda, uygulamanın belge klasöründeki RafSkoru alanında saklanır; galeriye, sunucuya veya başka bir servise gönderilmez. "Taslağı ve fotoğrafları sil" ile kaldırılır.';
+  'Fotoğraflar uygulamanın özel depolama alanında saklanır; uygulama tarafından sunucuya, galeriye veya başka bir servise gönderilmez. "Taslağı ve fotoğrafları sil" ile kaldırılır.';
 
 export function hasPersistentPhotos(photos: readonly CapturedPhoto[]): boolean {
   return photos.length > 0 && photos.every((p) => p.storage === 'persistent' && Boolean(p.persistentUri));

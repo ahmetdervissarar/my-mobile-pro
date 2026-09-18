@@ -2,26 +2,57 @@
  * RafSkoru — İnceleme ekranının üst alerjen bloğu (bilgi hiyerarşisi 1: alerjen kapısı).
  * src/localProduct/review/AllergenReviewBlock.tsx
  *
- * "İçerir" ve "içerebilir" ayrı ayrı ele alınır; kullanıcı girişi hiçbir zaman okunabilir beyan
- * olmaz. Olumlu güvenlik iddiası yoktur; durum daima "veri yok / doğrulanmamış".
+ * İki durum AYRI gösterilir ve biri diğerini yok saymaz:
+ * 1) Mevcut kaynak beyanı (OFF/doğrulanmış kayıt): var / yok.
+ * 2) Ambalaj adayı: doğrulanmamış / okunamıyor / veri yok.
+ * Kullanıcı girişi hiçbir zaman okunabilir beyan olmaz; ikisi otomatik kıyaslanmaz → "İnsan
+ * karşılaştırması gerekli". Olumlu güvenlik iddiası yoktur.
  */
 
 import { StyleSheet, Text, View } from 'react-native';
 
+import type { HumanFieldDecision } from '../resolution/types';
 import type { AllergenKey } from '../../userProfile/userProfileTypes';
 
 export interface AllergenReviewBlockProps {
   candidateText: string | null;
   hasAllergenPhoto: boolean;
+  /** Kullanıcının bu alan için verdiği karar (henüz yoksa null). */
+  candidateDecision?: HumanFieldDecision | null;
   /** Kayıtlı (okunabilir kaynak) beyanın kullanıcı metni; yoksa null. Kullanıcı girişi bunu değiştirmez. */
   existingDeclarationText?: string | null;
+  existingSourceLabel?: string | null;
   /** Cihazdaki profil anahtarları; yalnız "profilinizde tanımlı" hatırlatması için, hiçbir yere gönderilmez. */
   profileAllergens: readonly AllergenKey[];
 }
 
-export function AllergenReviewBlock({ candidateText, hasAllergenPhoto, existingDeclarationText = null, profileAllergens }: AllergenReviewBlockProps) {
+function candidateStatus(candidateText: string | null, decision: HumanFieldDecision | null): { icon: string; text: string } {
+  if (decision === 'unreadable') return { icon: '?', text: 'okunamıyor → veri yok / doğrulanmamış' };
+  if (!candidateText) return { icon: '–', text: 'veri yok / doğrulanmamış' };
+  return { icon: '✎', text: 'doğrulanmamış aday (bu ekranda onaylansa da alerjen kararına girmez)' };
+}
+
+export function AllergenReviewBlock({
+  candidateText,
+  hasAllergenPhoto,
+  candidateDecision = null,
+  existingDeclarationText = null,
+  existingSourceLabel = null,
+  profileAllergens,
+}: AllergenReviewBlockProps) {
+  const sourceLine = existingDeclarationText
+    ? `${existingSourceLabel ?? 'Kayıt'} kaydında beyan var: ${existingDeclarationText}`
+    : 'kayıtta okunabilir beyan yok';
+  const candidate = candidateStatus(candidateText, candidateDecision);
+  const needsHumanComparison = Boolean(existingDeclarationText && candidateText && candidateDecision !== 'unreadable');
+
   return (
-    <View style={styles.block} accessible accessibilityRole="summary" accessibilityLabel="Alerjen beyanı incelemesi. Durum: veri yok, doğrulanmamış.">
+    <View
+      style={styles.block}
+      accessible
+      accessibilityRole="summary"
+      accessibilityLabel={`Alerjen beyanı incelemesi. Mevcut kaynak beyanı: ${sourceLine}. Ambalaj adayı: ${candidate.text}.`}
+    >
       <Text style={styles.title} allowFontScaling>
         ! Alerjen beyanı — önce bu alan
       </Text>
@@ -30,26 +61,27 @@ export function AllergenReviewBlock({ candidateText, hasAllergenPhoto, existingD
         alerjen kararına sokmaz.
       </Text>
       <Text style={styles.line} allowFontScaling>
-        Kayıtlı beyan: {existingDeclarationText ?? '— kayıtta okunabilir beyan yok —'}
+        {existingDeclarationText ? '■' : '□'} Mevcut kaynak beyanı: {sourceLine}
       </Text>
       <Text style={styles.line} allowFontScaling>
-        Ambalaj adayı: {candidateText ?? '— boş —'}
+        {candidate.icon} Ambalaj adayı: {candidate.text}
+        {candidateText ? ` — "${candidateText}"` : ''}
       </Text>
-      {existingDeclarationText && candidateText ? (
-        <Text style={styles.line} allowFontScaling>
-          ≠ Kayıtlı beyan ile ambalaj metni otomatik karşılaştırılmaz; kayıt korunur, kararı siz verin.
+      <Text style={styles.line} allowFontScaling>
+        Fotoğraf: {hasAllergenPhoto ? 'var' : 'yok'}
+      </Text>
+      {needsHumanComparison ? (
+        <Text style={styles.status} allowFontScaling>
+          ⇄ İnsan karşılaştırması gerekli: kayıtlı beyan ile ambalaj metni otomatik kıyaslanmaz; kayıt korunur.
         </Text>
       ) : null}
-      <Text style={styles.line} allowFontScaling>
-        Fotoğraf: {hasAllergenPhoto ? 'var (geçici önbellek)' : 'yok'}
-      </Text>
       {profileAllergens.length > 0 ? (
         <Text style={styles.line} allowFontScaling>
-          Profilinizde {profileAllergens.length} alerjen tanımlı. Bu kayıt profil eşleşmesi üretmez; etiketi kontrol edin.
+          Profilinizde {profileAllergens.length} alerjen tanımlı. Ambalaj adayı profil eşleşmesi üretmez; etiketi kontrol edin.
         </Text>
       ) : null}
       <Text style={styles.status} allowFontScaling>
-        Durum: alerjen verisi yok / doğrulanmamış. Bu bir garanti değildir.
+        Bu bir garanti değildir; son karar için güncel ambalaj etiketi esastır.
       </Text>
     </View>
   );

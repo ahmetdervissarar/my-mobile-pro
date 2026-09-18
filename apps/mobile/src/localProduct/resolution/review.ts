@@ -56,25 +56,34 @@ function structuredValueText(field: ProductFactField, value: unknown): string | 
   return null;
 }
 
+/**
+ * Mevcut kayıt = birleştirme motorunun SEÇTİĞİ kanıt (`selectedEvidenceId/selectedSource/value`); burada
+ * ikinci bir kaynak seçimi yapılmaz — aksi hâlde `rafskoru_verified` kayıt OFF'tan öncelikli seçildiğinde
+ * ekran yanlışlıkla OFF değerini gösterebilirdi. Seçilen kanıt kullanıcı kaynaklıysa (OFF'ta alan yok,
+ * ambalaj adayı seçildi) "mevcut kayıt" yoktur; aday yalnız ambalaj adayı olarak gösterilir.
+ */
 function existingText(merged: MergedProductRecord | null, field: ProductFactField): { text: string | null; label: string | null; fetchedAt: string | null } {
-  if (!merged) return { text: null, label: null, fetchedAt: null };
+  const none = { text: null, label: null, fetchedAt: null };
+  if (!merged) return none;
   const f = merged.fields[field];
-  const structured = f.evidence.find((e) => e.source.source !== 'user_ocr' && e.structuredValue !== null);
-  if (!structured) return { text: null, label: null, fetchedAt: null };
-  const text = structuredValueText(field, structured.structuredValue);
-  return { text, label: SOURCE_LABEL[structured.source.source] ?? structured.source.source, fetchedAt: structured.source.fetchedAt ?? structured.source.observedAt ?? null };
+  const source = f.selectedSource;
+  if (!f.selectedEvidenceId || !source || source.source === 'user_ocr' || source.source === 'beta_inference') return none;
+  const text = structuredValueText(field, f.value);
+  if (text === null) return none;
+  return { text, label: SOURCE_LABEL[source.source] ?? source.source, fetchedAt: source.fetchedAt ?? source.observedAt ?? null };
 }
 
 /**
  * Alan karşılaştırma durumu (ekranda ikon + metinle gösterilir; renk tek başına anlam taşımaz):
  * - same: kayıtlı değer ile ambalaj adayı normalize edilince aynı.
  * - packaging_only: kayıtta bu alan yok; ambalaj adayı yalnız doğrulanmamış adaydır.
- * - conflict: ikisi de var ve farklı; kayıt korunur, otomatik kazanan yoktur (alerjen alanında
- *   etiket ile serbest metin otomatik karşılaştırılmaz → her zaman insan kararı).
+ * - conflict: ikisi de var ve farklı; kayıt korunur, otomatik kazanan yoktur.
+ * - needs_human_comparison: ikisi de var ama otomatik kıyaslanamaz (alerjen: yapılandırılmış etiket ile
+ *   serbest ambalaj metni); çatışma DEĞİL, insan karşılaştırması gerekir.
  * - unreadable: kullanıcı "Okunamıyor" dedi.
  * - no_data: ambalaj adayı yok (kayıtlı değer varsa korunur, yoksa alan veri yok kalır).
  */
-export type FieldComparisonStatus = 'same' | 'packaging_only' | 'conflict' | 'unreadable' | 'no_data';
+export type FieldComparisonStatus = 'same' | 'packaging_only' | 'conflict' | 'needs_human_comparison' | 'unreadable' | 'no_data';
 
 function normalizeCompare(text: string): string {
   return text.replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -84,7 +93,7 @@ export function deriveFieldComparison(item: ReviewItem, decision: HumanFieldDeci
   if (decision === 'unreadable') return 'unreadable';
   if (!item.candidateText) return 'no_data';
   if (!item.existingValueText) return 'packaging_only';
-  if (item.isAllergen) return 'conflict';
+  if (item.isAllergen) return 'needs_human_comparison';
   return normalizeCompare(item.candidateText) === normalizeCompare(item.existingValueText) ? 'same' : 'conflict';
 }
 
@@ -92,6 +101,7 @@ export const FIELD_COMPARISON_COPY: Record<FieldComparisonStatus, { icon: string
   same: { icon: '=', label: 'Aynı', note: 'Kayıtlı değer ile ambalaj adayı örtüşüyor; yine de aday olarak kalır.' },
   packaging_only: { icon: '◔', label: 'Yalnız ambalajda', note: 'Kayıtta bu alan yok; ambalaj adayı doğrulanmamış aday olarak saklanır.' },
   conflict: { icon: '≠', label: 'Çatışmalı', note: 'Kayıtlı değer ile ambalaj adayı farklı. Kayıt korunuyor; otomatik kazanan yok, kararı siz verin.' },
+  needs_human_comparison: { icon: '⇄', label: 'İnsan karşılaştırması gerekli', note: 'Kayıtlı beyan (etiket) ile ambalaj metni otomatik kıyaslanamaz. Kayıt korunuyor; ikisini siz karşılaştırın.' },
   unreadable: { icon: '?', label: 'Okunamıyor', note: 'Bu alan "veri yok / doğrulanmamış" kalır. Bu bir garanti değildir.' },
   no_data: { icon: '–', label: 'Veri yok', note: 'Ambalaj adayı girilmedi. Kayıtlı değer varsa korunur; yoksa alan boş kalır.' },
 };

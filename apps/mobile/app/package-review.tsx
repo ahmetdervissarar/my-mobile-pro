@@ -19,7 +19,7 @@ import { deleteContributionDraft, loadLatestContributionDraft } from '../src/loc
 import { PHOTO_PERSISTENT_STORAGE_NOTICE, PHOTO_TEMPORARY_STORAGE_NOTICE, hasPersistentPhotos } from '../src/localProduct/contributionDraft';
 import { isValidGtin } from '../src/localProduct/gtin';
 import { deleteDraftPhotos } from '../src/localProduct/photoStorage';
-import { loadProductFactsSnapshot } from '../src/localProduct/productFactsSnapshot';
+import { isSnapshotFresh, loadProductFactsSnapshot, saveProductFactsSnapshot } from '../src/localProduct/productFactsSnapshot';
 import { applyHumanFieldChecks, buildReviewItems, computeReviewProgress, isReviewComplete, summarizeReviewedRecord } from '../src/localProduct/resolution/review';
 import type { FieldDecisionInput, ReviewDecisions } from '../src/localProduct/resolution/review';
 import { deleteReviewedRecordsForDraft, loadLatestReviewedRecord, saveLocallyReviewedRecord } from '../src/localProduct/resolution/reviewStorage';
@@ -36,24 +36,44 @@ import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorag
 import { emptyUserSensitivityProfile } from '../src/userProfile/userProfileTypes';
 import type { UserSensitivityProfile } from '../src/userProfile/userProfileTypes';
 
-type OffSourcePath = 'snapshot' | 'backend_resolve' | 'none';
+/**
+ * - snapshot: 24 saatten yeni cihaz kaydı (ürün sonuç ekranının aldığı AYNI kayıt).
+ * - backend_resolve: snapshot yok/eski → mevcut backend çözümleme uç noktası OFF kaynaklı kayıt döndürdü.
+ * - stale_snapshot: backend yenileyemedi; 24 saatten eski cihaz kaydı "eski cihaz kaydı" etiketiyle kullanılır,
+ *   güncel kayıt gibi GÖSTERİLMEZ.
+ * - none: hiçbir OFF kaynaklı kayıt yok (backend OFF dışı bir kayıt döndürdüyse de none).
+ */
+type OffSourcePath = 'snapshot' | 'backend_resolve' | 'stale_snapshot' | 'none';
+
+interface OffFactsLoad {
+  facts: ProductFactsWire | null;
+  path: OffSourcePath;
+  snapshotSavedAt: string | null;
+}
 
 const priceClient = new PriceClient();
 
-/**
- * Tercih sırası: (1) cihazdaki snapshot — ürün sonuç ekranının aldığı AYNI kayıt; (2) mevcut backend
- * çözümleme uç noktası. Mobil OFF'a doğrudan çağrı yapmaz; ikinci bir ürün veri modeli yoktur.
- */
-async function loadOffFacts(gtin: string): Promise<{ facts: ProductFactsWire | null; path: OffSourcePath; snapshotSavedAt: string | null }> {
-  const snapshot = await loadProductFactsSnapshot(gtin);
-  if (snapshot) return { facts: snapshot.facts, path: 'snapshot', snapshotSavedAt: snapshot.savedAt };
+async function resolveFromBackend(gtin: string): Promise<ProductFactsWire | null> {
   try {
     const response = await priceClient.resolve({ barcode: gtin, productName: undefined });
     const facts = (response.result.productFacts ?? null) as ProductFactsWire | null;
-    return { facts: facts && facts.dataSource === 'off' ? facts : null, path: facts ? 'backend_resolve' : 'none', snapshotSavedAt: null };
+    return facts && facts.dataSource === 'off' ? facts : null;
   } catch {
-    return { facts: null, path: 'none', snapshotSavedAt: null };
+    return null;
   }
+}
+
+/** Mobil OFF'a doğrudan çağrı yapmaz; ikinci bir ürün veri modeli yoktur. */
+async function loadOffFacts(gtin: string): Promise<OffFactsLoad> {
+  const snapshot = await loadProductFactsSnapshot(gtin);
+  if (snapshot && isSnapshotFresh(snapshot)) return { facts: snapshot.facts, path: 'snapshot', snapshotSavedAt: snapshot.savedAt };
+  const refreshed = await resolveFromBackend(gtin);
+  if (refreshed) {
+    void saveProductFactsSnapshot(gtin, refreshed);
+    return { facts: refreshed, path: 'backend_resolve', snapshotSavedAt: null };
+  }
+  if (snapshot) return { facts: snapshot.facts, path: 'stale_snapshot', snapshotSavedAt: snapshot.savedAt };
+  return { facts: null, path: 'none', snapshotSavedAt: null };
 }
 
 function formatIso(iso: string | null): string {
@@ -171,13 +191,40 @@ export default function PackageReviewScreen() {
 
   const allergenItem = items.find((i) => i.isAllergen) ?? null;
   const merged = attempt?.merged ?? null;
+
+  // "Taslağı ve fotoğrafları sil" hem inceleme sırasında hem kaydedilmiş aday özetinde erişilebilir kalır.
+  const deleteControls =
+    deleteState === 'confirm' ? (
+      <View style={styles.errorCard}>
+        <Text style={styles.errorText}>Taslak, inceleme kayıtları ve bu cihazdaki fotoğraf dosyaları silinecek. Geri alınamaz.</Text>
+        <View style={styles.row}>
+          <Pressable style={[styles.secondaryButton, styles.rowButton]} accessibilityRole="button" accessibilityLabel="Silmeyi iptal et" onPress={() => setDeleteState('idle')}>
+            <Text style={styles.secondaryButtonText}>İptal</Text>
+          </Pressable>
+          <Pressable style={[styles.dangerButton, styles.rowButton]} accessibilityRole="button" accessibilityLabel="Taslağı ve fotoğrafları kalıcı olarak sil" onPress={() => void handleDelete()}>
+            <Text style={styles.primaryButtonText}>Evet, sil</Text>
+          </Pressable>
+        </View>
+      </View>
+    ) : (
+      <>
+        <Pressable style={styles.secondaryButton} accessibilityRole="button" accessibilityLabel="Taslağı ve fotoğrafları sil" onPress={() => setDeleteState('confirm')}>
+          <Text style={styles.secondaryButtonText}>Taslağı ve fotoğrafları sil</Text>
+        </Pressable>
+        {deleteState === 'error' ? <Text style={styles.warn}>Silme tamamlanamadı; bazı kayıtlar kalmış olabilir. Tekrar deneyin.</Text> : null}
+      </>
+    );
   const offCandidate = attempt?.candidates.find((c) => c.providerId === 'off') ?? null;
   const offStatusText =
     offPath === 'none'
-      ? 'Open Food Facts kaydı bu cihazda yok ve sunucudan alınamadı.'
-      : offCandidate
-        ? `Open Food Facts kaydı ${offPath === 'snapshot' ? 'ürün sonuç ekranından' : 'sunucudan'} alındı${offSavedAt ? ` (cihaz kaydı: ${formatIso(offSavedAt)})` : ''}.`
-        : 'Open Food Facts kaydı yetersiz; karşılaştırılacak alan yok.';
+      ? 'Open Food Facts kaynaklı kayıt yok: cihazda kayıt bulunmadı ve sunucudan alınamadı.'
+      : !offCandidate
+        ? 'Open Food Facts kaydı yetersiz; karşılaştırılacak alan yok.'
+        : offPath === 'stale_snapshot'
+          ? `ESKİ CİHAZ KAYDI: Open Food Facts kaydı ${formatIso(offSavedAt)} tarihinde alınmıştı; sunucudan yenilenemedi. Güncel kayıt olarak gösterilmez.`
+          : offPath === 'snapshot'
+            ? `Open Food Facts kaydı ürün sonuç ekranından alındı (cihaz kaydı: ${formatIso(offSavedAt)}, 24 saatten yeni).`
+            : 'Open Food Facts kaydı sunucudan yenilendi.';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -195,7 +242,9 @@ export default function PackageReviewScreen() {
       <AllergenReviewBlock
         candidateText={allergenItem?.candidateText ?? null}
         hasAllergenPhoto={Boolean(allergenItem?.photo)}
+        candidateDecision={decisions.allergenDeclaration?.decision ?? null}
         existingDeclarationText={allergenItem?.existingValueText ?? null}
+        existingSourceLabel={allergenItem?.existingSourceLabel ?? null}
         profileAllergens={userProfile.allergens}
       />
 
@@ -209,7 +258,7 @@ export default function PackageReviewScreen() {
         <Text style={styles.helper}>{offStatusText}</Text>
       </View>
 
-      {savedRecord ? (
+      {savedRecord && draft ? (
         <View style={styles.section} accessible accessibilityLabel="İnceleme özeti">
           {summarizeReviewedRecord(savedRecord).map((line) => (
             <Text key={line} style={styles.body}>
@@ -219,6 +268,7 @@ export default function PackageReviewScreen() {
           <Pressable style={styles.primaryButton} accessibilityRole="button" accessibilityLabel="Ürün sonucuna dön" onPress={() => router.back()}>
             <Text style={styles.primaryButtonText}>Ürün sonucuna dön</Text>
           </Pressable>
+          {deleteControls}
         </View>
       ) : deleteState === 'done' ? (
         <View style={styles.section}>
@@ -296,24 +346,7 @@ export default function PackageReviewScreen() {
           </Pressable>
           {!complete ? <Text style={styles.helper}>Kaydetmek için her alan için bir karar verin ({progress.decided} / {progress.total}).</Text> : null}
 
-          {deleteState === 'confirm' ? (
-            <View style={styles.errorCard}>
-              <Text style={styles.errorText}>Taslak, inceleme kayıtları ve bu cihazdaki fotoğraf dosyaları silinecek. Geri alınamaz.</Text>
-              <View style={styles.row}>
-                <Pressable style={[styles.secondaryButton, styles.rowButton]} accessibilityRole="button" accessibilityLabel="Silmeyi iptal et" onPress={() => setDeleteState('idle')}>
-                  <Text style={styles.secondaryButtonText}>İptal</Text>
-                </Pressable>
-                <Pressable style={[styles.dangerButton, styles.rowButton]} accessibilityRole="button" accessibilityLabel="Taslağı ve fotoğrafları kalıcı olarak sil" onPress={() => void handleDelete()}>
-                  <Text style={styles.primaryButtonText}>Evet, sil</Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <Pressable style={styles.secondaryButton} accessibilityRole="button" accessibilityLabel="Taslağı ve fotoğrafları sil" onPress={() => setDeleteState('confirm')}>
-              <Text style={styles.secondaryButtonText}>Taslağı ve fotoğrafları sil</Text>
-            </Pressable>
-          )}
-          {deleteState === 'error' ? <Text style={styles.warn}>Silme tamamlanamadı; bazı kayıtlar kalmış olabilir. Tekrar deneyin.</Text> : null}
+          {deleteControls}
 
           <Pressable style={styles.secondaryButton} accessibilityRole="button" accessibilityLabel="Vazgeç ve geri dön" onPress={() => router.back()}>
             <Text style={styles.secondaryButtonText}>Vazgeç</Text>

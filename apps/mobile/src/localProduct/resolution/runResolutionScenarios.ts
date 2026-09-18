@@ -273,13 +273,45 @@ scenario('17 Alan karşılaştırma durumu: aynı / yalnız ambalajda / çatış
   assert(deriveFieldComparison(byField.productName, null) === 'same', '"ALBENİ" ≈ "Albeni" → aynı (Türkçe İ normalize)');
   assert(deriveFieldComparison(byField.ingredientsText, null) === 'conflict', 'farklı içindekiler metni → çatışmalı');
   assert(merged.fields.ingredientsText.value === recordedAlbeniComplete.ingredientsText && merged.fields.ingredientsText.conflict === 'unresolved', 'çatışmada OFF içindekiler korunur, otomatik kazanan yok');
-  assert(deriveFieldComparison(byField.allergenDeclaration, null) === 'conflict' && byField.allergenDeclaration.existingValueText?.startsWith('Beyana göre içerir'), 'alerjen: kayıtlı beyan metni gösterilir, otomatik karşılaştırma yok → insan kararı');
+  assert(deriveFieldComparison(byField.allergenDeclaration, null) === 'needs_human_comparison' && byField.allergenDeclaration.existingValueText?.startsWith('Beyana göre içerir'), 'alerjen: kayıtlı beyan metni gösterilir, otomatik karşılaştırma yok → "İnsan karşılaştırması gerekli" (çatışma değil)');
+  assert(byField.netQuantity.existingValueText === null && merged.fieldSources.netQuantity?.source === 'user_ocr', 'seçilen kanıt user_ocr ise "mevcut kayıt" gösterilmez');
   assert(deriveFieldComparison(byField.netQuantity, null) === 'packaging_only', 'OFF mobil kaydında net miktar yok → yalnız ambalajda');
   assert(deriveFieldComparison(byField.nutrition, null) === 'no_data', 'besin metni girilmedi → veri yok');
   assert(deriveFieldComparison(byField.ingredientsText, 'unreadable') === 'unreadable', 'karar okunamıyor → okunamıyor');
   const progress = computeReviewProgress(items, { productName: { decision: 'confirmed' }, ingredientsText: { decision: 'corrected', correctedText: '' } });
   assert(progress.decided === 1 && progress.total === 5, 'boş düzeltme metni karar sayılmaz: 1/5');
   for (const copy of Object.values(FIELD_COMPARISON_COPY)) for (const bad of FORBIDDEN) assert(!`${copy.label} ${copy.note}`.toLowerCase().includes(bad), `yasak ifade: ${bad}`);
+});
+
+scenario('18 Mevcut kayıt = seçilen kanıt: OFF + rafskoru_verified farklı ürün adı → ekran doğrulanmış değeri gösterir (her iki sağlayıcı sırası)', () => {
+  const off = offCandidateFromProductFacts('8690504034506', recordedAlbeniComplete);
+  const verifiedRecord: VerifiedLocalProduct = {
+    id: 'vlp-test-2',
+    gtin: '8690504034506',
+    status: 'verified',
+    claims: [
+      {
+        field: 'productName',
+        value: 'Ülker Albeni Karamelli Bisküvi 40 g',
+        evidenceId: 'ev-test-2',
+        verificationRecordId: 'vr-test-2',
+        provenance: { source: 'rafskoru_verified', confidence: 'high', observedAt: '2026-09-12T09:00:00.000Z', evidenceId: 'ev-test-2' },
+      },
+    ],
+    evidenceIds: ['ev-test-2'],
+    verificationRecordIds: ['vr-test-2'],
+    createdAt: NOW,
+    updatedAt: NOW,
+  };
+  const verified = verifiedCandidateFromRecord('8690504034506', verifiedRecord)!;
+  const draft = makeDraft('8690504034506', [ocr('productName', 'Albeni')]);
+  for (const order of [[off, verified], [verified, off]]) {
+    const merged = mergeCandidates('8690504034506', [...order, draftCandidate('8690504034506', draft)]);
+    const item = buildReviewItems(draft, merged).find((i) => i.field === 'productName')!;
+    assert(item.existingValueText === 'Ülker Albeni Karamelli Bisküvi 40 g', `mevcut kayıt seçilen (doğrulanmış) değer olmalı (sıra ${order.map((c) => c.providerId).join('>')})`);
+    assert(item.existingSourceLabel === 'RafSkoru doğrulanmış kayıt', 'kaynak etiketi doğrulanmış kayıt olmalı, OFF değil');
+    assert(merged.fields.productName.selectedEvidenceId === verified.fields[0].id, 'seçilen kanıt doğrulanmış kayıt olmalı');
+  }
 });
 
 (async () => {
