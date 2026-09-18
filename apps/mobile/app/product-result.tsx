@@ -624,14 +624,26 @@ function isExplicitlyAlternativesIneligible(input: {
 
 const CRITICAL_ALLERGEN_CODES = [
     'PROFILE_PEANUT_ALLERGEN_MATCH',
+    'PROFILE_PEANUT_TRACE_MATCH',
     'PROFILE_SOY_ALLERGEN_MATCH',
+    'PROFILE_SOY_TRACE_MATCH',
     'PROFILE_GLUTEN_ALLERGEN_MATCH',
+    'PROFILE_GLUTEN_TRACE_MATCH',
     'PROFILE_MILK_ALLERGEN_MATCH',
+    'PROFILE_MILK_TRACE_MATCH',
     'PROFILE_LACTOSE_ALLERGEN_MATCH',
+    'PROFILE_LACTOSE_TRACE_MATCH',
     'PROFILE_TREE_NUTS_ALLERGEN_MATCH',
+    'PROFILE_TREE_NUTS_TRACE_MATCH',
     'PROFILE_SESAME_ALLERGEN_MATCH',
+    'PROFILE_SESAME_TRACE_MATCH',
     'PROFILE_FISH_ALLERGEN_MATCH',
+    'PROFILE_FISH_TRACE_MATCH',
     'PROFILE_SHELLFISH_ALLERGEN_MATCH',
+    'PROFILE_SHELLFISH_TRACE_MATCH',
+    // ADR-004: trace kodları eklendi. Not: bugün `AlternativeCandidateSignals`
+    // (price modülü) trace verisi taşımıyor; bu liste yalnız ana ürünün kendi
+    // kartı için etkin. Aday filtresi trace verisi olmadan bu kodları üretemez.
   ];
   const criticalProfileWarnings = riskResult.warnings.filter((w) =>
     CRITICAL_ALLERGEN_CODES.includes(w.code),

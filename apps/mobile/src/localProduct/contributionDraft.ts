@@ -17,6 +17,14 @@ import type {
   PackageCaptureStepKind,
 } from './types';
 
+/**
+ * Fotoğraflar bu sürümde yalnız geçici önbellek dosyasıdır (`expo-camera` cache URI'si);
+ * kalıcı depolama (ör. `expo-file-system`) bu görevde KURULMADI — yeni bağımlılık onayı
+ * gerektirir. Ekran bu sınırı açıkça göstermeli, fotoğrafı "kalıcı kaydedildi" gibi sunmamalıdır.
+ */
+export const PHOTO_TEMPORARY_STORAGE_NOTICE =
+  'Fotoğraflar bu cihazda geçici önbellek dosyasıdır; kalıcı depolama bu sürümde yok. Uygulama önbelleği temizlenirse veya cihaz yeniden başlatılırsa fotoğraflar kaybolabilir.';
+
 export const PACKAGE_CAPTURE_STEPS: readonly PackageCaptureStep[] = [
   {
     kind: 'front',
@@ -138,6 +146,7 @@ export function summarizeContributionDraft(draft: ContributionDraft): string[] {
   lines.push(`Durum: aday kayıt (doğrulanmadı). Skorlara ve alerjen kararına girmez.`);
   lines.push(`Barkod: ${draft.gtin ?? 'yok'}`);
   lines.push(`Fotoğraf: ${draft.photos.length} · Atlanan adım: ${draft.skippedSteps.length}`);
+  if (draft.photos.length > 0) lines.push(PHOTO_TEMPORARY_STORAGE_NOTICE);
   lines.push(`Gözlem zamanı: ${draft.observedAt ?? 'yok'}`);
   lines.push(`Ambalaj sürümü: ${draft.packagingVersion ?? 'belirtilmedi'}`);
   lines.push('Alerjen durumu: veri yok / doğrulanmamış. Bu bir garanti değildir; etiketi kontrol edin.');

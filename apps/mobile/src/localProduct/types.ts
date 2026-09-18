@@ -63,7 +63,12 @@ export interface PackageCaptureStep {
 
 export interface CapturedPhoto {
   kind: PackageCaptureStepKind;
-  /** Cihazdaki geçici dosya; sözleşmeye taşınmaz, yalnız yerel taslakta tutulur. */
+  /**
+   * Cihazdaki GEÇİCİ önbellek dosyası (kamera cache URI'si); sözleşmeye taşınmaz. Kalıcı
+   * depolama bu sürümde yok (`expo-file-system` kurulmadı — yeni bağımlılık onayı gerekir);
+   * uygulama önbelleği temizlenirse bu dosya kaybolabilir. UI bunu açıkça belirtmelidir
+   * (bkz. `PHOTO_TEMPORARY_STORAGE_NOTICE`).
+   */
   localUri: string;
   takenAt: string;
 }

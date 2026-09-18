@@ -21,10 +21,22 @@ Kullanma: "güvenli", "güvenli alternatif", "alerjen içermez", "uygun", "temiz
 Her aday/fixture/sentetik veri görünür etiket taşır: "GELİŞTİRME FIXTURE — gerçek veri değil", "aday, gönderilmez".
 
 ## Paket bilgisi ekleme akışı
-Adım = başlık + neden + atlarsan ne olur; "Tekrar çek" ve "Atla" her adımda (barkod atlanamaz). OCR yoksa sahte sonuç üretme; elle giriş `user_ocr`/`verified=false`. Alerjen alanı boş veya okunamıyorsa durum `unknown_or_unverified`; kullanıcı beyanı asla `readable` olmaz. Taslak cihazda kalır; gönderim sınırı ve sonraki doğrulama görevi ekranda yazılır.
+Adım = başlık + neden + atlarsan ne olur; "Tekrar çek", "Önceki adım" (gerçek fotoğraf önizlemesiyle) ve "Atla" her adımda (barkod atlanamaz). OCR yoksa sahte sonuç üretme; elle giriş `user_ocr`/`verified=false`. Alerjen alanı boş veya okunamıyorsa durum `unknown_or_unverified`; kullanıcı beyanı asla `readable` olmaz. Taslak cihazda kalır; gönderim sınırı ve sonraki doğrulama görevi ekranda yazılır.
+- **Yerel kayıt hatası görünür olmalı.** AsyncStorage/dosya yazımı başarısız olursa "kaydedildi" gösterilmez; kullanıcıya kısa Türkçe hata + tekrar deneme yolu sunulur. Sessiz `catch` ile başarı taklidi yapılmaz.
+- **Barkod/GTIN yapısal olarak doğrulanır** (uzunluk 8/12/13/14 + GS1 kontrol basamağı) kayıttan önce; geçersizse görünür hata, kayıt engellenir.
+- **Geçici veriyi kalıcıymış gibi sunma.** Kamera/cache URI'si kalıcı değilse ("Fotoğraf çekildi" tek başına yetmez) ekran ve özet bunu açıkça yazar. Kalıcı depolama yeni bağımlılık gerektiriyorsa kurmadan dur, onay iste; geçicilik uyarısıyla devam et.
+- **Kamera izni gerekçe-önce.** Ekran açılır açılmaz OS izin isteği tetiklenmez; önce neden gerektiği yazılır, izin yalnız kullanıcının bastığı butonla istenir.
+
+## Alerjen kapısı genişletme (declared vs. trace)
+`declared_contains` ("içerir") ve `trace_may_contain` ("içerebilir") ayrı motor kodu ve mesaj gerektirir; biri diğerine indirgenmez. Motor değişikliği (yeni `PROFILE_*_TRACE_MATCH` gibi) proje sahibi onayı + ayrı commit + ADR + `allergen-safety-reviewer` ister (bkz. ADR-004). Kritik uyarı listesine (`CRITICAL_ALLERGEN_CODES`) yeni kod eklenirse, o kodu üretebilen her girdi yolu (ana ürün, alternatif aday) kontrol edilir; bir yol veri taşımıyorsa (ör. fiyat modülündeki aday sinyalleri) bu açıkça "kapsam dışı" olarak belgelenir, sessizce eksik bırakılmaz.
 
 ## Erişilebilirlik
 Renk tek anlam taşıyıcısı olmaz (ikon + metin). Dokunma alanı ≥48 pt. Her buton `accessibilityRole` + `accessibilityLabel`; durum değişimi `accessibilityLiveRegion`; devre dışı `accessibilityState`. Dinamik yazı açık; satır yüksekliği ölçeklenir. Teknik alan adı yerine Türkçe etiket.
 
 ## Bayrak ve doğrulama
-Yeni akış `EXPO_PUBLIC_*` bayrağı arkasında; kapalıyken eski davranış birebir. Değişiklik sonrası: `npx tsc --noEmit`, `npm run smoke:beta-wording` (yeni metinler guard'a eklenir), `runLocalProductScenarios` ve risk senaryoları 28/28. Alerjen akışına dokunan değişiklikte `allergen-safety-reviewer` raporu şarttır.
+Yeni akış `EXPO_PUBLIC_*` bayrağı arkasında; kapalıyken eski davranış birebir. Değişiklik sonrası: `npx tsc --noEmit`, `npm run smoke:beta-wording` (yeni metinler guard'a eklenir), `runLocalProductScenarios` ve risk senaryoları — güncel sayı için ilgili çalıştırıcının çıktısına bak (bkz. `docs/ux/local-product-recovery.md` "Doğrulama kapıları"), sabit sayı ezberlenmez. Alerjen akışına dokunan değişiklikte `allergen-safety-reviewer` raporu şarttır.
+
+## Yeni ürün/ad araması gibi ikinci bir veri yolu eklerken
+Kod yazmadan önce mevcut fallback'in GERÇEKTEN neyi döndürdüğünü doğrula (`grep` ile hangi fonksiyonun
+çağrıldığını bul). "Mock veri" varsayımıyla buton gizleme veya yeniden yazma yapma; koddaki ölü/kullanılmayan
+mock fonksiyonları (varsa) ayrı, düşük riskli bir temizlik olarak not et, bu görevin kapsamına zorla dahil etme.

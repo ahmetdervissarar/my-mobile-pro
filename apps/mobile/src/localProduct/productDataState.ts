@@ -175,12 +175,15 @@ export function toRiskInputFromProductFacts(
   if (!facts || isInsufficientRecord(facts)) return null;
   // Alerjen listesi yalnız okunabilir (yapılandırılmış OFF) beyandan gelir; beyan yoksa boş liste
   // verilir ve motor kendi "alerjen bilgisi eksik" uyarısını üretir (fail-closed). Ham `allergens`
-  // dizisi beyandan bağımsız ikinci bir gerçek kaynağı olamaz.
+  // dizisi beyandan bağımsız ikinci bir gerçek kaynağı olamaz. `traceTags` (iz/"içerebilir") ayrı
+  // bir alanda, declared ile karıştırılmadan motora geçirilir (ADR-004 — trace_may_contain artık
+  // merkezi risk motorunda ayrı kod üretir).
   const declaration = toAllergenDeclaration(facts);
   return {
     name: facts.productName ?? fallbackName,
     ingredients: facts.ingredientsText ?? null,
     allergens: declaration.status === 'readable' ? [...declaration.declaredTags] : [],
+    traceAllergens: declaration.status === 'readable' ? [...declaration.traceTags] : [],
     additives: facts.additives ?? [],
     novaGroup: facts.novaGroup ?? null,
     trafficLight: null,
@@ -247,9 +250,10 @@ export interface ProfileDeclarationMatches {
   /** Profil anahtarı ↔ "beyana göre içerir" etiketi. Motor bu eşleşme için ayrıca uyarı üretir. */
   declared: { profileKey: AllergenKey; tag: string }[];
   /**
-   * Profil anahtarı ↔ "içerebilir" (iz) etiketi. Risk motorunun girdisinde iz alanı yoktur
-   * (`ProductRiskInput`), bu nedenle yalnız ekran projeksiyonu olarak gösterilir; motor değişikliği
-   * insan onayı ister (allergen-safety-reviewer F2, 2026-09-18).
+   * Profil anahtarı ↔ "içerebilir" (iz) etiketi. ADR-004 ile risk motoru artık bu eşleşme için
+   * de ayrı kod üretir (`PROFILE_*_TRACE_MATCH`, `toRiskInputFromProductFacts` → `traceAllergens`).
+   * Bu alan yalnız ekranın OFF etiketi → profil anahtarı tablosuna dayanan kendi özet metni içindir
+   * (`OFF_ALLERGEN_TAG_TO_PROFILE_KEYS`); güvenlik kararı motordan (riskResult.warnings) gelir.
    */
   trace: { profileKey: AllergenKey; tag: string }[];
 }

@@ -25,13 +25,27 @@ async function readStore(): Promise<DraftStore> {
   }
 }
 
-export async function saveContributionDraft(draft: ContributionDraft): Promise<void> {
+export interface SaveContributionDraftResult {
+  ok: boolean;
+  /** Kullanıcıya gösterilecek kısa Türkçe hata metni; başarılıysa null. */
+  errorMessage: string | null;
+}
+
+/**
+ * Taslağı cihazda saklar. Başarı/başarısızlık çağıran tarafa bildirilir — ekran bu sonucu
+ * göstermeden "Taslak kaydedildi" diyemez (proje sahibi düzeltmesi, 2026-09-18).
+ */
+export async function saveContributionDraft(draft: ContributionDraft): Promise<SaveContributionDraftResult> {
   try {
     const store = await readStore();
     store[draft.id] = draft;
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    return { ok: true, errorMessage: null };
   } catch {
-    // Kayıt başarısız olursa sessizce geç; ekran çalışmaya devam eder.
+    return {
+      ok: false,
+      errorMessage: 'Taslak cihazda kaydedilemedi. Depolama alanı dolu olabilir veya bir hata oluştu. Tekrar deneyin.',
+    };
   }
 }
 

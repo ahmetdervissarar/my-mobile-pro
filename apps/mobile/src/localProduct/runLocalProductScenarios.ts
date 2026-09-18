@@ -24,9 +24,12 @@ import {
   summarizeContributionDraft,
 } from './contributionDraft';
 import { FIXTURE_LABEL, ocrCandidateFixture, productFactsFixtures } from './fixtures';
+import { describeGtinValidationError, isValidGtin, validateGtin } from './gtin';
 import { describeAllergenDeclaration, deriveProductDataView, evaluateRecoveryRisk, findProfileDeclarationMatches, toRiskInputFromProductFacts } from './productDataState';
 
-const FORBIDDEN_CLAIMS = ['güvenli alternatif', 'alerjen içermez', 'ürün güvenlidir', 'garanti eder', 'sorun yok', 'temiz'];
+// CLAUDE.md P5 yasaklı ifadeleri + yaygın türevleri. Bare "temiz" kasıtlı olarak yok: "önbellek
+// temizlenirse" gibi ilgisiz kelimelerle çakışıyordu (yanlış pozitif); "ürün temiz" hâlâ yakalanır.
+const FORBIDDEN_CLAIMS = ['güvenli alternatif', 'alerjen içermez', 'ürün güvenlidir', 'garanti eder', 'sorun yok', 'ürün temiz'];
 
 type Check = { name: string; run: () => void };
 const checks: Check[] = [];
@@ -88,9 +91,17 @@ scenario('3 Yalnız "içerebilir" beyanı → trace_may_contain; içerir beyanı
   assert(desc.tone === 'trace', 'ton trace olmalı');
   assert(desc.lines.some((l) => l.startsWith('İçerebilir')), '"İçerebilir" metni görünmeli');
   assert(!desc.lines.some((l) => l.startsWith('Beyana göre içerir')), '"içerir" kesinlik dili olmamalı');
+  // ADR-004: trace beyanı artık motora geçer (traceAllergens=['milk','sesame-seeds']). Profil
+  // (peanut) bunlarla eşleşmiyor → hiçbir PROFILE_*_TRACE_MATCH tetiklenmez; ama trace beyanı
+  // mevcut olduğu için "eksik alerjen bilgisi" de tetiklenmez (hasAllergenInfo artık true).
   const risk = evaluateProductRisks(toRiskInputFromProductFacts(facts, null, peanutProfile)!);
-  assert(risk.warnings.some((w) => w.code === 'MISSING_ALLERGEN_INFO' || w.code === 'PROFILE_ALLERGEN_INFO_MISSING'), 'yalnız iz beyanı varken motor "eksik alerjen bilgisi" uyarısını korumalı');
-  assertNoForbiddenClaims([view.summary, ...desc.lines]);
+  assert(!risk.warnings.some((w) => w.code === 'MISSING_ALLERGEN_INFO' || w.code === 'PROFILE_ALLERGEN_INFO_MISSING'), 'trace beyanı mevcutken "eksik" uyarısı üretilmemeli (ADR-004)');
+  assert(!risk.warnings.some((w) => w.code.endsWith('_TRACE_MATCH')), 'fıstık profiliyle trace_only fixture eşleşmez');
+  // Aynı fixture, süt profiliyle: PROFILE_MILK_TRACE_MATCH tetiklenmeli.
+  const milkRisk = evaluateProductRisks(toRiskInputFromProductFacts(facts, null, milkProfile)!);
+  assert(milkRisk.warnings.some((w) => w.code === 'PROFILE_MILK_TRACE_MATCH'), 'süt profiliyle trace eşleşmesi tetiklenmeli');
+  assert(!milkRisk.warnings.some((w) => w.code === 'PROFILE_MILK_ALLERGEN_MATCH'), 'declared eşleşme tetiklenmemeli (yalnız trace var)');
+  assertNoForbiddenClaims([view.summary, ...desc.lines, ...milkRisk.warnings.map((w) => w.message)]);
 });
 
 scenario('4 OFF\'ta olmayan ürün → not_found, risk girdisi yok, tahmin yok', () => {
@@ -175,16 +186,58 @@ scenario('7 Bayrak açık, OFF dışı ama isComplete=true kayıt → eski yola 
   assertNoForbiddenClaims(risk.warnings.map((w) => w.message));
 });
 
-scenario('8 Declared+trace karışık: profil (milk) yalnız iz listesinde → motor sessiz (bilinen boşluk), ekran projeksiyonu uyarır', () => {
+scenario('8 Declared+trace karışık: profil (milk) yalnız iz listesinde → motor PROFILE_MILK_TRACE_MATCH üretir (ADR-004), declared üretmez', () => {
   const mixed = { ...productFactsFixtures.trace_only!, allergens: ['gluten'], allergenInfo: { dataStatus: 'present' as const, declaredAllergens: ['gluten'], traceAllergens: ['milk'], source: 'off_structured' as const } };
   const view = deriveProductDataView({ facts: mixed, isLoading: false, resolveCompleted: true });
   const risk = evaluateRecoveryRisk({ facts: mixed, fallbackName: null, userProfile: milkProfile, trafficLight: null });
-  // Bilinen boşluk (allergen-safety-reviewer F2): ProductRiskInput'ta iz alanı yok; motor değişikliği insan onayı ister.
-  assert(!risk.warnings.some((w) => w.code === 'PROFILE_MILK_ALLERGEN_MATCH'), 'motor iz beyanından profil uyarısı üretmez (belgelenmiş boşluk)');
+  // ADR-004 (allergen-safety-reviewer F2 kapatıldı): trace beyanı artık merkezi motora girer.
+  assert(!risk.warnings.some((w) => w.code === 'PROFILE_MILK_ALLERGEN_MATCH'), 'declared eşleşme üretilmemeli (gluten declared, süt değil)');
+  assert(risk.warnings.some((w) => w.code === 'PROFILE_MILK_TRACE_MATCH'), 'motor trace eşleşmesini merkezi olarak üretmeli');
+  assert(risk.warnings.some((w) => w.message.includes('içerebilir') || w.message.includes('eser miktarda')), 'mesaj ihtiyatlı dil taşımalı');
   const matches = findProfileDeclarationMatches(view.allergenDeclaration, milkProfile.allergens);
-  assert(matches.trace.some((m) => m.profileKey === 'milk' && m.tag === 'milk'), 'ekran projeksiyonu iz eşleşmesini göstermeli');
+  assert(matches.trace.some((m) => m.profileKey === 'milk' && m.tag === 'milk'), 'ekran projeksiyonu iz eşleşmesini de göstermeli (motorla tutarlı)');
   assert(matches.declared.length === 0, 'declared eşleşme yok');
   assert(findProfileDeclarationMatches({ status: 'absent', declaredTags: [], traceTags: [], source: null }, milkProfile.allergens).trace.length === 0, 'beyan yokken eşleşme üretilmez');
+});
+
+scenario('9 GTIN doğrulama: uzunluk + kontrol basamağı (proje sahibi düzeltmesi)', () => {
+  // Ölçülmüş gerçek GTIN'ler (turkey-weekly-price-source-spike, 2026-09-18): geçerli.
+  assert(isValidGtin('8690504011521'), 'gerçek 13 haneli GTIN geçerli olmalı');
+  assert(isValidGtin('8690504410911'), 'gerçek 13 haneli GTIN geçerli olmalı');
+  // Depodaki eski örnek kodlar: kontrol basamağı hatalı (bilinen geçersiz).
+  assert(!isValidGtin('8690000000001'), 'geçersiz kontrol basamaklı kod reddedilmeli');
+  assert(validateGtin('8690000000001').reason === 'check_digit', 'reddedilme nedeni check_digit olmalı');
+  assert(!isValidGtin('869000'), '6 haneli kod (geçersiz uzunluk) reddedilmeli');
+  assert(validateGtin('869000').reason === 'length', 'reddedilme nedeni length olmalı');
+  assert(!isValidGtin('869050401152a'), 'rakam olmayan karakter reddedilmeli');
+  assert(validateGtin('869050401152a').reason === 'non_digit', 'reddedilme nedeni non_digit olmalı');
+  assert(!isValidGtin(''), 'boş barkod reddedilmeli');
+  assert(!isValidGtin(null), 'null barkod reddedilmeli');
+  assert(isValidGtin('96385074'), '8 haneli EAN-8 geçerliyse kabul edilmeli');
+  assert(describeGtinValidationError('8690504011521') === null, 'geçerli GTIN için hata metni olmamalı');
+  assert(typeof describeGtinValidationError('8690000000001') === 'string', 'geçersiz GTIN için Türkçe hata metni dönmeli');
+  assertNoForbiddenClaims([describeGtinValidationError('8690000000001') ?? '']);
+});
+
+scenario('10 Geçici fotoğraf uyarısı: fotoğraf varsa özet metninde görünür, yoksa görünmez', () => {
+  const withPhoto = createContributionDraft({
+    gtin: '8690504011521',
+    photos: [{ kind: 'front', localUri: 'file:///cache/front.jpg', takenAt: '2026-09-18T12:00:00.000Z' }],
+    skippedSteps: [],
+    candidates: [],
+    packagingVersion: null,
+    now: '2026-09-18T12:00:00.000Z',
+  });
+  const withoutPhoto = createContributionDraft({
+    gtin: '8690504011521',
+    photos: [],
+    skippedSteps: ['front'],
+    candidates: [],
+    packagingVersion: null,
+    now: '2026-09-18T12:00:00.000Z',
+  });
+  assert(summarizeContributionDraft(withPhoto).some((l) => l.includes('geçici önbellek')), 'fotoğraf varken geçicilik uyarısı görünmeli');
+  assert(!summarizeContributionDraft(withoutPhoto).some((l) => l.includes('geçici önbellek')), 'fotoğraf yokken uyarı gösterilmemeli');
 });
 
 let passed = 0;
