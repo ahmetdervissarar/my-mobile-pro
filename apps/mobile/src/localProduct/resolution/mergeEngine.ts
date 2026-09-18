@@ -166,7 +166,15 @@ export function mergeCandidates(gtin: string | null, candidates: readonly Resolu
   const declarationField = fields.allergenDeclaration;
   type DeclarationEvidence = Extract<FieldEvidence, { field: 'allergenDeclaration' }>;
   const declarationEvidence = declarationField.evidence.filter((e): e is DeclarationEvidence => e.field === 'allergenDeclaration');
-  const readable = declarationEvidence.find((e) => isStructuredSource(e) && e.structuredValue?.status === 'readable');
+  // Alan seçimi `mergeField` ile yapılır (verified > tek aday > öncelik); burada ikinci bir seçim
+  // mekanizması KURULMAZ — aksi hâlde sağlayıcı sırasına göre OFF beyanı doğrulanmış beyanı gölgeleyebilirdi
+  // (product-data-contract-reviewer F1, 2026-09-18). Seçilen kanıt okunabilir yapılandırılmış beyan değilse
+  // (ör. yalnız user_ocr metni seçildi) beyan okunabilir sayılmaz.
+  const selectedDeclaration = declarationEvidence.find((e) => e.id === declarationField.selectedEvidenceId) ?? null;
+  const readable =
+    selectedDeclaration && isStructuredSource(selectedDeclaration) && selectedDeclaration.structuredValue?.status === 'readable'
+      ? selectedDeclaration
+      : null;
   const ocr = declarationEvidence.find((e) => e.source.source === 'user_ocr' && e.rawText) ?? null;
   const ocrText = ocr?.rawText ?? null;
   let allergenDeclaration: AllergenDeclaration = ABSENT;

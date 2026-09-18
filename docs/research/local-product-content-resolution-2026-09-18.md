@@ -3,6 +3,9 @@
 Karar: `docs/decisions/ADR-005-local-product-content-resolution.md`. Kanıt:
 `docs/research/evidence/off-content-resolution-2026-09-18.live.json`. Fiyat kaynakları bu belgede yer almaz.
 
+Atıf: kanıt dosyası ve `recordedEvidence.ts` "Contains data from Open Food Facts, available under the Open
+Database License" (https://openfoodfacts.org; ODbL/DbCL; görseller kopyalanmadı, içerik metni alınmadı).
+
 Bütçe: 5/12 web araması, birincil kaynak okuma 4 belge + 9 canlı OFF isteği (≤15). Aynı kaynak iki kez okunmadı.
 
 ## 1. Mimari karşılaştırması (uygulanabilir üç seçenek)

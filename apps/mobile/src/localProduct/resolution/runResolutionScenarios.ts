@@ -15,14 +15,14 @@
 declare const process: { exitCode?: number };
 
 import { deriveAllergenState } from '../../contracts/generated';
-import type { AllergenDeclaration } from '../../contracts/generated';
+import type { AllergenDeclaration, VerifiedLocalProduct } from '../../contracts/generated';
 import { isAlternativeCandidateSafeForAllergyProfile } from '../alternativeAllergenFilter';
 import { createContributionDraft } from '../contributionDraft';
 import type { ContributionDraft, OcrCandidate, ProductFactsWire } from '../types';
 import { emptyUserSensitivityProfile } from '../../userProfile/userProfileTypes';
 import { buildIdentityKey, classifyMatch, isSameGtin, normalizeGtin } from './identity';
 import { mergeCandidates } from './mergeEngine';
-import { createContributionDraftProvider, createOffProvider, createVerifiedLocalProvider, draftCandidate, emptyVerifiedLocalStore, offCandidateFromProductFacts } from './providers';
+import { createContributionDraftProvider, createOffProvider, createVerifiedLocalProvider, draftCandidate, emptyVerifiedLocalStore, offCandidateFromProductFacts, verifiedCandidateFromRecord } from './providers';
 import { RECORDED_NEGATIVE_CONTROL, RECORDED_NOT_FOUND_GTIN, recordedAlbeniComplete, recordedCokokremPartial, recordedTorkuSearchSample, recordedWefoodNoAllergenTags } from './recordedEvidence';
 import { applyHumanFieldChecks, buildReviewItems } from './review';
 import { runProductResolution } from './resolve';
@@ -226,6 +226,42 @@ scenario('15 Ekran metinleri: on durum ayrı; olumlu güvenlik iddiası yok; inc
   const draft = makeDraft('8690000000010', [ocr('productName', 'x'), ocr('allergenDeclaration', 'süt')]);
   const items = buildReviewItems(draft, null);
   assert(items[0].isAllergen && items[0].photo?.kind === 'allergen', 'alerjen öğesi ilk sırada ve fotoğrafla eşleşmiş');
+});
+
+scenario('16 Aynı GTIN: OFF readable beyan + rafskoru_verified readable beyan → doğrulanmış olan seçilir (sağlayıcı sırasından bağımsız)', () => {
+  const off = offCandidateFromProductFacts('8690504034506', recordedAlbeniComplete);
+  const verifiedRecord: VerifiedLocalProduct = {
+    id: 'vlp-test-1',
+    gtin: '8690504034506',
+    status: 'verified',
+    claims: [
+      {
+        field: 'allergenDeclaration',
+        value: {
+          status: 'readable',
+          declaredTags: ['milk', 'nuts'],
+          traceTags: ['soybeans'],
+          source: { source: 'rafskoru_verified', confidence: 'high', observedAt: '2026-09-10T10:00:00.000Z', evidenceId: 'ev-test-1' },
+        },
+        evidenceId: 'ev-test-1',
+        verificationRecordId: 'vr-test-1',
+        provenance: { source: 'rafskoru_verified', confidence: 'high', observedAt: '2026-09-10T10:00:00.000Z', evidenceId: 'ev-test-1' },
+      },
+    ],
+    evidenceIds: ['ev-test-1'],
+    verificationRecordIds: ['vr-test-1'],
+    createdAt: NOW,
+    updatedAt: NOW,
+  };
+  const verified = verifiedCandidateFromRecord('8690504034506', verifiedRecord);
+  assert(verified, 'doğrulanmış aday üretilmeli');
+  for (const order of [[off, verified!], [verified!, off]]) {
+    const merged = mergeCandidates('8690504034506', order);
+    assert(merged.fieldSources.allergenDeclaration?.source === 'rafskoru_verified', 'beyan kökeni rafskoru_verified olmalı (sıra: ' + order.map((c) => c.providerId).join('>') + ')');
+    assert(merged.allergenDeclaration.status === 'readable' && merged.allergenDeclaration.traceTags.includes('soybeans'), 'gösterilen beyan doğrulanmış kaydın beyanı olmalı');
+    const conflict = merged.conflicts.find((c) => c.field === 'allergenDeclaration');
+    assert(conflict?.state === 'resolved' && conflict.rule === 'verified_over_unverified' && conflict.preferredEvidenceId === merged.fields.allergenDeclaration.selectedEvidenceId, 'çatışma kaydı ile seçilen kanıt tutarlı olmalı');
+  }
 });
 
 (async () => {

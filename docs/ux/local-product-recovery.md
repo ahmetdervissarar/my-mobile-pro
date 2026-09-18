@@ -16,7 +16,7 @@ yana; her alan Doğrula / Düzelt / Okunamıyor; alerjen bloğu en üstte). On a
 (`providers.ts`; üretici kaynağı `not_implemented`, sahte adapter yok). Sonuç `locally_reviewed_candidate`;
 `rafskoru_verified` değildir, alerjen durumu `unknown_or_unverified` kalır, hiçbir yere gönderilmez.
 `product-result.tsx`'e yalnız `onReviewDraft` geri çağrısı eklendi. Doğrulama: `runResolutionScenarios.ts`
-15/15 · risk 39/39 · yerel ürün 11/11 · alternatif filtre 14/14 · `npx tsc --noEmit` PASS · wording guard PASS.
+16/16 · risk 39/39 · yerel ürün 11/11 · alternatif filtre 14/14 · `npx tsc --noEmit` PASS · wording guard PASS.
 Ekran görüntüsü alınmadı; "görsel olarak doğrulandı" iddiası yoktur. Araştırma ve gerçek GTIN denemesi:
 `docs/research/local-product-content-resolution-2026-09-18.md`.
 

@@ -7,8 +7,12 @@
  * kurallarıyla (`openFoodFactsAdapter.ts`: allergenInfo yalnız etiket varsa `present`; eksik alan →
  * `partial`) mobil `ProductFactsWire` biçimine aktarılmıştır. Yalnız senaryo koşucusu kullanır;
  * ekrana ürün verisi olarak GİRMEZ. İçerik metinleri kısaltılmadan alınmadı; yalnız yapılandırılmış
- * alanlar (etiketler, skorlar, durum) korunur — bu dosya OFF'un kopyası değildir (ODbL atfı: Open
- * Food Facts, https://openfoodfacts.org).
+ * alanlar (etiketler, skorlar, durum) korunur — bu dosya OFF'un kopyası değildir.
+ *
+ * Atıf: "Contains data from Open Food Facts, available under the Open Database License"
+ * (https://openfoodfacts.org, ODbL v1.0; kayıt içerikleri DbCL). Görseller kopyalanmadı; `imageUrl`
+ * yalnız OFF'un kendi adresine referanstır (CC BY-SA). Bu dosya yeniden dağıtılan bir veritabanı
+ * değildir; dışa aktarım başlarsa share-alike yükümlülüğü ayrıca değerlendirilir (ADR-005).
  */
 
 import type { ProductFactsWire } from '../types';

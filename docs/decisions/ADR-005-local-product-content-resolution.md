@@ -63,8 +63,17 @@ Bu görev fiyat araştırması değildir; fiyat sağlayıcıları, ağırlıklar
 
 ## Sonuçlar
 
-- Testler: `runResolutionScenarios.ts` 15/15 (zorunlu 11 + gerçek kaydedilmiş OFF kanıtı 2 + güven yokluğu +
-  metin). Mevcut koşucular değişmedi: risk 39/39, yerel ürün 11/11, alternatif filtre 14/14.
+- Testler: `runResolutionScenarios.ts` 16/16 (zorunlu 11 + gerçek kaydedilmiş OFF kanıtı 2 + güven yokluğu +
+  metin + doğrulanmış-beyan önceliği). Mevcut koşucular değişmedi: risk 39/39, yerel ürün 11/11, alternatif
+  filtre 14/14.
+- Denetim (2026-09-18, birer tur): `product-data-contract-reviewer` F1 (yüksek) — alerjen beyanı bloğu alan
+  seçiminden ayrı ikinci bir seçim yapıyordu; düzeltildi, senaryo 16 ile kilitlendi. `allergen-safety-reviewer`:
+  yüksek/orta bulgu yok; F1 (düşük): inceleme ekranı OFF adayını içermiyor, kayıtlı OFF beyanı karşılaştırma
+  için görünmüyor → ürün kararı (aşağıda). `legal-privacy-reviewer`: profil verisi kayda/log'a yazılmıyor;
+  OFF tam atıf metni eklendi; dışa aktarım başlarsa share-alike ve `contributorPseudonymousId` uzman görüşü ister.
+- Açık kararlar: (1) inceleme ekranına OFF adayının eklenmesi (backend `resolve` çağrısı ekler); (2)
+  `locally_reviewed_candidate` durumunun backend `VerifiedLocalProductStatus`'a taşınıp taşınmayacağı;
+  (3) `MergedProductRecord`'dan `UsabilityCapabilities`/`CompletenessTier` türetimi (bu turda üretilmiyor).
 - Gerçek veri denemesi: 7 GTIN (6 bulundu, 1 OFF 404), v2 arama 13 Torku adayı; kanıt dosyası
   `docs/research/evidence/off-content-resolution-2026-09-18.live.json`.
 - Yayın engelleri sürüyor: zorunlu dört alerjenin profil modeli, gerçek cihaz görsel testi, kalıcı fotoğraf

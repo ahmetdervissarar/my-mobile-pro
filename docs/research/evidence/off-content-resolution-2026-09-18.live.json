@@ -1,4 +1,5 @@
 {
+  "attribution": "Contains data from Open Food Facts, available under the Open Database License (https://openfoodfacts.org). Record contents: DbCL. Images not copied; ingredient text not stored.",
   "measuredAt": "2026-09-18T19:30:16.432Z",
   "userAgent": "RafSkoru-research/0.1 (closed beta content-resolution spike; github.com/ahmetdervissarar/my-mobile-pro)",
   "endpoint": "GET https://world.openfoodfacts.org/api/v2/product/{gtin}.json?fields=…",
