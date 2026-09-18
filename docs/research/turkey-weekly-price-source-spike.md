@@ -7,6 +7,7 @@
 - Kanıt: `docs/research/evidence/open-prices-probe-2026-09-18.{summary.live.json,report.live.md}`,
   `docs/research/evidence/open-prices-try-records-2026-09-18.md`. Fixture çıktısı bu belgede hiçbir yerde kullanılmadı.
 - Bu belge karar desteğidir; hukuki görüş değildir (bkz. §6).
+- Revizyon 2026-09-18 (ikinci tur): proje sahibinin önceki oturumlarda kapattığı yollar `docs/research/price-source-history.md` içine kaydedildi; bu belgedeki "önerilen/yedek yol" ve 30 günlük saha planı kaldırıldı. Ölçümler (§1–§2, §4) değişmedi.
 
 ## 0. Sonuç (özet)
 
@@ -17,8 +18,8 @@
 | Market Fiyatı (TÜBİTAK BİLGEM) açık API sunuyor mu? | **Belgelenmiş açık API bulunamadı; yokluğu kesin olarak kanıtlanmadı.** Resmî TÜBİTAK duyurusu 7 zincirin verisinin BİLGEM'e aktarıldığını ve temizlenmiş verinin **CimriMarket ve MarketTamam** ile paylaşıldığını söylüyor → yazılı paylaşım **emsali var**, açık API/başvuru prosedürü **bulunamadı**. Site tek sayfa uygulaması; kullanım koşulları bu ortamda okunamadı (§4.1). |
 | Perakendeci resmî API/feed var mı? | **Hayır.** Migros B2B, CarrefourSA/A101/BİM tedarikçi formları ve ŞOK B2B tedarik portalıdır, fiyat verisi erişimi değildir. Trendyol geliştirici API'si yalnız satıcının kendi listeleri içindir (doğrulandı); Hepsiburada aynı model (ikincil kaynak; portal 403). Zincir siteleri egress'te engelli. |
 | `seed-candidates.json` GTIN taşıyor mu? | **Hayır.** 11 adayın hiçbirinde `gtin/barcode` alanı yok; depodaki 869… örnek kodların check-digit'i geçersiz (`8690000000001`, `8691004000050`). GTIN anahtarlı hiçbir kaynakla eşleşemez. **Her yolun 1. haftası GTIN atamasıdır.** |
-| Önerilen yol | **A — "Kanıtlı gözlem hattı"**: kapalı beta sepeti için haftalık, kanıt kaydı bağlantılı (etiket/fiş fotoğrafı) fiyat gözlemi; kayıt Open Prices'a resmî API ile katkı + backend'e `open_prices` kaynağı olarak haftalık içe aktarım. **A otomatik çevrim içi haftalık fiyat çözümü değildir**; kısa vadeli, insan emeğine dayalı kanıt/ürün doğrulama köprüsüdür ve fiyat sorununu çözmez. Ölçeklenebilir üretim hedefi yazılı izinli BİLGEM (B) veya perakendeci feed'idir (C). Kod öncesi insan onayı gerekir (§7). |
-| Yedek yol | **B — Market Fiyatı / TÜBİTAK BİLGEM yazılı veri paylaşımı başvurusu** (A ile paralel başlatılır; cevap gelene kadar kod yazılmaz). |
+| Sonuç | **Bugün RafSkoru'nun bütün sepeti kapsayan, otomatik, haftalık ve izinli çevrim içi fiyat kaynağı çözülememiştir.** Open Prices yalnız şema/araştırma referansıdır; üretim fiyat çözümü olarak önerilmez. TÜBİTAK BİLGEM erişimi, zincir ortaklığı, REM People, JoJ/Camgöz, CollectAPI ve haftalık fiziksel raf toplama daha önce kapanmıştır (`price-source-history.md`, proje sahibi beyanı; yazışmalar henüz repoda değil). |
+| Bundan sonrası | İnsan kararı gerektiren iki ürün seçeneği (§7): (1) MVP'yi otomatik market karşılaştırması olmadan yayımlamak, fiyat alanı `veri yok`/opsiyonel referans; (2) seçili çevrim içi URL'lerde izinli bir hizmetle dar "çevrim içi referans fiyat" denemesi. Bu belge seçim yapmaz. |
 
 ## 1. Erişim doğrulaması (kısa istekler, 2026-09-18)
 
@@ -71,19 +72,24 @@ Daha derin sayfalar OFF tarafından reddedildi (HTTP 503 ve 401); tekrar denenme
 Yorum: Türkiye'de Open Prices verisi **birkaç bireysel katkıcının** girişidir; zincir, şube ve ürün kapsamı rastlantısaldır, güncelleme ritmi haftalık değildir.
 Ancak şema RafSkoru'nun köken kurallarıyla (G1, G2) birebir uyumludur: `product_code`, `date` (= `observedAt`), `proof` (= kanıt), `location` (= şube), `price_is_discounted`.
 
-## 3. Karar tablosu
+## 3. Karar tablosu (durum özeti; önerilen/yedek yol yok)
 
-| Seçenek | Kapsam (kanıt) | Güncellik | GTIN anahtar | Şube düzeyi | İzin / lisans | Maliyet | İlk veri | Değişmez risk | Karar |
-|---|---|---|---|---|---|---|---|---|---|
-| **A. Kanıtlı gözlem hattı** — ekip/beta kullanıcısı haftalık etiket-fiş fotoğrafı; Open Prices'a resmî API ile katkı; backend'e haftalık `open_prices` içe aktarımı | Bugün 27 kayıt; MVP hedefi 30 GTIN × 3 mağaza × 4 hafta = ölçülecek | Bizim ritmimiz (haftalık) | Evet | Evet (OSM) | ODbL (atıf + paylaş-benzer; katkı hesabı gerekir) | İşgücü: **planlama varsayımı** ~2–3 saat/hafta (ölçülmedi; 1. saha turunda ölçülecek değişken); API ücretsiz | 1. hafta | Düşük: `isSynthetic=false`, doğrulama düzeyi görünür; alerjen kapısına dokunmaz | **Önerilen** — ODbL uzman görüşü (§8.4) olumlu dönene kadar kod yazılmaz |
-| **B. Market Fiyatı / TÜBİTAK BİLGEM yazılı veri paylaşımı** | 7 zincir, ~50 bin ürün, şube bazlı (resmî duyuru; ölçülemedi) | "Anlık" (duyuru) | Bilinmiyor (belge yok) | Duyuruya göre evet | Yazılı protokol gerekir; emsal: CimriMarket, MarketTamam | Bilinmiyor | Belirsiz (haftalar–aylar) | Orta: şartlar okunamadı; KVKK/ticari sır maddeleri belirsiz | **Yedek** — başvuru hemen, kod sonra |
-| C. Perakendeci doğrudan ortaklık (Migros, CarrefourSA, A101, BİM, ŞOK) | Zincir başına tam | Zincire bağlı | Muhtemelen | Zincire bağlı | Sözleşme; tedarikçi portalları veri paylaşımı için değil | İş geliştirme süresi | Aylar | Düşük teknik, yüksek zaman | Ertele; B olumsuz dönerse tek zincirle pilot |
-| D. Ticari fiyat izleme sağlayıcısı (Price2Spy, REM People vb.) | Türkiye market kapsamı kanıtı bulunamadı | Sağlayıcıya bağlı | Belirsiz | Çoğu çevrim içi fiyat (şube değil) | Sağlayıcının veri toplama yöntemi ve kullanım hakkı **yazılı** olmalı (ADR-002 şartı); aksi E1 ihlali riski | Ücretli | Sözleşmeyle | Yüksek belirsizlik | Reddet (yazılı yöntem+hak kanıtı gelene kadar); ADR gerekir |
-| E. Mevcut durum (manual_beta + sentetik referans) | 11 seed, GTIN'siz | Yok | Hayır | Hayır | — | 0 | — | Sentetik fiyat canlı gibi görünme riski sürüyor (G1) | Kabul edilemez son durum; yalnız A'ya köprü |
-| F. Resmî olmayan API / scraping (arşiv `marketfiyati` istemcisi, Apify "aktüel scraper" vb.) | — | — | — | — | **Yasak** (CLAUDE.md, E1, ADR-001) | — | — | — | **Reddet** |
+Kanıt düzeyi: `ölçüldü` = bu depoda kanıt dosyası; `beyan` = proje sahibi tarafından bildirilen geçmiş karar, dayanak yazışmaları henüz repoda değil; `belge` = kamuya açık birincil kaynak. Kapanmış yolların gerekçesi ve yeniden açılma şartı: `docs/research/price-source-history.md`.
 
-Tek önerilen yol: **A**. Tek yedek yol: **B**. C ve D, B'nin sonucuna göre 30 gün sonra yeniden değerlendirilir.
-A, otomatik çevrim içi haftalık fiyat çözümü değildir: yalnız kısa vadeli, insan emeğine dayalı bir kanıt/ürün doğrulama köprüsüdür. Ölçeklenebilir üretim hedefi yazılı izinli BİLGEM (B) veya perakendeci feed'idir (C); bu belge fiyat sorununu çözülmüş saymaz.
+| Seçenek | Kapsam | Güncellik | GTIN | Şube | İzin / lisans | Durum | Kanıt düzeyi |
+|---|---|---|---|---|---|---|---|
+| Open Prices (ODbL; API + haftalık dump) | TR: 27 fiyat / 26 GTIN / 14 konum; OFF-TR kesişimi 21 / 11.404 | Son 30 günde 5 kayıt; haftalık değil | Evet | Evet (OSM) | ODbL; paylaş-benzer sorusu uzman görüşü ister | **Yalnız şema/araştırma referansı**; üretim fiyat kaynağı değil | ölçüldü |
+| TÜBİTAK BİLGEM / Market Fiyatı resmî erişim | 7 zincir, ~50 bin ürün (duyuru) | "Anlık" (duyuru) | Bilinmiyor | Duyuruya göre evet | Yazılı protokol gerekir; belgelenmiş açık API bulunamadı | **Kapalı**: görüşme yapıldı, izin alınamadı; yalnız yeni belgelenmiş kamu erişimi veya yeni yazılı davetle açılır | beyan + belge |
+| Gizli endpoint / resmî olmayan istemci / scraping / dolaylı MarketTamam-Cimri | — | — | — | — | Yasak (E1, ADR-001) | **Reddedildi (kalıcı)** | beyan + kural |
+| Zincir marketlerle doğrudan veri ortaklığı | Zincir başına | Zincire bağlı | Muhtemelen | Zincire bağlı | Sözleşme | **Kapalı (bu aşama)**: birkaç firma ile görüşüldü, erken aşamada gerçekçi değil; 30 günlük çözüm değil | beyan + belge (yalnız tedarikçi portalları bulundu) |
+| REM People | 100+ platform, günlük (beyan) | Günlük (beyan) | Belirsiz | Çevrim içi ağırlıklı | API dışarı açılmıyor; kategori bazlı yıllık sözleşme | **Kapalı**: pahalı, aşamaya uygun değil | beyan |
+| JoJ / Camgöz | Çalıştı | — | — | — | Kredi modeli | **Kapalı (ana kaynak olarak)**: 500 kredi ≈ 19 istek | beyan |
+| CollectAPI | — | — | — | — | — | **Kapalı**: paketli ürün ve zincir market fiyatına uygun değil | beyan |
+| Haftalık fiziksel raf/mağaza toplama (eski "yol A") | Ekip emeğiyle sınırlı | Haftalık (emekle) | Evet | Evet | ODbL (Open Prices'a yazılırsa) | **Kapalı**: proje sahibi için operasyonel olarak mümkün ve sürdürülebilir değil; önerilmez | beyan |
+| Price2Spy benzeri çevrim içi izleme (seçili URL) | Yalnız seçili çevrim içi ürün URL'leri; raf/şube/tüm sepet yok | Hizmete bağlı | URL eşlemesiyle | Hayır | Hizmetin toplama yöntemi ve kullanım hakkı yazılı olmalı (ADR-002) | **Sınırlı**: en fazla "çevrim içi referans fiyat" (§7 seçenek 2) | beyan |
+| Mevcut durum (manual_beta + sentetik referans) | 11 seed, GTIN'siz | Yok | Hayır | Hayır | — | Köprü değil, son durum da değil; sentetik etiket görünür kalmalı (G1) | ölçüldü (kod) |
+
+Sonuç: **Bugün RafSkoru'nun bütün sepeti kapsayan, otomatik, haftalık ve izinli çevrim içi fiyat kaynağı çözülememiştir.** Bu belge önerilen veya yedek yol tanımlamaz; §7'deki iki ürün seçeneği insan kararına bırakılmıştır.
 
 ## 4. Resmî kanal araştırması (yalnız resmî API / feed / yazılı ortaklık)
 
@@ -97,7 +103,7 @@ A, otomatik çevrim içi haftalık fiyat çözümü değildir: yalnız kısa vad
   kapatılmadı → **metin okunamadı**. İnsan görevi: bu altı sayfayı tarayıcıda okuyup API/veri paylaşımı ve yeniden kullanım maddelerini not etmek.
 - Belgelenmiş API, geliştirici portalı veya başvuru formu **bulunamadı**. Arşivdeki resmî olmayan istemci (`_archive/skanr-web/src/server/products.functions.ts`)
   kullanılmadı ve kullanılmayacak (ADR-001).
-- Yol: `/bize-ulasin` + TÜBİTAK İletişim Merkezi üzerinden yazılı "araştırma/tüketici bilgilendirme amaçlı veri paylaşımı" başvurusu; emsal olarak CimriMarket/MarketTamam paylaşımı referans gösterilir.
+- Geçmiş: proje sahibi beyanına göre TÜBİTAK BİLGEM ile resmî erişim görüşmesi daha önce yapıldı ve olumlu izin alınamadı (`price-source-history.md` #1; yazışmalar henüz repoda değil). Yeniden başvuru **önerilmez**; yalnız yeni belgelenmiş kamu erişimi veya TÜBİTAK'tan yeni yazılı davet çıkarsa açılır.
 
 ### 4.2 Zincir marketler
 | Zincir | Bulunan resmî kanal | Fiyat verisi erişimi? | Kaynak (erişim 2026-09-18) |
@@ -107,7 +113,7 @@ A, otomatik çevrim içi haftalık fiyat çözümü değildir: yalnız kısa vad
 | A101 | "Tedarikçi olmak istiyorum" formu, kurumsal satış formu | Hayır | https://www.a101.com.tr/kurumsal-satis-formu (egress engelli) |
 | BİM | Tedarikçi başvurusu + "Tedarikçi – İş Ortağı KVKK" metni | Hayır | https://www.bim.com.tr/Categories/696/tedarikci-isortagi-kvkk.aspx (egress engelli) |
 | ŞOK | Şok Market B2B portalı | Hayır | https://b2b.sokmarket.com.tr/ (egress engelli) |
-Sonuç: beş zincirin de yalnız tedarikçi/iş ortağı kanalı bulundu; tüketici veya üçüncü taraf fiyat feed'i belgesi bulunamadı (yokluğu kanıtlanmadı; siteler egress engelli). Bu zincirlerin verisi resmî olarak yalnız Market Fiyatı üzerinden (B) toplu erişilebilir görünüyor.
+Sonuç: beş zincirin de yalnız tedarikçi/iş ortağı kanalı bulundu; tüketici veya üçüncü taraf fiyat feed'i belgesi bulunamadı (yokluğu kanıtlanmadı; siteler egress engelli). Doğrudan ortaklık proje sahibi beyanına göre daha önce birkaç firma ile görüşüldü ve bu aşamada gerçekçi bulunmadı (`price-source-history.md` #3).
 
 ### 4.3 Pazaryeri / veri sağlayıcı
 - Trendyol Geliştirici Portalı (https://developers.trendyol.com/docs, okundu): satıcı entegrasyonu; "ürün filtreleme servisleri" satıcının kendi ürünleri içindir; üçüncü tarafa pazar geneli fiyat okuma yok.
@@ -118,10 +124,10 @@ Sonuç: beş zincirin de yalnız tedarikçi/iş ortağı kanalı bulundu; tüket
 
 ## 5. Sözleşme etkisi (kod değişmedi; onay gerektiren noktalar)
 - `apps/backend/src/price/types.ts:12-17` `PriceSource` bugün `manual_beta | beta_reference | last_known | retailer_scraper | online_test_seed`.
-  `retailer_scraper` değeri E1 ile çelişen bir ad taşır ve kullanılmamalıdır; `open_prices` (A) ve `market_fiyati_feed` (B) değerleri **yoktur** → eklenmesi korumalı bölge değişikliğidir (S2), mobil tip aynı PR'da güncellenir (G2).
+  `retailer_scraper` değeri E1 ile çelişen bir ad taşır ve kullanılmamalıdır; `open_prices` ve `market_fiyati_feed` değerleri **yoktur** (ikisi de bugün planlanmıyor; kayıt amaçlı) → eklenmesi korumalı bölge değişikliğidir (S2), mobil tip aynı PR'da güncellenir (G2).
 - `product-data-provenance` skill'i `retailer_feed` (izinli, ileride) sınıfını tanımlar; B bu sınıfa, A ise yeni `open_prices` sınıfına (isSynthetic=false, doğrulama düzeyi `community_proof` veya RafSkoru ekibi girdiyse `verified_observation`) girer.
 - Open Prices kaydı → `PriceOffer` (ADR-002) eşlemesi: `product_code→barcode`, `price/currency`, `date→observedAt`, `location.osm_name→marketName`, `location.osm_id→store`, `price_is_discounted→note`, `proof.type→verification`, `matchType=barcode`. `freshnessLabel`: ≤7 gün `recent`, >7 gün `stale`; hiçbir Open Prices kaydı `live` sayılmaz.
-- Sentetik/`unverified` kayıttan `last_known` türetilmez kuralı A için de geçerlidir.
+- Sentetik/`unverified` kayıttan `last_known` türetilmez kuralı olası her yeni kaynak için geçerlidir.
 - `product-data-contract-reviewer` denetimi (2026-09-18, doğrulanmış satırlar):
   - `retailer_scraper` hiçbir sağlayıcı tarafından üretilmiyor; yalnız tip (`backend types.ts:16`, `mobile types.ts:5`), `attachPriceConfidence` eşlemesi (`priceProviderService.ts:425`, `retailer_scraper→live_api`) ve `confidence.smoke.ts:12` fixture'ında var → ölü kod yolu; ADR-002 "aktif kaynak" listesiyle çelişiyor.
   - `PriceStatus` (`live|manual_beta|beta_reference|last_known|internal_test|unavailable`) "topluluk kanıtlı, canlı değil" durumunu taşıyamıyor; `attachPriceConfidence` (`priceProviderService.ts:414-423`) bilinmeyen durumu `beta_reference`'a (sentetik ima) sıkıştırır → gerçek ama bayat gözlem sentetik gibi etiketlenir (G4 riski). `PriceConfidenceStatus`'ta `stale` yok; `PriceFreshnessLabel` (`live|recent|stale|reference`) ayrı bir enum.
@@ -133,36 +139,54 @@ Sonuç: beş zincirin de yalnız tedarikçi/iş ortağı kanalı bulundu; tüket
 ## 6. Hukuk / gizlilik notları (uzman görüşü gerekir; hüküm değildir)
 - Open Prices verisi ODbL: kaynak atfı, paylaş-benzer ve "özgür olmayan veriyle birleştirmeme" şartı (`docs/guides/data.md`, erişim 2026-09-18). RafSkoru'nun manual_beta/seed fiyatlarıyla aynı tabloda birleştirilmesi ODbL "türev veritabanı" sorusunu doğurur → **uzman görüşü**.
 - Konum verisi OSM kaynaklıdır (ODbL, atıf zorunlu). Kanıt görselleri (fiş) kişisel veri içerebilir; RafSkoru fiş görselini **saklamaz**, yalnız fiyat satırını alır; `owner` alanı hiçbir katmanda tutulmaz (probe beyaz listesi).
-- Open Prices'a katkı (A) katkıcı hesabı ve kullanıcı sözleşmesi gerektirir; hesap açma ve yazma insan onaylıdır (verification-gates). Open Prices'ın kendi ToS/gizlilik metni bu turda **okunmadı**; fiş görselinin Open Prices tarafında saklanması RafSkoru'nun kontrolü dışındadır ve "saklamama" kararı yalnız RafSkoru deposunu kapsar (`legal-privacy-reviewer`, 2026-09-18).
-- Gelecekteki `open_prices` içe aktarıcısı probe'daki beyaz liste disiplinini (`tools/market-source-spike/probe.mjs:36-44`; `owner`, `owner_comment`, kanıt görseli, cihaz kimliği hariç) aynen taşımalı ve `product-data-contract-reviewer` tarafından ayrıca doğrulanmalıdır.
-- Okul gibi çocukla ilişkilendirilebilir OSM konumları (ör. "Mithatpaşa Ortaokulu", 6 kayıt) içe aktarımda ve saha turunda **hariç** tutulur; yalnız `shop=supermarket|convenience` etiketli konumlar alınır.
-- Market Fiyatı kullanım koşulları ve KVKK metni okunamadı (§4.1); B başvurusu öncesi insan tarafından okunmalı.
+- Open Prices'a katkı (bugün planlanmıyor) katkıcı hesabı ve kullanıcı sözleşmesi gerektirir; hesap açma ve yazma insan onaylıdır (verification-gates). Open Prices'ın kendi ToS/gizlilik metni bu turda **okunmadı**; fiş görselinin Open Prices tarafında saklanması RafSkoru'nun kontrolü dışındadır ve "saklamama" kararı yalnız RafSkoru deposunu kapsar (`legal-privacy-reviewer`, 2026-09-18).
+- Olası bir `open_prices` içe aktarıcısı (bugün planlanmıyor) probe'daki beyaz liste disiplinini (`tools/market-source-spike/probe.mjs:36-44`; `owner`, `owner_comment`, kanıt görseli, cihaz kimliği hariç) aynen taşımalı ve `product-data-contract-reviewer` tarafından ayrıca doğrulanmalıdır.
+- Okul gibi çocukla ilişkilendirilebilir OSM konumları (ör. "Mithatpaşa Ortaokulu", 6 kayıt) olası her içe aktarımda **hariç** tutulur; yalnız `shop=supermarket|convenience` etiketli konumlar alınır.
+- Market Fiyatı kullanım koşulları ve KVKK metni okunamadı (§4.1); yeniden açılma şartı oluşursa insan tarafından okunmalı.
 - Mevzuat sayfaları (mevzuat.gov.tr, Resmî Gazete) egress'te engelli → "kaynak bulunamadı": Tüketicinin Korunması / fiyat etiketi mevzuatı ile fiyat gösteriminin ilişkisi bu belgede dayanaksızdır.
 
-## 7. 30 günlük MVP planı (yol A, ölçülmüş bulgulara dayalı)
-Kapsam: kapalı beta sepeti (`seed-candidates.json` 11 ürün → GTIN atanmış 30 ürün), 3 mağaza (şehir **insan kararı**; erişilebilirlik gerekçesiyle Mersin pilot adayıdır — bir Migros, bir BİM, bir A101: Open Prices'ta zaten kaydı olan zincirler; okul/kantin gibi konumlar hariç), 4 haftalık gözlem. A bu planda köprüdür; B başvurusu 1. haftada paralel gönderilir.
+## 7. İnsan kararı gerektiren iki ürün seçeneği (30 günlük saha planı kaldırıldı)
 
-| Hafta | İş | Çıktı / ölçüt | Onay kapısı |
-|---|---|---|---|
-| 1 | Sepete GTIN atama (gerçek ambalajdan; check-digit doğrulama); Open Prices katkı hesabı ve ODbL/ToS okuması; Market Fiyatı sayfalarını (§4.1) insan okur ve B başvuru taslağı yazılır | 30 GTIN'in ≥28'i OFF'ta bulunuyor; başvuru mektubu | Hesap açma + B başvurusu gönderimi: **insan** |
-| 2 | 1. saha turu: 3 mağaza × 30 GTIN etiket fotoğrafı; Open Prices resmî API ile yazma (küçük pilot, ≤90 kayıt); `open_prices` içe aktarım tasarımı (ADR-004 taslağı: `PriceSource`/`PriceStatus`/`PriceConfidenceStatus` genişletme + doğrulama düzeyi alanı + `remember()` kapısı, backend ve mobil tip aynı PR'da, UI etiketi "topluluk kanıtlı gözlem — canlı değil") | Yazılan/toplam oran, hata kaydı, **ölçülen saat/hafta** (varsayım 2–3 saat yerine); ADR-004 taslağı | Yazma pilotu ve ADR: **insan**; `product-data-contract-reviewer` raporu |
-| 3 | 2. saha turu; içe aktarıcı (yalnız `product_code in (...)` sorgusu veya dump filtresi; haftalık; idempotent; `observedAt=date`, `isSynthetic=false`, doğrulama düzeyi görünür); smoke: 3 GTIN'lik gerçek yanıt fixture'ı | Kapsama: sepetin %≥80'inde ≤7 gün taze fiyat; eşleşme %100 GTIN | Kod PR'ı: verification-gates (tsc, smoke 34+, wording) |
-| 4 | 3.–4. saha turu; ölçüm raporu: kapsama, tazelik, saat/hafta maliyeti, indirim oranı, mağaza farkı; B cevabı varsa değerlendirme; C/D için karar | Karar notu: A devam / B geçiş / durdur | İnsan |
+Bu belge seçim yapmaz. Her iki seçenek de "otomatik, haftalık, izinli çevrim içi fiyat kaynağı" sorununu **çözmez**; bunu çözülmüş gibi gösteren metin üretilmez.
 
-Durma koşulları: yazma pilotu %20+ hata verirse; ODbL uzman görüşü "birleştirme yasak" derse; saha maliyeti >4 saat/hafta ise; B protokolü gelirse (A'nın gözlem hattı kanıt olarak sürer, kaynak önceliği B'ye geçer).
-Kod hiçbir aşamada `riskEngine.ts`, alerjen kapısı veya skor mantığına dokunmaz; fiyat yalnız fiyat skoru ve sepet toplamına girer, alerjen kararına girmez.
+### Seçenek 1 — MVP'yi otomatik market karşılaştırması olmadan yayımlamak
+Fiyat alanı `veri yok` veya opsiyonel, etiketli referans (`isSynthetic=true` / `beta_reference`, kullanıcıya görünür) olarak kalır; "en ucuz market", "market karşılaştırması" ve sepet toplamı iddiası üretilmez.
+
+| Artı | Eksi |
+|---|---|
+| Dış kaynak, hesap, sözleşme, anahtar gerekmez; E1/G1 riski yok | Fiyat ve sepet boyutu ürün değerinin bir parçasıdır (`closed-beta-readiness.md` §1); MVP bu boyut olmadan değerlendirilir |
+| Sağlık, içerik, alerjen kapısı ve köken alanları bugünkü kodla yayınlanabilir | `priceScore` ağırlığı ve `rafScore` bileşimi "fiyat yok" durumu için gözden geçirilmeli (ADR / insan kararı) |
+| Sentetik fiyatın canlı gibi görünme riski ortadan kalkar (seed/reference tamamen gizlenir veya açıkça etiketlenir) | Sepet ekranının değer önerisi daralır; UX yeniden yazılır |
+| Mevcut `manual_beta`/`last_known` yolları korunur ama üretimde bayrak arkasında kalır (D4) | Kullanıcı beklentisi yönetimi: "fiyat gelecek" vaadi verilmez |
+
+Durma koşulları: skor bileşiminde fiyatın 0 ağırlığı olumlu iddia dilini bozuyorsa; sentetik referans herhangi bir ekranda etiketsiz görünüyorsa; sepet toplamı hesaplanmaya devam ediyorsa.
+
+### Seçenek 2 — Seçili çevrim içi URL'lerde dar "çevrim içi referans fiyat" denemesi
+Yalnız izinli, yazılı sözleşmeli bir çevrim içi fiyat izleme hizmetiyle (Price2Spy benzeri; `price-source-history.md` #8), az sayıda (örn. ≤30) seçili çevrim içi ürün URL'si için. Çıktı "çevrim içi referans fiyat"tır: fiziksel raf fiyatı, şube fiyatı, "en ucuz market" veya tüm sepet kapsamı iddiası üretilmez.
+
+| Artı | Eksi |
+|---|---|
+| Gerçek, tarihli, kaynaklı bir fiyat gözlemi elde edilir (`isSynthetic=false`, `observedAt`, kaynak URL) | Kapsam seçili URL'lerle sınırlı; sepetin çoğu `veri yok` kalır; haftalık tüm sepet çözümü değildir |
+| Fiyat sözleşmesi (`PriceSource`, doğrulama düzeyi, `stale`) gerçek veriyle test edilir | Ücretli hizmet; hizmetin veri toplama yöntemi ve kullanım hakkı **yazılı** değilse E1 ihlali riski; ADR-002 şartı |
+| Otomatik ve tekrarlanabilir (hizmet ritmine bağlı) | Çevrim içi fiyat ≠ mağaza fiyatı; UI etiketi ("çevrim içi referans, mağaza fiyatı değil") zorunlu |
+| Küçük, geri alınabilir pilot | Hizmet seçimi, hesap, anahtar yönetimi ve sözleşme insan onayı gerektirir (verification-gates) |
+
+Durma koşulları: hizmet veri toplama yöntemini ve kullanım hakkını yazılı veremezse; URL eşlemesi GTIN ile doğrulanamıyorsa; UI'da "mağaza fiyatı" veya "en ucuz" izlenimi oluşuyorsa; maliyet pilot bütçesini aşarsa; hizmet CAPTCHA/bot koruması aşma gerektiriyorsa.
+
+Her iki seçenekte de kod `riskEngine.ts`, alerjen kapısı ve skor mantığına dokunmaz; sözleşme değişikliği (§5) ayrı ADR ve insan onayı ister.
 
 ## 8. Açık kararlar (insan)
-1. A'yı onaylıyor musun: Open Prices'a katkı hesabı + haftalık saha gözlemi (kim, hangi 3 mağaza)?
-2. B başvurusunu hangi kimlikle (kişi/şirket) ve hangi gerekçeyle göndereceğiz?
-3. `PriceSource`'a `open_prices` ekleme ve `retailer_scraper` değerini kaldırma/yeniden adlandırma için ADR-004 açılsın mı?
-4. ODbL paylaş-benzer sorusu için hukuk görüşü alınacak mı (A'nın ön şartı)?
-5. `PriceConfidence`'a doğrulama düzeyi alanı ve `PriceConfidenceStatus`'a `stale` eklenmesi Open Prices'tan **önce** ayrı PR mı, ADR-004 ile birlikte mi? `PriceConfidenceStatus` ile `PriceFreshnessLabel` birleştirilecek mi (migrasyon planı gerekir)?
+1. Seçenek 1 mi, Seçenek 2 mi (ya da ikisi sırayla)? Bu belge karar vermez.
+2. Seçenek 1 seçilirse: fiyat boyutu skor bileşiminden çıkarılacak mı, yoksa "veri yok" etiketiyle 0 ağırlık mı (ADR)?
+3. Seçenek 2 seçilirse: hangi hizmet, hangi URL listesi, bütçe, sözleşmede veri toplama yöntemi ve kullanım hakkı maddesi kim tarafından doğrulanacak?
+4. `PriceSource`'taki `retailer_scraper` ölü değerinin kaldırılması/yeniden adlandırılması için ADR-004 açılsın mı (her iki seçenekte de geçerli)?
+5. `PriceConfidence`'a doğrulama düzeyi alanı ve `PriceConfidenceStatus`'a `stale` eklenmesi ayrı PR mı, ADR-004 ile birlikte mi?
 6. `lastKnownPriceProvider.remember()`'ın kanıtsız `manual_beta`'yı da `last_known` yapması bugünkü bir provenance ihlali olarak ayrı görev açılsın mı?
+7. Kapanmış yolların dayanak yazışmaları (`price-source-history.md`, kanıt düzeyi "beyan") repoya eklenecek mi, eklenecekse nereye?
 
 ## 9. Ajan denetimleri (birer tur, salt okunur)
 - `legal-privacy-reviewer`: 6 konu; olumlu iddia dili bulunmadı; "kaynak bulunamadı": ODbL tam metni (egress), KVKK m.3 (egress), Open Prices ToS (okunmadı), marketfiyati.org.tr koşulları (SPA). Öneriler §3, §6, §7'ye işlendi.
-- `product-data-contract-reviewer`: 7 sapma/ekleme, 3 akış senaryosu; bulgular §5 ve §8'e işlendi. Sözleşme değişikliği mobil+backend'i aynı anda etkilediği için öneri değil sapma listesi verdi (durma koşulu).
+- `product-data-contract-reviewer`: 7 sapma/ekleme, 3 akış senaryosu; bulgular §5 ve §8'e işlendi. (Her iki denetim, saha planı kaldırılmadan önceki sürüm üzerinde yapıldı; ölçüm ve sözleşme bulguları geçerliliğini korur.) Sözleşme değişikliği mobil+backend'i aynı anda etkilediği için öneri değil sapma listesi verdi (durma koşulu).
 
 ## 10. İstek günlüğü
 - Probe canlı çalıştırma ×2 (v0.1.0 17:07 UTC ve v0.1.1 17:10 UTC; ikincisi `source` kırpması sonrası; sayılar aynı) = 20 GET.
