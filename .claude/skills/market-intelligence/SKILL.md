@@ -17,8 +17,8 @@ Kanıt ve karar: `docs/research/turkey-weekly-price-source-spike.md` (+ `docs/re
 ## Kaynak merdiveni (2026-09-18 durumu)
 | Sıra | Kaynak | Durum | Kullanım |
 |---|---|---|---|
-| 1 | Yazılı izinli feed (Market Fiyatı/TÜBİTAK BİLGEM protokolü, zincir sözleşmesi) | Başvuru yolu; API yok | `retailer_feed`; `observedAt` ile `live` olabilir, UI metni iddia sınırından geçer ("resmî fiyat" denmez) |
-| 2 | Open Prices (ODbL; API + haftalık JSONL dump) | TR: 27 fiyat / 26 GTIN / 14 konum — kapsam yetersiz, şema uygun | `open_prices` (önerilen: kendi kanıtlı gözlemlerimizle büyütülür); `recent/stale`, asla `live` |
+| 1 | Yazılı izinli feed (Market Fiyatı/TÜBİTAK BİLGEM protokolü, zincir sözleşmesi) | Başvuru yolu; belgelenmiş açık API bulunamadı (yokluğu kanıtlanmadı) — **ölçeklenebilir üretim hedefi budur** | `retailer_feed`; `observedAt` ile `live` olabilir, UI metni iddia sınırından geçer ("resmî fiyat" denmez) |
+| 2 | Open Prices (ODbL; API + haftalık JSONL dump) | TR: 27 fiyat / 26 GTIN (21'i OFF-TR etiketli) / 14 konum; 27/27 `proof_id` bağlantılı, içerik doğrulanmamış — kapsam yetersiz, şema uygun | `open_prices` (yol A: kısa vadeli, insan emeğine dayalı köprü; **otomatik haftalık fiyat çözümü değildir**); `recent/stale`, asla `live` |
 | 3 | Kanıtlı saha gözlemi (etiket/fiş fotoğrafı, ekip) | MVP yolu A | `manual_beta` + `verified_observation` |
 | 4 | Ticari sağlayıcı | Yöntem ve hak yazılı değilse reddet; ADR gerekir | — |
 | ✗ | Resmî olmayan API / scraping | Yasak | — |

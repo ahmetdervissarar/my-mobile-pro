@@ -2,9 +2,9 @@
 
 Kaynak: `GET https://prices.openfoodfacts.org/api/v1/prices?currency=TRY&order_by=-date&size=100` (toplam 27, tek sayfa).
 Yalnız beyaz liste alanları; katkıcı (`owner`), kanıt görseli ve istemci cihaz bilgisi tutulmadı. Konum alanları OSM kaynaklıdır (ODbL).
-Bu tablo bir kapsam ölçümüdür; hiçbir satır RafSkoru için canlı fiyat sayılmaz (`isSynthetic=false`, doğrulama düzeyi: topluluk katkısı, kanıtlı).
+Bu tablo bir kapsam ölçümüdür; hiçbir satır RafSkoru için canlı fiyat sayılmaz (`isSynthetic=false`, doğrulama düzeyi: topluluk katkısı; kanıt kaydı bağlantılı, kanıt içeriği doğrulanmamış).
 
-| # | date | product_code (GTIN) | product_name | price | disc | mağaza (OSM adı) | ilçe | kanıt türü |
+| # | date | product_code (GTIN) | product_name | price | disc | mağaza (OSM adı) | ilçe | proof.type (API) |
 |---|---|---|---|---|---|---|---|---|
 | 1 | 2026-09-05 | 8683130038161 | algida cornetto oreo | 75.0 TRY | — | Migros | Güngören | PRICE_TAG |
 | 2 | 2026-09-04 | 80050278 | Ferrero Rocher t3 | 49.9 TRY | evet | Migros | Güngören | PRICE_TAG |
@@ -37,12 +37,17 @@ Bu tablo bir kapsam ölçümüdür; hiçbir satır RafSkoru için canlı fiyat s
 ## Türetilmiş sayılar
 
 - Kayıt: 27 · farklı GTIN: 26 · farklı konum: 14
-- Kanıtlı (proof_id): 27/27 · kanıt türü: {'PRICE_TAG': 18, 'RECEIPT': 9}
+- `proof_id` bağlantısı mevcut: 27/27 · `proof.type` (API alanı; görsel açılmadı, içerik doğrulanmadı): {'PRICE_TAG': 18, 'RECEIPT': 9}
 - İndirimli: 2
 - Yıla göre: {'2024': 2, '2025': 9, '2026': 16}
 - Son 30 / 90 / 365 gün (`date__gte` ile ayrı sorgu): 5 / 5 / 16
 - Mağaza adına göre kayıt: {'Migros (tüm formatlar)': 10, 'Mithatpaşa Ortaokulu': 6, 'Pehlivanoğlu': 5, 'BİM': 3, 'A101': 2, 'ŞOK Market': 1}
 - Ürün kaynağı (Open Prices `product.source`): {'off': 25, 'opf': 2}
+
+## OFF kesişimi (26 GTIN, `GET /api/v2/product/{code}?fields=code,countries_tags`, 1 s aralık)
+
+- OFF'ta kayıtlı: 24/26 · `en:turkey` etiketli: 21/26 · OFF'ta yok: 8682815041403, 8695077157959 (Open Prices `product.source=opf`) · OFF'ta var, Türkiye etiketi yok: 1230000168045 (NL), 80050278 (AU/MA/NZ/ES), 8699495573421 (FR).
+- Ham sonuç: `off-intersection-2026-09-18.json`.
 
 ## Ek istekler (probe dışı, salt okunur, 1 s aralık)
 
