@@ -41,6 +41,14 @@ bir alerjenle ("peanuts") yanlışlıkla eşleşir. OFF'un TÜR belirtmeyen gene
 OFF etiketi eklerken: önce "bu kelime başka, ilgisiz veya daha dar bir alerjenin içinde geçer mi?" diye
 sor; geçiyorsa serbest metne eklenmez, negatif test yazılır.
 
+## İnsan alan incelemesi (ADR-005)
+`app/package-review.tsx` + `src/localProduct/review/*`: fotoğraf ve aday metin yan yana; her alan için
+Doğrula / Düzelt / Okunamıyor (≥48 pt, `accessibilityState.selected`). Alerjen bloğu her zaman en üstte ve ilk
+öğedir; kullanıcı kararı beyanı `readable` yapmaz, sonuç `locally_reviewed_candidate`tır ("doğrulanmış değil"
+etiketi görünür). On ekran durumu `RESOLUTION_UI_COPY`'den gelir; yeni durum eklenirken wording guard'a
+başlığı eklenir. Kaynak çatışması gizlenmez: kayıtlı değer ve ambalaj kanıtı yan yana, "kayıt korunuyor"
+notuyla. `product-result.tsx` büyütülmez; yeni akış ayrı ekran ve bileşenlerde yaşar.
+
 ## Erişilebilirlik
 Renk tek anlam taşıyıcısı olmaz (ikon + metin). Dokunma alanı ≥48 pt. Her buton `accessibilityRole` + `accessibilityLabel`; durum değişimi `accessibilityLiveRegion`; devre dışı `accessibilityState`. Dinamik yazı açık; satır yüksekliği ölçeklenir. Teknik alan adı yerine Türkçe etiket.
 

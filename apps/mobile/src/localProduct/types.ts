@@ -61,16 +61,23 @@ export interface PackageCaptureStep {
   required: boolean;
 }
 
+export type CapturedPhotoStorage = 'cache' | 'persistent';
+
 export interface CapturedPhoto {
   kind: PackageCaptureStepKind;
   /**
-   * Cihazdaki GEÇİCİ önbellek dosyası (kamera cache URI'si); sözleşmeye taşınmaz. Kalıcı
-   * depolama bu sürümde yok (`expo-file-system` kurulmadı — yeni bağımlılık onayı gerekir);
-   * uygulama önbelleği temizlenirse bu dosya kaybolabilir. UI bunu açıkça belirtmelidir
-   * (bkz. `PHOTO_TEMPORARY_STORAGE_NOTICE`).
+   * Cihazdaki dosya URI'si. Çekim anında kamera önbelleği (`storage: 'cache'`); taslak kaydedilirken
+   * uygulamanın belge klasörüne (`Paths.document/rafskoru/photos/<taslak>/`) kopyalanır ve
+   * `storage: 'persistent'` olur (Aşama 6B, `photoStorage.ts`). Kopyalama başarısızsa taslak
+   * "kaydedildi" sayılmaz. Galeriye, backend'e veya başka servise gönderilmez; sözleşmeye taşınmaz.
    */
   localUri: string;
   takenAt: string;
+  storage: CapturedPhotoStorage;
+  /** Kalıcı kopyanın URI'si; yalnız `storage === 'persistent'` iken dolu. */
+  persistentUri: string | null;
+  /** Dosya içerik hash'i (MD5, `expo-file-system`); hesaplanamazsa null. */
+  contentHash: string | null;
 }
 
 export type OcrCandidateEntryMethod = 'none' | 'manual' | 'fixture';

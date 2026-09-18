@@ -21,6 +21,7 @@ import { CameraView, type BarcodeScanningResult, useCameraPermissions } from 'ex
 
 import { isLocalProductFixtureEnabled, isLocalProductRecoveryEnabled } from '../src/localProduct/featureFlag';
 import {
+  contributionDraftId,
   createContributionDraft,
   DRAFT_TEXT_FIELDS,
   PACKAGE_CAPTURE_STEPS,
@@ -28,6 +29,7 @@ import {
   summarizeContributionDraft,
 } from '../src/localProduct/contributionDraft';
 import { saveContributionDraft } from '../src/localProduct/contributionDraftStorage';
+import { deleteDraftPhotos, persistDraftPhotos } from '../src/localProduct/photoStorage';
 import { describeGtinValidationError, isValidGtin } from '../src/localProduct/gtin';
 import { FIXTURE_LABEL, ocrCandidateFixture } from '../src/localProduct/fixtures';
 import type { CapturedPhoto, ContributionDraft, DraftTextField, OcrCandidate, PackageCaptureStepKind } from '../src/localProduct/types';
@@ -102,7 +104,7 @@ export default function PackageCaptureScreen() {
       if (!photo?.uri) throw new Error('PHOTO_URI_MISSING');
       setPhotos((current) => ({
         ...current,
-        [step.kind]: { kind: step.kind, localUri: photo.uri, takenAt: new Date().toISOString() },
+        [step.kind]: { kind: step.kind, localUri: photo.uri, takenAt: new Date().toISOString(), storage: 'cache', persistentUri: null, contentHash: null },
       }));
       setSkipped((current) => current.filter((k) => k !== step.kind));
     } catch {
@@ -157,17 +159,26 @@ export default function PackageCaptureScreen() {
     setIsSaving(true);
     try {
       const orderedPhotos = PACKAGE_CAPTURE_STEPS.map((s) => photos[s.kind]).filter((p): p is CapturedPhoto => Boolean(p));
+      const now = new Date().toISOString();
+      const draftId = contributionDraftId(gtin, now);
+      // Önce fotoğraflar belge klasörüne kopyalanır; kopyalama başarısızsa taslak KAYDEDİLMEZ (Aşama 6B).
+      const persisted = persistDraftPhotos(draftId, orderedPhotos);
+      if (!persisted.ok) {
+        setSaveError(persisted.errorMessage ?? 'Fotoğraflar kalıcı olarak kaydedilemedi. Tekrar deneyin.');
+        return;
+      }
       const created = createContributionDraft({
         gtin,
-        photos: orderedPhotos,
+        photos: persisted.photos,
         skippedSteps: skipped,
         candidates,
         packagingVersion: packagingVersion || null,
-        now: new Date().toISOString(),
+        now,
       });
       const result = await saveContributionDraft(created);
       if (!result.ok) {
-        // Kayıt başarısız → "Taslak kaydedildi" GÖSTERİLMEZ; kullanıcı bilgilendirilir (proje sahibi düzeltmesi).
+        // Kayıt başarısız → "Taslak kaydedildi" GÖSTERİLMEZ; kopyalanan fotoğraflar temizlenir.
+        deleteDraftPhotos(draftId);
         setSaveError(result.errorMessage ?? 'Taslak kaydedilemedi. Tekrar deneyin.');
         return;
       }
@@ -190,10 +201,20 @@ export default function PackageCaptureScreen() {
           ))}
         </View>
         <Text style={styles.helper}>
-          Sınır: bu sürüm taslağı cihazda tutar, hiçbir yere göndermez. Sonraki görev: insan doğrulaması ve gönderim kanalı.
+          Sınır: bu sürüm taslağı cihazda tutar, hiçbir yere göndermez. Sonraki adım: alan alan inceleme (aday kalır, doğrulanmış olmaz).
         </Text>
-        <Pressable style={styles.primaryButton} accessibilityRole="button" accessibilityLabel="Ürün sonucuna dön" onPress={() => router.back()}>
-          <Text style={styles.primaryButtonText}>Ürün sonucuna dön</Text>
+        {draft.gtin ? (
+          <Pressable
+            style={styles.primaryButton}
+            accessibilityRole="button"
+            accessibilityLabel="Alan alan incelemeye geç"
+            onPress={() => router.replace({ pathname: '/package-review', params: { gtin: draft.gtin ?? '' } })}
+          >
+            <Text style={styles.primaryButtonText}>Alan alan incelemeye geç</Text>
+          </Pressable>
+        ) : null}
+        <Pressable style={styles.secondaryButton} accessibilityRole="button" accessibilityLabel="Ürün sonucuna dön" onPress={() => router.back()}>
+          <Text style={styles.secondaryButtonText}>Ürün sonucuna dön</Text>
         </Pressable>
       </ScrollView>
     );
@@ -319,8 +340,8 @@ export default function PackageCaptureScreen() {
         // Kamera izni gerekçesi önce gösterilir; OS izin isteği yalnız butona basınca tetiklenir.
         <View style={[styles.cameraWrapper, styles.rationaleBox]}>
           <Text style={styles.rationaleText}>
-            Bu adımda ambalajın fotoğrafını çekmek için kamera erişimi gerekir. Fotoğraf yalnız bu
-            cihazda, geçici olarak tutulur; bu sürümde hiçbir yere gönderilmez.
+            Bu adımda ambalajın fotoğrafını çekmek için kamera erişimi gerekir. Fotoğraf uygulamanın özel
+            depolama alanında tutulur; uygulama tarafından sunucuya gönderilmez.
           </Text>
           <Pressable style={styles.primaryButton} accessibilityRole="button" accessibilityLabel="Kamera izni ver" onPress={() => void requestPermission()}>
             <Text style={styles.primaryButtonText}>Kamera izni ver</Text>

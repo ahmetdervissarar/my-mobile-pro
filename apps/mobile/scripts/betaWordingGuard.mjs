@@ -144,12 +144,69 @@ assertIncludes('contributionDraftStorage.ts', contributionDraftStorage, 'kaydedi
 assertIncludes('contributionDraft.ts', contributionDraft, 'geçici önbellek');
 assertIncludes('package-capture.tsx', packageCapture, 'Önceki adım');
 assertIncludes('package-capture.tsx', packageCapture, 'Kamera izni ver');
-assertIncludes('package-capture.tsx', packageCapture, 'geçici olarak tutulur');
+assertIncludes('package-capture.tsx', packageCapture, 'uygulama tarafından sunucuya gönderilmez');
 assertIncludes('package-capture.tsx', packageCapture, 'önizleme');
 assertIncludes('package-capture.tsx', packageCapture, 'Kaydediliyor');
 
 assertIncludes('criticalAllergenCodes.ts', criticalAllergenCodes, 'PROFILE_EGG_ALLERGEN_MATCH');
 assertIncludes('alternativeAllergenFilter.ts', alternativeAllergenFilter, 'traceAllergens');
+
+// Aşama 6 (ADR-005): içerik çözümleme + insan alan incelemesi. On ekran durumu, Doğrula/Düzelt/Okunamıyor,
+// "yerel aday" sonucu; kullanıcı beyanı asla readable, sonuç asla rafskoru_verified.
+const packageReview = readMobileFile('app/package-review.tsx');
+const resolutionUiState = readMobileFile('src/localProduct/resolution/uiState.ts');
+const resolutionReview = readMobileFile('src/localProduct/resolution/review.ts');
+const resolutionMerge = readMobileFile('src/localProduct/resolution/mergeEngine.ts');
+const reviewFieldCard = readMobileFile('src/localProduct/review/ReviewFieldCard.tsx');
+const allergenReviewBlock = readMobileFile('src/localProduct/review/AllergenReviewBlock.tsx');
+
+assertIncludes('package-review.tsx', packageReview, 'Alan alan inceleme');
+assertIncludes('package-review.tsx', packageReview, 'Yerel aday olarak kaydet — doğrulanmış ürün değildir.');
+assertIncludes('package-review.tsx', packageReview, 'locally_reviewed');
+assertIncludes('package-review.tsx', packageReview, 'İncelenen alan');
+assertIncludes('package-review.tsx', packageReview, 'Taslağı ve fotoğrafları sil');
+assertIncludes('package-review.tsx', packageReview, 'loadProductFactsSnapshot');
+assertNotIncludes('package-review.tsx', packageReview, 'openfoodfacts.org/api');
+assertIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'Doğrula');
+assertIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'Düzelt');
+assertIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'Okunamıyor');
+assertIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'doğrulanmamış');
+assertIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'Mevcut kayıt');
+assertIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'Ambalaj adayı');
+assertIncludes('resolution/review.ts', resolutionReview, 'Çatışmalı');
+assertIncludes('resolution/review.ts', resolutionReview, 'Yalnız ambalajda');
+assertIncludes('resolution/review.ts', resolutionReview, 'İnsan karşılaştırması gerekli');
+assertIncludes('AllergenReviewBlock.tsx', allergenReviewBlock, 'Mevcut kaynak beyanı');
+assertIncludes('AllergenReviewBlock.tsx', allergenReviewBlock, 'Ambalaj adayı');
+assertNotIncludes('AllergenReviewBlock.tsx', allergenReviewBlock, 'geçici önbellek');
+assertNotIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'geçici önbellek');
+const photoStorage = readMobileFile('src/localProduct/photoStorage.ts');
+assertIncludes('photoStorage.ts', photoStorage, 'Paths.document');
+assertNotIncludes('photoStorage.ts', photoStorage, 'MediaLibrary');
+assertNotIncludes('photoStorage.ts', photoStorage, 'fetch(');
+assertIncludes('contributionDraft.ts', contributionDraft, 'uygulamanın özel depolama alanında');
+assertIncludes('contributionDraft.ts', contributionDraft, 'uygulama tarafından sunucuya');
+assertIncludes('package-review.tsx', packageReview, 'ESKİ CİHAZ KAYDI');
+assertIncludes('package-review.tsx', packageReview, 'isSnapshotFresh');
+assertIncludes('AllergenReviewBlock.tsx', allergenReviewBlock, 'veri yok / doğrulanmamış');
+assertIncludes('AllergenReviewBlock.tsx', allergenReviewBlock, 'Bu bir garanti değildir');
+assertIncludes('resolution/review.ts', resolutionReview, "status: 'locally_reviewed_candidate'");
+assertIncludes('resolution/review.ts', resolutionReview, 'not_rafskoru_verified');
+assertIncludes('resolution/mergeEngine.ts', resolutionMerge, 'allergenCandidateText');
+for (const title of [
+  'Kaynaklar aranıyor',
+  'Open Food Facts kaydı kısmi',
+  'Kesin barkod eşleşmesi bulundu',
+  'Birden fazla olası aday bulundu',
+  'Kaynak bulundu fakat ambalajla çatışıyor',
+  'Ambalaj fotoğrafı gerekli',
+  'Aday metin doğrulama bekliyor',
+  'Alan okunamıyor',
+  'Yerel aday kaydedildi',
+  'Veri hâlâ yetersiz',
+]) {
+  assertIncludes('resolution/uiState.ts', resolutionUiState, title);
+}
 
 for (const [fileName, content] of [
   ['ProductDataStateCard.tsx', productDataStateCard],
@@ -160,12 +217,19 @@ for (const [fileName, content] of [
   ['contributionDraftStorage.ts', contributionDraftStorage],
   ['criticalAllergenCodes.ts', criticalAllergenCodes],
   ['alternativeAllergenFilter.ts', alternativeAllergenFilter],
+  ['package-review.tsx', packageReview],
+  ['resolution/uiState.ts', resolutionUiState],
+  ['resolution/review.ts', resolutionReview],
+  ['resolution/mergeEngine.ts', resolutionMerge],
+  ['ReviewFieldCard.tsx', reviewFieldCard],
+  ['AllergenReviewBlock.tsx', allergenReviewBlock],
 ]) {
   assertNotIncludes(fileName, content, 'alerjen içermez');
   assertNotIncludes(fileName, content, 'güvenli alternatif');
   assertNotIncludes(fileName, content, 'ürün güvenlidir');
   assertNotIncludes(fileName, content, 'garanti eder');
   assertNotIncludes(fileName, content, 'alerjensiz');
+  assertNotIncludes(fileName, content, 'sağlıklı alternatif');
 }
 
 // riskEngine.ts pre-existing VEGAN_ALLERGEN_PRECAUTION metni bilinçli olarak "alerjensiz"

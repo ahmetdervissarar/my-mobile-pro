@@ -58,6 +58,19 @@ export async function loadLatestContributionDraft(gtin: string | null | undefine
   return matches[0] ?? null;
 }
 
+/** Tek taslağı siler (fotoğraf dosyaları `photoStorage.deleteDraftPhotos` ile ayrıca silinir). */
+export async function deleteContributionDraft(draftId: string): Promise<boolean> {
+  try {
+    const store = await readStore();
+    if (!(draftId in store)) return true;
+    delete store[draftId];
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function clearContributionDrafts(): Promise<void> {
   try {
     await AsyncStorage.removeItem(STORAGE_KEY);

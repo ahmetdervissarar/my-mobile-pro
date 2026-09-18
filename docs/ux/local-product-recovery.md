@@ -9,6 +9,26 @@ tespit edip fail-closed bir kanıt-eksikliği kapısı ekledi (bkz. §"Revizyon 
 
 Denetimler (birer tur): `product-data-contract-reviewer` (fallback hizalama, ham `allergens` kaynağı), `allergen-safety-reviewer` (F1 ve F2 düzeltildi — bkz. ADR-004), `release-gatekeeper` (aşağıda).
 
+## Aşama 6B (2026-09-18) — gerçek akışa bağlama, kalıcı fotoğraf, kart tasarımı (ADR-005 madde 10-12)
+OFF kaydı inceleme ekranına cihaz snapshot'ı (`productFactsSnapshot.ts`; ürün sonuç ekranının aldığı aynı
+kayıt) ile, yoksa mevcut backend `resolve` uç noktasıyla ulaşır; mobil OFF'a doğrudan çağrı yapmaz. Fotoğraflar
+`expo-file-system` ile `Paths.document/rafskoru/photos/<taslak>/` altına kopyalanır; kopyalama başarısızsa
+taslak kaydedilmez; "Taslağı ve fotoğrafları sil" hepsini birlikte kaldırır. Kart: Mevcut kayıt → Ambalaj
+adayı → Durum (= aynı · ◔ yalnız ambalajda · ≠ çatışmalı · ? okunamıyor · – veri yok) → Karar; üstte
+"İncelenen alan: n / toplam"; CTA "Yerel aday olarak kaydet — doğrulanmış ürün değildir." Doğrulama:
+resolution 17/17 · yerel ürün 11/11 · `tsc` PASS · wording guard PASS. Cihaz testi yapılmadı.
+
+## Aşama 6 (2026-09-18) — içerik çözümleme + insan alan incelemesi (ADR-005)
+Dal `feat/local-product-content-resolution-v1`. Yeni ekran `app/package-review.tsx` (fotoğraf + aday metin yan
+yana; her alan Doğrula / Düzelt / Okunamıyor; alerjen bloğu en üstte). On ayrı ekran durumu
+(`src/localProduct/resolution/uiState.ts`), alan bazlı birleştirme (`mergeEngine.ts`), sağlayıcı arayüzü
+(`providers.ts`; üretici kaynağı `not_implemented`, sahte adapter yok). Sonuç `locally_reviewed_candidate`;
+`rafskoru_verified` değildir, alerjen durumu `unknown_or_unverified` kalır, hiçbir yere gönderilmez.
+`product-result.tsx`'e yalnız `onReviewDraft` geri çağrısı eklendi. Doğrulama: `runResolutionScenarios.ts`
+16/16 · risk 39/39 · yerel ürün 11/11 · alternatif filtre 14/14 · `npx tsc --noEmit` PASS · wording guard PASS.
+Ekran görüntüsü alınmadı; "görsel olarak doğrulandı" iddiası yoktur. Araştırma ve gerçek GTIN denemesi:
+`docs/research/local-product-content-resolution-2026-09-18.md`.
+
 ## Revizyon 2026-09-18 (dördüncü tur) — uçtan uca kanıt-eksikliği düzeltmesi
 Proje sahibi üçüncü turdan sonra gerçek veri yolunu denetledi: mobil `traceAllergens` tip eklemesi
 gerçek backend (`apps/backend/src/price/alternatives/types.ts`) ve gerçek seed verisinde

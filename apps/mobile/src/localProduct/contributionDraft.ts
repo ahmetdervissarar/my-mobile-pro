@@ -18,12 +18,19 @@ import type {
 } from './types';
 
 /**
- * Fotoğraflar bu sürümde yalnız geçici önbellek dosyasıdır (`expo-camera` cache URI'si);
- * kalıcı depolama (ör. `expo-file-system`) bu görevde KURULMADI — yeni bağımlılık onayı
- * gerektirir. Ekran bu sınırı açıkça göstermeli, fotoğrafı "kalıcı kaydedildi" gibi sunmamalıdır.
+ * Çekim sırasında fotoğraf yalnız geçici önbellek dosyasıdır (`expo-camera` cache URI'si). Taslak
+ * kaydedilirken `photoStorage.ts` (`expo-file-system`, Aşama 6B onaylı bağımlılık) dosyayı uygulamanın
+ * belge klasörüne kopyalar; kopyalama başarısızsa taslak "kaydedildi" sayılmaz.
  */
 export const PHOTO_TEMPORARY_STORAGE_NOTICE =
-  'Fotoğraflar bu cihazda geçici önbellek dosyasıdır; kalıcı depolama bu sürümde yok. Uygulama önbelleği temizlenirse veya cihaz yeniden başlatılırsa fotoğraflar kaybolabilir.';
+  'Çekilen fotoğraf şimdilik geçici önbellek dosyasıdır; taslağı kaydettiğinde bu cihazdaki RafSkoru klasörüne kopyalanır.';
+
+export const PHOTO_PERSISTENT_STORAGE_NOTICE =
+  'Fotoğraflar uygulamanın özel depolama alanında saklanır; uygulama tarafından sunucuya, galeriye veya başka bir servise gönderilmez. "Taslağı ve fotoğrafları sil" ile kaldırılır.';
+
+export function hasPersistentPhotos(photos: readonly CapturedPhoto[]): boolean {
+  return photos.length > 0 && photos.every((p) => p.storage === 'persistent' && Boolean(p.persistentUri));
+}
 
 export const PACKAGE_CAPTURE_STEPS: readonly PackageCaptureStep[] = [
   {
@@ -112,6 +119,11 @@ export function toDraftAllergenDeclaration(
   return { status: 'absent', declaredTags: [], traceTags: [], source: null };
 }
 
+/** Taslak kimliği = barkod + zaman; fotoğraf klasörü adı da bundan türer (profil/konum/kimlik içermez). */
+export function contributionDraftId(gtin: string | null, now: string): string {
+  return `draft-${gtin ?? 'nogtin'}-${now}`;
+}
+
 export function createContributionDraft(input: CreateContributionDraftInput): ContributionDraft {
   const observedAt = input.photos.length > 0 ? input.photos[0].takenAt : null;
   const candidateByField = new Map(input.candidates.map((c) => [c.field, c] as const));
@@ -124,7 +136,7 @@ export function createContributionDraft(input: CreateContributionDraftInput): Co
   if (!input.photos.some((p) => p.kind === 'front')) missingFields.push('imageUrl');
 
   return {
-    id: `draft-${input.gtin ?? 'nogtin'}-${input.now}`,
+    id: contributionDraftId(input.gtin, input.now),
     status: 'candidate',
     gtin: input.gtin,
     createdAt: input.now,
@@ -146,7 +158,7 @@ export function summarizeContributionDraft(draft: ContributionDraft): string[] {
   lines.push(`Durum: aday kayıt (doğrulanmadı). Skorlara ve alerjen kararına girmez.`);
   lines.push(`Barkod: ${draft.gtin ?? 'yok'}`);
   lines.push(`Fotoğraf: ${draft.photos.length} · Atlanan adım: ${draft.skippedSteps.length}`);
-  if (draft.photos.length > 0) lines.push(PHOTO_TEMPORARY_STORAGE_NOTICE);
+  if (draft.photos.length > 0) lines.push(hasPersistentPhotos(draft.photos) ? PHOTO_PERSISTENT_STORAGE_NOTICE : PHOTO_TEMPORARY_STORAGE_NOTICE);
   lines.push(`Gözlem zamanı: ${draft.observedAt ?? 'yok'}`);
   lines.push(`Ambalaj sürümü: ${draft.packagingVersion ?? 'belirtilmedi'}`);
   lines.push('Alerjen durumu: veri yok / doğrulanmamış. Bu bir garanti değildir; etiketi kontrol edin.');
