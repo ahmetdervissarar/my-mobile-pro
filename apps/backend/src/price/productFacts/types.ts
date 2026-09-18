@@ -20,6 +20,26 @@ export type ProductFactsConfidence = 'low' | 'medium' | 'high';
 
 export type ProductFactsAllergenDataStatus = 'present' | 'unknown';
 
+/**
+ * Katmanlı tamlık (A1B). `isComplete` yalnız `complete` iken true'dur.
+ * - complete: skorlamada kullanılan tüm alanlar mevcut.
+ * - partial: gerçek kaynak kaydı var, bazı alanlar eksik; kayıt ATILMAZ.
+ * - insufficient: anlamlı gıda verisi yok; kullanılamaz sayılır.
+ */
+export type ProductFactsCompleteness = 'complete' | 'partial' | 'insufficient';
+
+/**
+ * Birbirinden bağımsız kullanılabilirlik yetenekleri.
+ * - risk: yalnız yapılandırılmış alerjen/iz tag'i varken true; içerik metni tek başına açmaz.
+ * - health: Nutri-Score, NOVA veya en az bir trafik ışığı değeri varken true.
+ * - content: içerik metni veya katkı listesi varken true.
+ */
+export interface ProductFactsCapabilities {
+  risk: boolean;
+  health: boolean;
+  content: boolean;
+}
+
 export type ProductFactsAllergenInfoSource = 'off_structured' | 'none';
 
 export interface ProductFactsAllergenInfo {
@@ -53,6 +73,10 @@ export interface ProductFacts {
 
   dataSource: ProductFactsSource;
   isComplete: boolean;
+  /** Opsiyonel (geriye uyumlu). Yoksa eski istemciler `isComplete` ile devam eder. */
+  completeness?: ProductFactsCompleteness;
+  /** Opsiyonel (geriye uyumlu). */
+  capabilities?: ProductFactsCapabilities;
   missingFields?: ProductFactsMissingField[];
   verificationNeeded?: boolean;
   verificationReason?: string;

@@ -1,5 +1,7 @@
 import type {
   ProductFacts,
+  ProductFactsCapabilities,
+  ProductFactsCompleteness,
   ProductFactsConfidence,
   ProductFactsMissingField,
   ProductFactsNovaGroup,
@@ -190,9 +192,31 @@ function getConfidence(missingFields: ProductFactsMissingField[]): ProductFactsC
   return 'medium';
 }
 
+function resolveCompleteness(
+  facts: ProductFacts,
+  missingFields: ProductFactsMissingField[],
+): ProductFactsCompleteness {
+  if (!hasMeaningfulFoodFacts(facts)) return 'insufficient';
+  return missingFields.length === 0 ? 'complete' : 'partial';
+}
+
+function resolveCapabilities(facts: ProductFacts): ProductFactsCapabilities {
+  return {
+    // Yalnız yapılandırılmış allergens_tags / traces_tags (dataStatus 'present'); içerik metni açmaz.
+    risk: facts.allergenInfo?.dataStatus === 'present',
+    health:
+      facts.nutriScoreGrade !== null && facts.nutriScoreGrade !== undefined ||
+      facts.novaGroup !== null && facts.novaGroup !== undefined ||
+      hasAnyTrafficLightValue(facts.trafficLight),
+    content: !!facts.ingredientsText?.trim() || (facts.additives?.length ?? 0) > 0,
+  };
+}
+
 function hasMeaningfulFoodFacts(facts: ProductFacts): boolean {
   return (
     !!facts.ingredientsText?.trim() ||
+    // Yapılandırılmış beyan VEYA iz tag'i anlamlı veridir; yalnız "içerebilir" uyarısı da korunur.
+    facts.allergenInfo?.dataStatus === 'present' ||
     (facts.allergens?.length ?? 0) > 0 ||
     (facts.additives?.length ?? 0) > 0 ||
     facts.nutriScoreGrade !== null ||
@@ -226,11 +250,15 @@ export function openFoodFactsInfoToProductFacts(
   };
 
   const missingFields = getMissingFields(facts);
-  const isComplete = hasMeaningfulFoodFacts(facts) && missingFields.length === 0;
+  const completeness = resolveCompleteness(facts, missingFields);
+  // Eski alan korunur: yalnız `complete` iken true; kısmi kayıt false kalır ama ATILMAZ.
+  const isComplete = completeness === 'complete';
 
   return {
     ...facts,
     isComplete,
+    completeness,
+    capabilities: resolveCapabilities(facts),
     missingFields,
     verificationNeeded: missingFields.length > 0,
     verificationReason: getVerificationReason(missingFields),

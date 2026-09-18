@@ -24,6 +24,7 @@ import {
   productFactsToContentScoreInput,
   productFactsToHealthScoreInput,
   productFactsToSustainabilityInput,
+  selectUsableProductFacts,
   type ProductFacts,
 } from './productFacts/index.js';
 import { inferProductGroupKey, logAlternativeSuppression, resolveProductGroup } from './productGroups/index.js';
@@ -52,7 +53,8 @@ async function tryFetchProductFacts(query: PriceQuery): Promise<ProductFacts | n
   try {
     const facts = await fetchOpenFoodFactsProductFactsByBarcode(barcode);
 
-    return facts?.isComplete ? facts : null;
+    // A1B: kısmi gerçek OFF kaydı atılmaz; yalnız `insufficient` kayıt düşer.
+    return selectUsableProductFacts(facts);
   } catch {
     return null;
   }
