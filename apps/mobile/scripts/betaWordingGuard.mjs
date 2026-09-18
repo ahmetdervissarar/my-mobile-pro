@@ -103,4 +103,78 @@ for (const [fileName, content] of [
   assertNotIncludes(fileName, content, 'qanlÄ±ÅŸ');
 }
 
+// Local product recovery slice (feature-flagged): three data states, package capture, candidate draft.
+const productDataStateCard = readMobileFile('src/localProduct/ProductDataStateCard.tsx');
+const packageCapture = readMobileFile('app/package-capture.tsx');
+const productDataState = readMobileFile('src/localProduct/productDataState.ts');
+const contributionDraft = readMobileFile('src/localProduct/contributionDraft.ts');
+
+assertIncludes('ProductDataStateCard.tsx', productDataStateCard, 'Ürün verisi bulunamadı');
+assertIncludes('ProductDataStateCard.tsx', productDataStateCard, 'Paket bilgisini ekle');
+assertIncludes('ProductDataStateCard.tsx', productDataStateCard, 'Ürün kaydı kısmi');
+assertIncludes('ProductDataStateCard.tsx', productDataStateCard, 'Aday kayıt, doğrulanmadı');
+assertIncludes('ProductDataStateCard.tsx', productDataStateCard, 'skordan bağımsızdır');
+assertIncludes('productDataState.ts', productDataState, 'Beyana göre içerir');
+assertIncludes('productDataState.ts', productDataState, 'İçerebilir');
+assertIncludes('productDataState.ts', productDataState, 'Alerjen verisi yok / doğrulanmamış');
+assertIncludes('productDataState.ts', productDataState, 'Bu bir garanti değildir');
+assertIncludes('package-capture.tsx', packageCapture, 'OCR bu sürümde yok');
+assertIncludes('package-capture.tsx', packageCapture, 'GELİŞTİRME FIXTURE');
+assertIncludes('package-capture.tsx', packageCapture, 'aday, gönderilmez');
+assertIncludes('contributionDraft.ts', contributionDraft, 'veri yok / doğrulanmamış');
+assertIncludes('contributionDraft.ts', contributionDraft, 'no_upload_in_this_build');
+
+// ADR-004 (risk motoru trace desteği) + proje sahibi düzeltmeleri (kayıt hatası, GTIN
+// doğrulama, geçici fotoğraf uyarısı, izin gerekçesi önce, alternatif aday trace filtresi,
+// egg declared/trace kodları).
+const riskEngine = readMobileFile('src/riskEngine/riskEngine.ts');
+const gtin = readMobileFile('src/localProduct/gtin.ts');
+const contributionDraftStorage = readMobileFile('src/localProduct/contributionDraftStorage.ts');
+const criticalAllergenCodes = readMobileFile('src/localProduct/criticalAllergenCodes.ts');
+const alternativeAllergenFilter = readMobileFile('src/localProduct/alternativeAllergenFilter.ts');
+
+assertIncludes('riskEngine.ts', riskEngine, 'PROFILE_MILK_TRACE_MATCH');
+assertIncludes('riskEngine.ts', riskEngine, 'PROFILE_EGG_ALLERGEN_MATCH');
+assertIncludes('riskEngine.ts', riskEngine, 'PROFILE_EGG_TRACE_MATCH');
+assertIncludes('riskEngine.ts', riskEngine, 'eser miktarda içerebilir');
+assertIncludes('riskEngine.ts', riskEngine, 'çapraz bulaşma');
+assertIncludes('riskEngine.ts', riskEngine, 'tıbbi hüküm niteliği taşımaz');
+assertIncludes('gtin.ts', gtin, 'kontrol basamağı');
+assertIncludes('contributionDraftStorage.ts', contributionDraftStorage, 'kaydedilemedi');
+assertIncludes('contributionDraft.ts', contributionDraft, 'geçici önbellek');
+assertIncludes('package-capture.tsx', packageCapture, 'Önceki adım');
+assertIncludes('package-capture.tsx', packageCapture, 'Kamera izni ver');
+assertIncludes('package-capture.tsx', packageCapture, 'geçici olarak tutulur');
+assertIncludes('package-capture.tsx', packageCapture, 'önizleme');
+assertIncludes('package-capture.tsx', packageCapture, 'Kaydediliyor');
+
+assertIncludes('criticalAllergenCodes.ts', criticalAllergenCodes, 'PROFILE_EGG_ALLERGEN_MATCH');
+assertIncludes('alternativeAllergenFilter.ts', alternativeAllergenFilter, 'traceAllergens');
+
+for (const [fileName, content] of [
+  ['ProductDataStateCard.tsx', productDataStateCard],
+  ['package-capture.tsx', packageCapture],
+  ['productDataState.ts', productDataState],
+  ['contributionDraft.ts', contributionDraft],
+  ['gtin.ts', gtin],
+  ['contributionDraftStorage.ts', contributionDraftStorage],
+  ['criticalAllergenCodes.ts', criticalAllergenCodes],
+  ['alternativeAllergenFilter.ts', alternativeAllergenFilter],
+]) {
+  assertNotIncludes(fileName, content, 'alerjen içermez');
+  assertNotIncludes(fileName, content, 'güvenli alternatif');
+  assertNotIncludes(fileName, content, 'ürün güvenlidir');
+  assertNotIncludes(fileName, content, 'garanti eder');
+  assertNotIncludes(fileName, content, 'alerjensiz');
+}
+
+// riskEngine.ts pre-existing VEGAN_ALLERGEN_PRECAUTION metni bilinçli olarak "alerjensiz"
+// kelimesini olumsuzlama içinde kullanır ("...alerjensiz olduğu anlamına gelmez"); bu nedenle
+// yukarıdaki genel taramaya alınmaz. Yine de en katı iki iddia (kesin güvenlik/garanti) burada
+// da yasaktır.
+assertNotIncludes('riskEngine.ts', riskEngine, 'alerjen içermez');
+assertNotIncludes('riskEngine.ts', riskEngine, 'güvenli alternatif');
+assertNotIncludes('riskEngine.ts', riskEngine, 'ürün güvenlidir');
+assertNotIncludes('riskEngine.ts', riskEngine, 'garanti eder');
+
 console.log('MOBILE_BETA_WORDING_GUARD_OK');

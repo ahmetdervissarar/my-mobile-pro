@@ -428,6 +428,13 @@ export interface AlternativeCandidateScores {
 
 export interface AlternativeCandidateSignals {
   allergens?: string[];
+  /**
+   * Eser / çapraz bulaşma ("içerebilir") alerjen listesi — `allergens` (declared, "içerir")
+   * ile KARIŞTIRILMAZ; ayrı bir alandır (ADR-004). Yalnız alerjen güvenliği için eklendi;
+   * fiyat kaynağı, hesaplama, ağırlık veya sağlayıcı davranışını etkilemez (proje sahibi
+   * onayı, 2026-09-18 — üçüncü tur).
+   */
+  traceAllergens?: string[];
   additives?: string[];
   nutriScoreGrade?: 'A' | 'B' | 'C' | 'D' | 'E';
   novaGroup?: 1 | 2 | 3 | 4;
