@@ -25,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const TOOL_VERSION = '0.1.0';
+const TOOL_VERSION = '0.1.1';
 const USER_AGENT = 'RafSkoru-MarketSourceSpike/0.1 (read-only research probe; github.com/ahmetdervissarar/my-mobile-pro)';
 const REQUEST_TIMEOUT_MS = 20_000;
 const REQUEST_GAP_MS = 1_000; // nazik hız: ardışık istekler arası bekleme
@@ -140,6 +140,9 @@ function pick(obj, whitelist) {
   if (!obj || typeof obj !== 'object') return null;
   const out = {};
   for (const k of whitelist) if (k in obj) out[k] = obj[k];
+  // `source` Open Prices'ta istemci User-Agent'ıdır ve cihaz/derleme kimliği taşıyabilir;
+  // yalnız uygulama adını tut (parantezden önceki kısım).
+  if (typeof out.source === 'string') out.source = out.source.split(' (')[0].trim();
   return out;
 }
 
@@ -314,6 +317,7 @@ function selftest(summary) {
   const prices = summary.results.find((r) => r.id === 'open_prices_prices_try');
   assert(prices?.summary?.hasGtinField === true, 'fixture fiyat kaydında product_code olmalı');
   assert(prices.summary.samples.every((s) => !('owner' in s)), 'owner alanı örneklere sızmamalı');
+  assert(prices.summary.samples.every((s) => typeof s.source !== 'string' || !s.source.includes('(')), 'source alanı cihaz/derleme kimliği taşımamalı');
   const stats = summary.results.find((r) => r.id === 'open_prices_stats');
   assert(stats?.status === 'ok', 'stats fixture yüklenmeli');
   const md = renderReport(summary);

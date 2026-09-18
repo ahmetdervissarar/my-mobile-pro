@@ -16,7 +16,13 @@ node tools/market-source-spike/probe.mjs --fixture
 
 # Canlı mod: belgelenmiş açık uç noktalara gerçek GET istekleri (en fazla 10 istek, 1 s aralık)
 node tools/market-source-spike/probe.mjs --live --gtin 8690504012345,8690637012345
+
+# Egress proxy arkasında (Node fetch HTTPS_PROXY'yi kendiliğinden okumaz):
+NODE_USE_ENV_PROXY=1 NODE_EXTRA_CA_CERTS=/path/to/ca-bundle.crt node tools/market-source-spike/probe.mjs --live --gtin ...
 ```
+
+Canlı kanıt (2026-09-18, araç v0.1.1): `docs/research/evidence/open-prices-probe-2026-09-18.*`;
+değerlendirme: `docs/research/turkey-weekly-price-source-spike.md`.
 
 Çıktılar `tools/market-source-spike/out/` altına yazılır (`--out DIR` ile değiştirilebilir):
 `summary.<mode>.json` (makinece okunur) ve `report.<mode>.md` (insan okunur).
@@ -46,6 +52,7 @@ Her kayıt: `id, source, purpose, url, mode, isFixture, requestedAt, status, htt
 ## Gizlilik ve kurallar
 
 - Yanıt örneklerinden yalnız beyaz listedeki alanlar saklanır; `owner` gibi kullanıcı alanları atılır.
+  `source` (istemci User-Agent) yalnız uygulama adına kırpılır; cihaz/derleme kimliği tutulmaz (v0.1.1).
 - Anahtar/parola okunmaz, istenmez, yazılmaz; yalnız anonim GET.
 - Fixture (`fixtures/open-prices-sample.json`, `_fixture:true`) uydurma yapı verisidir ve raporda
   her yerde "FIXTURE" etiketiyle görünür; kapsam iddiası üretmez.
