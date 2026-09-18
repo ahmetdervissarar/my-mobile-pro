@@ -1,0 +1,98 @@
+{
+  "_fixture": true,
+  "_note": "ÖRNEK YAPI VERİSİ. Gerçek Open Prices / OFF yanıtı DEĞİLDİR; yalnız alan şeklini ve rapor üretimini test etmek içindir. Değerler uydurmadır; kapsam ölçümü olarak kullanılamaz.",
+  "_schemaSource": "openfoodfacts/open-prices docs/guides/API.md + open_prices/api/prices/filters.py + open_prices/api/locations/filters.py (erişim 2026-09-18)",
+  "generatedAt": "2026-09-18T00:00:00.000Z",
+  "gtins": ["8690000000001"],
+  "responses": {
+    "open_prices_status": { "status": "running" },
+    "open_prices_stats": {
+      "price_count": 0,
+      "product_count": 0,
+      "location_count": 0,
+      "proof_count": 0,
+      "user_count": 0,
+      "_fixture": true
+    },
+    "open_prices_locations_tr": {
+      "items": [
+        {
+          "id": 1,
+          "type": "OSM",
+          "osm_id": 1,
+          "osm_type": "NODE",
+          "osm_name": "Örnek Market",
+          "osm_address_city": "Örnek Şehir",
+          "osm_address_country": "Türkiye",
+          "osm_address_country_code": "TR",
+          "price_count": 2,
+          "owner": "FIXTURE_KULLANICI_ATILMALI",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "pages": 1,
+      "size": 100
+    },
+    "open_prices_locations_turkey": { "items": [], "total": 0, "page": 1, "pages": 0, "size": 100 },
+    "open_prices_prices_try": {
+      "items": [
+        {
+          "id": 1,
+          "type": "PRODUCT",
+          "product_code": "8690000000001",
+          "product_name": null,
+          "category_tag": null,
+          "price": 10.5,
+          "price_is_discounted": false,
+          "price_without_discount": null,
+          "discount_type": null,
+          "currency": "TRY",
+          "date": "2026-01-01",
+          "location_id": 1,
+          "location_osm_id": 1,
+          "location_osm_type": "NODE",
+          "proof_id": 1,
+          "owner": "FIXTURE_KULLANICI_ATILMALI",
+          "source": "FIXTURE",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-01T00:00:00Z"
+        },
+        {
+          "id": 2,
+          "type": "PRODUCT",
+          "product_code": "8690000000002",
+          "price": 20,
+          "price_is_discounted": true,
+          "price_without_discount": 25,
+          "discount_type": "QUANTITY",
+          "currency": "TRY",
+          "date": "2026-01-02",
+          "location_id": 1,
+          "location_osm_id": 1,
+          "location_osm_type": "NODE",
+          "proof_id": null,
+          "owner": "FIXTURE_KULLANICI_ATILMALI",
+          "source": "FIXTURE",
+          "created": "2026-01-02T00:00:00Z",
+          "updated": "2026-01-02T00:00:00Z"
+        }
+      ],
+      "total": 2,
+      "page": 1,
+      "pages": 1,
+      "size": 100
+    },
+    "open_prices_prices_try_last_30d": { "items": [], "total": 0, "page": 1, "pages": 0, "size": 1 },
+    "off_products_turkey_count": {
+      "count": 0,
+      "page": 1,
+      "page_count": 0,
+      "page_size": 1,
+      "products": [ { "code": "8690000000001", "product_name": "Örnek Ürün", "brands": "Örnek Marka" } ]
+    },
+    "open_prices_prices_gtin_8690000000001": { "items": [], "total": 0, "page": 1, "pages": 0, "size": 10 }
+  }
+}

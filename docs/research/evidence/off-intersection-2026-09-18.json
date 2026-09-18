@@ -1,0 +1,372 @@
+{
+ "measuredAt": "2026-09-18T17:26:04Z",
+ "results": {
+  "09868687": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "1230000168045": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:netherlands"
+   ],
+   "turkey": false
+  },
+  "5000112664478": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "80050278": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:australia",
+    "en:morocco",
+    "en:new-zealand",
+    "en:spain",
+    "en:united-arab-emirates",
+    "en:united-kingdom"
+   ],
+   "turkey": false
+  },
+  "8680908020885": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8681324004510": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8682815041403": {
+   "http": 404,
+   "status": null,
+   "in_off": false,
+   "countries_tags": [],
+   "turkey": false
+  },
+  "8683130038161": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8683347030866": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8690504011521": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8690504410911": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8690526689890": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8690526748344": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8690533091136": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8690547188341": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8690632762876": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8690698512835": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8691020006336": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8691641380051": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8693454000812": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8695077001078": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8695077004369": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8695077020833": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8695077157959": {
+   "http": 404,
+   "status": null,
+   "in_off": false,
+   "countries_tags": [],
+   "turkey": false
+  },
+  "8697471725666": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:turkey"
+   ],
+   "turkey": true
+  },
+  "8699495573421": {
+   "http": 200,
+   "status": 1,
+   "in_off": true,
+   "countries_tags": [
+    "en:france"
+   ],
+   "turkey": false
+  }
+ },
+ "log": [
+  [
+   "09868687",
+   200,
+   0.92
+  ],
+  [
+   "1230000168045",
+   200,
+   0.81
+  ],
+  [
+   "5000112664478",
+   200,
+   0.44
+  ],
+  [
+   "80050278",
+   200,
+   0.51
+  ],
+  [
+   "8680908020885",
+   200,
+   0.52
+  ],
+  [
+   "8681324004510",
+   200,
+   0.7
+  ],
+  [
+   "8682815041403",
+   404,
+   0.56
+  ],
+  [
+   "8683130038161",
+   200,
+   0.52
+  ],
+  [
+   "8683347030866",
+   200,
+   0.7
+  ],
+  [
+   "8690504011521",
+   200,
+   0.53
+  ],
+  [
+   "8690504410911",
+   200,
+   0.54
+  ],
+  [
+   "8690526689890",
+   200,
+   0.59
+  ],
+  [
+   "8690526748344",
+   200,
+   0.69
+  ],
+  [
+   "8690533091136",
+   200,
+   0.58
+  ],
+  [
+   "8690547188341",
+   200,
+   0.51
+  ],
+  [
+   "8690632762876",
+   200,
+   0.62
+  ],
+  [
+   "8690698512835",
+   200,
+   0.47
+  ],
+  [
+   "8691020006336",
+   200,
+   0.54
+  ],
+  [
+   "8691641380051",
+   200,
+   0.53
+  ],
+  [
+   "8693454000812",
+   200,
+   0.53
+  ],
+  [
+   "8695077001078",
+   200,
+   0.55
+  ],
+  [
+   "8695077004369",
+   200,
+   0.65
+  ],
+  [
+   "8695077020833",
+   200,
+   0.95
+  ],
+  [
+   "8695077157959",
+   404,
+   0.69
+  ],
+  [
+   "8697471725666",
+   200,
+   0.43
+  ],
+  [
+   "8699495573421",
+   200,
+   0.62
+  ]
+ ]
+}
