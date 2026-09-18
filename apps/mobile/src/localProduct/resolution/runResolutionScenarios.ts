@@ -24,7 +24,7 @@ import { buildIdentityKey, classifyMatch, isSameGtin, normalizeGtin } from './id
 import { mergeCandidates } from './mergeEngine';
 import { createContributionDraftProvider, createOffProvider, createVerifiedLocalProvider, draftCandidate, emptyVerifiedLocalStore, offCandidateFromProductFacts, verifiedCandidateFromRecord } from './providers';
 import { RECORDED_NEGATIVE_CONTROL, RECORDED_NOT_FOUND_GTIN, recordedAlbeniComplete, recordedCokokremPartial, recordedTorkuSearchSample, recordedWefoodNoAllergenTags } from './recordedEvidence';
-import { applyHumanFieldChecks, buildReviewItems } from './review';
+import { applyHumanFieldChecks, buildReviewItems, computeReviewProgress, deriveFieldComparison, FIELD_COMPARISON_COPY } from './review';
 import { runProductResolution } from './resolve';
 import type { ResolutionCandidate } from './types';
 import { deriveResolutionUiState, RESOLUTION_UI_COPY } from './uiState';
@@ -47,7 +47,7 @@ function ocr(field: OcrCandidate['field'], text: string | null): OcrCandidate {
 }
 function makeDraft(gtin: string, candidates: OcrCandidate[], withPhotos = true): ContributionDraft {
   const photos = withPhotos
-    ? (['front', 'barcode', 'ingredients', 'allergen'] as const).map((kind) => ({ kind, localUri: `file:///cache/${kind}.jpg`, takenAt: '2026-09-18T18:00:00.000Z' }))
+    ? (['front', 'barcode', 'ingredients', 'allergen'] as const).map((kind) => ({ kind, localUri: `file:///cache/${kind}.jpg`, takenAt: '2026-09-18T18:00:00.000Z', storage: 'cache' as const, persistentUri: null, contentHash: null }))
     : [];
   return createContributionDraft({ gtin, photos, skippedSteps: [], candidates, packagingVersion: 'SKT 12.2027', now: NOW });
 }
@@ -262,6 +262,24 @@ scenario('16 Aynı GTIN: OFF readable beyan + rafskoru_verified readable beyan �
     const conflict = merged.conflicts.find((c) => c.field === 'allergenDeclaration');
     assert(conflict?.state === 'resolved' && conflict.rule === 'verified_over_unverified' && conflict.preferredEvidenceId === merged.fields.allergenDeclaration.selectedEvidenceId, 'çatışma kaydı ile seçilen kanıt tutarlı olmalı');
   }
+});
+
+scenario('17 Alan karşılaştırma durumu: aynı / yalnız ambalajda / çatışmalı / okunamıyor / veri yok (gerçek Albeni kaydı + taslak)', () => {
+  const off = offCandidateFromProductFacts('8690504034506', recordedAlbeniComplete);
+  const draft = makeDraft('8690504034506', [ocr('productName', 'ALBENİ'), ocr('ingredientsText', 'Şeker, bitkisel yağ, buğday unu'), ocr('allergenDeclaration', 'Süt, gluten içerir'), ocr('netQuantity', '40 g')]);
+  const merged = mergeCandidates('8690504034506', [off, draftCandidate('8690504034506', draft)]);
+  const items = buildReviewItems(draft, merged);
+  const byField = Object.fromEntries(items.map((i) => [i.field, i]));
+  assert(deriveFieldComparison(byField.productName, null) === 'same', '"ALBENİ" ≈ "Albeni" → aynı (Türkçe İ normalize)');
+  assert(deriveFieldComparison(byField.ingredientsText, null) === 'conflict', 'farklı içindekiler metni → çatışmalı');
+  assert(merged.fields.ingredientsText.value === recordedAlbeniComplete.ingredientsText && merged.fields.ingredientsText.conflict === 'unresolved', 'çatışmada OFF içindekiler korunur, otomatik kazanan yok');
+  assert(deriveFieldComparison(byField.allergenDeclaration, null) === 'conflict' && byField.allergenDeclaration.existingValueText?.startsWith('Beyana göre içerir'), 'alerjen: kayıtlı beyan metni gösterilir, otomatik karşılaştırma yok → insan kararı');
+  assert(deriveFieldComparison(byField.netQuantity, null) === 'packaging_only', 'OFF mobil kaydında net miktar yok → yalnız ambalajda');
+  assert(deriveFieldComparison(byField.nutrition, null) === 'no_data', 'besin metni girilmedi → veri yok');
+  assert(deriveFieldComparison(byField.ingredientsText, 'unreadable') === 'unreadable', 'karar okunamıyor → okunamıyor');
+  const progress = computeReviewProgress(items, { productName: { decision: 'confirmed' }, ingredientsText: { decision: 'corrected', correctedText: '' } });
+  assert(progress.decided === 1 && progress.total === 5, 'boş düzeltme metni karar sayılmaz: 1/5');
+  for (const copy of Object.values(FIELD_COMPARISON_COPY)) for (const bad of FORBIDDEN) assert(!`${copy.label} ${copy.note}`.toLowerCase().includes(bad), `yasak ifade: ${bad}`);
 });
 
 (async () => {

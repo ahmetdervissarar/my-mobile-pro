@@ -41,6 +41,18 @@ export async function saveLocallyReviewedRecord(record: LocallyReviewedRecord): 
   }
 }
 
+/** Bir taslağa bağlı tüm inceleme kayıtlarını siler ("Taslağı ve fotoğrafları sil"). */
+export async function deleteReviewedRecordsForDraft(draftId: string): Promise<boolean> {
+  try {
+    const store = await readStore();
+    for (const [id, record] of Object.entries(store)) if (record.draftId === draftId) delete store[id];
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function loadLatestReviewedRecord(gtin: string | null | undefined): Promise<LocallyReviewedRecord | null> {
   if (!gtin) return null;
   const store = await readStore();

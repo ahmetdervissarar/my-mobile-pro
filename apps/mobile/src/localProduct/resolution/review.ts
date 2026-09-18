@@ -25,6 +25,8 @@ export interface ReviewItem {
   /** Yapılandırılmış kaynakta (ör. OFF) aynı alan için mevcut değer; çatışma görünür kalsın diye. */
   existingValueText: string | null;
   existingSourceLabel: string | null;
+  /** Kayıtlı değerin kaynaktan çekilme zamanı (gözlem değildir). */
+  existingFetchedAt: string | null;
 }
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -35,14 +37,79 @@ const SOURCE_LABEL: Record<string, string> = {
   beta_inference: 'Tahmin (ürün verisi değil)',
 };
 
-function existingText(merged: MergedProductRecord | null, field: ProductFactField): { text: string | null; label: string | null } {
-  if (!merged) return { text: null, label: null };
+/** Yapılandırılmış değeri kullanıcı diline çevirir; teknik JSON göstermez. */
+function structuredValueText(field: ProductFactField, value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') return value;
+  if (field === 'allergenDeclaration') {
+    const d = value as AllergenDeclaration;
+    if (d.status !== 'readable') return null;
+    const parts: string[] = [];
+    if (d.declaredTags.length > 0) parts.push(`Beyana göre içerir: ${d.declaredTags.join(', ')}`);
+    if (d.traceTags.length > 0) parts.push(`İçerebilir: ${d.traceTags.join(', ')}`);
+    return parts.length > 0 ? parts.join(' · ') : 'Kayıtta alerjen listelenmemiş (garanti değildir)';
+  }
+  if (field === 'netQuantity' && typeof value === 'object') {
+    const q = value as { value: number; unit: string };
+    return `${q.value} ${q.unit}`;
+  }
+  return null;
+}
+
+function existingText(merged: MergedProductRecord | null, field: ProductFactField): { text: string | null; label: string | null; fetchedAt: string | null } {
+  if (!merged) return { text: null, label: null, fetchedAt: null };
   const f = merged.fields[field];
   const structured = f.evidence.find((e) => e.source.source !== 'user_ocr' && e.structuredValue !== null);
-  if (!structured) return { text: null, label: null };
-  const v = structured.structuredValue;
-  const text = typeof v === 'string' ? v : field === 'allergenDeclaration' ? null : JSON.stringify(v);
-  return { text, label: SOURCE_LABEL[structured.source.source] ?? structured.source.source };
+  if (!structured) return { text: null, label: null, fetchedAt: null };
+  const text = structuredValueText(field, structured.structuredValue);
+  return { text, label: SOURCE_LABEL[structured.source.source] ?? structured.source.source, fetchedAt: structured.source.fetchedAt ?? structured.source.observedAt ?? null };
+}
+
+/**
+ * Alan karşılaştırma durumu (ekranda ikon + metinle gösterilir; renk tek başına anlam taşımaz):
+ * - same: kayıtlı değer ile ambalaj adayı normalize edilince aynı.
+ * - packaging_only: kayıtta bu alan yok; ambalaj adayı yalnız doğrulanmamış adaydır.
+ * - conflict: ikisi de var ve farklı; kayıt korunur, otomatik kazanan yoktur (alerjen alanında
+ *   etiket ile serbest metin otomatik karşılaştırılmaz → her zaman insan kararı).
+ * - unreadable: kullanıcı "Okunamıyor" dedi.
+ * - no_data: ambalaj adayı yok (kayıtlı değer varsa korunur, yoksa alan veri yok kalır).
+ */
+export type FieldComparisonStatus = 'same' | 'packaging_only' | 'conflict' | 'unreadable' | 'no_data';
+
+function normalizeCompare(text: string): string {
+  return text.replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+export function deriveFieldComparison(item: ReviewItem, decision: HumanFieldDecision | null): FieldComparisonStatus {
+  if (decision === 'unreadable') return 'unreadable';
+  if (!item.candidateText) return 'no_data';
+  if (!item.existingValueText) return 'packaging_only';
+  if (item.isAllergen) return 'conflict';
+  return normalizeCompare(item.candidateText) === normalizeCompare(item.existingValueText) ? 'same' : 'conflict';
+}
+
+export const FIELD_COMPARISON_COPY: Record<FieldComparisonStatus, { icon: string; label: string; note: string }> = {
+  same: { icon: '=', label: 'Aynı', note: 'Kayıtlı değer ile ambalaj adayı örtüşüyor; yine de aday olarak kalır.' },
+  packaging_only: { icon: '◔', label: 'Yalnız ambalajda', note: 'Kayıtta bu alan yok; ambalaj adayı doğrulanmamış aday olarak saklanır.' },
+  conflict: { icon: '≠', label: 'Çatışmalı', note: 'Kayıtlı değer ile ambalaj adayı farklı. Kayıt korunuyor; otomatik kazanan yok, kararı siz verin.' },
+  unreadable: { icon: '?', label: 'Okunamıyor', note: 'Bu alan "veri yok / doğrulanmamış" kalır. Bu bir garanti değildir.' },
+  no_data: { icon: '–', label: 'Veri yok', note: 'Ambalaj adayı girilmedi. Kayıtlı değer varsa korunur; yoksa alan boş kalır.' },
+};
+
+export interface ReviewProgress {
+  decided: number;
+  total: number;
+}
+
+export function computeReviewProgress(items: readonly ReviewItem[], decisions: ReviewDecisions): ReviewProgress {
+  const decided = items.filter((item) => {
+    const d = decisions[item.field];
+    if (!d) return false;
+    if (d.decision === 'corrected') return Boolean(d.correctedText && d.correctedText.trim());
+    if (d.decision === 'confirmed') return Boolean(item.candidateText);
+    return true;
+  }).length;
+  return { decided, total: items.length };
 }
 
 /** Alerjen alanı her zaman ilk sıradadır (bilgi hiyerarşisi 1: alerjen kapısı). */
@@ -64,6 +131,7 @@ export function buildReviewItems(draft: ContributionDraft, merged: MergedProduct
       photoEvidenceId: photo ? photoEvidenceId(draft, photo.kind) : null,
       existingValueText: existing.text,
       existingSourceLabel: existing.label,
+      existingFetchedAt: existing.fetchedAt,
     } satisfies ReviewItem;
   });
   return [...items.filter((i) => i.isAllergen), ...items.filter((i) => !i.isAllergen)];
@@ -77,13 +145,8 @@ export interface FieldDecisionInput {
 export type ReviewDecisions = Partial<Record<DraftTextField, FieldDecisionInput>>;
 
 export function isReviewComplete(items: readonly ReviewItem[], decisions: ReviewDecisions): boolean {
-  return items.every((item) => {
-    const d = decisions[item.field];
-    if (!d) return false;
-    if (d.decision === 'corrected') return Boolean(d.correctedText && d.correctedText.trim());
-    if (d.decision === 'confirmed') return Boolean(item.candidateText);
-    return true;
-  });
+  const progress = computeReviewProgress(items, decisions);
+  return progress.total > 0 && progress.decided === progress.total;
 }
 
 export function applyHumanFieldChecks(draft: ContributionDraft, decisions: ReviewDecisions, now: string): LocallyReviewedRecord {

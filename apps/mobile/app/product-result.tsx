@@ -11,6 +11,7 @@ import { isLocalProductRecoveryEnabled } from '../src/localProduct/featureFlag';
 import { ProductDataStateCard } from '../src/localProduct/ProductDataStateCard';
 import { loadLatestContributionDraft } from '../src/localProduct/contributionDraftStorage';
 import { deriveProductDataView, evaluateRecoveryRisk } from '../src/localProduct/productDataState';
+import { useProductFactsSnapshotWriter } from '../src/localProduct/productFactsSnapshot';
 import { CRITICAL_ALLERGEN_CODES } from '../src/localProduct/criticalAllergenCodes';
 import { isAlternativeCandidateSafeForAllergyProfile } from '../src/localProduct/alternativeAllergenFilter';
 import type { ContributionDraft, ProductFactsWire } from '../src/localProduct/types';
@@ -351,6 +352,8 @@ export default function ProductResultScreen() {
   // Bayrak açıkken `beta_inference` ürün verisi olarak gösterilmez ve güvenlik kararına girmez (D3).
   const recoveryProductFacts: ProductFactsWire | null =
     isLocalRecoveryEnabled && backendProductFacts?.dataSource === 'beta_inference' ? null : (backendProductFacts as ProductFactsWire | null);
+  // Aşama 6B: inceleme ekranı aynı OFF kaydını cihaz snapshot'ından yeniden kullanır (yalnız bayrak açıkken).
+  useProductFactsSnapshotWriter(isLocalRecoveryEnabled ? normalizedInput.barcode : null, recoveryProductFacts);
 
   const riskResult: ProductRiskResult = useMemo(() => {
     if (isLocalRecoveryEnabled && searchType === 'barcode') {

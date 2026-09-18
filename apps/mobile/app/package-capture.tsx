@@ -21,6 +21,7 @@ import { CameraView, type BarcodeScanningResult, useCameraPermissions } from 'ex
 
 import { isLocalProductFixtureEnabled, isLocalProductRecoveryEnabled } from '../src/localProduct/featureFlag';
 import {
+  contributionDraftId,
   createContributionDraft,
   DRAFT_TEXT_FIELDS,
   PACKAGE_CAPTURE_STEPS,
@@ -28,6 +29,7 @@ import {
   summarizeContributionDraft,
 } from '../src/localProduct/contributionDraft';
 import { saveContributionDraft } from '../src/localProduct/contributionDraftStorage';
+import { deleteDraftPhotos, persistDraftPhotos } from '../src/localProduct/photoStorage';
 import { describeGtinValidationError, isValidGtin } from '../src/localProduct/gtin';
 import { FIXTURE_LABEL, ocrCandidateFixture } from '../src/localProduct/fixtures';
 import type { CapturedPhoto, ContributionDraft, DraftTextField, OcrCandidate, PackageCaptureStepKind } from '../src/localProduct/types';
@@ -102,7 +104,7 @@ export default function PackageCaptureScreen() {
       if (!photo?.uri) throw new Error('PHOTO_URI_MISSING');
       setPhotos((current) => ({
         ...current,
-        [step.kind]: { kind: step.kind, localUri: photo.uri, takenAt: new Date().toISOString() },
+        [step.kind]: { kind: step.kind, localUri: photo.uri, takenAt: new Date().toISOString(), storage: 'cache', persistentUri: null, contentHash: null },
       }));
       setSkipped((current) => current.filter((k) => k !== step.kind));
     } catch {
@@ -157,17 +159,26 @@ export default function PackageCaptureScreen() {
     setIsSaving(true);
     try {
       const orderedPhotos = PACKAGE_CAPTURE_STEPS.map((s) => photos[s.kind]).filter((p): p is CapturedPhoto => Boolean(p));
+      const now = new Date().toISOString();
+      const draftId = contributionDraftId(gtin, now);
+      // Önce fotoğraflar belge klasörüne kopyalanır; kopyalama başarısızsa taslak KAYDEDİLMEZ (Aşama 6B).
+      const persisted = persistDraftPhotos(draftId, orderedPhotos);
+      if (!persisted.ok) {
+        setSaveError(persisted.errorMessage ?? 'Fotoğraflar kalıcı olarak kaydedilemedi. Tekrar deneyin.');
+        return;
+      }
       const created = createContributionDraft({
         gtin,
-        photos: orderedPhotos,
+        photos: persisted.photos,
         skippedSteps: skipped,
         candidates,
         packagingVersion: packagingVersion || null,
-        now: new Date().toISOString(),
+        now,
       });
       const result = await saveContributionDraft(created);
       if (!result.ok) {
-        // Kayıt başarısız → "Taslak kaydedildi" GÖSTERİLMEZ; kullanıcı bilgilendirilir (proje sahibi düzeltmesi).
+        // Kayıt başarısız → "Taslak kaydedildi" GÖSTERİLMEZ; kopyalanan fotoğraflar temizlenir.
+        deleteDraftPhotos(draftId);
         setSaveError(result.errorMessage ?? 'Taslak kaydedilemedi. Tekrar deneyin.');
         return;
       }

@@ -48,6 +48,28 @@ Bu görev fiyat araştırması değildir; fiyat sağlayıcıları, ağırlıklar
 9. Bayrak: mevcut `EXPO_PUBLIC_LOCAL_PRODUCT_RECOVERY` (varsayılan kapalı). Yeni bayrak, paket, lockfile,
    backend, veritabanı veya dış servis çağrısı eklenmedi.
 
+## Aşama 6B (2026-09-18) — gerçek akışa bağlama ve kalıcı fotoğraf
+
+10. **OFF → inceleme ekranı.** Mobilde OFF için servis cache'i yoktur (`PriceClient.resolve` yalnız ağ
+    çağrısıdır); tercih sırasına göre: (1) cache yok → (3) ürün sonuç ekranının backend'den aldığı AYNI
+    `ProductFactsWire`, GTIN + `savedAt` ile cihaz snapshot'ına yazılır (`productFactsSnapshot.ts`,
+    `product-result.tsx`'e tek hook satırı; yalnız `dataSource==='off'`), inceleme ekranı bunu
+    `createOffProvider` ile çözümlemeye verir; snapshot yoksa (2) mevcut backend uç noktası
+    `GET /api/price/resolve?barcode=` aynı sözleşmeyle kullanılır. Mobil OFF'a doğrudan çağrı yapmaz;
+    ikinci bir ürün veri modeli yoktur. `fetchedAt`/köken/eksik alan/alerjen durumu `offCandidateFromProductFacts`
+    ile korunur. OFF ile ambalaj adayı farklıysa `mergeEngine` çatışmayı `unresolved` bırakır, OFF değeri
+    korunur, kart "≠ Çatışmalı" gösterir; OFF'ta alan yoksa aday "Yalnız ambalajda" (user_ocr) kalır.
+11. **Kalıcı fotoğraf** (`photoStorage.ts`, onaylı `expo-file-system@~19.0.24`, SDK 54 `File/Directory/Paths`):
+    taslak kaydedilirken kamera önbelleğindeki dosya `Paths.document/rafskoru/photos/<taslak-id>/<tür>-<zaman>.<uzantı>`
+    yoluna kopyalanır; MD5 `contentHash`, `persistentUri`, `storage:'persistent'` taslakta tutulur. Kopyalama
+    başarısızsa taslak kaydedilmez ve "kaydedildi" gösterilmez; kısmi kopyalar geri alınır. "Taslağı ve
+    fotoğrafları sil" taslağı, bağlı inceleme kayıtlarını ve klasörü birlikte siler. Yol yalnız barkod+zaman
+    içerir; galeriye/servise gönderim yoktur.
+12. **Kart bilgi tasarımı**: Mevcut kayıt (değer + kaynak + alınma) → Ambalaj adayı (fotoğraf + metin) →
+    Durum (aynı / yalnız ambalajda / çatışmalı / okunamıyor / veri yok; ikon + metin, `deriveFieldComparison`)
+    → Karar. Üstte "İncelenen alan: n / toplam". Alerjen bloğu kayıtlı beyanı da gösterir, otomatik
+    karşılaştırmaz. CTA: "Yerel aday olarak kaydet — doğrulanmış ürün değildir." Senaryo 17 (17/17).
+
 ## Reddedilen / ertelenen seçenekler (ayrıntı ve tablo: araştırma raporu)
 
 - **Cihaz içi OCR** (ML Kit / Apple Vision; `rn-mlkit-ocr`, `expo-mlkit-ocr`): teknik olarak uygun ve

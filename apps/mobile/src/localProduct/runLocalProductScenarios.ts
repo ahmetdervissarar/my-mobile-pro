@@ -132,8 +132,8 @@ scenario('5 Katkı taslağı: okunamayan alerjen alanı → unknown_or_unverifie
   const draft = createContributionDraft({
     gtin: '8690000000041',
     photos: [
-      { kind: 'front', localUri: 'file:///tmp/front.jpg', takenAt: '2026-09-18T11:58:00.000Z' },
-      { kind: 'barcode', localUri: 'file:///tmp/barcode.jpg', takenAt: '2026-09-18T11:58:30.000Z' },
+      { kind: 'front', localUri: 'file:///tmp/front.jpg', takenAt: '2026-09-18T11:58:00.000Z', storage: 'cache' as const, persistentUri: null, contentHash: null },
+      { kind: 'barcode', localUri: 'file:///tmp/barcode.jpg', takenAt: '2026-09-18T11:58:30.000Z', storage: 'cache' as const, persistentUri: null, contentHash: null },
     ],
     skippedSteps: ['allergen', 'nutrition', 'quantity'],
     candidates: ocrCandidateFixture.map((c) => ({ ...c })),
@@ -222,7 +222,7 @@ scenario('9 GTIN doğrulama: uzunluk + kontrol basamağı (proje sahibi düzeltm
 scenario('10 Geçici fotoğraf uyarısı: fotoğraf varsa özet metninde görünür, yoksa görünmez', () => {
   const withPhoto = createContributionDraft({
     gtin: '8690504011521',
-    photos: [{ kind: 'front', localUri: 'file:///cache/front.jpg', takenAt: '2026-09-18T12:00:00.000Z' }],
+    photos: [{ kind: 'front', localUri: 'file:///cache/front.jpg', takenAt: '2026-09-18T12:00:00.000Z', storage: 'cache' as const, persistentUri: null, contentHash: null }],
     skippedSteps: [],
     candidates: [],
     packagingVersion: null,

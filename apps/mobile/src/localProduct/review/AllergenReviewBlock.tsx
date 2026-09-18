@@ -13,11 +13,13 @@ import type { AllergenKey } from '../../userProfile/userProfileTypes';
 export interface AllergenReviewBlockProps {
   candidateText: string | null;
   hasAllergenPhoto: boolean;
+  /** Kayıtlı (okunabilir kaynak) beyanın kullanıcı metni; yoksa null. Kullanıcı girişi bunu değiştirmez. */
+  existingDeclarationText?: string | null;
   /** Cihazdaki profil anahtarları; yalnız "profilinizde tanımlı" hatırlatması için, hiçbir yere gönderilmez. */
   profileAllergens: readonly AllergenKey[];
 }
 
-export function AllergenReviewBlock({ candidateText, hasAllergenPhoto, profileAllergens }: AllergenReviewBlockProps) {
+export function AllergenReviewBlock({ candidateText, hasAllergenPhoto, existingDeclarationText = null, profileAllergens }: AllergenReviewBlockProps) {
   return (
     <View style={styles.block} accessible accessibilityRole="summary" accessibilityLabel="Alerjen beyanı incelemesi. Durum: veri yok, doğrulanmamış.">
       <Text style={styles.title} allowFontScaling>
@@ -28,8 +30,16 @@ export function AllergenReviewBlock({ candidateText, hasAllergenPhoto, profileAl
         alerjen kararına sokmaz.
       </Text>
       <Text style={styles.line} allowFontScaling>
-        Aday metin: {candidateText ?? '— boş —'}
+        Kayıtlı beyan: {existingDeclarationText ?? '— kayıtta okunabilir beyan yok —'}
       </Text>
+      <Text style={styles.line} allowFontScaling>
+        Ambalaj adayı: {candidateText ?? '— boş —'}
+      </Text>
+      {existingDeclarationText && candidateText ? (
+        <Text style={styles.line} allowFontScaling>
+          ≠ Kayıtlı beyan ile ambalaj metni otomatik karşılaştırılmaz; kayıt korunur, kararı siz verin.
+        </Text>
+      ) : null}
       <Text style={styles.line} allowFontScaling>
         Fotoğraf: {hasAllergenPhoto ? 'var (geçici önbellek)' : 'yok'}
       </Text>

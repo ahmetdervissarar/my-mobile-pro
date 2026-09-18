@@ -161,12 +161,25 @@ const reviewFieldCard = readMobileFile('src/localProduct/review/ReviewFieldCard.
 const allergenReviewBlock = readMobileFile('src/localProduct/review/AllergenReviewBlock.tsx');
 
 assertIncludes('package-review.tsx', packageReview, 'Alan alan inceleme');
-assertIncludes('package-review.tsx', packageReview, 'doğrulanmış değil');
+assertIncludes('package-review.tsx', packageReview, 'Yerel aday olarak kaydet — doğrulanmış ürün değildir.');
 assertIncludes('package-review.tsx', packageReview, 'locally_reviewed');
+assertIncludes('package-review.tsx', packageReview, 'İncelenen alan');
+assertIncludes('package-review.tsx', packageReview, 'Taslağı ve fotoğrafları sil');
+assertIncludes('package-review.tsx', packageReview, 'loadProductFactsSnapshot');
+assertNotIncludes('package-review.tsx', packageReview, 'openfoodfacts.org/api');
 assertIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'Doğrula');
 assertIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'Düzelt');
 assertIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'Okunamıyor');
 assertIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'doğrulanmamış');
+assertIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'Mevcut kayıt');
+assertIncludes('ReviewFieldCard.tsx', reviewFieldCard, 'Ambalaj adayı');
+assertIncludes('resolution/review.ts', resolutionReview, 'Çatışmalı');
+assertIncludes('resolution/review.ts', resolutionReview, 'Yalnız ambalajda');
+const photoStorage = readMobileFile('src/localProduct/photoStorage.ts');
+assertIncludes('photoStorage.ts', photoStorage, 'Paths.document');
+assertNotIncludes('photoStorage.ts', photoStorage, 'MediaLibrary');
+assertNotIncludes('photoStorage.ts', photoStorage, 'fetch(');
+assertIncludes('contributionDraft.ts', contributionDraft, 'galeriye, sunucuya veya başka bir servise gönderilmez');
 assertIncludes('AllergenReviewBlock.tsx', allergenReviewBlock, 'veri yok / doğrulanmamış');
 assertIncludes('AllergenReviewBlock.tsx', allergenReviewBlock, 'Bu bir garanti değildir');
 assertIncludes('resolution/review.ts', resolutionReview, "status: 'locally_reviewed_candidate'");
