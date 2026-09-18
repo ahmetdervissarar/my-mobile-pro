@@ -1,12 +1,17 @@
 import { getBetaFeedbackLabel, submitBetaFeedback, type BetaFeedbackType } from '../src/api/betaFeedbackClient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getFallbackProductSummary } from '../src/services/productService';
 import type { ProductSearchInput } from '../src/services/productService';
 import { getUserLocationForPricing } from '../src/services/locationService';
 import { evaluateProductRisks } from '../src/riskEngine/riskEngine';
+import { isLocalProductRecoveryEnabled } from '../src/localProduct/featureFlag';
+import { ProductDataStateCard } from '../src/localProduct/ProductDataStateCard';
+import { loadLatestContributionDraft } from '../src/localProduct/contributionDraftStorage';
+import { deriveProductDataView, evaluateRecoveryRisk } from '../src/localProduct/productDataState';
+import type { ContributionDraft, ProductFactsWire } from '../src/localProduct/types';
 
 import type { ProductRiskResult, RiskLevel } from '../src/riskEngine/riskEngine';
 import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorage';
@@ -324,6 +329,9 @@ export default function ProductResultScreen() {
   const [isPriceLoading, setIsPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
   const [alternativeRecommendations, setAlternativeRecommendations] = useState<AlternativeRecommendation[]>([]);
+  // Yerel ürün kurtarma dikey dilimi (bayrak arkasında; kapalıyken eski davranış korunur).
+  const isLocalRecoveryEnabled = isLocalProductRecoveryEnabled();
+  const [contributionDraft, setContributionDraft] = useState<ContributionDraft | null>(null);
 
   useEffect(() => {
     void loadUserSensitivityProfile()
@@ -338,8 +346,23 @@ export default function ProductResultScreen() {
     priceResolution?.result.contentScore?.status === 'partial' ||
     priceResolution?.result.rafScore?.status === 'ready';
   const backendProductFacts = priceResolution?.result.productFacts ?? null;
+  // Bayrak açıkken `beta_inference` ürün verisi olarak gösterilmez ve güvenlik kararına girmez (D3).
+  const recoveryProductFacts: ProductFactsWire | null =
+    isLocalRecoveryEnabled && backendProductFacts?.dataSource === 'beta_inference' ? null : (backendProductFacts as ProductFactsWire | null);
 
   const riskResult: ProductRiskResult = useMemo(() => {
+    if (isLocalRecoveryEnabled && searchType === 'barcode') {
+      // Barkod aramasında tek risk yolu: yalnız OFF kaynaklı, yetersiz olmayan kayıt motora girer.
+      // Kısmi OFF kaydı korunur (D2); OFF dışı / beta_inference / kayıt yok → fail-closed
+      // "değerlendirilemedi" döner, eski ham `productFacts` yoluna düşülmez (D3).
+      return evaluateRecoveryRisk({
+        facts: recoveryProductFacts,
+        fallbackName: priceResolution?.result.productName ?? result.name ?? null,
+        userProfile,
+        trafficLight: recoveryProductFacts ? productFactsToRiskTrafficLight(recoveryProductFacts) : null,
+      });
+    }
+
     if (backendProductFacts?.isComplete) {
       return evaluateProductRisks({
         name:
@@ -391,7 +414,21 @@ export default function ProductResultScreen() {
       nutriScore: result.nutriScore ?? null,
       userProfile,
     });
-  }, [backendProductFacts, hasBackendFoodAnalysis, priceResolution?.result.productName, result, userProfile]);
+  }, [backendProductFacts, hasBackendFoodAnalysis, isLocalRecoveryEnabled, priceResolution?.result.productName, recoveryProductFacts, result, searchType, userProfile]);
+
+  // Katkı taslağı (yalnız cihazda): ekran odağa geldiğinde barkoda göre yeniden okunur.
+  useFocusEffect(
+    useCallback(() => {
+      if (!isLocalRecoveryEnabled) return;
+      let isActive = true;
+      void loadLatestContributionDraft(normalizedInput.barcode).then((draft) => {
+        if (isActive) setContributionDraft(draft);
+      });
+      return () => {
+        isActive = false;
+      };
+    }, [isLocalRecoveryEnabled, normalizedInput.barcode]),
+  );
 
   useEffect(() => {
     setResult(getInitialResult(normalizedInput));
@@ -719,6 +756,14 @@ const CRITICAL_ALLERGEN_CODES = [
     !backendProductFacts &&
     priceResult?.rafScore?.status === 'unavailable' &&
     (priceResult?.price ?? null) === null;
+  const productDataView = isLocalRecoveryEnabled
+    ? deriveProductDataView({
+        facts: recoveryProductFacts,
+        isLoading: isPriceLoading,
+        resolveCompleted: isBackendCompletedResolve,
+      })
+    : null;
+  const showRecoveryCard = Boolean(productDataView && normalizedInput.barcode && searchType === 'barcode');
   const shouldShowAlternativeUnavailableNotice = Boolean(
     !isPriceLoading &&
       priceResult &&
@@ -780,7 +825,25 @@ const CRITICAL_ALLERGEN_CODES = [
           </View>
         ) : null}
 
-        {shouldShowProductFactsNotice ? (
+        {showRecoveryCard && productDataView ? (
+          <ProductDataStateCard
+            view={productDataView}
+            draft={contributionDraft}
+            profileAllergens={userProfile.allergens}
+            onAddPackageInfo={() =>
+              router.push({
+                pathname: '/package-capture',
+                params: { barcode: normalizedInput.barcode ?? '', productName: displayProductName ?? '' },
+              })
+            }
+            onSearchByName={() =>
+              router.push({ pathname: '/search', params: { initialQuery: normalizedInput.productName ?? '' } })
+            }
+            onPhotoSearch={() => router.push('/photo-search')}
+          />
+        ) : null}
+
+        {shouldShowProductFactsNotice && !showRecoveryCard ? (
           <View style={styles.productFactsNoticeCard}>
             <Text style={styles.productFactsNoticeTitle}>Ürün verisi eksik</Text>
             <Text style={styles.productFactsNoticeText}>
@@ -800,7 +863,7 @@ const CRITICAL_ALLERGEN_CODES = [
             ) : null}
           </View>
         ) : null}
-        {isUnknownProduct ? (
+        {isUnknownProduct && !showRecoveryCard ? (
           <View style={styles.productFactsNoticeCard}>
             <Text style={styles.productFactsNoticeTitle}>Ürün bulunamadı</Text>
             <Text style={styles.productFactsNoticeText}>

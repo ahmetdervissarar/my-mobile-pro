@@ -103,4 +103,38 @@ for (const [fileName, content] of [
   assertNotIncludes(fileName, content, 'qanlÄ±ÅŸ');
 }
 
+// Local product recovery slice (feature-flagged): three data states, package capture, candidate draft.
+const productDataStateCard = readMobileFile('src/localProduct/ProductDataStateCard.tsx');
+const packageCapture = readMobileFile('app/package-capture.tsx');
+const productDataState = readMobileFile('src/localProduct/productDataState.ts');
+const contributionDraft = readMobileFile('src/localProduct/contributionDraft.ts');
+
+assertIncludes('ProductDataStateCard.tsx', productDataStateCard, 'Ürün verisi bulunamadı');
+assertIncludes('ProductDataStateCard.tsx', productDataStateCard, 'Paket bilgisini ekle');
+assertIncludes('ProductDataStateCard.tsx', productDataStateCard, 'Ürün kaydı kısmi');
+assertIncludes('ProductDataStateCard.tsx', productDataStateCard, 'Aday kayıt, doğrulanmadı');
+assertIncludes('ProductDataStateCard.tsx', productDataStateCard, 'skordan bağımsızdır');
+assertIncludes('productDataState.ts', productDataState, 'Beyana göre içerir');
+assertIncludes('productDataState.ts', productDataState, 'İçerebilir');
+assertIncludes('productDataState.ts', productDataState, 'Alerjen verisi yok / doğrulanmamış');
+assertIncludes('productDataState.ts', productDataState, 'Bu bir garanti değildir');
+assertIncludes('package-capture.tsx', packageCapture, 'OCR bu sürümde yok');
+assertIncludes('package-capture.tsx', packageCapture, 'GELİŞTİRME FIXTURE');
+assertIncludes('package-capture.tsx', packageCapture, 'aday, gönderilmez');
+assertIncludes('contributionDraft.ts', contributionDraft, 'veri yok / doğrulanmamış');
+assertIncludes('contributionDraft.ts', contributionDraft, 'no_upload_in_this_build');
+
+for (const [fileName, content] of [
+  ['ProductDataStateCard.tsx', productDataStateCard],
+  ['package-capture.tsx', packageCapture],
+  ['productDataState.ts', productDataState],
+  ['contributionDraft.ts', contributionDraft],
+]) {
+  assertNotIncludes(fileName, content, 'alerjen içermez');
+  assertNotIncludes(fileName, content, 'güvenli alternatif');
+  assertNotIncludes(fileName, content, 'ürün güvenlidir');
+  assertNotIncludes(fileName, content, 'garanti eder');
+  assertNotIncludes(fileName, content, 'alerjensiz');
+}
+
 console.log('MOBILE_BETA_WORDING_GUARD_OK');
