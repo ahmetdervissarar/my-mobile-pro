@@ -190,10 +190,20 @@ export default function PackageCaptureScreen() {
           ))}
         </View>
         <Text style={styles.helper}>
-          Sınır: bu sürüm taslağı cihazda tutar, hiçbir yere göndermez. Sonraki görev: insan doğrulaması ve gönderim kanalı.
+          Sınır: bu sürüm taslağı cihazda tutar, hiçbir yere göndermez. Sonraki adım: alan alan inceleme (aday kalır, doğrulanmış olmaz).
         </Text>
-        <Pressable style={styles.primaryButton} accessibilityRole="button" accessibilityLabel="Ürün sonucuna dön" onPress={() => router.back()}>
-          <Text style={styles.primaryButtonText}>Ürün sonucuna dön</Text>
+        {draft.gtin ? (
+          <Pressable
+            style={styles.primaryButton}
+            accessibilityRole="button"
+            accessibilityLabel="Alan alan incelemeye geç"
+            onPress={() => router.replace({ pathname: '/package-review', params: { gtin: draft.gtin ?? '' } })}
+          >
+            <Text style={styles.primaryButtonText}>Alan alan incelemeye geç</Text>
+          </Pressable>
+        ) : null}
+        <Pressable style={styles.secondaryButton} accessibilityRole="button" accessibilityLabel="Ürün sonucuna dön" onPress={() => router.back()}>
+          <Text style={styles.secondaryButtonText}>Ürün sonucuna dön</Text>
         </Pressable>
       </ScrollView>
     );

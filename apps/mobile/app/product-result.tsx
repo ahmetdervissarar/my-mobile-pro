@@ -830,6 +830,7 @@ function isExplicitlyAlternativesIneligible(input: {
               router.push({ pathname: '/search', params: { initialQuery: normalizedInput.productName ?? '' } })
             }
             onPhotoSearch={() => router.push('/photo-search')}
+            onReviewDraft={() => router.push({ pathname: '/package-review', params: { gtin: normalizedInput.barcode ?? '' } })}
           />
         ) : null}
 

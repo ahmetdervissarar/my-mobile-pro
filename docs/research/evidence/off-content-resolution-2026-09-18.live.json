@@ -1,0 +1,374 @@
+{
+  "measuredAt": "2026-09-18T19:30:16.432Z",
+  "userAgent": "RafSkoru-research/0.1 (closed beta content-resolution spike; github.com/ahmetdervissarar/my-mobile-pro)",
+  "endpoint": "GET https://world.openfoodfacts.org/api/v2/product/{gtin}.json?fields=…",
+  "requestCount": 9,
+  "results": [
+    {
+      "gtin": "8690504121336",
+      "why": "OFF TR ürün sayfası (arama sonucu): Ülker Çokokrem 400 g",
+      "http": 200,
+      "elapsedMs": 958,
+      "found": true,
+      "identity": {
+        "product_name": "Ülker Çokokrem 400 G",
+        "brands": "Çokokrem",
+        "quantity": "400 g",
+        "countries_tags": [
+          "en:turkey"
+        ],
+        "lang": "tr",
+        "last_modified_t": 1786460801
+      },
+      "fieldsPresent": {
+        "ingredientsText": true,
+        "allergens": true,
+        "traces": false,
+        "nutrition": true,
+        "nutriScore": true,
+        "nova": false,
+        "image": true,
+        "quantity": true,
+        "brand": true,
+        "name": true
+      },
+      "allergens_tags": [
+        "en:milk",
+        "en:nuts",
+        "en:soybeans"
+      ],
+      "traces_tags": [],
+      "states_tags": [
+        "en:to-be-completed",
+        "en:nutrition-facts-completed",
+        "en:ingredients-completed",
+        "en:expiration-date-to-be-completed",
+        "en:packaging-code-to-be-completed",
+        "en:characteristics-to-be-completed",
+        "en:origins-to-be-completed",
+        "en:categories-completed",
+        "en:brands-completed",
+        "en:packaging-to-be-completed",
+        "en:quantity-completed",
+        "en:product-name-completed",
+        "en:photos-to-be-validated"
+      ],
+      "recoveredFieldCount": 8,
+      "missing": [
+        "traces",
+        "nova"
+      ]
+    },
+    {
+      "gtin": "8680181051347",
+      "why": "OFF TR ürün sayfası (arama sonucu): Torku Nefis Ayran 2 l",
+      "http": 200,
+      "elapsedMs": 142,
+      "found": true,
+      "identity": {
+        "product_name": "Nefis Ayran",
+        "brands": "Torku",
+        "quantity": "2l",
+        "countries_tags": [
+          "en:turkey"
+        ],
+        "lang": "tr",
+        "last_modified_t": 1756489971
+      },
+      "fieldsPresent": {
+        "ingredientsText": true,
+        "allergens": true,
+        "traces": false,
+        "nutrition": true,
+        "nutriScore": true,
+        "nova": true,
+        "image": true,
+        "quantity": true,
+        "brand": true,
+        "name": true
+      },
+      "allergens_tags": [
+        "en:milk"
+      ],
+      "traces_tags": [],
+      "states_tags": [
+        "en:to-be-completed",
+        "en:nutrition-facts-completed",
+        "en:ingredients-completed",
+        "en:expiration-date-to-be-completed",
+        "en:packaging-code-to-be-completed",
+        "en:characteristics-to-be-completed",
+        "en:origins-to-be-completed",
+        "en:categories-completed",
+        "en:brands-completed",
+        "en:packaging-to-be-completed",
+        "en:quantity-completed",
+        "en:product-name-completed",
+        "en:photos-to-be-validated"
+      ],
+      "recoveredFieldCount": 9,
+      "missing": [
+        "traces"
+      ]
+    },
+    {
+      "gtin": "8690504034506",
+      "why": "OFF TR ürün sayfası (arama sonucu): Ülker Albeni 40 g",
+      "http": 200,
+      "elapsedMs": 231,
+      "found": true,
+      "identity": {
+        "product_name": "Albeni",
+        "brands": "Ülker",
+        "quantity": "40 G",
+        "countries_tags": [
+          "en:russia",
+          "en:turkey"
+        ],
+        "lang": "en",
+        "last_modified_t": 1787999799
+      },
+      "fieldsPresent": {
+        "ingredientsText": true,
+        "allergens": true,
+        "traces": true,
+        "nutrition": true,
+        "nutriScore": true,
+        "nova": true,
+        "image": true,
+        "quantity": true,
+        "brand": true,
+        "name": true
+      },
+      "allergens_tags": [
+        "en:gluten",
+        "en:milk",
+        "en:nuts",
+        "en:soybeans"
+      ],
+      "traces_tags": [
+        "en:gluten",
+        "en:nuts"
+      ],
+      "states_tags": [
+        "en:to-be-completed",
+        "en:nutrition-facts-completed",
+        "en:ingredients-completed",
+        "en:expiration-date-to-be-completed",
+        "en:packaging-code-to-be-completed",
+        "en:characteristics-to-be-completed",
+        "en:origins-to-be-completed",
+        "en:categories-completed",
+        "en:brands-completed",
+        "en:packaging-to-be-completed",
+        "en:quantity-completed",
+        "en:product-name-completed",
+        "en:photos-to-be-validated"
+      ],
+      "recoveredFieldCount": 10,
+      "missing": []
+    },
+    {
+      "gtin": "8690120070056",
+      "why": "OFF TR ürün sayfası (arama sonucu): Torku Banada",
+      "http": 200,
+      "elapsedMs": 156,
+      "found": true,
+      "identity": {
+        "product_name": "Torku Banada",
+        "brands": "TORKU",
+        "quantity": "400 g",
+        "countries_tags": [
+          "en:france",
+          "en:turkey"
+        ],
+        "lang": "fr",
+        "last_modified_t": 1787466847
+      },
+      "fieldsPresent": {
+        "ingredientsText": true,
+        "allergens": true,
+        "traces": false,
+        "nutrition": true,
+        "nutriScore": true,
+        "nova": true,
+        "image": true,
+        "quantity": true,
+        "brand": true,
+        "name": true
+      },
+      "allergens_tags": [
+        "en:gluten"
+      ],
+      "traces_tags": [],
+      "states_tags": [
+        "en:to-be-completed",
+        "en:nutrition-facts-completed",
+        "en:ingredients-completed",
+        "en:expiration-date-to-be-completed",
+        "en:packaging-code-to-be-completed",
+        "en:characteristics-to-be-completed",
+        "en:origins-to-be-completed",
+        "en:categories-completed",
+        "en:brands-completed",
+        "en:packaging-to-be-completed",
+        "en:quantity-completed",
+        "en:product-name-completed",
+        "en:photos-to-be-validated"
+      ],
+      "recoveredFieldCount": 9,
+      "missing": [
+        "traces"
+      ]
+    },
+    {
+      "gtin": "8683347030866",
+      "why": "Open Prices ∩ OFF kesişimi (evidence 2026-09-18), tamlık bilinmiyor",
+      "http": 200,
+      "elapsedMs": 139,
+      "found": true,
+      "identity": {
+        "product_name": "Glutensiz Karabuğday Patlağı",
+        "brands": "wefood",
+        "quantity": "100 g",
+        "countries_tags": [
+          "en:turkey"
+        ],
+        "lang": "tr",
+        "last_modified_t": 1787457337
+      },
+      "fieldsPresent": {
+        "ingredientsText": true,
+        "allergens": false,
+        "traces": false,
+        "nutrition": true,
+        "nutriScore": true,
+        "nova": true,
+        "image": true,
+        "quantity": true,
+        "brand": true,
+        "name": true
+      },
+      "allergens_tags": [],
+      "traces_tags": [],
+      "states_tags": [
+        "en:to-be-completed",
+        "en:nutrition-facts-completed",
+        "en:ingredients-completed",
+        "en:expiration-date-to-be-completed",
+        "en:packaging-code-to-be-completed",
+        "en:characteristics-to-be-completed",
+        "en:origins-to-be-completed",
+        "en:categories-completed",
+        "en:brands-completed",
+        "en:packaging-to-be-completed",
+        "en:quantity-completed",
+        "en:product-name-completed",
+        "en:photos-to-be-validated"
+      ],
+      "recoveredFieldCount": 8,
+      "missing": [
+        "allergens",
+        "traces"
+      ]
+    },
+    {
+      "gtin": "8682815041403",
+      "why": "Open Prices kaydı; OFF 404 (evidence 2026-09-18) → beklenen: bulunamadı",
+      "http": 404,
+      "elapsedMs": 139,
+      "found": false,
+      "status_verbose": "product found with a different product type: product"
+    },
+    {
+      "gtin": "8691381000486",
+      "why": "NEGATİF KONTROL (proje sahibi); kimlik yalnız OFF yanıtından okunur",
+      "http": 200,
+      "elapsedMs": 139,
+      "found": true,
+      "identity": {
+        "product_name": "Beypazarı Doğal Maden Suyu",
+        "brands": "Beypazarı",
+        "quantity": "200 ml",
+        "countries_tags": [
+          "en:turkey"
+        ],
+        "lang": "tr",
+        "last_modified_t": 1787499056
+      },
+      "fieldsPresent": {
+        "ingredientsText": true,
+        "allergens": false,
+        "traces": false,
+        "nutrition": true,
+        "nutriScore": true,
+        "nova": true,
+        "image": true,
+        "quantity": true,
+        "brand": true,
+        "name": true
+      },
+      "allergens_tags": [],
+      "traces_tags": [],
+      "states_tags": [
+        "en:to-be-completed",
+        "en:nutrition-facts-completed",
+        "en:ingredients-completed",
+        "en:expiration-date-to-be-completed",
+        "en:packaging-code-to-be-completed",
+        "en:characteristics-to-be-completed",
+        "en:origins-to-be-completed",
+        "en:categories-completed",
+        "en:brands-completed",
+        "en:packaging-to-be-completed",
+        "en:quantity-completed",
+        "en:product-name-completed",
+        "en:photos-to-be-validated"
+      ],
+      "recoveredFieldCount": 8,
+      "missing": [
+        "allergens",
+        "traces"
+      ]
+    }
+  ],
+  "search": {
+    "http": 503,
+    "elapsedMs": 219,
+    "note": "ilk deneme 503 (sunucu tarafı)",
+    "retry": {
+      "http": 200,
+      "retryDelaySec": 3,
+      "count": 13,
+      "page_size": 5,
+      "sample": [
+        {
+          "brands": "Torku",
+          "code": "8680181051347",
+          "product_name": "Nefis Ayran",
+          "quantity": "2l"
+        },
+        {
+          "brands": "Torku",
+          "code": "8680181051392",
+          "product_name": "Yarım Yağlı Taze Lor Peyniri"
+        },
+        {
+          "brands": "Torku",
+          "code": "8690120093932"
+        },
+        {
+          "brands": "torku",
+          "code": "8690120138725",
+          "product_name": "tortu tam kraker",
+          "quantity": "120gr"
+        },
+        {
+          "brands": "Torku",
+          "code": "8690120097459"
+        }
+      ],
+      "endpoint": "GET https://world.openfoodfacts.org/api/v2/search?brands_tags=torku&countries_tags=en:turkey&fields=code,product_name,brands,quantity&page_size=5"
+    }
+  }
+}

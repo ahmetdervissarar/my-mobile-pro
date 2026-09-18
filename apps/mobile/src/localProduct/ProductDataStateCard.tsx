@@ -21,6 +21,8 @@ export interface ProductDataStateCardProps {
   onAddPackageInfo: () => void;
   onSearchByName: () => void;
   onPhotoSearch: () => void;
+  /** Aşama 6: taslağı alan alan inceleme ekranına götürür (aday kalır, doğrulanmış olmaz). */
+  onReviewDraft?: () => void;
 }
 
 const STATE_META: Record<ProductDataView['state'], { icon: string; title: string; a11y: string }> = {
@@ -37,7 +39,7 @@ const ALLERGEN_ICON: Record<ReturnType<typeof describeAllergenDeclaration>['tone
   unknown: '?',
 };
 
-export function ProductDataStateCard({ view, draft, profileAllergens, onAddPackageInfo, onSearchByName, onPhotoSearch }: ProductDataStateCardProps) {
+export function ProductDataStateCard({ view, draft, profileAllergens, onAddPackageInfo, onSearchByName, onPhotoSearch, onReviewDraft }: ProductDataStateCardProps) {
   const meta = STATE_META[view.state];
   const allergen = describeAllergenDeclaration(view.allergenDeclaration);
   const profileMatches = findProfileDeclarationMatches(view.allergenDeclaration, profileAllergens);
@@ -106,6 +108,17 @@ export function ProductDataStateCard({ view, draft, profileAllergens, onAddPacka
           <Text style={styles.draftText}>
             Fotoğraf: {draft.photos.length} · Eksik alan: {draft.missingFields.length} · Ambalaj sürümü: {draft.packagingVersion ?? 'belirtilmedi'}
           </Text>
+          {onReviewDraft && draft.gtin ? (
+            <Pressable
+              style={styles.secondaryButton}
+              accessibilityRole="button"
+              accessibilityLabel="Taslağı alan alan incele"
+              accessibilityHint="Fotoğraf ve aday metni yan yana gösterir; Doğrula, Düzelt veya Okunamıyor seçersiniz"
+              onPress={onReviewDraft}
+            >
+              <Text style={styles.secondaryButtonText}>Taslağı alan alan incele (aday kalır)</Text>
+            </Pressable>
+          ) : null}
         </View>
       ) : null}
 
