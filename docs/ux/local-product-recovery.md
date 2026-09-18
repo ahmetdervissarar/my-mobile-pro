@@ -1,14 +1,40 @@
 # Yerel ürün kurtarma + ürün sonuç arayüzü — tasarım kararları
 
 Dal: `feat/local-product-recovery-ux` · Taban: `9e62ad3` · Bayrak: `EXPO_PUBLIC_LOCAL_PRODUCT_RECOVERY=1`
-(kapalıyken ürün sonuç ekranı eski davranışını aynen korur). Fiyat modülü, fiyat ağırlıkları ve fiyat araştırma dosyalarına dokunulmadı.
+(kapalıyken ürün sonuç ekranı eski davranışını aynen korur). Fiyat kaynağı, fiyat hesaplaması, ağırlıklar,
+sağlayıcılar ve fiyat araştırma dosyalarına dokunulmadı; üçüncü turda yalnız `apps/mobile/src/price/types.ts`'e
+tek, opsiyonel bir alerjen güvenliği alanı (`traceAllergens`) eklendi (bkz. §"Alternatif aday filtresi").
 
 Denetimler (birer tur): `product-data-contract-reviewer` (fallback hizalama, ham `allergens` kaynağı), `allergen-safety-reviewer` (F1 ve F2 düzeltildi — bkz. ADR-004), `release-gatekeeper` (aşağıda).
+
+## Revizyon 2026-09-18 (üçüncü tur) — odaklı güvenlik commit'i
+1. **Alternatif aday filtresi artık trace veriyle de çalışıyor.** `AlternativeCandidateSignals`'a
+   (`apps/mobile/src/price/types.ts`) tek, opsiyonel `traceAllergens` alanı eklendi — fiyat kaynağı,
+   hesaplama, ağırlık, sağlayıcı veya araştırma dosyalarının hiçbiri değişmedi
+   (`git diff -- apps/mobile/src/price` ile doğrulandı). Ana ürün ve alternatif adaylar artık **tek
+   kaynaklı** bir kritik kod listesini (`src/localProduct/criticalAllergenCodes.ts`) ve **aynı**
+   değerlendirme fonksiyonunu paylaşır (`src/localProduct/alternativeAllergenFilter.ts`); declared ve
+   trace ayrı test edilir (`runAlternativeAllergenFilterScenarios.ts`, 9/9). ADR-004'teki eski "açık
+   madde" (filtre trace veriyle fiilen çalışmıyordu) kapatıldı.
+2. **`egg` eklendi.** `PROFILE_EGG_ALLERGEN_MATCH` ve `PROFILE_EGG_TRACE_MATCH`, OFF `eggs` etiketi için;
+   mevcut kategori bazlı `PROFILE_EGG_PRECAUTION`'ın **yerine geçmez**, üçü ayrı kod olarak kalır.
+3. **Genel OFF etiketi düzeltmesi (regresyon giderildi).** İkinci turda `TREE_NUTS_KEYWORDS`'e serbest
+   metin olarak eklenen `"nuts"` ve `SHELLFISH_KEYWORDS`'e eklenen `"crustaceans"`/`"molluscs"`
+   kaldırıldı — bunlar "coconuts", "doughnuts" gibi ilgisiz kelimelerle ve yapılandırılmış dizide
+   declared `"peanuts"` ile de eşleşiyordu (ağaç yemişleri profiline yanlışlıkla fıstık ürünü
+   gösteriyordu). Artık bu üç genel etiket **yalnız** yapılandırılmış `allergens`/`traceAllergens`
+   dizisinde tam eşleşmeyle (`arrayHasExactTag`) değerlendiriliyor; coconut/doughnut/peanuts negatif
+   testleri eklendi.
+4. **ADR-004 düzeltildi.** Önceki sürümün "gösterilmez" (Karar) / "fiilen çalışmıyor" (Kapsam dışı)
+   çelişkisi giderildi; belge artık gerçek davranışı anlatıyor.
+5. **Kereviz, hardal, sülfit, acı bakla — bilinçli olarak dokunulmadı.** Bu değişmez alerjenler hâlâ
+   profil modelinde yok; bayrak (`EXPO_PUBLIC_LOCAL_PRODUCT_RECOVERY`) varsayılan kapalı kalmaya devam
+   ediyor ve bu eksiklik genel kullanıma açılmayı engelleyen kalıcı bir koşul (ADR-004 madde 10).
 
 ## Revizyon 2026-09-18 (ikinci tur) — proje sahibi kararları
 1. **F2 kapatıldı** (`docs/decisions/ADR-004-trace-allergen-profile-matching.md`): risk motoru artık
    `trace_may_contain` ("içerebilir") için de `PROFILE_*_TRACE_MATCH` kodu üretir, kritik uyarı alanında
-   görünür. Alternatif aday filtresi için açık madde kaldı (aşağıda).
+   görünür.
 2. Bu PR'da dış gönderim kanalı **açılmadı**; taslak cihazda `candidate` kalır (değişmedi). İnsan
    doğrulama ekranı (fotoğraf + aday alan yan yana, alan başına doğrula/düzelt/okunamıyor,
    `VerificationRecord`, henüz `rafskoru_verified` değil) ayrı, sonraki bir PR'dır.
@@ -68,17 +94,30 @@ Kritik profil uyarısı kartı (mevcut) ve yeni durum kartındaki "Alerjen beyan
 `PROFILE_*_TRACE_MATCH` kuralı çalıştırır (`productTraceContainsAny`, aynı anahtar kelime listeleri).
 Mesaj dili: "eser miktarda içerebilir / çapraz bulaşma beyanı", "kesin içerik bilgisi değildir",
 "tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır". Trace kodları
-`CRITICAL_ALLERGEN_CODES`'a eklendi → kritik uyarı kartında görünür. Ayrıca `TREE_NUTS_KEYWORDS`'e
-`"nuts"`, `SHELLFISH_KEYWORDS`'e `"crustaceans"`/`"molluscs"` eklendi — OFF'un genel etiketleri
-öncesinde declared eşleşmeyi de sessizce atlıyordu (bağımsız düzeltme, ADR-004 §Bağlam).
+`CRITICAL_ALLERGEN_CODES`'a eklendi → kritik uyarı kartında görünür.
 `toRiskInputFromProductFacts` artık `traceAllergens: declaration.traceTags` de geçirir (yalnız
 `readable` beyanda). Ekranın kendi projeksiyonu (`findProfileDeclarationMatches`) hâlâ ayrı bir metin
 gösterir, ama artık motorun gerçek uyarısıyla tutarlı — çelişmez, aynı bulguyu iki bağlamda anlatır.
+`egg` de (üçüncü tur) aynı desene katıldı: `PROFILE_EGG_ALLERGEN_MATCH`/`PROFILE_EGG_TRACE_MATCH`,
+kategori bazlı `PROFILE_EGG_PRECAUTION`'ın yerine değil, yanına.
 
-**Açık kalan madde:** `AlternativeCandidateSignals` (`apps/mobile/src/price/types.ts`, fiyat modülü) bugün
-yalnız declared `allergens` taşıyor; `traceAllergens` yok. Bu turda **fiyat modülüne dokunulmadı**
-(proje sahibi talimatı). Sonuç: alternatif aday filtresi bugün trace verisiyle çalışamaz — yalnız
-ana ürünün kendi kartı için tam etkin. Aday sinyallerine trace eklenmesi ayrı görev + `price` modülü onayı ister.
+**OFF'un genel etiketleri (`nuts`, `crustaceans`, `molluscs`) — son hâli.** Serbest metin anahtar
+kelimesi olarak DEĞİL, yalnız yapılandırılmış `allergens`/`traceAllergens` dizisinde tam etiket
+eşleşmesiyle değerlendirilir (`arrayHasExactTag`). İkinci turda bu üçü serbest metne (`TREE_NUTS_KEYWORDS`/
+`SHELLFISH_KEYWORDS`) eklenmişti; üçüncü tur bunun "coconuts"/"doughnuts" ve declared `"peanuts"` ile
+yanlış eşleştiğini buldu ve geri aldı — bkz. ADR-004 madde 5, 9.
+
+## Alternatif aday filtresi — declared/trace tek kaynak (üçüncü tur, kapatıldı)
+`AlternativeCandidateSignals`'a (`apps/mobile/src/price/types.ts`) tek, opsiyonel `traceAllergens` alanı
+eklendi — fiyat kaynağı, hesaplama, ağırlık, sağlayıcı ve araştırma dosyalarının hiçbiri değişmedi
+(`git diff -- apps/mobile/src/price` ile doğrulandı, tek dosya tek alan). Ana ürünün kritik kartı ve
+alternatif filtresi artık **tek kaynaklı** bir listeyi paylaşır: `src/localProduct/criticalAllergenCodes.ts`
+(`CRITICAL_ALLERGEN_CODES`, yalnız `*_ALLERGEN_MATCH`/`*_TRACE_MATCH` kodları — kategori ihtiyatları
+hariç). Değerlendirme `src/localProduct/alternativeAllergenFilter.ts::isAlternativeCandidateCriticalMatch`
+üzerinden yapılır; `product-result.tsx`'teki `visibleAlternativeRecommendations` artık ayrı, potansiyel
+olarak sapabilecek bir kopya değil, bu tek fonksiyonu çağırır. Declared ve trace eşleşmesi ayrı test
+edilir (`runAlternativeAllergenFilterScenarios.ts`, 9/9): yalnız trace eşleşen aday da gizlenir; yalnız
+kategori ihtiyatı (ör. `PROFILE_EGG_PRECAUTION`) tek başına bir adayı gizlemez.
 
 ## "Paket bilgisini ekle" akışı (`app/package-capture.tsx`)
 Adımlar ve gerekçe metinleri `PACKAGE_CAPTURE_STEPS`'te: ön yüz → barkod (zorunlu, kamera taramasıyla
@@ -150,15 +189,26 @@ Backend'e yükleme, kullanıcı hesabı ve resmî doğrulama süreci ayrıca, so
 9. GTIN doğrulama: ölçülmüş gerçek GTIN'ler geçerli, geçersiz kontrol basamağı/uzunluk/rakam-dışı reddedilir.
 10. Geçici fotoğraf uyarısı: fotoğraf varsa özette görünür, yoksa görünmez.
 
-Risk motorunun kendi senaryo dosyası (`src/riskEngine/riskEngineScenarios.ts`, 33/33): senaryo 29–33
-ADR-004'ü kapsar — yalnız trace eşleşmesi, declared+trace birlikte, trace var ama profil eşleşmiyor
-(eksik uyarısı bastırılır), OFF genel etiketleri `nuts`/`crustaceans`/`molluscs`.
+Risk motorunun kendi senaryo dosyası (`src/riskEngine/riskEngineScenarios.ts`, **39/39**): senaryo 29–33
+(ikinci tur) yalnız trace eşleşmesi, declared+trace birlikte, trace var ama profil eşleşmiyor (eksik
+uyarısı bastırılır); senaryo 34–39 (üçüncü tur) egg declared/trace, egg+peanut karışık, ve üç negatif
+regresyon testi: "coconut"/"doughnuts" serbest metinde eşleşmez, declared `"peanuts"` ağaç yemişleri
+profiliyle eşleşmez, serbest metindeki `"crustaceans"`/`"molluscs"` (yapılandırılmamış) eşleşmez.
+
+Alternatif aday filtresi senaryo dosyası (`src/localProduct/runAlternativeAllergenFilterScenarios.ts`,
+**9/9**, yeni): declared/trace ayrı gizler, ikisi de yoksa gizlemez, `signals` tanımsızken gizlemez,
+egg declared/trace, genel etiket regresyonları (nuts/peanuts, crustaceans/molluscs), yalnız kategori
+ihtiyatının (`PROFILE_EGG_PRECAUTION`) tek başına gizlemediği, kritik listenin yalnız match kodları
+içerdiği.
 
 Çalıştırma (yeni bağımlılık yok):
 ```
 cd apps/mobile
 npx tsc src/localProduct/runLocalProductScenarios.ts --outDir /tmp/rafskoru-local-product --module commonjs --target es2020 --moduleResolution node --esModuleInterop --skipLibCheck --strict
 node /tmp/rafskoru-local-product/localProduct/runLocalProductScenarios.js
+
+npx tsc src/localProduct/runAlternativeAllergenFilterScenarios.ts --outDir /tmp/rafskoru-alt-filter --module commonjs --target es2020 --moduleResolution node --esModuleInterop --skipLibCheck --strict
+node /tmp/rafskoru-alt-filter/localProduct/runAlternativeAllergenFilterScenarios.js
 ```
 
 ## Doğrulama kapıları
@@ -175,10 +225,17 @@ node /tmp/rafskoru-local-product/localProduct/runLocalProductScenarios.js
 | Backend `npm run check` / `smoke` | uygulanamadı: backend dokunulmadı, bağımlılık kurulu değil |
 
 İkinci tur (proje sahibi düzeltmeleri + ADR-004, aynı gün): `npx tsc --noEmit` PASS ·
-`npm run smoke:beta-wording` PASS (guard genişletildi) · risk senaryoları **33/33** ·
-yerel ürün senaryoları **11/11** · `git diff --check` temiz · gizli anahtar taraması temiz ·
+`npm run smoke:beta-wording` PASS (guard genişletildi) · risk senaryoları 33/33 ·
+yerel ürün senaryoları 11/11 · `git diff --check` temiz · gizli anahtar taraması temiz ·
 `package.json` / lockfile / backend / `price/` modülü değişmedi (yalnız `riskEngine.ts` proje sahibi
 onayıyla, ayrı commit).
+
+Üçüncü tur (odaklı güvenlik commit'i, aynı gün): `npx tsc --noEmit` PASS ·
+`npm run smoke:beta-wording` PASS (guard genişletildi) · risk senaryoları **39/39** · yerel ürün
+senaryoları **11/11** (değişmedi) · alternatif aday filtresi senaryoları **9/9** (yeni) ·
+`git diff -- apps/mobile/src/price` → yalnız bir opsiyonel alan eklemesi (`traceAllergens`), fiyat
+kaynağı/hesaplama/ağırlık/sağlayıcı/araştırma dosyası değişmedi · `package.json` / lockfile / backend
+değişmedi.
 
 ## Ekran görüntüleri
 Alınamadı: bu ortamda Android/iOS emülatörü yok ve `expo start --web` için gereken `react-dom` /
@@ -187,7 +244,10 @@ Kullanıcı testi için: `EXPO_PUBLIC_LOCAL_PRODUCT_RECOVERY=1 npx expo start` i
 OFF'ta olmayan bir barkodda ✕ kartı ve "Paket bilgisini ekle" görünür.
 
 ## Açık bırakılanlar (sonraki görevler)
-- **Alternatif aday filtresi trace verisi taşımıyor** (fiyat modülü, bu turda dokunulmadı — ADR-004 §Kapsam dışı).
+- **Kereviz, hardal, sülfit/sülfür dioksit, acı bakla profil modeli yok.** Türkiye'de zorunlu alerjenlerdir;
+  bayrak varsayılan kapalı kalır, genel kullanıma açılma bu eksiklik giderilmeden düşünülmez (ADR-004 madde 10).
+- Backend'in gerçek alternatif API yanıtının `signals.traceAllergens` alanını doldurup doldurmadığı bu
+  görevin kapsamı dışında (backend dokunulmadı); alan boşsa `[]` varsayılır, "iz beyanı yok" demektir.
 - İnsan doğrulama ekranı (fotoğraf + aday alan, doğrula/düzelt/okunamıyor, yerel `VerificationRecord`,
   henüz `rafskoru_verified` değil) ve gönderim kanalı; bu sürümde yok, ayrı PR.
 - Ad/fotoğraf araması için **gerçek** çözümleyici (OFF → doğrulanmış yerel ürün → izinli üretici kaynağı

@@ -125,12 +125,17 @@ assertIncludes('contributionDraft.ts', contributionDraft, 'veri yok / doğrulanm
 assertIncludes('contributionDraft.ts', contributionDraft, 'no_upload_in_this_build');
 
 // ADR-004 (risk motoru trace desteği) + proje sahibi düzeltmeleri (kayıt hatası, GTIN
-// doğrulama, geçici fotoğraf uyarısı, izin gerekçesi önce).
+// doğrulama, geçici fotoğraf uyarısı, izin gerekçesi önce, alternatif aday trace filtresi,
+// egg declared/trace kodları).
 const riskEngine = readMobileFile('src/riskEngine/riskEngine.ts');
 const gtin = readMobileFile('src/localProduct/gtin.ts');
 const contributionDraftStorage = readMobileFile('src/localProduct/contributionDraftStorage.ts');
+const criticalAllergenCodes = readMobileFile('src/localProduct/criticalAllergenCodes.ts');
+const alternativeAllergenFilter = readMobileFile('src/localProduct/alternativeAllergenFilter.ts');
 
 assertIncludes('riskEngine.ts', riskEngine, 'PROFILE_MILK_TRACE_MATCH');
+assertIncludes('riskEngine.ts', riskEngine, 'PROFILE_EGG_ALLERGEN_MATCH');
+assertIncludes('riskEngine.ts', riskEngine, 'PROFILE_EGG_TRACE_MATCH');
 assertIncludes('riskEngine.ts', riskEngine, 'eser miktarda içerebilir');
 assertIncludes('riskEngine.ts', riskEngine, 'çapraz bulaşma');
 assertIncludes('riskEngine.ts', riskEngine, 'tıbbi hüküm niteliği taşımaz');
@@ -143,6 +148,9 @@ assertIncludes('package-capture.tsx', packageCapture, 'geçici olarak tutulur');
 assertIncludes('package-capture.tsx', packageCapture, 'önizleme');
 assertIncludes('package-capture.tsx', packageCapture, 'Kaydediliyor');
 
+assertIncludes('criticalAllergenCodes.ts', criticalAllergenCodes, 'PROFILE_EGG_ALLERGEN_MATCH');
+assertIncludes('alternativeAllergenFilter.ts', alternativeAllergenFilter, 'traceAllergens');
+
 for (const [fileName, content] of [
   ['ProductDataStateCard.tsx', productDataStateCard],
   ['package-capture.tsx', packageCapture],
@@ -150,6 +158,8 @@ for (const [fileName, content] of [
   ['contributionDraft.ts', contributionDraft],
   ['gtin.ts', gtin],
   ['contributionDraftStorage.ts', contributionDraftStorage],
+  ['criticalAllergenCodes.ts', criticalAllergenCodes],
+  ['alternativeAllergenFilter.ts', alternativeAllergenFilter],
 ]) {
   assertNotIncludes(fileName, content, 'alerjen içermez');
   assertNotIncludes(fileName, content, 'güvenli alternatif');

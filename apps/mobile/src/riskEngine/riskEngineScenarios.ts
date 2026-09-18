@@ -1058,4 +1058,156 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
     ],
   },
 
+  // ── Senaryo 34 (proje sahibi düzeltmesi, üçüncü tur) ────────────────────────────
+  {
+    id: "scenario-34",
+    title: "Yumurta alerjisi + declared 'eggs' (OFF etiketi) → PROFILE_EGG_ALLERGEN_MATCH",
+    description:
+      "Üründe allergens=['eggs'] (OFF'un çoğul etiketi) var. Profilde egg tanımlı. " +
+      "Kategori bazlı PROFILE_EGG_PRECAUTION ürün adı anahtar kelimesi taşımadığı için " +
+      "tetiklenmez; ayrı, içerik/beyan tabanlı PROFILE_EGG_ALLERGEN_MATCH tetiklenmeli.",
+    input: {
+      name: "paket ürün",
+      ingredients: "un, şeker, yumurta tozu, kabartıcı",
+      allergens: ["eggs"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["egg"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_EGG_ALLERGEN_MATCH",
+    ],
+  },
+
+  // ── Senaryo 35 (proje sahibi düzeltmesi, üçüncü tur) ────────────────────────────
+  {
+    id: "scenario-35",
+    title: "Yumurta alerjisi + yalnız trace 'eggs' → PROFILE_EGG_TRACE_MATCH, declared değil",
+    description:
+      "traceAllergens=['eggs'] var, declared allergens boş. Profilde egg tanımlı. " +
+      "Beklenen: yalnız PROFILE_EGG_TRACE_MATCH; PROFILE_EGG_ALLERGEN_MATCH tetiklenmez.",
+    input: {
+      name: "kraker",
+      ingredients: "un, tuz, bitkisel yağ",
+      allergens: [],
+      traceAllergens: ["eggs"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["egg"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_EGG_TRACE_MATCH",
+    ],
+  },
+
+  // ── Senaryo 36 (proje sahibi düzeltmesi, üçüncü tur) — negatif test ─────────────
+  {
+    id: "scenario-36",
+    title: "Ağaç yemişleri profili + içindekilerde 'coconut'/'doughnuts' → EŞLEŞME YOK (regresyon)",
+    description:
+      "Önceki sürümde TREE_NUTS_KEYWORDS'e serbest metin olarak eklenen 'nuts' kelimesi " +
+      "'coconuts' ve 'doughnuts' gibi ilgisiz İngilizce kelimelerle de eşleşiyordu. Bu " +
+      "düzeltmeden sonra 'nuts' yalnız yapılandırılmış dizide tam etiket olarak aranır; " +
+      "serbest metinde aranmaz. Beklenen: hiçbir eşleşme yok.",
+    input: {
+      name: "coconut doughnuts",
+      ingredients: "un, şeker, coconut flakes, doughnuts glazing, bitkisel yağ",
+      allergens: [],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["tree_nuts"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "MISSING_ALLERGEN_INFO",
+    ],
+  },
+
+  // ── Senaryo 37 (proje sahibi düzeltmesi, üçüncü tur) — negatif test ─────────────
+  {
+    id: "scenario-37",
+    title: "Ağaç yemişleri profili + declared 'peanuts' (yer fıstığı) → EŞLEŞME YOK (regresyon)",
+    description:
+      "Önceki sürümde 'nuts' alt dizesi 'peanuts' içinde de geçtiği için declared " +
+      "allergens=['peanuts'] yanlışlıkla PROFILE_TREE_NUTS_ALLERGEN_MATCH da üretiyordu. " +
+      "Artık yalnız tam etiket eşleşmesi arandığı için 'peanuts' ≠ 'nuts'; ağaç yemişleri " +
+      "profiliyle eşleşmemeli (fıstık alerjisi ayrı bir profil anahtarıdır, burada tanımlı değil).",
+    input: {
+      name: "fıstık ezmesi",
+      ingredients: "yer fıstığı, tuz",
+      allergens: ["peanuts"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["tree_nuts"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [],
+  },
+
+  // ── Senaryo 38 (proje sahibi düzeltmesi, üçüncü tur) — negatif test ─────────────
+  {
+    id: "scenario-38",
+    title: "Kabuklu deniz ürünü profili + içindekilerde 'crustaceans' serbest metin → EŞLEŞME YOK",
+    description:
+      "'crustaceans'/'molluscs' artık SHELLFISH_KEYWORDS'te değil; serbest içindekiler " +
+      "metninde geçmeleri eşleşme üretmemeli. Yalnız yapılandırılmış dizide tam etiket " +
+      "olarak geçtiklerinde (senaryo 33) eşleşme üretilir.",
+    input: {
+      name: "deniz ürünleri makarna sosu",
+      ingredients: "domates, zeytinyağı, may contain traces of crustaceans and molluscs, baharat",
+      allergens: [],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["shellfish"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "MISSING_ALLERGEN_INFO",
+    ],
+  },
+
+  // ── Senaryo 39 (proje sahibi düzeltmesi, üçüncü tur) ────────────────────────────
+  {
+    id: "scenario-39",
+    title: "Yumurta + fıstık birlikte, declared ve trace karışık, farklı profil anahtarları",
+    description:
+      "allergens=['eggs'] (declared) ve traceAllergens=['peanuts'] (trace). Profilde hem egg " +
+      "hem peanut tanımlı. Beklenen: PROFILE_PEANUT_TRACE_MATCH VE PROFILE_EGG_ALLERGEN_MATCH " +
+      "birlikte, ayrı kodlarla (PRIORITY_ORDER: peanut > egg).",
+    input: {
+      name: "atıştırmalık ürün",
+      ingredients: "un, şeker, tuz",
+      allergens: ["eggs"],
+      traceAllergens: ["peanuts"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["egg", "peanut"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_PEANUT_TRACE_MATCH",
+      "PROFILE_EGG_ALLERGEN_MATCH",
+    ],
+  },
+
 ];

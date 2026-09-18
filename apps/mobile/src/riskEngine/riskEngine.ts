@@ -8,6 +8,11 @@
  * 2026-09-18 (ADR-004): declared_contains ("içerir") ile trace_may_contain ("içerebilir")
  * profil eşleşmesi ayrı kod ve alanlarla eklendi (proje sahibi onayı; allergen-safety-reviewer
  * F2 bulgusunun kapatılması). Bkz. docs/decisions/ADR-004-trace-allergen-profile-matching.md.
+ *
+ * 2026-09-18 (üçüncü tur, proje sahibi onayı): `egg` için declared+trace eşleşmesi eklendi
+ * (kategori bazlı PROFILE_EGG_PRECAUTION'dan ayrı); OFF'un genel "nuts"/"crustaceans"/"molluscs"
+ * etiketleri serbest metin taramasından çıkarıldı, yalnız yapılandırılmış dizide tam eşleşmeyle
+ * değerlendiriliyor (önceki sürüm "coconuts"/"doughnuts"/"peanuts" ile yanlış eşleşiyordu).
  */
 
 import type { TrafficLightNutrition } from "../types/product";
@@ -116,6 +121,8 @@ const PRIORITY_ORDER: string[] = [
   "PROFILE_FISH_TRACE_MATCH",
   "PROFILE_SHELLFISH_ALLERGEN_MATCH",
   "PROFILE_SHELLFISH_TRACE_MATCH",
+  "PROFILE_EGG_ALLERGEN_MATCH",
+  "PROFILE_EGG_TRACE_MATCH",
   "PROFILE_EGG_PRECAUTION",
   "PROFILE_BLOOD_SUGAR_PRECAUTION",
   "PROFILE_SODIUM_PRECAUTION",
@@ -207,6 +214,23 @@ function productTraceContainsAny(product: ProductRiskInput, keywords: string[]):
 }
 
 /**
+ * OFF'un tür belirtmeyen GENEL alerjen etiketleri ("nuts", "crustaceans", "molluscs").
+ * Bunlar serbest metin (`productContainsAny`/`productTraceContainsAny`) ile ARANMAZ: kısa,
+ * yaygın İngilizce kelimeler oldukları için ilgisiz içeriklerle çakışırlar — "nuts" içindekiler
+ * metninde "coconuts", "doughnuts" veya yapılandırılmış dizide "peanuts" (ayrı bir alerjendir)
+ * ile de eşleşirdi. Bu nedenle yalnız YAPILANDIRILMIŞ `allergens`/`traceAllergens` dizisinde,
+ * TAM etiket eşleşmesiyle değerlendirilir (proje sahibi düzeltmesi, 2026-09-18).
+ */
+function arrayHasExactTag(list: string[] | undefined, tags: readonly string[]): boolean {
+  if (!list || list.length === 0) return false;
+  const normalized = list.map((item) => normalizeText(item.trim()));
+  return tags.some((tag) => normalized.includes(normalizeText(tag)));
+}
+
+const GENERIC_TREE_NUT_TAGS = ["nuts"] as const;
+const GENERIC_SHELLFISH_TAGS = ["crustaceans", "molluscs"] as const;
+
+/**
  * Yer fıstığı / peanut arama terimleri.
  *
  * "fıstık" tek başına Antep fıstığını da kapsayabilir; bu nedenle
@@ -293,9 +317,9 @@ const LACTOSE_KEYWORDS = [
 
 /**
  * Ağaç yemişleri (tree nuts) arama terimleri.
- * Yer fıstığı (peanut/groundnut) bu listeye dahil değildir; ayrı kural kapsar.
- * "nuts": OFF'un genel etiketi (ör. `allergens_tags: ["nuts"]`); belirli fındık/badem
- * türü belirtilmeden gelebilir (ADR-004).
+ * Yer fıstığı (peanut/groundnut) bu listeye dahil değildir; ayrı kural kapsar. OFF'un genel
+ * "nuts" etiketi burada YOKTUR — bkz. `GENERIC_TREE_NUT_TAGS` / `arrayHasExactTag` (serbest
+ * metinde "coconuts"/"doughnuts" ile, yapılandırılmış dizide "peanuts" ile yanlış eşleşirdi).
  */
 const TREE_NUTS_KEYWORDS = [
   "fındık ezmesi",
@@ -313,7 +337,6 @@ const TREE_NUTS_KEYWORDS = [
   "pistachio",
   "pecan",
   "macadamia",
-  "nuts",
 ];
 
 /** Susam / sesame arama terimleri. */
@@ -341,10 +364,11 @@ const FISH_KEYWORDS = [
 ];
 
 /**
- * Kabuklu deniz ürünleri alerjisi arama terimleri.
- * "crustaceans", "molluscs": OFF'un iki ayrı genel etiketi; bu üründe tek `shellfish`
- * profil anahtarına eşlenir. Bu birleştirme kesinleşmiş sayılmaz — mevzuat/gıda uzmanı
- * incelemesi gerektirir (allergen-safety skill, ADR-004).
+ * Kabuklu deniz ürünleri alerjisi arama terimleri. OFF'un genel "crustaceans"/"molluscs"
+ * etiketleri burada YOKTUR — bkz. `GENERIC_SHELLFISH_TAGS` / `arrayHasExactTag` (yalnız
+ * yapılandırılmış dizide tam eşleşme; serbest metinde aranmaz). Bu ikisinin tek `shellfish`
+ * profil anahtarına eşlenmesi kesinleşmiş sayılmaz — mevzuat/gıda uzmanı incelemesi gerektirir
+ * (allergen-safety skill, ADR-004).
  */
 const SHELLFISH_KEYWORDS = [
   "kabuklu deniz ürünü",
@@ -363,8 +387,23 @@ const SHELLFISH_KEYWORDS = [
   "ahtapot",
   "squid",
   "kalamar",
-  "crustaceans",
-  "molluscs",
+];
+
+/**
+ * Yumurta alerjisi arama terimleri. Mevcut `PROFILE_EGG_PRECAUTION` kategori bazlı bir
+ * ihtiyattır (işlenmiş et/tatlı/vegan ürün grubu); bu liste ayrı, içerik/beyan tabanlı
+ * `PROFILE_EGG_ALLERGEN_MATCH` / `PROFILE_EGG_TRACE_MATCH` kuralları içindir (proje sahibi
+ * düzeltmesi, 2026-09-18 — üçüncü tur).
+ */
+const EGG_KEYWORDS = [
+  "yumurta tozu",
+  "egg powder",
+  "yumurta akı",
+  "yumurta sarısı",
+  "albümin",
+  "albumin",
+  "yumurta",
+  "egg",
 ];
 
 // ─── Yardımcı Fonksiyonlar ────────────────────────────────────────────────────
@@ -751,9 +790,11 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
     }
 
     // ── Profil Kural A7: Ağaç yemişleri hassasiyeti + içerikte fındık/nut beyanı ─
+    // Belirli tür (fındık, badem…) serbest metinde; OFF'un genel "nuts" etiketi yalnız
+    // yapılandırılmış `allergens` dizisinde tam eşleşmeyle (proje sahibi düzeltmesi).
     if (
       profile.allergens.includes("tree_nuts") &&
-      productContainsAny(product, TREE_NUTS_KEYWORDS)
+      (productContainsAny(product, TREE_NUTS_KEYWORDS) || arrayHasExactTag(product.allergens, GENERIC_TREE_NUT_TAGS))
     ) {
       warnings.push({
         code: "PROFILE_TREE_NUTS_ALLERGEN_MATCH",
@@ -771,7 +812,7 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
     // ── Profil Kural A7b: Ağaç yemişleri + eser/çapraz bulaşma beyanı (ADR-004) ──
     if (
       profile.allergens.includes("tree_nuts") &&
-      productTraceContainsAny(product, TREE_NUTS_KEYWORDS)
+      (productTraceContainsAny(product, TREE_NUTS_KEYWORDS) || arrayHasExactTag(product.traceAllergens, GENERIC_TREE_NUT_TAGS))
     ) {
       warnings.push({
         code: "PROFILE_TREE_NUTS_TRACE_MATCH",
@@ -855,9 +896,11 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
     }
 
     // ── Profil Kural A10: Kabuklu deniz ürünleri alerjisi + içerikte beyan ────
+    // OFF'un genel "crustaceans"/"molluscs" etiketleri yalnız yapılandırılmış `allergens`
+    // dizisinde tam eşleşmeyle (proje sahibi düzeltmesi).
     if (
       profile.allergens.includes("shellfish") &&
-      productContainsAny(product, SHELLFISH_KEYWORDS)
+      (productContainsAny(product, SHELLFISH_KEYWORDS) || arrayHasExactTag(product.allergens, GENERIC_SHELLFISH_TAGS))
     ) {
       warnings.push({
         code: "PROFILE_SHELLFISH_ALLERGEN_MATCH",
@@ -875,7 +918,7 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
     // ── Profil Kural A10b: Kabuklu deniz ürünleri + eser/çapraz bulaşma (ADR-004) ─
     if (
       profile.allergens.includes("shellfish") &&
-      productTraceContainsAny(product, SHELLFISH_KEYWORDS)
+      (productTraceContainsAny(product, SHELLFISH_KEYWORDS) || arrayHasExactTag(product.traceAllergens, GENERIC_SHELLFISH_TAGS))
     ) {
       warnings.push({
         code: "PROFILE_SHELLFISH_TRACE_MATCH",
@@ -886,6 +929,41 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
           "profilinizde kabuklu deniz ürünleri alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
           "ambalajdaki alerjen ve çapraz bulaşma beyanını dikkatle kontrol etmeniz önerilir. " +
           "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A11: Yumurta alerjisi + içerikte yumurta beyanı (proje sahibi, 2026-09-18) ─
+    // Kategori bazlı PROFILE_EGG_PRECAUTION'ın YERİNE geçmez; ayrı, içerik/beyan tabanlı koddur.
+    if (
+      profile.allergens.includes("egg") &&
+      productContainsAny(product, EGG_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_EGG_ALLERGEN_MATCH",
+        title: "Yumurta alerjisi için yüksek dikkat",
+        message:
+          "Bu üründe yumurta ile ilişkili içerik veya alerjen beyanı bulunuyor. " +
+          "Profilinizde yumurta alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
+          "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A11b: Yumurta alerjisi + eser/çapraz bulaşma beyanı ────
+    if (
+      profile.allergens.includes("egg") &&
+      productTraceContainsAny(product, EGG_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_EGG_TRACE_MATCH",
+        title: "Yumurta için çapraz bulaşma uyarısı",
+        message:
+          "Bu üründe yumurta için eser miktarda içerebilir / çapraz bulaşma beyanı bulunuyor. " +
+          "Bu, kesin içerik bilgisi değildir; ancak profilinizde yumurta alerjisi tanımlı olduğu " +
+          "için ürünü tüketmeden önce ambalajdaki alerjen ve çapraz bulaşma beyanını dikkatle " +
+          "kontrol etmeniz önerilir. Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
         level: "high",
       });
     }

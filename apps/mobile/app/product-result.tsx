@@ -11,6 +11,8 @@ import { isLocalProductRecoveryEnabled } from '../src/localProduct/featureFlag';
 import { ProductDataStateCard } from '../src/localProduct/ProductDataStateCard';
 import { loadLatestContributionDraft } from '../src/localProduct/contributionDraftStorage';
 import { deriveProductDataView, evaluateRecoveryRisk } from '../src/localProduct/productDataState';
+import { CRITICAL_ALLERGEN_CODES } from '../src/localProduct/criticalAllergenCodes';
+import { isAlternativeCandidateCriticalMatch } from '../src/localProduct/alternativeAllergenFilter';
 import type { ContributionDraft, ProductFactsWire } from '../src/localProduct/types';
 
 import type { ProductRiskResult, RiskLevel } from '../src/riskEngine/riskEngine';
@@ -622,31 +624,12 @@ function isExplicitlyAlternativesIneligible(input: {
   return input.alternativesEligible === false;
 }
 
-const CRITICAL_ALLERGEN_CODES = [
-    'PROFILE_PEANUT_ALLERGEN_MATCH',
-    'PROFILE_PEANUT_TRACE_MATCH',
-    'PROFILE_SOY_ALLERGEN_MATCH',
-    'PROFILE_SOY_TRACE_MATCH',
-    'PROFILE_GLUTEN_ALLERGEN_MATCH',
-    'PROFILE_GLUTEN_TRACE_MATCH',
-    'PROFILE_MILK_ALLERGEN_MATCH',
-    'PROFILE_MILK_TRACE_MATCH',
-    'PROFILE_LACTOSE_ALLERGEN_MATCH',
-    'PROFILE_LACTOSE_TRACE_MATCH',
-    'PROFILE_TREE_NUTS_ALLERGEN_MATCH',
-    'PROFILE_TREE_NUTS_TRACE_MATCH',
-    'PROFILE_SESAME_ALLERGEN_MATCH',
-    'PROFILE_SESAME_TRACE_MATCH',
-    'PROFILE_FISH_ALLERGEN_MATCH',
-    'PROFILE_FISH_TRACE_MATCH',
-    'PROFILE_SHELLFISH_ALLERGEN_MATCH',
-    'PROFILE_SHELLFISH_TRACE_MATCH',
-    // ADR-004: trace kodları eklendi. Not: bugün `AlternativeCandidateSignals`
-    // (price modülü) trace verisi taşımıyor; bu liste yalnız ana ürünün kendi
-    // kartı için etkin. Aday filtresi trace verisi olmadan bu kodları üretemez.
-  ];
+  // CRITICAL_ALLERGEN_CODES tek kaynaktır (src/localProduct/criticalAllergenCodes.ts):
+  // ana ürünün kritik kartı ve alternatif aday filtresi AYNI listeyi kullanır (proje sahibi
+  // düzeltmesi, 2026-09-18) — ikisi ayrı listeye sahip olursa bir ürün kritik sayılıp aynı
+  // alerjenle eşleşen bir alternatif "uygun" gösterilebilirdi.
   const criticalProfileWarnings = riskResult.warnings.filter((w) =>
-    CRITICAL_ALLERGEN_CODES.includes(w.code),
+    (CRITICAL_ALLERGEN_CODES as readonly string[]).includes(w.code),
   );
 
   const isBackendBarcodeLoading = Boolean(normalizedInput.barcode && isPriceLoading && !priceResolution);
@@ -677,19 +660,12 @@ const CRITICAL_ALLERGEN_CODES = [
           return false;
         }
 
-        const candidateSignals = recommendation.candidate.signals;
-        const candidateRisk = evaluateProductRisks({
-          name: recommendation.candidate.productName,
-          allergens: candidateSignals?.allergens ?? [],
-          additives: candidateSignals?.additives ?? [],
-          hasAdditives: (candidateSignals?.additives ?? []).length > 0,
-          novaGroup: candidateSignals?.novaGroup ?? null,
-          nutriScore: candidateSignals?.nutriScoreGrade ?? null,
+        // Declared ("içerir") VE trace ("içerebilir") ayrı alanlarla, aynı kritik kod listesiyle
+        // değerlendirilir; ana ürünle aynı fonksiyon (proje sahibi düzeltmesi, 2026-09-18).
+        return !isAlternativeCandidateCriticalMatch(
+          recommendation.candidate.signals,
+          recommendation.candidate.productName,
           userProfile,
-        });
-
-        return !candidateRisk.warnings.some((warning) =>
-          CRITICAL_ALLERGEN_CODES.includes(warning.code),
         );
       }),
     [alternativeRecommendations, currentProductGroupKey, userProfile],

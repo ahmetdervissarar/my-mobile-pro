@@ -28,7 +28,16 @@ Adım = başlık + neden + atlarsan ne olur; "Tekrar çek", "Önceki adım" (ger
 - **Kamera izni gerekçe-önce.** Ekran açılır açılmaz OS izin isteği tetiklenmez; önce neden gerektiği yazılır, izin yalnız kullanıcının bastığı butonla istenir.
 
 ## Alerjen kapısı genişletme (declared vs. trace)
-`declared_contains` ("içerir") ve `trace_may_contain` ("içerebilir") ayrı motor kodu ve mesaj gerektirir; biri diğerine indirgenmez. Motor değişikliği (yeni `PROFILE_*_TRACE_MATCH` gibi) proje sahibi onayı + ayrı commit + ADR + `allergen-safety-reviewer` ister (bkz. ADR-004). Kritik uyarı listesine (`CRITICAL_ALLERGEN_CODES`) yeni kod eklenirse, o kodu üretebilen her girdi yolu (ana ürün, alternatif aday) kontrol edilir; bir yol veri taşımıyorsa (ör. fiyat modülündeki aday sinyalleri) bu açıkça "kapsam dışı" olarak belgelenir, sessizce eksik bırakılmaz.
+`declared_contains` ("içerir") ve `trace_may_contain` ("içerebilir") ayrı motor kodu ve mesaj gerektirir; biri diğerine indirgenmez. Motor değişikliği (yeni `PROFILE_*_TRACE_MATCH` gibi) proje sahibi onayı + ayrı commit + ADR + `allergen-safety-reviewer` ister (bkz. ADR-004). Kritik uyarı listesi (`CRITICAL_ALLERGEN_CODES`, `src/localProduct/criticalAllergenCodes.ts`) TEK kaynaktır — ana ürünün kritik kartı ve alternatif aday filtresi (`alternativeAllergenFilter.ts`) aynı listeyi ve aynı `evaluateProductRisks` çağrısını kullanır. Yeni kritik kod eklenirse, o kodu üretebilen HER girdi yolu (ana ürün + alternatif aday) veri taşıyacak şekilde güncellenir; bir yol veri taşımıyorsa "kapsam dışı" **geçici** bir not değildir, kapatılana kadar açık madde olarak izlenir (bkz. ADR-004 revizyon geçmişi — bir önceki tur tam da bunu unutup çelişkili belge bıraktı).
+
+## Anahtar kelime eşleştirme riski (kısa/genel kelimeler)
+`riskEngine.ts`'teki serbest metin eşleştirmesi (`productContainsAny`) alt dize arar; kısa veya genel
+bir kelime (`"nuts"` gibi) ilgisiz kelimelerle ("coconuts", "doughnuts") veya yapılandırılmış dizide başka
+bir alerjenle ("peanuts") yanlışlıkla eşleşir. OFF'un TÜR belirtmeyen genel etiketleri (`nuts`,
+`crustaceans`, `molluscs`) bu yüzden serbest metinde değil, yalnız yapılandırılmış `allergens`/
+`traceAllergens` dizisinde TAM etiket eşleşmesiyle (`arrayHasExactTag`) değerlendirilir. Yeni bir genel
+OFF etiketi eklerken: önce "bu kelime başka, ilgisiz veya daha dar bir alerjenin içinde geçer mi?" diye
+sor; geçiyorsa serbest metne eklenmez, negatif test yazılır.
 
 ## Erişilebilirlik
 Renk tek anlam taşıyıcısı olmaz (ikon + metin). Dokunma alanı ≥48 pt. Her buton `accessibilityRole` + `accessibilityLabel`; durum değişimi `accessibilityLiveRegion`; devre dışı `accessibilityState`. Dinamik yazı açık; satır yüksekliği ölçeklenir. Teknik alan adı yerine Türkçe etiket.
