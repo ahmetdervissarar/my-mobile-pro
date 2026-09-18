@@ -2,10 +2,37 @@
 
 Dal: `feat/local-product-recovery-ux` · Taban: `9e62ad3` · Bayrak: `EXPO_PUBLIC_LOCAL_PRODUCT_RECOVERY=1`
 (kapalıyken ürün sonuç ekranı eski davranışını aynen korur). Fiyat kaynağı, fiyat hesaplaması, ağırlıklar,
-sağlayıcılar ve fiyat araştırma dosyalarına dokunulmadı; üçüncü turda yalnız `apps/mobile/src/price/types.ts`'e
-tek, opsiyonel bir alerjen güvenliği alanı (`traceAllergens`) eklendi (bkz. §"Alternatif aday filtresi").
+sağlayıcılar, fiyat araştırma dosyaları, backend ve seed veri dosyalarına dokunulmadı; üçüncü turda yalnız
+`apps/mobile/src/price/types.ts`'e tek, opsiyonel bir alerjen güvenliği alanı (`traceAllergens`) eklendi
+(bkz. §"Alternatif aday filtresi"). Dördüncü tur bu alanın gerçek backend/seed verisinde HİÇ dolmadığını
+tespit edip fail-closed bir kanıt-eksikliği kapısı ekledi (bkz. §"Revizyon 2026-09-18 (dördüncü tur)").
 
 Denetimler (birer tur): `product-data-contract-reviewer` (fallback hizalama, ham `allergens` kaynağı), `allergen-safety-reviewer` (F1 ve F2 düzeltildi — bkz. ADR-004), `release-gatekeeper` (aşağıda).
+
+## Revizyon 2026-09-18 (dördüncü tur) — uçtan uca kanıt-eksikliği düzeltmesi
+Proje sahibi üçüncü turdan sonra gerçek veri yolunu denetledi: mobil `traceAllergens` tip eklemesi
+gerçek backend (`apps/backend/src/price/alternatives/types.ts`) ve gerçek seed verisinde
+(`apps/backend/data/seed-candidates.json`, 11 aday) hiç karşılığı olmadığından, 9/9 test yalnız elle
+kurulmuş nesnelerde geçiyor, gerçek uygulama yanıtında filtre fiilen etkisizdi. Bu tur geniş bir
+backend/alternatif veri hattı **kurmadı**; bunun yerine küçük, fail-closed bir düzeltme ekledi
+(bkz. ADR-004 revizyon 4):
+1. `hasCompleteAllergenEvidence(signals)` — bir adayın kanıtı yalnız `allergens` VE `traceAllergens`
+   HER İKİSİ de açıkça dizi olarak mevcutsa eksiksiz sayılır. `signals` yokluğu veya
+   `traceAllergens === undefined` "iz beyanı yok" DEĞİL, "kanıt eksik" sayılır.
+2. `isAlternativeCandidateSafeForAllergyProfile(signals, productName, userProfile)` —
+   `product-result.tsx`'teki filtrenin tek giriş noktası oldu. Kullanıcı profilinde alerjen yoksa
+   davranış aynen korunur; en az bir alerjen varsa kanıtı eksik/doğrulanmamış adaylar kritik eşleşme
+   kontrolüne bile geçilmeden gizlenir. Uydurulmuş bir `verified=true` bayrağına dayanmaz.
+3. Seed dosyasına kanıtsız `traceAllergens: []` **eklenmedi** — boş dizi de negatif kanıt olurdu ve
+   dosya gerçek veriyi yansıtmayan bir iddia taşırdı.
+4. Ampirik sonuç (doğrudan dosya okunarak doğrulandı): bugün seed'deki 11 adayın hiçbiri kanıt eşiğini
+   geçemiyor → alerji profili tanımlı kullanıcı için tüm seed alternatifleri gizlenir; profili olmayan
+   kullanıcının davranışı değişmez.
+5. Testler: `runAlternativeAllergenFilterScenarios.ts` 9/9 → **14/14** (5 yeni: signals yok,
+   `traceAllergens` undefined, trace eşleşmesi, doğrulanmış kanıt+çakışma yok, GERÇEK
+   `seed-candidates.json` dosyasını okuyan senaryo — hem boşluğu hem düzeltmeyi kanıtlıyor).
+6. Fiyat modülü, backend, seed dosyası, lockfile'lar bu turda **hiç** değişmedi (aşağıdaki doğrulama
+   kapılarında listelenen `git diff` komutlarıyla doğrulandı).
 
 ## Revizyon 2026-09-18 (üçüncü tur) — odaklı güvenlik commit'i
 1. **Alternatif aday filtresi artık trace veriyle de çalışıyor.** `AlternativeCandidateSignals`'a
@@ -237,6 +264,17 @@ senaryoları **11/11** (değişmedi) · alternatif aday filtresi senaryoları **
 kaynağı/hesaplama/ağırlık/sağlayıcı/araştırma dosyası değişmedi · `package.json` / lockfile / backend
 değişmedi.
 
+Dördüncü tur (uçtan uca kanıt-eksikliği düzeltmesi, aynı gün): `npx tsc --noEmit` PASS ·
+`npm run smoke:beta-wording` PASS · risk senaryoları **39/39** (değişmedi) · yerel ürün senaryoları
+**11/11** (değişmedi) · alternatif aday filtresi senaryoları **14/14** (9→14, 5 yeni + gerçek
+`seed-candidates.json` senaryosu) ·
+`git diff -- apps/mobile/src/price apps/backend/src/price apps/backend/data/seed-candidates.json
+package.json package-lock.json apps/mobile/package.json apps/mobile/package-lock.json
+apps/backend/package.json apps/backend/package-lock.json` → boş (fiyat/backend/seed/lockfile hiç
+değişmedi) · değişen dosyalar: `app/product-result.tsx` (filtre çağrısı), `src/localProduct/
+alternativeAllergenFilter.ts` (iki yeni fonksiyon), `src/localProduct/
+runAlternativeAllergenFilterScenarios.ts` (5 yeni senaryo).
+
 ## Ekran görüntüleri
 Alınamadı: bu ortamda Android/iOS emülatörü yok ve `expo start --web` için gereken `react-dom` /
 `react-native-web` paketleri lockfile'da yok (kurulum lockfile değişikliği gerektirir; yapılmadı).
@@ -246,8 +284,12 @@ OFF'ta olmayan bir barkodda ✕ kartı ve "Paket bilgisini ekle" görünür.
 ## Açık bırakılanlar (sonraki görevler)
 - **Kereviz, hardal, sülfit/sülfür dioksit, acı bakla profil modeli yok.** Türkiye'de zorunlu alerjenlerdir;
   bayrak varsayılan kapalı kalır, genel kullanıma açılma bu eksiklik giderilmeden düşünülmez (ADR-004 madde 10).
-- Backend'in gerçek alternatif API yanıtının `signals.traceAllergens` alanını doldurup doldurmadığı bu
-  görevin kapsamı dışında (backend dokunulmadı); alan boşsa `[]` varsayılır, "iz beyanı yok" demektir.
+- **(Dördüncü tur ile düzeltildi)** Backend'in gerçek alternatif API yanıtının `signals.traceAllergens`
+  alanını doldurması hâlâ bu görevin kapsamı dışında (backend dokunulmadı). Ancak artık alan yokluğu
+  "iz beyanı yok" OLARAK OKUNMUYOR — "kanıt eksik" sayılıyor ve alerji profili olan kullanıcı için aday
+  fail-closed gizleniyor (bkz. ADR-004 revizyon 4). Backend gerçekten doldurmaya başladığında adaylar
+  otomatik olarak görünür hâle gelecek; bu, ayrı bir entegrasyon görevidir (alan bazlı köken sözleşmesi,
+  `src/contracts/generated.ts`, henüz alternatif adaylara bağlı değil).
 - İnsan doğrulama ekranı (fotoğraf + aday alan, doğrula/düzelt/okunamıyor, yerel `VerificationRecord`,
   henüz `rafskoru_verified` değil) ve gönderim kanalı; bu sürümde yok, ayrı PR.
 - Ad/fotoğraf araması için **gerçek** çözümleyici (OFF → doğrulanmış yerel ürün → izinli üretici kaynağı

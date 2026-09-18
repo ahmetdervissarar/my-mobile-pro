@@ -12,7 +12,7 @@ import { ProductDataStateCard } from '../src/localProduct/ProductDataStateCard';
 import { loadLatestContributionDraft } from '../src/localProduct/contributionDraftStorage';
 import { deriveProductDataView, evaluateRecoveryRisk } from '../src/localProduct/productDataState';
 import { CRITICAL_ALLERGEN_CODES } from '../src/localProduct/criticalAllergenCodes';
-import { isAlternativeCandidateCriticalMatch } from '../src/localProduct/alternativeAllergenFilter';
+import { isAlternativeCandidateSafeForAllergyProfile } from '../src/localProduct/alternativeAllergenFilter';
 import type { ContributionDraft, ProductFactsWire } from '../src/localProduct/types';
 
 import type { ProductRiskResult, RiskLevel } from '../src/riskEngine/riskEngine';
@@ -662,7 +662,9 @@ function isExplicitlyAlternativesIneligible(input: {
 
         // Declared ("içerir") VE trace ("içerebilir") ayrı alanlarla, aynı kritik kod listesiyle
         // değerlendirilir; ana ürünle aynı fonksiyon (proje sahibi düzeltmesi, 2026-09-18).
-        return !isAlternativeCandidateCriticalMatch(
+        // Alerji profili olan kullanıcı için kanıt eksik/doğrulanmamışsa aday fail-closed
+        // gizlenir — bkz. alternativeAllergenFilter.ts (proje sahibi düzeltmesi, dördüncü tur).
+        return isAlternativeCandidateSafeForAllergyProfile(
           recommendation.candidate.signals,
           recommendation.candidate.productName,
           userProfile,
