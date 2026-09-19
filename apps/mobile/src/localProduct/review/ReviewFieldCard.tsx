@@ -3,13 +3,22 @@
  * src/localProduct/review/ReviewFieldCard.tsx
  *
  * Sıra: 1) Mevcut kayıt (kaynak değeri + kaynak adı) · 2) Ambalaj adayı (fotoğraf + kullanıcının yazdığı
- * metin) · 3) Durum (aynı / yalnız ambalajda / çatışmalı / okunamıyor / veri yok; ikon + metin) ·
+ * metin) · 2b) Cihazda OCR (Aşama 7, ADR-006; yalnız "Metni cihazda oku" ile, otomatik çalışmaz) ·
+ * 3) Durum (aynı / yalnız ambalajda / çatışmalı / okunamıyor / veri yok; ikon + metin) ·
  * 4) Karar (Doğrula / Düzelt / Okunamıyor). Dokunma alanı ≥48 pt; her buton accessibilityRole/Label/State.
  * Hiçbir karar alanı doğrulanmış ürün verisi yapmaz; sonuç daima "aday". Teknik sağlayıcı adı gösterilmez.
+ *
+ * OCR sınırı: bu bileşen native OCR paketini DOĞRUDAN çağırmaz; yalnız `ocr/ocrEngine.ts`
+ * sınırını kullanır (`getOcrCapability()` + `createOcrEngine()`). OCR sonucu asla otomatik
+ * "Doğrula" saymaz — yalnız mevcut "Düzelt" metin kutusuna ön dolgu yapar; ham OCR metni ayrı
+ * yerel state'te tutulur, kullanıcı düzeltmesi bunun üzerine ASLA yazmaz.
  */
 
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { createOcrEngine, getOcrCapability } from '../ocr/ocrEngine';
+import type { OcrRunResult } from '../ocr/types';
 import { deriveFieldComparison, FIELD_COMPARISON_COPY } from '../resolution/review';
 import type { ReviewItem, FieldDecisionInput } from '../resolution/review';
 import type { HumanFieldDecision } from '../resolution/types';
@@ -32,12 +41,91 @@ function formatFetchedAt(iso: string | null): string | null {
   return match ? `${match[3]}.${match[2]}.${match[1]}` : iso;
 }
 
+type OcrUiStatus = 'idle' | 'running' | 'done';
+
 export function ReviewFieldCard({ item, decision, onDecision }: ReviewFieldCardProps) {
   const current = decision?.decision ?? null;
   const canConfirm = Boolean(item.candidateText);
   const comparison = deriveFieldComparison(item, current);
   const comparisonCopy = FIELD_COMPARISON_COPY[comparison];
   const fetched = formatFetchedAt(item.existingFetchedAt);
+
+  // Cihazda OCR (Aşama 7) — yalnız fotoğraf varsa gösterilir; otomatik çalışmaz.
+  const [ocrStatus, setOcrStatus] = useState<OcrUiStatus>('idle');
+  const [ocrResult, setOcrResult] = useState<OcrRunResult | null>(null);
+  const ocrCapability = getOcrCapability();
+
+  const handleRunOcr = async () => {
+    if (!item.photo || ocrStatus === 'running') return;
+    setOcrStatus('running');
+    try {
+      const engine = await createOcrEngine();
+      const result = await engine.recognize({ photo: item.photo, field: item.field });
+      setOcrResult(result);
+      // KASITLI OLARAK burada onDecision() ÇAĞRILMAZ: OCR tek başına bir "karar" üretmez — kullanıcı
+      // ham metni görüp aşağıdaki "✎ Düzelt" düğmesine kendisi basmadan hiçbir alan "karar verildi"
+      // sayılmaz (computeReviewProgress). Ham metin yalnız Düzelt'in metin kutusuna ÖN DOLGU olarak
+      // sunulur (bkz. handleCorrectPress), otomatik onaylanmaz/doğrulanmış sayılmaz.
+    } finally {
+      setOcrStatus('done');
+    }
+  };
+
+  const ocrSection =
+    item.photo && ocrCapability.reason !== 'flag_disabled' ? (
+      <View style={styles.section} accessible={false}>
+        <Text style={styles.sectionCaption}>Cihazda oku (OCR — aday, doğrulanmamış)</Text>
+        <Text style={styles.metaText} allowFontScaling>
+          Fotoğraf yalnız bu cihazda işlenir; sunucuya gönderilmez.
+        </Text>
+        {ocrCapability.reason === 'native_module_missing' ? (
+          <Text style={styles.metaText} allowFontScaling accessibilityLabel="OCR bu cihazda kullanılamıyor, elle yazabilirsiniz">
+            OCR bu cihazda kullanılamıyor — elle yazabilirsiniz.
+          </Text>
+        ) : (
+          <Pressable
+            style={[styles.button, styles.ocrButton, ocrStatus === 'running' ? styles.buttonDisabled : null]}
+            accessibilityRole="button"
+            accessibilityLabel={`${item.label}: Metni cihazda oku`}
+            accessibilityState={{ disabled: ocrStatus === 'running' }}
+            disabled={ocrStatus === 'running'}
+            onPress={() => void handleRunOcr()}
+          >
+            {ocrStatus === 'running' ? (
+              <ActivityIndicator size="small" color="#111827" />
+            ) : (
+              <Text style={styles.buttonText}>◈ Metni cihazda oku</Text>
+            )}
+          </Pressable>
+        )}
+        {ocrStatus === 'running' ? (
+          <Text style={styles.metaText} accessibilityLiveRegion="polite" allowFontScaling>
+            İşleniyor...
+          </Text>
+        ) : null}
+        {ocrStatus === 'done' && ocrResult?.status === 'no_text' ? (
+          <Text style={styles.metaText} accessibilityLiveRegion="polite" allowFontScaling>
+            Metin bulunamadı. Fotoğrafı yeniden çekebilir veya elle yazabilirsiniz.
+          </Text>
+        ) : null}
+        {ocrStatus === 'done' && ocrResult?.status === 'failed' ? (
+          <Text style={styles.warnText} accessibilityLiveRegion="polite" allowFontScaling>
+            {ocrResult.errorMessage ?? 'Okuma başarısız — yeniden deneyin veya elle yazın.'}
+          </Text>
+        ) : null}
+        {ocrResult?.status === 'candidate' && ocrResult.rawText ? (
+          <View accessible accessibilityLabel={`Ham OCR metni: ${ocrResult.rawText}`}>
+            <Text style={styles.metaText} allowFontScaling>
+              Ham OCR metni (yalnız aday, doğrulanmamış). Kullanmak için aşağıda "✎ Düzelt"e basın —
+              düzenlenebilir alana ön dolgu olarak gelir, siz onaylamadan karar sayılmaz:
+            </Text>
+            <Text style={styles.ocrRawText} allowFontScaling>
+              {ocrResult.rawText}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    ) : null;
 
   return (
     <View style={[styles.card, item.isAllergen ? styles.cardAllergen : null, comparison === 'conflict' ? styles.cardConflict : null]} accessible={false}>
@@ -87,6 +175,9 @@ export function ReviewFieldCard({ item, decision, onDecision }: ReviewFieldCardP
         </View>
       </View>
 
+      {/* 2b. Cihazda OCR (Aşama 7) */}
+      {ocrSection}
+
       {/* 3. Durum */}
       <View style={styles.statusRow} accessible accessibilityLiveRegion="polite" accessibilityLabel={`Durum: ${comparisonCopy.label}. ${comparisonCopy.note}`}>
         <Text style={styles.statusIcon} accessibilityElementsHidden importantForAccessibility="no">
@@ -120,7 +211,13 @@ export function ReviewFieldCard({ item, decision, onDecision }: ReviewFieldCardP
           accessibilityRole="button"
           accessibilityLabel={`${item.label}: Düzelt`}
           accessibilityState={{ selected: current === 'corrected' }}
-          onPress={() => onDecision({ decision: 'corrected', correctedText: decision?.correctedText ?? item.candidateText ?? '' })}
+          onPress={() =>
+            // Ön dolgu sırası: kullanıcının önceki düzeltmesi > OCR ham metni (yalnız burada, açık
+            // basma anında teklif edilir) > mevcut ambalaj adayı. Kullanıcı bu metni değiştirmeden
+            // kaydederse bile karar YİNE kendi açık "Düzelt" basışıyla verilmiş olur (OCR tek başına
+            // karar üretmez); ham OCR metni `ocrResult` state'inde ayrı ve değişmeden kalır.
+            onDecision({ decision: 'corrected', correctedText: decision?.correctedText ?? ocrResult?.rawText ?? item.candidateText ?? '' })
+          }
         >
           <Text style={[styles.buttonText, current === 'corrected' ? styles.buttonTextActive : null]}>✎ Düzelt</Text>
         </Pressable>
@@ -168,6 +265,9 @@ const styles = StyleSheet.create({
   photo: { width: 96, height: 96, borderRadius: 8, backgroundColor: '#111827' },
   photoMissing: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#E5E7EB' },
   photoMissingText: { fontSize: 12, color: '#374151' },
+  ocrButton: { alignSelf: 'flex-start', minWidth: 48, paddingHorizontal: 14, flex: 0 },
+  ocrRawText: { fontSize: 14, lineHeight: 20, color: '#111827', backgroundColor: '#F3F4F6', borderRadius: 8, padding: 8, marginTop: 4 },
+  warnText: { fontSize: 13, lineHeight: 18, color: '#92400E' },
   statusRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', paddingVertical: 6, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
   statusIcon: { fontSize: 20, width: 28, textAlign: 'center', color: '#111827' },
   statusTextBlock: { flex: 1, gap: 2 },

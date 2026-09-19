@@ -50,6 +50,16 @@ export function getOcrCapability(): OcrCapability {
   return { available: true, reason: 'ready' };
 }
 
+/**
+ * UYARI (product-data-contract-reviewer bulgu #2): bu kimlik `resolution/providers.ts::photoEvidenceId`
+ * (`${draft.id}:photo:${kind}`, draft kapsamlı, `FieldEvidence.source.evidenceId` kanıt zincirine giren
+ * TEK kimlik) İLE AYNI ŞEY DEĞİLDİR ve onun yerine KULLANILMAMALIDIR. Bu fonksiyon yalnız
+ * `OcrRunResult.photoEvidenceId` (ekranda gösterilen, henüz taslağa/kanıt zincirine yazılmamış geçici
+ * provenance bilgisi) için vardır — draft henüz kaydedilmeden (dolayısıyla `draft.id` olmadan) OCR
+ * çalışabildiği için ayrı, kararlı (fotoğraf tür+çekim zamanı veya hash tabanlı) bir kimliğe ihtiyaç
+ * duyar. Draft kaydedildikten sonraki gerçek kanıt kimliği için HER ZAMAN `providers.ts::photoEvidenceId`
+ * kullanılır; bu iki fonksiyon birbirinin yerine geçmez.
+ */
 export function photoOcrEvidenceId(photo: CapturedPhoto): string {
   return photo.contentHash ? `photo-hash:${photo.contentHash}` : `photo:${photo.kind}:${photo.takenAt}`;
 }
