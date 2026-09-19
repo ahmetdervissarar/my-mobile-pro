@@ -226,8 +226,10 @@ burada raporlanıyor:
    mevcut "Düzelt" akışının düzenlenebilir metin kutusuna ön dolgu olarak aktarılır — yalnız
    kullanıcı açıkça "✎ Düzelt"e basarsa (OCR başarılı olduğunda OTOMATİK bir karar ÜRETİLMEZ;
    kullanıcı karar vermeden inceleme ilerlemesi artmaz). Sonuç `ReviewFieldCard`'ın İÇİNDE
-   tutulmaz — `package-review.tsx`'e `ocrResult`/`onOcrResult` prop'larıyla TAŞINIR ve orada
-   (draft/gtin ömrü boyunca) kalıcı kalır.
+   tutulmaz — `package-review.tsx`'e `ocrResult`/`onOcrResult` prop'larıyla TAŞINIR. **Ham OCR
+   sonucu kullanıcı inceleme kaydını kaydettikten sonra cihazda kalıcıdır; kaydetme öncesinde
+   yalnız mevcut ekran oturumunda (React state) tutulur** — otomatik taslak kaydetme YOKTUR;
+   kullanıcı kaydetmeden ekranı kapatırsa bu oturumdaki OCR sonucu kaybolabilir.
 5. Kullanıcı Doğrula/Düzelt/Okunamıyor kararını verip "Yerel aday olarak kaydet"e bastığında,
    `applyHumanFieldChecks(draft, decisions, now, ocrResults)` (yeni, geriye dönük uyumlu 4.
    parametre) `source:'user_ocr'`, `confidence:'low'`, `verified:false` bir `FieldEvidence` üretir

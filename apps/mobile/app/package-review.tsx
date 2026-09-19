@@ -95,8 +95,10 @@ export default function PackageReviewScreen() {
   const [offSavedAt, setOffSavedAt] = useState<string | null>(null);
   const [existingReview, setExistingReview] = useState<LocallyReviewedRecord | null>(null);
   const [decisions, setDecisions] = useState<ReviewDecisions>({});
-  // Alan bazında ham OCR sonucu (Aşama 7, düzeltme turu) — bileşen ağacında değil, burada kalıcı
-  // tutulur; kaydedilirken applyHumanFieldChecks'e geçirilip inceleme kaydına yazılır.
+  // Alan bazında ham OCR sonucu (Aşama 7, düzeltme turu) — ReviewFieldCard bileşeninin İÇİNDE değil,
+  // bu ekranın state'inde tutulur. Kaydetme ÖNCESİNDE yalnız bu ekran oturumunda geçerlidir (React
+  // state — kalıcı DEĞİL); "Yerel aday olarak kaydet"e basıldığında applyHumanFieldChecks'e
+  // geçirilip inceleme kaydına (AsyncStorage) yazılınca cihazda kalıcı olur.
   const [ocrResults, setOcrResults] = useState<Partial<Record<DraftTextField, OcrRunResult>>>({});
   const [savedRecord, setSavedRecord] = useState<LocallyReviewedRecord | null>(null);
   const [isSaving, setIsSaving] = useState(false);

@@ -15,9 +15,10 @@
  *
  * Ham OCR sonucu bu bileşenin İÇİNDE tutulmaz — `ocrResult`/`onOcrResult` prop'larıyla üst ekrana
  * (`package-review.tsx`) TAŞINIR ve kaydedilirken `applyHumanFieldChecks`'e geçirilip
- * `HumanFieldCheck.ocrEvidence` olarak cihazdaki inceleme kaydına kalıcı yazılır; böylece ekran
- * kapatılıp yeniden açılsa da (kaydetmeden önce) kaybolmaz ve kullanıcının `correctedText`
- * kararından her zaman ayrı kalır.
+ * `HumanFieldCheck.ocrEvidence` olarak kullanıcının `correctedText` kararından her zaman ayrı
+ * tutulur. Ham OCR sonucu kullanıcı inceleme kaydını kaydettikten sonra cihazda kalıcıdır;
+ * kaydetme öncesinde yalnız mevcut ekran oturumunda (React state) tutulur — kullanıcı kaydetmeden
+ * ekranı kapatırsa bu oturumdaki OCR sonucu kaybolabilir; otomatik taslak kaydetme YOKTUR.
  */
 
 import { useState } from 'react';
