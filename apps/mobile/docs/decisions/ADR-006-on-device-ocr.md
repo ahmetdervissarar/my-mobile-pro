@@ -64,11 +64,22 @@ uyarı değil, **SDK 54 sürüm hizası kanıtının paket kodunda bulunmamasıd
 
 ## 2) `rn-mlkit-ocr` — KABUL (seçilen yol)
 
-**SDK 54 / RN 0.81 kanıtı (paket koduyla doğrulanmış):** Yayınlanan `package.json`
-`devDependencies`: `"react-native": "0.81.1"` (projemiz: `0.81.5`, aynı minör hat),
-`"@expo/config-plugins": "^54.0.3"` (Expo SDK 54 araç zincirine hizalı),
+**SDK 54 / RN 0.81 ile güçlü sürüm uyumu bulundu; gerçek native build henüz doğrulanmadı.**
+Yayınlanan `package.json` `devDependencies`: `"react-native": "0.81.1"` (projemiz: `0.81.5`, aynı
+minör hat), `"@expo/config-plugins": "^54.0.3"` (Expo SDK 54 araç zincirine hizalı),
 `"@react-native/babel-preset": "0.81.1"`. Bu, incelenen üç paket arasında bizim tam sürüm
-hattımıza (SDK 54 / RN 0.81) en yakın, doğrudan kanıtlanmış eşleşme.
+hattımıza (SDK 54 / RN 0.81) en yakın, doğrudan kanıtlanmış eşleşme — **ama bu yalnız bir sürüm
+uyumu göstergesidir, gerçek bir derleme kanıtı DEĞİLDİR.** `devDependencies` alanı paketin
+GELİŞTİRME ortamını gösterir; bizim projemizde gerçekten derlendiğini (Gradle/CocoaPods
+çözümlemesi, Kotlin/Swift derlemesi, Expo Modules Core sürüm uyumu) kanıtlamaz. Bu, ancak
+`expo prebuild` + gerçek bir Android/iOS derleme ile doğrulanabilir; bu tur bunu kapsam dışı
+bırakıyor (bkz. "Kesin kapsam dışı"). `EXPO_PUBLIC_LOCAL_OCR` bayrağının kapalı olması bu
+belirsizliği ORTADAN KALDIRMAZ — bayrak yalnız OCR ARAYÜZÜNÜN JS tarafında render edilip
+edilmeyeceğini kontrol eder; paket `package.json`'a girdiği andan itibaren native bağımlılık
+grafiğinin bir parçasıdır ve bir native build sırasında (bayrak durumundan bağımsız olarak)
+Gradle/CocoaPods çözümleme hatası, Kotlin/Swift derleme hatası veya Expo Modules Core sürüm
+çakışması üretebilir. Bayrak yalnız çalışma zamanı JS davranışını kontrol eder, derleme zamanı
+hatasını engellemez.
 
 **Android metin tanıma kanıtı:** `npm pack` ile indirilen gerçek tarball içinde
 `android/src/main/java/com/rnmlkitocr/RnMlkitOcrModule.kt` — gerçek
@@ -128,32 +139,72 @@ değerlendirilecek yedek.
 
 | Koşul | Sonuç |
 |---|---|
-| SDK 54 uyumu paket koduyla doğrulandı | ✅ (`rn-mlkit-ocr` devDependencies) |
+| SDK 54/RN 0.81 ile güçlü sürüm uyumu bulundu; gerçek native build henüz doğrulanmadı | ✅ paket koduyla (`devDependencies`) kanıtlanmış sürüm uyumu — derleme kanıtı değil |
 | Android metin tanıma native kaynakla doğrulandı | ✅ (gerçek Kotlin + ML Kit) |
 | Lisans proje ile uyumlu | ✅ MIT + Google ML Kit ücretsiz SDK şartları |
 | Fotoğraf/metin harici sunucuya gitmiyor | ✅ yalnız `ocrUseBundled:true` ile — bu proje bunu zorunlu kılıyor |
 | API anahtarı / ücretli servis gerekmiyor | ✅ |
 | Paket bakımlı / kod denetlenebilir | ✅ (kanıtlı ama genç) |
-| Expo Go'da kontrollü fallback mümkün | ✅ `getOcrCapability()` + `UnavailableOcrEngine` |
+| Expo Go'da kontrollü fallback mümkün | ✅ `getOcrCapability()` + `UnavailableOcrEngine` — YALNIZ JS çalışma zamanı davranışı, native build hatasını engellemez |
 | Mevcut manuel akış korunuyor | ✅ dokunulmadı; OCR yalnız ek/opsiyonel adım |
 
-Tüm koşullar sağlandığı için **tek bağımlılık** (`rn-mlkit-ocr@0.3.1`) eklendi.
+Tüm koşullar sağlandığı için **tek bağımlılık** (`rn-mlkit-ocr@0.3.1`) eklendi. Bu, Android/iOS'ta
+gerçekten derlendiği veya çalıştığı anlamına GELMEZ — yalnız kapı koşullarının kod/sürüm kanıtıyla
+sağlandığı, ilerlemek için yeterli bulunduğu anlamına gelir. Native derleme ve cihaz testi ayrı,
+insan onaylı bir sonraki adımdır.
 
 ## Eklenen bağımlılık ve config farkı
 
-- `apps/mobile/package.json`: `"rn-mlkit-ocr": "^0.3.1"` eklendi.
-- `apps/mobile/package-lock.json`: yeni paket girişleri eklendi (54 satır fark). Bu işlem sırasında
-  `npm install`, projede **önceden var olan** (bu göreve ait olmayan, CLAUDE.md'de "mobil lockfile
-  şu an senkron değil" diye kayıtlı) `react-dom@19.3.0`/`scheduler@0.28.0` eksikliğini de yan etki
-  olarak çözdü — bu, OCR eklemesinin bir parçası değil, `npm install`'ın doğal davranışıdır; ayrı
-  olarak not edilir, gizlenmez.
+- `apps/mobile/package.json`: `"rn-mlkit-ocr": "0.3.1"` eklendi — **kesin sürüm, caret (`^`) YOK**
+  (düzeltme turu: önceki taslak yanlışlıkla `^0.3.1` kullanmıştı).
+- `apps/mobile/package-lock.json`: `b92a6ff8a3a9ca9d50115a30f44721fef0506a32` tabanındaki temiz
+  lockfile'dan yeniden kuruldu; fark **76 satır, tamamen ekleyici** (`diff` doğrulandı, hiçbir satır
+  silinmedi/değiştirilmedi). Yalnız şu 5 yeni paket girişi ve kök `dependencies` listesindeki 2
+  satır eklendi: `rn-mlkit-ocr@0.3.1`, `expo-build-properties@1.0.10` (bkz. aşağıdaki iOS bölümü),
+  ve bu ikisinin kendi çözümlenmiş bağımlılıkları `ajv@8.20.0`, `fast-uri@3.1.8`,
+  `json-schema-traverse@1.0.0` (ikisinin de gerektirdiği `fast-deep-equal`, `require-from-string`,
+  `semver` zaten base'de vardı, tekrar eklenmedi/deduplike edildi).
+  **Görev dışı hiçbir değişiklik yok:** ilk denemede `npm install` yan etki olarak
+  `react-dom@19.3.0`/`scheduler@0.28.0` ekliyor, `@types/react`/`csstype`/`typescript`'i
+  `dev`→`devOptional` çeviriyor ve 4 `lightningcss-linux-*` paketinden `libc` alanını
+  siliyordu — bunların hepsi **bu göreve ait olmayan, projede önceden var olan bir lockfile
+  senkron sorununun** (`b92a6ff`'te de `npm ci` aynı `react-dom`/`scheduler` hatasıyla başarısız
+  olur; doğrulandı) yan etkisiydi. Bu tur bunları **düzeltmedi de bozmadı da** — kurulum sonucu
+  elle (JSON düzeyinde) base'in birebir aynısına geri alındı; yalnız yukarıdaki 5 yeni paket kaldı.
+  Bu sorunun kendisi hâlâ açık, ayrı bir görevdir.
 - `apps/mobile/app.json`: `expo.plugins` dizisine
   `["rn-mlkit-ocr", { "ocrModels": ["latin"], "ocrUseBundled": true }]` eklendi. Bu yalnız native
   build yapılandırmasıdır; bu turda `expo prebuild`/EAS build ÇALIŞTIRILMADI, dolayısıyla bu
   ayarın gerçek cihazda etkisi doğrulanmadı (bkz. "Çalıştırılmayan kontroller").
 - Yeni ortam bayrağı `EXPO_PUBLIC_LOCAL_OCR` (`apps/mobile/.env.example`'a dokümante edildi,
   varsayılan boş/kapalı) — `isLocalProductRecoveryEnabled()` VE bu bayrak ikisi de açık olmadan
-  OCR arayüzü hiç render edilmez.
+  OCR arayüzü hiç render edilmez. **Bu bayrağın kapalı olması bir native build hatasını
+  engellemez** (yukarıya bkz.) — yalnız JS tarafında OCR arayüzünün render edilmesini engeller.
+
+### iOS 15.5 minimum deployment target — OCR'dan AYRI bir değişiklik
+
+`rn-mlkit-ocr` dokümanı iOS 15.5+ ister (ML Kit iOS API'leri yalnız 64-bit cihazlarda çalışır).
+Repoda `expo-build-properties` daha önce YOKTU (`grep` ile doğrulandı, sıfır sonuç); bu tur
+**yeni, ikinci bir bağımlılık** olarak eklendi — OCR bağımlılığından ayrı bir satır/karar olarak
+burada raporlanıyor:
+
+- Sürüm seçimi README tahminine değil, **kurulu `expo@54.0.34` paketinin kendi
+  `bundledNativeModules.json` dosyasına** dayanıyor (`node_modules/expo/bundledNativeModules.json`
+  → `"expo-build-properties": "~1.0.10"`) — bu, Expo SDK 54'ün resmî, o SDK ile paketlenmiş
+  eşleşme tablosudur; aynı dosyadaki `expo-camera`/`expo-router` girdileri projenin kurulu
+  sürümleriyle birebir örtüşüyor, bu da dosyanın doğru SDK 54 kaynağı olduğunu doğruluyor.
+  `expo-build-properties@1.0.10` npm'de mevcut (MIT, `sha512-mFCZ...`).
+- `apps/mobile/package.json`: `"expo-build-properties": "1.0.10"` eklendi (kesin sürüm).
+- `apps/mobile/package-lock.json`: `node_modules/expo-build-properties` + onun kendi bağımlılıkları
+  `ajv@8.20.0` (→ `fast-uri@3.1.8`, `json-schema-traverse@1.0.0`) eklendi; `semver` zaten base'de
+  vardı. Yukarıdaki 76 satırlık farkın bir parçası, OCR'ninkiyle karışmadan burada ayrıca listelendi.
+- `apps/mobile/app.json`: `expo.plugins` dizisine
+  `["expo-build-properties", { "ios": { "deploymentTarget": "15.5" } }]` eklendi — statik config
+  dosyası değişikliği, `expo prebuild`/EAS build ÇALIŞTIRILMADI. Bu ayarın gerçek bir iOS
+  derlemesinde `Podfile`'a doğru yansıdığı bu turda DOĞRULANMADI; yalnız config-plugin girdisinin
+  Expo'nun kendi dokümante ettiği şema ile (`ios.deploymentTarget`) eşleştiği söylenebilir.
+- iOS desteği "hazır" veya "çalışıyor" olarak sunulmuyor — yalnız gerekli statik yapılandırma
+  eklendi; gerçek doğrulama native build gerektirir (kapsam dışı, bkz. aşağı).
 
 ## OCR verisinin uçtan uca akışı
 
@@ -161,24 +212,34 @@ Tüm koşullar sağlandığı için **tek bağımlılık** (`rn-mlkit-ocr@0.3.1`
    biri için fotoğraf varsa **"Metni cihazda oku"** düğmesine basar (otomatik çalışmaz).
 2. `getOcrCapability()` bayrak + native modül varlığını kontrol eder; kapasite yoksa düğme zaten
    pasif/yönlendirici metinle gösterilir, buraya kadar gelinmez.
-3. `MlKitOcrEngine.recognize({ photo, field })` yalnız `photo.localUri` (cihaz dosya yolu) ile
-   `rn-mlkit-ocr`'ın `recognizeText(uri, 'latin')`'ini çağırır — hiçbir ağ isteği yapılmaz
-   (bundled model). Sonuç `OcrRunResult`'a eşlenir: `rawText`, `blocks`, `engine:'mlkit_latin'`,
-   `engineVersion`, `photoEvidenceId` (fotoğraf tür+çekim zamanından türetilen kararlı kimlik),
-   `capturedAt`, `recognizedAt`, `source:'user_ocr'`, `verificationLevel:'unverified'`,
-   `confidence:'low'`, `status`.
+3. `MlKitOcrEngine.recognize({ photo, field })` ÖNCE `localUriGate.ts::isAllowedLocalOcrUri`
+   kapısından geçer — yalnız `file://` ve (Android) `content://` kabul edilir; `rn-mlkit-ocr`
+   http(s)/uzak URL okumayı da desteklese de bu proje bunu asla kullanmaz, `http(s)://`/`data:`/
+   bilinmeyen şema native pakete HİÇ iletilmeden reddedilir (tek, sabit mesaj: "Bu fotoğraf
+   cihazda okunamadı; yeniden çekin veya elle yazın."). Kapıdan geçen istek yalnız
+   `photo.localUri` ile `rn-mlkit-ocr`'ın `recognizeText(uri, 'latin')`'ini çağırır — hiçbir ağ
+   isteği yapılmaz (bundled model). Sonuç `OcrRunResult`'a eşlenir: `rawText`, `blocks`,
+   `engine:'mlkit_latin'`, `engineVersion`, `photoEvidenceId` (fotoğraf tür+çekim zamanından
+   türetilen kararlı kimlik), `capturedAt`, `recognizedAt`, `source:'user_ocr'`,
+   `verificationLevel:'unverified'`, `confidence:'low'`, `status`.
 4. Ham metin `ReviewFieldCard` içinde salt-okunur "Ham OCR metni" olarak gösterilir VE aynı anda
-   mevcut "Düzelt" akışının düzenlenebilir metin kutusuna ön dolgu olarak aktarılır
-   (`onDecision({decision:'corrected', correctedText: rawText})`) — kullanıcı bu kutuyu
-   değiştirirse ham metin (ayrı state'te tutulur) ASLA üzerine yazılmaz, ikisi ekranda yan yana
-   kalır.
+   mevcut "Düzelt" akışının düzenlenebilir metin kutusuna ön dolgu olarak aktarılır — yalnız
+   kullanıcı açıkça "✎ Düzelt"e basarsa (OCR başarılı olduğunda OTOMATİK bir karar ÜRETİLMEZ;
+   kullanıcı karar vermeden inceleme ilerlemesi artmaz). Sonuç `ReviewFieldCard`'ın İÇİNDE
+   tutulmaz — `package-review.tsx`'e `ocrResult`/`onOcrResult` prop'larıyla TAŞINIR ve orada
+   (draft/gtin ömrü boyunca) kalıcı kalır.
 5. Kullanıcı Doğrula/Düzelt/Okunamıyor kararını verip "Yerel aday olarak kaydet"e bastığında,
-   **değişmemiş** `applyHumanFieldChecks` (review.ts) mevcut mantığıyla `source:'user_ocr'`,
-   `confidence:'low'`, `verified:false` bir `FieldEvidence` üretir ve kayıt durumu
-   `locally_reviewed_candidate` olur — `rafskoru_verified` DEĞİL. Alerjen alanı bu akışta da hiçbir
-   zaman `readable` olmaz (mevcut kural, dokunulmadı).
+   `applyHumanFieldChecks(draft, decisions, now, ocrResults)` (yeni, geriye dönük uyumlu 4.
+   parametre) `source:'user_ocr'`, `confidence:'low'`, `verified:false` bir `FieldEvidence` üretir
+   VE aynı zamanda o alan için OCR çalıştırıldıysa ham sonucu `HumanFieldCheck.ocrEvidence` olarak
+   **cihazdaki inceleme kaydına kalıcı yazar** (`reviewStorage.ts` → AsyncStorage). `ocrEvidence`
+   kullanıcının kararından (`reviewedText`/`correctedText`) HER ZAMAN ayrı bir alandır; kullanıcı
+   ham metni değiştirse de değiştirmese de `ocrEvidence.rawText` AYNEN kalır, üzerine yazılmaz.
+   Kayıt durumu `locally_reviewed_candidate` olur — `rafskoru_verified` DEĞİL. Alerjen alanı bu
+   akışta da hiçbir zaman `readable` olmaz (mevcut kural, dokunulmadı); OCR adayı tek başına karar,
+   doğrulama veya `readable` beyan ÜRETMEZ.
 6. OCR çıktısı hiçbir noktada `riskEngine.ts`, RafSkoru, alternatif filtresi veya OFF/backend'e
-   gönderilmez; yalnız cihazdaki taslağa (adım 5 sonrası) girer.
+   gönderilmez; yalnız cihazdaki inceleme kaydına (adım 5 sonrası) girer.
 
 ## Expo Go / native modül yok davranışı
 
@@ -188,12 +249,21 @@ ama `NativeModules.RnMlkitOcr` yok — Expo Go veya native modülsüz derleme �
 "OCR bu cihazda kullanılamıyor — elle yazabilirsiniz" metni, elle giriş tamamen açık kalır),
 `ready` (native modül var → düğme aktif). İçe aktarma (`import`) hiçbir dalda hata fırlatmaz;
 yalnız `recognize()` çağrısı (yalnız `ready` durumunda tetiklenir) başarısız olursa `status:'failed'`
-+ "Okuma başarısız — yeniden deneyin veya elle yazın" döner, uygulama çökmez.
++ "Okuma başarısız — yeniden deneyin veya elle yazın" döner, uygulama çökmez. İki katmanlı hata
+sınırı (düzeltme turu): `createOcrEngine()`'in kendi dinamik `import()`'u başarısız olursa
+(beklenmedik bundler/native bağlama hatası) kendi içinde yakalanır ve `UnavailableOcrEngine`'e
+düşer; `ReviewFieldCard::handleRunOcr` de ayrıca kendi `try/catch`'ini taşır ve herhangi bir
+beklenmeyen hatada (promise reddi dâhil) sabit, güvenli bir "failed" sonucu üretir — hiçbir yığın
+izi veya native hata mesajı kullanıcıya ya da log'a taşınmaz.
 
 ## Kesin kapsam dışı (bu turda yapılmadı)
 
 `expo prebuild`, EAS build, geliştirme sertifikası/kimlik bilgisi, fiziksel cihaz/emülatör testi,
 backend değişikliği, OFF'a yazma, riskEngine/skor/alternatif filtresi değişikliği, OCR metninden
 otomatik alerjen sınıflandırma, `EXPO_PUBLIC_LOCAL_OCR` bayrağının açılması, `main` dalına dokunma,
-PR merge. `app.json` config-plugin girdisi eklendi (statik dosya değişikliği) ama hiçbir build
-komutu çalıştırılmadı; bu ayarın gerçek Android/iOS derlemesinde çalıştığı bu turda DOĞRULANMADI.
+PR merge. `app.json`'a iki config-plugin girdisi eklendi (`rn-mlkit-ocr`, `expo-build-properties` —
+statik dosya değişiklikleri) ama hiçbir build komutu çalıştırılmadı; bu ayarların gerçek
+Android/iOS derlemesinde çalıştığı, Gradle/CocoaPods'un bunları doğru işlediği, ve genel olarak
+paketin bu projede gerçekten derlendiği/çalıştığı **bu turda hiç doğrulanmadı**. Bu ADR'deki her
+"kabul edildi"/"kanıt bulundu" ifadesi kod ve sürüm düzeyinde bir doğrulamadır; bir native build
+veya cihaz çalıştırma kanıtı değildir.

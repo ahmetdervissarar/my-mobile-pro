@@ -31,6 +31,7 @@ import { AllergenReviewBlock } from '../src/localProduct/review/AllergenReviewBl
 import { ResolutionStateBanner } from '../src/localProduct/review/ResolutionStateBanner';
 import { ReviewFieldCard } from '../src/localProduct/review/ReviewFieldCard';
 import type { ContributionDraft, DraftTextField, ProductFactsWire } from '../src/localProduct/types';
+import type { OcrRunResult } from '../src/localProduct/ocr/types';
 import { PriceClient } from '../src/price/priceClient';
 import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile } from '../src/userProfile/userProfileTypes';
@@ -94,6 +95,9 @@ export default function PackageReviewScreen() {
   const [offSavedAt, setOffSavedAt] = useState<string | null>(null);
   const [existingReview, setExistingReview] = useState<LocallyReviewedRecord | null>(null);
   const [decisions, setDecisions] = useState<ReviewDecisions>({});
+  // Alan bazında ham OCR sonucu (Aşama 7, düzeltme turu) — bileşen ağacında değil, burada kalıcı
+  // tutulur; kaydedilirken applyHumanFieldChecks'e geçirilip inceleme kaydına yazılır.
+  const [ocrResults, setOcrResults] = useState<Partial<Record<DraftTextField, OcrRunResult>>>({});
   const [savedRecord, setSavedRecord] = useState<LocallyReviewedRecord | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -155,13 +159,14 @@ export default function PackageReviewScreen() {
   }
 
   const setDecision = (field: DraftTextField, input: FieldDecisionInput) => setDecisions((current) => ({ ...current, [field]: input }));
+  const setOcrResultForField = (field: DraftTextField, result: OcrRunResult) => setOcrResults((current) => ({ ...current, [field]: result }));
 
   const handleSave = async () => {
     if (!draft || isSaving || !complete) return;
     setSaveError(null);
     setIsSaving(true);
     try {
-      const record = applyHumanFieldChecks(draft, decisions, new Date().toISOString());
+      const record = applyHumanFieldChecks(draft, decisions, new Date().toISOString(), ocrResults);
       const result = await saveLocallyReviewedRecord(record);
       if (!result.ok) {
         setSaveError(result.errorMessage ?? 'İnceleme kaydı kaydedilemedi. Tekrar deneyin.');
@@ -183,6 +188,7 @@ export default function PackageReviewScreen() {
       setSavedRecord(null);
       setExistingReview(null);
       setDecisions({});
+      setOcrResults({});
       setDeleteState('done');
     } else {
       setDeleteState('error');
@@ -295,7 +301,14 @@ export default function PackageReviewScreen() {
         <>
           {/* 3. Alanlar (alerjen alanı ilk sırada) */}
           {items.map((item) => (
-            <ReviewFieldCard key={item.field} item={item} decision={decisions[item.field]} onDecision={(d) => setDecision(item.field, d)} />
+            <ReviewFieldCard
+              key={item.field}
+              item={item}
+              decision={decisions[item.field]}
+              onDecision={(d) => setDecision(item.field, d)}
+              ocrResult={ocrResults[item.field] ?? null}
+              onOcrResult={(result) => setOcrResultForField(item.field, result)}
+            />
           ))}
 
           {/* 4. Kaynak ve gözlem tarihi */}

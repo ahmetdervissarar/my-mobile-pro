@@ -10,14 +10,20 @@
  *
  * OCR sınırı: bu bileşen native OCR paketini DOĞRUDAN çağırmaz; yalnız `ocr/ocrEngine.ts`
  * sınırını kullanır (`getOcrCapability()` + `createOcrEngine()`). OCR sonucu asla otomatik
- * "Doğrula" saymaz — yalnız mevcut "Düzelt" metin kutusuna ön dolgu yapar; ham OCR metni ayrı
- * yerel state'te tutulur, kullanıcı düzeltmesi bunun üzerine ASLA yazmaz.
+ * "Doğrula" saymaz — yalnız mevcut "Düzelt" metin kutusuna ön dolgu yapar; kullanıcı karar
+ * vermeden (bir Karar düğmesine basmadan) inceleme ilerlemesi ARTMAZ.
+ *
+ * Ham OCR sonucu bu bileşenin İÇİNDE tutulmaz — `ocrResult`/`onOcrResult` prop'larıyla üst ekrana
+ * (`package-review.tsx`) TAŞINIR ve kaydedilirken `applyHumanFieldChecks`'e geçirilip
+ * `HumanFieldCheck.ocrEvidence` olarak cihazdaki inceleme kaydına kalıcı yazılır; böylece ekran
+ * kapatılıp yeniden açılsa da (kaydetmeden önce) kaybolmaz ve kullanıcının `correctedText`
+ * kararından her zaman ayrı kalır.
  */
 
 import { useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { createOcrEngine, getOcrCapability } from '../ocr/ocrEngine';
+import { createOcrEngine, getOcrCapability, photoOcrEvidenceId } from '../ocr/ocrEngine';
 import type { OcrRunResult } from '../ocr/types';
 import { deriveFieldComparison, FIELD_COMPARISON_COPY } from '../resolution/review';
 import type { ReviewItem, FieldDecisionInput } from '../resolution/review';
@@ -27,6 +33,34 @@ export interface ReviewFieldCardProps {
   item: ReviewItem;
   decision: FieldDecisionInput | undefined;
   onDecision: (decision: FieldDecisionInput) => void;
+  /** Bu alan için en son OCR sonucu (üst ekranda kalıcı tutulur); hiç çalıştırılmadıysa null. */
+  ocrResult: OcrRunResult | null;
+  /** OCR tamamlandığında (başarı/no_text/failed fark etmez) üst ekrana bildirir. */
+  onOcrResult: (result: OcrRunResult) => void;
+}
+
+/**
+ * `createOcrEngine()`/`engine.recognize()` kendi içlerinde de güvenli tarafa düşer, ama burası son
+ * savunma hattıdır: beklenmeyen bir promise reddi/import hatası olursa bile kullanıcıya HİÇBİR
+ * teknik ayrıntı (yığın izi, native mesaj) sızdırmadan sabit, güvenli bir "failed" sonucu üretir.
+ */
+function buildUnexpectedOcrFailure(item: ReviewItem): OcrRunResult {
+  const now = new Date().toISOString();
+  return {
+    field: item.field,
+    status: 'failed',
+    rawText: null,
+    blocks: [],
+    engine: 'unavailable',
+    engineVersion: null,
+    photoEvidenceId: item.photo ? photoOcrEvidenceId(item.photo) : `photo:${item.field}:${now}`,
+    capturedAt: item.photo?.takenAt ?? now,
+    recognizedAt: now,
+    source: 'user_ocr',
+    verificationLevel: 'unverified',
+    confidence: 'low',
+    errorMessage: 'Okuma başarısız — yeniden deneyin veya elle yazın.',
+  };
 }
 
 const DECISION_LABEL: Record<HumanFieldDecision, { icon: string; text: string }> = {
@@ -41,33 +75,35 @@ function formatFetchedAt(iso: string | null): string | null {
   return match ? `${match[3]}.${match[2]}.${match[1]}` : iso;
 }
 
-type OcrUiStatus = 'idle' | 'running' | 'done';
-
-export function ReviewFieldCard({ item, decision, onDecision }: ReviewFieldCardProps) {
+export function ReviewFieldCard({ item, decision, onDecision, ocrResult, onOcrResult }: ReviewFieldCardProps) {
   const current = decision?.decision ?? null;
   const canConfirm = Boolean(item.candidateText);
   const comparison = deriveFieldComparison(item, current);
   const comparisonCopy = FIELD_COMPARISON_COPY[comparison];
   const fetched = formatFetchedAt(item.existingFetchedAt);
 
-  // Cihazda OCR (Aşama 7) — yalnız fotoğraf varsa gösterilir; otomatik çalışmaz.
-  const [ocrStatus, setOcrStatus] = useState<OcrUiStatus>('idle');
-  const [ocrResult, setOcrResult] = useState<OcrRunResult | null>(null);
+  // Cihazda OCR (Aşama 7) — yalnız fotoğraf varsa gösterilir; otomatik çalışmaz. Sonucun kendisi
+  // (`ocrResult`) prop'tur (üst ekranda kalıcı); burada yalnız "istek şu an sürüyor mu" tutulur.
+  const [isOcrRunning, setIsOcrRunning] = useState(false);
   const ocrCapability = getOcrCapability();
 
   const handleRunOcr = async () => {
-    if (!item.photo || ocrStatus === 'running') return;
-    setOcrStatus('running');
+    if (!item.photo || isOcrRunning) return;
+    setIsOcrRunning(true);
     try {
       const engine = await createOcrEngine();
       const result = await engine.recognize({ photo: item.photo, field: item.field });
-      setOcrResult(result);
+      onOcrResult(result);
       // KASITLI OLARAK burada onDecision() ÇAĞRILMAZ: OCR tek başına bir "karar" üretmez — kullanıcı
       // ham metni görüp aşağıdaki "✎ Düzelt" düğmesine kendisi basmadan hiçbir alan "karar verildi"
       // sayılmaz (computeReviewProgress). Ham metin yalnız Düzelt'in metin kutusuna ÖN DOLGU olarak
-      // sunulur (bkz. handleCorrectPress), otomatik onaylanmaz/doğrulanmış sayılmaz.
+      // sunulur, otomatik onaylanmaz/doğrulanmış sayılmaz.
+    } catch {
+      // Beklenmeyen hata (dinamik import, promise reddi, native mesaj/yığın izi) — hiçbir ayrıntı
+      // kullanıcıya veya log'a taşınmaz; yalnız sabit, güvenli bir "failed" sonucu üretilir.
+      onOcrResult(buildUnexpectedOcrFailure(item));
     } finally {
-      setOcrStatus('done');
+      setIsOcrRunning(false);
     }
   };
 
@@ -84,31 +120,27 @@ export function ReviewFieldCard({ item, decision, onDecision }: ReviewFieldCardP
           </Text>
         ) : (
           <Pressable
-            style={[styles.button, styles.ocrButton, ocrStatus === 'running' ? styles.buttonDisabled : null]}
+            style={[styles.button, styles.ocrButton, isOcrRunning ? styles.buttonDisabled : null]}
             accessibilityRole="button"
             accessibilityLabel={`${item.label}: Metni cihazda oku`}
-            accessibilityState={{ disabled: ocrStatus === 'running' }}
-            disabled={ocrStatus === 'running'}
+            accessibilityState={{ disabled: isOcrRunning }}
+            disabled={isOcrRunning}
             onPress={() => void handleRunOcr()}
           >
-            {ocrStatus === 'running' ? (
-              <ActivityIndicator size="small" color="#111827" />
-            ) : (
-              <Text style={styles.buttonText}>◈ Metni cihazda oku</Text>
-            )}
+            {isOcrRunning ? <ActivityIndicator size="small" color="#111827" /> : <Text style={styles.buttonText}>◈ Metni cihazda oku</Text>}
           </Pressable>
         )}
-        {ocrStatus === 'running' ? (
+        {isOcrRunning ? (
           <Text style={styles.metaText} accessibilityLiveRegion="polite" allowFontScaling>
             İşleniyor...
           </Text>
         ) : null}
-        {ocrStatus === 'done' && ocrResult?.status === 'no_text' ? (
+        {!isOcrRunning && ocrResult?.status === 'no_text' ? (
           <Text style={styles.metaText} accessibilityLiveRegion="polite" allowFontScaling>
             Metin bulunamadı. Fotoğrafı yeniden çekebilir veya elle yazabilirsiniz.
           </Text>
         ) : null}
-        {ocrStatus === 'done' && ocrResult?.status === 'failed' ? (
+        {!isOcrRunning && ocrResult?.status === 'failed' ? (
           <Text style={styles.warnText} accessibilityLiveRegion="polite" allowFontScaling>
             {ocrResult.errorMessage ?? 'Okuma başarısız — yeniden deneyin veya elle yazın.'}
           </Text>

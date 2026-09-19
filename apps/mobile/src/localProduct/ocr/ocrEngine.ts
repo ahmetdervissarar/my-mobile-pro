@@ -67,14 +67,21 @@ export function photoOcrEvidenceId(photo: CapturedPhoto): string {
 /**
  * Motoru geç seçer (lazy): `MlKitOcrEngine` yalnız kapasite `ready` iken oluşturulur, bu sayede
  * native paket importu yalnız gerektiğinde tetiklenir (Expo Go'da hâlâ çökmez, çünkü orada zaten
- * `ready` olmaz).
+ * `ready` olmaz). Dinamik `import()` başarısız olursa (ör. bundler/native bağlama hatası — kapasite
+ * `ready` desin bile) ASLA fırlatmaz; kontrollü biçimde `UnavailableOcrEngine`'e düşer, elle giriş
+ * akışını hiçbir zaman engellemez. Çağıran taraf (`ReviewFieldCard.tsx::handleRunOcr`) yine de kendi
+ * try/catch'ini taşır — bu, tek bir savunma katmanına güvenmemek içindir.
  */
 export async function createOcrEngine(): Promise<OcrEngine> {
   const capability = getOcrCapability();
-  if (!capability.available) {
-    const { UnavailableOcrEngine } = await import('./unavailableOcrEngine');
-    return new UnavailableOcrEngine();
+  if (capability.available) {
+    try {
+      const { MlKitOcrEngine } = await import('./mlKitOcrEngine');
+      return new MlKitOcrEngine();
+    } catch {
+      // Beklenmeyen import hatası — sessizce güvenli tarafa düş, hiçbir ayrıntı sızdırma.
+    }
   }
-  const { MlKitOcrEngine } = await import('./mlKitOcrEngine');
-  return new MlKitOcrEngine();
+  const { UnavailableOcrEngine } = await import('./unavailableOcrEngine');
+  return new UnavailableOcrEngine();
 }

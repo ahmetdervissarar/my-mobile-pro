@@ -12,6 +12,7 @@ import MlkitOcr from 'rn-mlkit-ocr';
 
 import { photoOcrEvidenceId } from './ocrEngine';
 import type { OcrEngine, OcrRecognizeInput } from './ocrEngine';
+import { isAllowedLocalOcrUri, LOCAL_URI_REJECTED_MESSAGE } from './localUriGate';
 import { mapMlkitFailure, mapMlkitResult } from './mapMlkitResult';
 import type { OcrRunResult } from './types';
 
@@ -29,6 +30,11 @@ export class MlKitOcrEngine implements OcrEngine {
       engineVersion: ENGINE_VERSION,
       recognizedAt: new Date().toISOString(),
     };
+    // Yerel URI kapısı: rn-mlkit-ocr http(s)/uzak okumayı da destekliyor olsa da RafSkoru bunu
+    // hiçbir zaman kullanmaz — yalnız cihaz-yerel URI native pakete iletilir (localUriGate.ts).
+    if (!isAllowedLocalOcrUri(photo.localUri)) {
+      return mapMlkitFailure({ ...base, recognizedAt: new Date().toISOString() }, LOCAL_URI_REJECTED_MESSAGE);
+    }
     try {
       const result = await MlkitOcr.recognizeText(photo.localUri, 'latin');
       return mapMlkitResult(result, { ...base, recognizedAt: new Date().toISOString() });

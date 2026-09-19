@@ -10,6 +10,7 @@
 import type { AllergenDeclaration, ProductFactField } from '../../contracts/generated';
 import { DRAFT_TEXT_FIELDS } from '../contributionDraft';
 import type { CapturedPhoto, ContributionDraft, DraftTextField } from '../types';
+import type { OcrRunResult } from '../ocr/types';
 import { draftCandidate, photoEvidenceId } from './providers';
 import type { FieldEvidence, HumanFieldCheck, HumanFieldDecision, LocallyReviewedRecord, MergedProductRecord } from './types';
 
@@ -159,7 +160,18 @@ export function isReviewComplete(items: readonly ReviewItem[], decisions: Review
   return progress.total > 0 && progress.decided === progress.total;
 }
 
-export function applyHumanFieldChecks(draft: ContributionDraft, decisions: ReviewDecisions, now: string): LocallyReviewedRecord {
+/**
+ * `ocrResults`: bu incelemede cihazda OCR ÇALIŞTIRILAN alanların ham sonucu (Aşama 7, düzeltme
+ * turu) — yalnız köken kaydı (`HumanFieldCheck.ocrEvidence`) için kullanılır, kullanıcının
+ * `decisions` kararını (confirmed/corrected/unreadable) HİÇ etkilemez; OCR tek başına karar veya
+ * `readable` alerjen beyanı üretmez. Varsayılan boş nesne — geriye dönük uyumlu.
+ */
+export function applyHumanFieldChecks(
+  draft: ContributionDraft,
+  decisions: ReviewDecisions,
+  now: string,
+  ocrResults: Partial<Record<DraftTextField, OcrRunResult>> = {},
+): LocallyReviewedRecord {
   if (!draft.gtin) throw new Error('İnceleme kaydı barkodsuz oluşturulamaz.');
   const candidate = draftCandidate(draft.gtin, draft);
   const evidence: FieldEvidence[] = candidate.fields.map((e) => ({ ...e }));
@@ -170,7 +182,14 @@ export function applyHumanFieldChecks(draft: ContributionDraft, decisions: Revie
     const input = decisions[item.field];
     if (!input) continue;
     const original = evidence.find((e) => e.id === item.candidateEvidenceId) ?? null;
-    const base = { field: item.field, candidateEvidenceId: item.candidateEvidenceId, candidateText: item.candidateText, photoEvidenceId: item.photoEvidenceId, checkedAt: now };
+    const base = {
+      field: item.field,
+      candidateEvidenceId: item.candidateEvidenceId,
+      candidateText: item.candidateText,
+      photoEvidenceId: item.photoEvidenceId,
+      checkedAt: now,
+      ocrEvidence: ocrResults[item.field] ?? null,
+    };
 
     if (input.decision === 'unreadable') {
       checks.push({ ...base, decision: 'unreadable', reviewedText: null, resultingEvidenceId: null });

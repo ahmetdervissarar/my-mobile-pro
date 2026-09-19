@@ -13,6 +13,7 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~54.0.0",
+    "expo-build-properties": "1.0.10",
     "expo-camera": "~17.0.10",
     "expo-file-system": "~19.0.24",
     "expo-linking": "~8.0.12",
@@ -23,7 +24,7 @@
     "react-native": "0.81.5",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
-    "rn-mlkit-ocr": "^0.3.1"
+    "rn-mlkit-ocr": "0.3.1"
   },
   "devDependencies": {
     "@types/react": "^19.1.0",

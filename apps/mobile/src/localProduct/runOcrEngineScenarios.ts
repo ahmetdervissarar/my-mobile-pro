@@ -10,7 +10,7 @@
  * Çalıştırma (yeni bağımlılık gerektirmez):
  *   cd apps/mobile
  *   npx tsc src/localProduct/runOcrEngineScenarios.ts --outDir /tmp/rafskoru-ocr \
- *     --module commonjs --target es2020 --moduleResolution node --esModuleInterop --skipLibCheck --strict
+ *     --module commonjs --target es2020 --moduleResolution node --esModuleInterop --strict
  *   node /tmp/rafskoru-ocr/localProduct/runOcrEngineScenarios.js
  */
 
@@ -18,7 +18,10 @@ declare const process: { env: Record<string, string | undefined>; exitCode?: num
 
 import { getOcrCapability, photoOcrEvidenceId } from './ocr/ocrEngine';
 import { mapMlkitFailure, mapMlkitResult } from './ocr/mapMlkitResult';
+import { isAllowedLocalOcrUri, LOCAL_URI_REJECTED_MESSAGE } from './ocr/localUriGate';
 import { UnavailableOcrEngine } from './ocr/unavailableOcrEngine';
+import { applyHumanFieldChecks } from './resolution/review';
+import { createContributionDraft } from './contributionDraft';
 import type { CapturedPhoto } from './types';
 
 type Check = { name: string; run: () => Promise<void> | void };
@@ -148,6 +151,68 @@ scenario('UnavailableOcrEngine: her zaman failed + yönlendirici mesaj, asla ç�
   assert(r.engine === 'unavailable', 'engine unavailable olmalı');
   assert(r.errorMessage === 'OCR bu cihazda kullanılamıyor — elle yazabilirsiniz.', `beklenmeyen mesaj: ${r.errorMessage}`);
   assert(r.source === 'user_ocr' && r.verificationLevel === 'unverified' && r.confidence === 'low', 'provenance alanları sabit kalmalı');
+});
+
+// ── Yerel URI güvenlik kapısı (localUriGate.ts) ───────────────────────────────
+
+scenario('isAllowedLocalOcrUri: file:// ve content:// kabul edilir', () => {
+  assert(isAllowedLocalOcrUri('file:///data/user/0/app/cache/photo.jpg'), 'file:// kabul edilmeli');
+  assert(isAllowedLocalOcrUri('content://media/external/images/media/42'), 'content:// (Android) kabul edilmeli');
+});
+
+scenario('isAllowedLocalOcrUri: http(s)/data/bilinmeyen şema reddedilir — native pakete asla iletilmez', () => {
+  assert(!isAllowedLocalOcrUri('http://example.com/photo.jpg'), 'http:// reddedilmeli');
+  assert(!isAllowedLocalOcrUri('https://example.com/photo.jpg'), 'https:// reddedilmeli (rn-mlkit-ocr bunu destekler ama biz asla kullanmayız)');
+  assert(!isAllowedLocalOcrUri('data:image/jpeg;base64,/9j/4AAQ'), 'data: reddedilmeli');
+  assert(!isAllowedLocalOcrUri('ftp://example.com/photo.jpg'), 'bilinmeyen şema reddedilmeli');
+  assert(LOCAL_URI_REJECTED_MESSAGE === 'Bu fotoğraf cihazda okunamadı; yeniden çekin veya elle yazın.', 'tek, sabit kullanıcı mesajı');
+  assertNoForbiddenClaims([LOCAL_URI_REJECTED_MESSAGE]);
+});
+
+// ── Kalıcı kayıt: ham OCR ile kullanıcı düzeltmesi ayrımı (review.ts::applyHumanFieldChecks) ──
+
+scenario('applyHumanFieldChecks: ocrEvidence.rawText HİÇ değişmez; kullanıcı düzeltmesi (reviewedText) ayrı kalır, üzerine yazılmaz', () => {
+  const now = '2026-09-19T12:00:00.000Z';
+  const draft = createContributionDraft({
+    gtin: '8690000000041',
+    photos: [{ kind: 'ingredients', localUri: 'file:///tmp/ingredients.jpg', takenAt: '2026-09-19T11:59:00.000Z', storage: 'cache' as const, persistentUri: null, contentHash: null }],
+    skippedSteps: ['front', 'allergen', 'nutrition', 'quantity'],
+    candidates: [{ field: 'ingredientsText', text: 'Buğday unu, seker', entryMethod: 'manual', isFixture: false, source: 'user_ocr', verified: false }],
+    packagingVersion: null,
+    now,
+  });
+  const ocrRun = mapMlkitResult({ text: 'Buğday unu, seker (OCR ham)', blocks: [] }, {
+    field: 'ingredientsText',
+    photoEvidenceId: 'photo:ingredients:t',
+    capturedAt: '2026-09-19T11:59:00.000Z',
+    engineVersion: '0.3.1',
+    recognizedAt: now,
+  });
+  const userCorrected = 'Buğday unu, şeker'; // kullanıcı OCR ham metnini görüp DÜZELTEREK kaydetti
+  const record = applyHumanFieldChecks(draft, { ingredientsText: { decision: 'corrected', correctedText: userCorrected } }, now, { ingredientsText: ocrRun });
+  const check = record.checks.find((c) => c.field === 'ingredientsText');
+  assert(Boolean(check), 'ingredientsText için check üretilmeli');
+  assert(check!.reviewedText === userCorrected, `kullanıcı kararı korunmalı, "${check!.reviewedText}"`);
+  assert(check!.ocrEvidence !== null, 'ocrEvidence kaydedilmeli (OCR bu alanda çalıştırıldı)');
+  assert(check!.ocrEvidence!.rawText === 'Buğday unu, seker (OCR ham)', `ham OCR metni DEĞİŞMEDEN korunmalı, "${check!.ocrEvidence!.rawText}"`);
+  assert(check!.ocrEvidence!.rawText !== check!.reviewedText, 'ham metin ile kullanıcı düzeltmesi birbirinin üzerine yazılmamalı (iki ayrı alan)');
+  assert(check!.ocrEvidence!.source === 'user_ocr' && check!.ocrEvidence!.confidence === 'low' && check!.ocrEvidence!.verificationLevel === 'unverified', 'ocrEvidence köken alanları sabit');
+  assert(record.status === 'locally_reviewed_candidate', 'kayıt yine locally_reviewed_candidate — rafskoru_verified DEĞİL');
+});
+
+scenario('applyHumanFieldChecks: OCR hiç çalıştırılmayan alanda ocrEvidence=null (geriye dönük uyumlu)', () => {
+  const now = '2026-09-19T12:05:00.000Z';
+  const draft = createContributionDraft({
+    gtin: '8690000000041',
+    photos: [],
+    skippedSteps: ['front', 'ingredients', 'allergen', 'nutrition', 'quantity'],
+    candidates: [{ field: 'ingredientsText', text: 'elle yazıldı', entryMethod: 'manual', isFixture: false, source: 'user_ocr', verified: false }],
+    packagingVersion: null,
+    now,
+  });
+  const record = applyHumanFieldChecks(draft, { ingredientsText: { decision: 'confirmed' } }, now); // ocrResults argümanı verilmedi
+  const check = record.checks.find((c) => c.field === 'ingredientsText');
+  assert(check?.ocrEvidence === null, 'OCR çalışmadıysa ocrEvidence null kalmalı');
 });
 
 // ── Koşucu ────────────────────────────────────────────────────────────────────
