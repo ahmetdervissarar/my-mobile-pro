@@ -19,6 +19,7 @@ import type {
   ProductFactValueMap,
   SourceKind,
 } from '../../contracts/generated';
+import type { OcrRunResult } from '../ocr/types';
 
 export type ResolutionProviderId = 'off' | 'verified_local' | 'contribution_draft' | 'manufacturer_official';
 
@@ -189,6 +190,14 @@ export interface HumanFieldCheck {
   checkedAt: string;
   /** Kontrol sonucu üretilen kanıt (confirmed/corrected). unreadable → null. */
   resultingEvidenceId: string | null;
+  /**
+   * Bu alan için cihazda OCR ÇALIŞTIRILDIYSA ham sonucu (Aşama 7, düzeltme turu). `reviewedText`/
+   * `correctedText` (kullanıcının kararı) İLE KARIŞTIRILMAZ ve üzerine yazılmaz — kullanıcı ham OCR
+   * metnini değiştirse de değiştirmese de bu alan `OcrRunResult.rawText`'i AYNEN taşır. OCR hiç
+   * çalıştırılmadıysa (elle giriş) `null`. Bu alan tek başına karar/doğrulama/`readable` alerjen
+   * beyanı üretmez; yalnız köken (provenance) kaydı içindir.
+   */
+  ocrEvidence: OcrRunResult | null;
 }
 
 /**

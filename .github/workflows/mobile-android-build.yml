@@ -1,0 +1,55 @@
+name: Mobile Android build gate
+
+# RafSkoru Aşama 7 — yalnız derleme kapısı. APK yayınlamaz/yüklemez, EAS/imzalama/Expo hesabı
+# kullanmaz, gizli anahtar gerektirmez. Amaç: apps/mobile'a dokunan bir PR'ın Android tarafının
+# gerçekten (npm ci → expo prebuild → gradlew assembleDebug) derlendiğini kanıtlamak.
+
+"on":
+  pull_request:
+    branches:
+      - integration/rafskoru-ready-for-code
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/mobile-android-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  android-build:
+    name: npm ci + expo prebuild + gradlew assembleDebug
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node 20
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Set up Temurin JDK 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+
+      - name: npm ci
+        working-directory: apps/mobile
+        run: npm ci
+
+      - name: Expo prebuild (Android only)
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Android debug build (assembleDebug)
+        working-directory: apps/mobile/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
