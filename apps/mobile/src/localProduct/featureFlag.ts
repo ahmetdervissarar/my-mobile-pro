@@ -11,6 +11,9 @@
  *   `isLocalProductRecoveryEnabled()` DE açıkken etkilidir. Kapalıyken (varsayılan) OCR arayüzü
  *   hiç render edilmez, mevcut elle giriş akışı birebir korunur. Fotoğraf/metin bu bayrakla dahi
  *   hiçbir zaman cihaz dışına çıkmaz — yalnız cihaz üzerinde çalışan ML Kit motoru tetiklenir.
+ * - EXPO_PUBLIC_CONSUMER_UX_V2=1 → tüketici karar akışı V2 (Aşama 8, `src/consumerUx/`) ürün
+ *   sonuç ekranında açılır. Kapalıyken (varsayılan) mevcut `product-result.tsx` ekranı birebir
+ *   korunur; bu bayrak `riskEngine`/skor/alternatif MANTIĞINI değiştirmez, yalnız SUNUMU değiştirir.
  */
 
 declare const __DEV__: boolean | undefined;
@@ -26,4 +29,8 @@ export function isLocalProductFixtureEnabled(): boolean {
 
 export function isLocalOcrEnabled(): boolean {
   return isLocalProductRecoveryEnabled() && process.env.EXPO_PUBLIC_LOCAL_OCR === '1';
+}
+
+export function isConsumerUxV2Enabled(): boolean {
+  return process.env.EXPO_PUBLIC_CONSUMER_UX_V2 === '1';
 }
