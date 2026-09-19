@@ -7,10 +7,14 @@ import { getFallbackProductSummary } from '../src/services/productService';
 import type { ProductSearchInput } from '../src/services/productService';
 import { getUserLocationForPricing } from '../src/services/locationService';
 import { evaluateProductRisks } from '../src/riskEngine/riskEngine';
-import { isLocalProductRecoveryEnabled } from '../src/localProduct/featureFlag';
+import { isConsumerUxV2Enabled, isLocalProductRecoveryEnabled } from '../src/localProduct/featureFlag';
 import { ProductDataStateCard } from '../src/localProduct/ProductDataStateCard';
 import { loadLatestContributionDraft } from '../src/localProduct/contributionDraftStorage';
-import { deriveProductDataView, evaluateRecoveryRisk } from '../src/localProduct/productDataState';
+import { deriveProductDataView, evaluateRecoveryRisk, toAllergenDeclaration } from '../src/localProduct/productDataState';
+import { loadLatestReviewedRecord } from '../src/localProduct/resolution/reviewStorage';
+import type { LocallyReviewedRecord } from '../src/localProduct/resolution/types';
+import { ConsumerDecisionScreen } from '../src/consumerUx/ConsumerDecisionScreen';
+import { projectConsumerDecisionViewModel } from '../src/consumerUx/decisionViewModel';
 import { useProductFactsSnapshotWriter } from '../src/localProduct/productFactsSnapshot';
 import { CRITICAL_ALLERGEN_CODES } from '../src/localProduct/criticalAllergenCodes';
 import { isAlternativeCandidateSafeForAllergyProfile } from '../src/localProduct/alternativeAllergenFilter';
@@ -335,6 +339,22 @@ export default function ProductResultScreen() {
   // Yerel ürün kurtarma dikey dilimi (bayrak arkasında; kapalıyken eski davranış korunur).
   const isLocalRecoveryEnabled = isLocalProductRecoveryEnabled();
   const [contributionDraft, setContributionDraft] = useState<ContributionDraft | null>(null);
+  // Tüketici karar akışı V2 (Aşama 8, bayrak arkasında; kapalıyken bu okuma hiç tetiklenmez).
+  const isConsumerUxV2 = isConsumerUxV2Enabled();
+  const [reviewedRecord, setReviewedRecord] = useState<LocallyReviewedRecord | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isConsumerUxV2) return;
+      let isActive = true;
+      void loadLatestReviewedRecord(normalizedInput.barcode).then((record) => {
+        if (isActive) setReviewedRecord(record);
+      });
+      return () => {
+        isActive = false;
+      };
+    }, [isConsumerUxV2, normalizedInput.barcode]),
+  );
 
   useEffect(() => {
     void loadUserSensitivityProfile()
@@ -763,6 +783,44 @@ function isExplicitlyAlternativesIneligible(input: {
       !isUnknownProduct &&
       !topAlternativeRecommendation,
   );
+
+  // ── Tüketici karar akışı V2 (Aşama 8) ────────────────────────────────────────
+  // Bayrak KAPALIYKEN aşağıdaki hesaplama/erken dönüş ATLANIR; mevcut ekran (bu fonksiyonun
+  // geri kalanı) birebir korunur. riskEngine/skor/alternatif MANTIĞI burada TEKRAR HESAPLANMAZ —
+  // yalnız yukarıda zaten üretilmiş sonuçlar (`riskResult`, `priceResult`, `productDataView`,
+  // `visibleAlternativeRecommendations`) saf view-model'e (src/consumerUx) aktarılır.
+  if (isConsumerUxV2) {
+    const consumerDecisionView = projectConsumerDecisionViewModel({
+      isLoading: isBackendBarcodeLoading,
+      identity: { name: displayProductName ?? '', barcode: displayBarcode ?? '', imageUrl: displayImageUrl, isLoading: isBackendBarcodeLoading },
+      allergenDeclaration: toAllergenDeclaration(recoveryProductFacts),
+      riskResult,
+      criticalProfileWarnings,
+      productDataView,
+      reviewedRecord,
+      offProductName: recoveryProductFacts?.dataSource === 'off' ? recoveryProductFacts.productName ?? null : null,
+      rafScore,
+      priceScore,
+      healthScore,
+      contentScore,
+      sustainability,
+      visibleAlternatives: visibleAlternativeRecommendations,
+    });
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+        <ConsumerDecisionScreen
+          view={consumerDecisionView}
+          onAddPackageInfo={() =>
+            router.push({ pathname: '/package-capture', params: { barcode: normalizedInput.barcode ?? '', productName: displayProductName ?? '' } })
+          }
+          onSearchByName={() => router.push({ pathname: '/search', params: { initialQuery: normalizedInput.productName ?? '' } })}
+          onPhotoSearch={() => router.push('/photo-search')}
+          onOpenBasket={() => router.push('/basket')}
+        />
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView
       style={styles.container}

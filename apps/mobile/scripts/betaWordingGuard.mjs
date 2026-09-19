@@ -241,4 +241,52 @@ assertNotIncludes('riskEngine.ts', riskEngine, 'güvenli alternatif');
 assertNotIncludes('riskEngine.ts', riskEngine, 'ürün güvenlidir');
 assertNotIncludes('riskEngine.ts', riskEngine, 'garanti eder');
 
+// Tüketici karar akışı V2 (Aşama 8, bayrak EXPO_PUBLIC_CONSUMER_UX_V2, src/consumerUx/).
+const decisionViewModel = readMobileFile('src/consumerUx/decisionViewModel.ts');
+const allergenGateCard = readMobileFile('src/consumerUx/AllergenGateCard.tsx');
+const dataTrustStrip = readMobileFile('src/consumerUx/DataTrustStrip.tsx');
+const scoreDimensionCard = readMobileFile('src/consumerUx/ScoreDimensionCard.tsx');
+const alternativePreviewCard = readMobileFile('src/consumerUx/AlternativePreviewCard.tsx');
+const missingDataActionCard = readMobileFile('src/consumerUx/MissingDataActionCard.tsx');
+const devStateGallery = readMobileFile('src/consumerUx/DevStateGallery.tsx');
+const consumerUxTokens = readMobileFile('src/consumerUx/tokens.ts');
+const consumerUxFeatureFlag = readMobileFile('src/localProduct/featureFlag.ts');
+
+// Dört alerjen durumu, görev metniyle birebir (Aşama 8 zorunlu ifadeler).
+assertIncludes('decisionViewModel.ts', decisionViewModel, 'Beyana göre içerir:');
+assertIncludes('decisionViewModel.ts', decisionViewModel, 'İçerebilir:');
+assertIncludes(
+  'decisionViewModel.ts',
+  decisionViewModel,
+  'İlgili alerjen mevcut veri kaydında belirtilmemiştir; bu bir güvenlik garantisi değildir. Güncel ambalaj etiketini kontrol edin.',
+);
+assertIncludes('decisionViewModel.ts', decisionViewModel, 'Alerjen verisi yok veya doğrulanmamış. Güncel ambalaj etiketini kontrol edin.');
+assertIncludes('AllergenGateCard.tsx', allergenGateCard, 'skordan bağımsızdır');
+assertIncludes('AlternativePreviewCard.tsx', alternativePreviewCard, 'Aynı gruptan seçenekler');
+assertIncludes('ScoreDimensionCard.tsx', scoreDimensionCard, 'Bu boyut için veri yetersiz');
+assertIncludes('DataTrustStrip.tsx', dataTrustStrip, 'doğrulanmadı');
+assertIncludes('DataTrustStrip.tsx', dataTrustStrip, 'otomatik kazanan yok');
+assertIncludes('MissingDataActionCard.tsx', missingDataActionCard, 'Paket bilgisini ekle');
+assertIncludes('DevStateGallery.tsx', devStateGallery, 'GELİŞTİRME ÖNİZLEMESİ');
+assertIncludes('tokens.ts', consumerUxTokens, 'GELİŞTİRME ÖNİZLEMESİ');
+assertIncludes('featureFlag.ts', consumerUxFeatureFlag, 'EXPO_PUBLIC_CONSUMER_UX_V2');
+
+for (const [fileName, content] of [
+  ['decisionViewModel.ts', decisionViewModel],
+  ['AllergenGateCard.tsx', allergenGateCard],
+  ['DataTrustStrip.tsx', dataTrustStrip],
+  ['ScoreDimensionCard.tsx', scoreDimensionCard],
+  ['AlternativePreviewCard.tsx', alternativePreviewCard],
+  ['MissingDataActionCard.tsx', missingDataActionCard],
+  ['DevStateGallery.tsx', devStateGallery],
+]) {
+  assertNotIncludes(fileName, content, 'alerjen içermez');
+  assertNotIncludes(fileName, content, 'güvenli alternatif');
+  assertNotIncludes(fileName, content, 'ürün güvenlidir');
+  assertNotIncludes(fileName, content, 'garanti eder');
+  assertNotIncludes(fileName, content, 'alerjensiz');
+  assertNotIncludes(fileName, content, 'sağlıklı alternatif');
+  assertNotIncludes(fileName, content, 'tüketebilirsiniz');
+}
+
 console.log('MOBILE_BETA_WORDING_GUARD_OK');
