@@ -103,8 +103,16 @@ export interface ProductIdentityView {
   isLoading: boolean;
 }
 
+export type BasketAddStatus = 'idle' | 'success' | 'error';
+
+export interface BasketActionFeedback {
+  status: BasketAddStatus;
+  message: string;
+}
+
 export interface BasketActionView {
-  ctaLabel: string;
+  addLabel: string;
+  openLabel: string;
 }
 
 /** Ekranın tepeden dibe TEK, zorunlu render sırasıyla eşleşen tam görünüm. */

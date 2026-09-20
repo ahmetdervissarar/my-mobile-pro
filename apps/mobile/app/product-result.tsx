@@ -15,6 +15,9 @@ import { loadLatestReviewedRecord } from '../src/localProduct/resolution/reviewS
 import type { LocallyReviewedRecord } from '../src/localProduct/resolution/types';
 import { ConsumerDecisionScreen } from '../src/consumerUx/ConsumerDecisionScreen';
 import { projectConsumerDecisionViewModel } from '../src/consumerUx/decisionViewModel';
+import type { BasketActionFeedback } from '../src/consumerUx/types';
+import { addOrIncrementBasketLine } from '../src/weeklyBasket/basketStorage';
+import { buildBasketLineSnapshotFromDecisionView } from '../src/weeklyBasket/basketViewModel';
 import { useProductFactsSnapshotWriter } from '../src/localProduct/productFactsSnapshot';
 import { CRITICAL_ALLERGEN_CODES } from '../src/localProduct/criticalAllergenCodes';
 import { isAlternativeCandidateSafeForAllergyProfile } from '../src/localProduct/alternativeAllergenFilter';
@@ -355,6 +358,14 @@ export default function ProductResultScreen() {
       };
     }, [isConsumerUxV2, normalizedInput.barcode]),
   );
+
+  // Sepete ekleme geri bildirimi (Aşama 9); yalnız kısa süre görünür kalır.
+  const [basketFeedback, setBasketFeedback] = useState<BasketActionFeedback | null>(null);
+  useEffect(() => {
+    if (!basketFeedback) return;
+    const timeout = setTimeout(() => setBasketFeedback(null), 4000);
+    return () => clearTimeout(timeout);
+  }, [basketFeedback]);
 
   useEffect(() => {
     void loadUserSensitivityProfile()
@@ -806,6 +817,22 @@ function isExplicitlyAlternativesIneligible(input: {
       sustainability,
       visibleAlternatives: visibleAlternativeRecommendations,
     });
+
+    const handleAddToBasket = async () => {
+      const gtin = normalizedInput.barcode;
+      if (!gtin) {
+        setBasketFeedback({ status: 'error', message: 'Barkod olmadan ürün sepete eklenemez.' });
+        return;
+      }
+      const snapshot = buildBasketLineSnapshotFromDecisionView(consumerDecisionView, healthScore, contentScore);
+      const result = await addOrIncrementBasketLine(gtin, snapshot);
+      setBasketFeedback(
+        result.ok
+          ? { status: 'success', message: 'Ürün sepete eklendi.' }
+          : { status: 'error', message: result.errorMessage ?? 'Ürün sepete eklenemedi.' },
+      );
+    };
+
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         <ConsumerDecisionScreen
@@ -815,7 +842,9 @@ function isExplicitlyAlternativesIneligible(input: {
           }
           onSearchByName={() => router.push({ pathname: '/search', params: { initialQuery: normalizedInput.productName ?? '' } })}
           onPhotoSearch={() => router.push('/photo-search')}
-          onOpenBasket={() => router.push('/basket')}
+          onAddToBasket={() => void handleAddToBasket()}
+          onOpenBasket={() => router.push('/weekly-basket')}
+          basketFeedback={basketFeedback}
         />
       </ScrollView>
     );

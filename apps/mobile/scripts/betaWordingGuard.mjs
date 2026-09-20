@@ -289,4 +289,76 @@ for (const [fileName, content] of [
   assertNotIncludes(fileName, content, 'tüketebilirsiniz');
 }
 
+// Haftalık sepet V1 (Aşama 9, aynı bayrak EXPO_PUBLIC_CONSUMER_UX_V2, src/weeklyBasket/).
+const basketHeader = readMobileFile('src/weeklyBasket/BasketHeader.tsx');
+const basketAllergenSummaryCard = readMobileFile('src/weeklyBasket/BasketAllergenSummaryCard.tsx');
+const basketCriticalAllergenCard = readMobileFile('src/weeklyBasket/BasketCriticalAllergenCard.tsx');
+const basketDimensionCoverageCard = readMobileFile('src/weeklyBasket/BasketDimensionCoverageCard.tsx');
+const weeklyBasketLineRow = readMobileFile('src/weeklyBasket/WeeklyBasketLineRow.tsx');
+const weeklyBasketScreen = readMobileFile('src/weeklyBasket/WeeklyBasketScreen.tsx');
+const basketViewModel = readMobileFile('src/weeklyBasket/basketViewModel.ts');
+const basketStorage = readMobileFile('src/weeklyBasket/basketStorage.ts');
+const basketOperationsFile = readMobileFile('src/weeklyBasket/basketOperations.ts');
+const weeklyBasketRoute = readMobileFile('app/weekly-basket.tsx');
+const basketActionBar = readMobileFile('src/consumerUx/BasketActionBar.tsx');
+
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Bu haftanın sepeti');
+assertIncludes('BasketAllergenSummaryCard.tsx', basketAllergenSummaryCard, 'Sepet alerjen özeti');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'güvenlik garantisi değildir');
+assertIncludes('BasketDimensionCoverageCard.tsx', basketDimensionCoverageCard, 'Bu boyut için veri yetersiz');
+assertIncludes('WeeklyBasketLineRow.tsx', weeklyBasketLineRow, 'Aynı gruptan seçenekler');
+assertIncludes('basketStorage.ts', basketStorage, 'kaydedilemedi');
+assertIncludes('weekly-basket.tsx', weeklyBasketRoute, 'bu sürümde kapalı');
+assertIncludes('BasketActionBar.tsx', basketActionBar, 'Sepete ekle');
+assertIncludes('BasketActionBar.tsx', basketActionBar, 'Sepete git');
+
+// Odaklı düzeltme turu — Sorun 1: gerçek hafta geçişi.
+assertIncludes('basketOperations.ts', basketOperationsFile, "'week_mismatch'");
+assertIncludes('BasketHeader.tsx', basketHeader, 'Yeni haftaya başla');
+assertIncludes('BasketHeader.tsx', basketHeader, 'Bu sepet önceki haftaya ait');
+// Odaklı düzeltme turu — Sorun 3: ürün beyanı ile profil çakışmasını ayır.
+assertIncludes('BasketCriticalAllergenCard.tsx', basketCriticalAllergenCard, 'Sepete eklenirken profilinizle eşleşen kritik uyarılar');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Alerji profilinizi daha sonra değiştirdiyseniz ürünleri yeniden kontrol edin');
+// Odaklı düzeltme turu (alerjen sayım düzeltmesi): dominant tone yerine lines bazlı gruplama +
+// zaman açısından kesin, olumlu iddia taşımayan boş-durum metni.
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Gruplar birbirini dışlamaz; bir ürün birden fazla beyan grubunda görünebilir');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Sepete eklenme anında kaydedilmiş kritik profil uyarısı yok');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Beyan edilmiş alerjen bulunan ürünler');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'İz/eser beyanı bulunan ürünler');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Alerjen verisi eksik veya doğrulanmamış ürünler');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Mevcut kayıtta alerjen belirtilmemiş ürünler');
+// Odaklı düzeltme turu — Sorun 4: veri kapsamı ve ortalama dili.
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'basit ortalamasıdır');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'miktar ve tüketim sıklığı hesaba katılmaz');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'bu boyut hesaplanamadı');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Kullanılabilir veri');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Kaynak çatışması');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Yerel incelenmiş aday');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Bulunamadı / yüklenemedi');
+
+for (const [fileName, content] of [
+  ['BasketHeader.tsx', basketHeader],
+  ['BasketAllergenSummaryCard.tsx', basketAllergenSummaryCard],
+  ['BasketCriticalAllergenCard.tsx', basketCriticalAllergenCard],
+  ['BasketDimensionCoverageCard.tsx', basketDimensionCoverageCard],
+  ['WeeklyBasketLineRow.tsx', weeklyBasketLineRow],
+  ['WeeklyBasketScreen.tsx', weeklyBasketScreen],
+  ['weeklyBasket/basketViewModel.ts', basketViewModel],
+  ['basketStorage.ts', basketStorage],
+  ['basketOperations.ts', basketOperationsFile],
+  ['weekly-basket.tsx', weeklyBasketRoute],
+  ['BasketActionBar.tsx', basketActionBar],
+]) {
+  assertNotIncludes(fileName, content, 'alerjen içermez');
+  assertNotIncludes(fileName, content, 'güvenli alternatif');
+  assertNotIncludes(fileName, content, 'ürün güvenlidir');
+  assertNotIncludes(fileName, content, 'garanti eder');
+  assertNotIncludes(fileName, content, 'alerjensiz');
+  assertNotIncludes(fileName, content, 'sağlıklı alternatif');
+  assertNotIncludes(fileName, content, 'tüketebilirsiniz');
+  assertNotIncludes(fileName, content, 'sepet güvenli');
+  // Bu ifade Aşama 9 düzeltme turunda kaldırıldı; profille çakışma iddiası taşıyordu.
+  assertNotIncludes(fileName, content, 'çakışması görünmüyor');
+}
+
 console.log('MOBILE_BETA_WORDING_GUARD_OK');

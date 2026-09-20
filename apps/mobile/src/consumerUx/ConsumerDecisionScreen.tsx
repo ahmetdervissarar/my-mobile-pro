@@ -21,17 +21,27 @@ import { DecisionSummaryCard } from './DecisionSummaryCard';
 import { MissingDataActionCard } from './MissingDataActionCard';
 import { ScoreDimensionCard } from './ScoreDimensionCard';
 import { DEV_PREVIEW_LABEL, color, spacing, typography } from './tokens';
-import type { ConsumerDecisionView } from './types';
+import type { BasketActionFeedback, ConsumerDecisionView } from './types';
 
 export interface ConsumerDecisionScreenProps {
   view: ConsumerDecisionView;
   onAddPackageInfo: () => void;
   onSearchByName: () => void;
   onPhotoSearch: () => void;
+  onAddToBasket: () => void;
   onOpenBasket: () => void;
+  basketFeedback: BasketActionFeedback | null;
 }
 
-export function ConsumerDecisionScreen({ view, onAddPackageInfo, onSearchByName, onPhotoSearch, onOpenBasket }: ConsumerDecisionScreenProps) {
+export function ConsumerDecisionScreen({
+  view,
+  onAddPackageInfo,
+  onSearchByName,
+  onPhotoSearch,
+  onAddToBasket,
+  onOpenBasket,
+  basketFeedback,
+}: ConsumerDecisionScreenProps) {
   return (
     <View style={styles.container}>
       {view.isDevPreview ? (
@@ -68,8 +78,8 @@ export function ConsumerDecisionScreen({ view, onAddPackageInfo, onSearchByName,
       {/* 7. Aynı gruptan seçenekler */}
       <AlternativePreviewCard view={view.alternatives} />
 
-      {/* 8. Sepete ekleme alanı (mevcut sepet akışını değiştirmez) */}
-      <BasketActionBar view={view.basket} onPress={onOpenBasket} />
+      {/* 8. Sepete ekleme alanı — "Sepete ekle" gerçekten ekler (Aşama 9) */}
+      <BasketActionBar view={view.basket} feedback={basketFeedback} onAddToBasket={onAddToBasket} onOpenBasket={onOpenBasket} />
     </View>
   );
 }
