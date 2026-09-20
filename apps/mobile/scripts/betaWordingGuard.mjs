@@ -361,4 +361,28 @@ for (const [fileName, content] of [
   assertNotIncludes(fileName, content, 'çakışması görünmüyor');
 }
 
+// Pilot önizleme derlemesi (Aşama 10, bayrak EXPO_PUBLIC_PILOT_PREVIEW).
+const pilotPreviewRoute = readMobileFile('app/pilot-preview.tsx');
+const devConsumerUxGalleryRoute = readMobileFile('app/dev-consumer-ux-gallery.tsx');
+const pilotFeatureFlag = readMobileFile('src/localProduct/featureFlag.ts');
+
+assertIncludes('featureFlag.ts', pilotFeatureFlag, 'EXPO_PUBLIC_PILOT_PREVIEW');
+assertIncludes('pilot-preview.tsx', pilotPreviewRoute, 'PİLOT ÖNİZLEME — Geliştirme verileri');
+assertIncludes('pilot-preview.tsx', pilotPreviewRoute, 'pilot önizleme derlemesinde kullanılabilir');
+assertIncludes('dev-consumer-ux-gallery.tsx', devConsumerUxGalleryRoute, 'PİLOT ÖNİZLEME — Geliştirme verileri');
+
+for (const [fileName, content] of [
+  ['pilot-preview.tsx', pilotPreviewRoute],
+  ['dev-consumer-ux-gallery.tsx', devConsumerUxGalleryRoute],
+]) {
+  assertNotIncludes(fileName, content, 'alerjen içermez');
+  assertNotIncludes(fileName, content, 'güvenli alternatif');
+  assertNotIncludes(fileName, content, 'ürün güvenlidir');
+  assertNotIncludes(fileName, content, 'garanti eder');
+  assertNotIncludes(fileName, content, 'alerjensiz');
+  assertNotIncludes(fileName, content, 'sağlıklı alternatif');
+  assertNotIncludes(fileName, content, 'tüketebilirsiniz');
+  assertNotIncludes(fileName, content, 'sepet güvenli');
+}
+
 console.log('MOBILE_BETA_WORDING_GUARD_OK');

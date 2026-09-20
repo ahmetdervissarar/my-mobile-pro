@@ -14,6 +14,11 @@
  * - EXPO_PUBLIC_CONSUMER_UX_V2=1 → tüketici karar akışı V2 (Aşama 8, `src/consumerUx/`) ürün
  *   sonuç ekranında açılır. Kapalıyken (varsayılan) mevcut `product-result.tsx` ekranı birebir
  *   korunur; bu bayrak `riskEngine`/skor/alternatif MANTIĞINI değiştirmez, yalnız SUNUMU değiştirir.
+ * - EXPO_PUBLIC_PILOT_PREVIEW=1 → yalnız pilot önizleme derlemesinde (Aşama 10) açılır; ana
+ *   ekranda küçük "Pilot önizleme" giriş noktasını ve `__DEV__` durum galerilerini (yalnız bu
+ *   EK koşulla, `__DEV__` yerine değil) görünür kılar. Hiçbir izlenen `.env`/`app.json` dosyasında
+ *   `1` değeri YOKTUR; yalnız CI'nin pilot iş akışının job ortamında açılır. Kapalıyken (varsayılan,
+ *   normal derleme) hiçbir davranış değişmez.
  */
 
 declare const __DEV__: boolean | undefined;
@@ -33,4 +38,8 @@ export function isLocalOcrEnabled(): boolean {
 
 export function isConsumerUxV2Enabled(): boolean {
   return process.env.EXPO_PUBLIC_CONSUMER_UX_V2 === '1';
+}
+
+export function isPilotPreviewEnabled(): boolean {
+  return process.env.EXPO_PUBLIC_PILOT_PREVIEW === '1';
 }

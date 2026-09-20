@@ -2,14 +2,15 @@
  * RafSkoru — Tüketici karar akışı V2 geliştirme önizlemesi galerisi (Aşama 8).
  * src/consumerUx/DevStateGallery.tsx
  *
- * Yalnız `__DEV__ === true` VE `EXPO_PUBLIC_CONSUMER_UX_V2==='1'` iken erişilebilir
- * (`isDevStateGalleryEnabled`). Yeni bağımlılık eklemez. Fixture verisi açıkça
- * "GELİŞTİRME ÖNİZLEMESİ" etiketlidir ve üretim ekranına hiçbir zaman karışmaz.
+ * Yalnız (`__DEV__ === true` VEYA `EXPO_PUBLIC_PILOT_PREVIEW==='1'`) VE
+ * `EXPO_PUBLIC_CONSUMER_UX_V2==='1'` iken erişilebilir (`isDevStateGalleryEnabled`, pilot koşulu
+ * Aşama 10'da eklendi). Yeni bağımlılık eklemez. Fixture verisi açıkça "GELİŞTİRME ÖNİZLEMESİ"
+ * etiketlidir ve üretim ekranına hiçbir zaman karışmaz.
  */
 
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { isConsumerUxV2Enabled } from '../localProduct/featureFlag';
+import { isConsumerUxV2Enabled, isPilotPreviewEnabled } from '../localProduct/featureFlag';
 import { WeeklyBasketScreen } from '../weeklyBasket/WeeklyBasketScreen';
 import { DEV_WEEKLY_BASKET_FIXTURES } from '../weeklyBasket/basketDevFixtures';
 import { ConsumerDecisionScreen } from './ConsumerDecisionScreen';
@@ -20,7 +21,9 @@ declare const __DEV__: boolean | undefined;
 
 export function isDevStateGalleryEnabled(): boolean {
   const isDevBuild = typeof __DEV__ !== 'undefined' && __DEV__ === true;
-  return isDevBuild && isConsumerUxV2Enabled();
+  // Aşama 10: pilot önizleme derlemesinde __DEV__ false olabilir; yalnız bu EK koşul eklenir,
+  // __DEV__ kontrolü yerine geçmez. Normal (pilot olmayan) derlemede davranış değişmez.
+  return (isDevBuild || isPilotPreviewEnabled()) && isConsumerUxV2Enabled();
 }
 
 const NOOP = () => {};
