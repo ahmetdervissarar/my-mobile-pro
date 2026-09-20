@@ -10,6 +10,8 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { isConsumerUxV2Enabled } from '../localProduct/featureFlag';
+import { WeeklyBasketScreen } from '../weeklyBasket/WeeklyBasketScreen';
+import { DEV_WEEKLY_BASKET_FIXTURES } from '../weeklyBasket/basketDevFixtures';
 import { ConsumerDecisionScreen } from './ConsumerDecisionScreen';
 import { DEV_CONSUMER_DECISION_FIXTURES } from './devFixtures';
 import { color, spacing, typography } from './tokens';
@@ -33,7 +35,33 @@ export function DevStateGallery() {
       {DEV_CONSUMER_DECISION_FIXTURES.map((entry) => (
         <View key={entry.key} style={styles.entry}>
           <Text style={styles.entryTitle}>{entry.title}</Text>
-          <ConsumerDecisionScreen view={entry.view} onAddPackageInfo={NOOP} onSearchByName={NOOP} onPhotoSearch={NOOP} onOpenBasket={NOOP} />
+          <ConsumerDecisionScreen
+            view={entry.view}
+            onAddPackageInfo={NOOP}
+            onSearchByName={NOOP}
+            onPhotoSearch={NOOP}
+            onAddToBasket={NOOP}
+            onOpenBasket={NOOP}
+            basketFeedback={null}
+          />
+        </View>
+      ))}
+
+      <Text style={styles.pageTitle} accessibilityRole="header">
+        Sepet durumları — GELİŞTİRME ÖNİZLEMESİ
+      </Text>
+      {DEV_WEEKLY_BASKET_FIXTURES.map((entry) => (
+        <View key={entry.key} style={styles.entry}>
+          <Text style={styles.entryTitle}>{entry.title}</Text>
+          <WeeklyBasketScreen
+            view={entry.view}
+            onIncrement={NOOP}
+            onDecrement={NOOP}
+            onRemove={NOOP}
+            onClearBasket={NOOP}
+            onOpenProduct={NOOP}
+            onOpenAlternatives={NOOP}
+          />
         </View>
       ))}
     </ScrollView>

@@ -339,7 +339,7 @@ export function projectConsumerDecisionViewModel(input: ProjectConsumerDecisionV
           : `Eksik alanlar: ${dataTrust.missingLabels.join(', ') || 'belirtilmedi'}. Bu alanlar tahminle doldurulmaz.`,
     },
     alternatives: buildAlternativesView(input.visibleAlternatives),
-    basket: { ctaLabel: 'Sepete git' },
+    basket: { addLabel: 'Sepete ekle', openLabel: 'Sepete git' },
     isDevPreview: false,
   };
 }
