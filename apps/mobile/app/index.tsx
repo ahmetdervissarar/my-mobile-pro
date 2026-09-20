@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
+import { isPilotPreviewEnabled } from '../src/localProduct/featureFlag';
+
 export default function HomeScreen() {
   return (
     <View
@@ -95,6 +97,24 @@ export default function HomeScreen() {
         >
           <Text style={{ fontSize: 17, fontWeight: '600', color: '#111827' }}>Profilim</Text>
         </Pressable>
+
+        {isPilotPreviewEnabled() ? (
+          <Pressable
+            onPress={() => router.push('/pilot-preview')}
+            style={{
+              alignItems: 'center',
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#3D2E12',
+              backgroundColor: '#FCE7C8',
+              paddingVertical: 10,
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#3D2E12' }}>
+              Pilot önizleme
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
