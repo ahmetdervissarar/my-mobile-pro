@@ -72,11 +72,16 @@ function buildCriticalAllergenView(lines: readonly WeeklyBasketLine[]): BasketCr
     snapshotDisclaimer:
       'Bu, ürün sepete eklendiği andaki profil eşleşmesidir. Alerji profilinizi daha sonra değiştirdiyseniz ürünleri yeniden kontrol edin.',
     emptyNotice:
-      'Sepetteki ürünler arasında profilinizle eşleşen kritik bir uyarı bulunmuyor. Bu, ürünlerin güvenli olduğu anlamına gelmez — etiketleri kontrol edin.',
+      'Sepete eklenme anında kaydedilmiş kritik profil uyarısı yok. Bu, ürünlerin güvenli olduğu anlamına gelmez; profilinizi değiştirdiyseniz ürünleri ve güncel etiketleri yeniden kontrol edin.',
   };
 }
 
 // ── Sepet alerjen özeti — dört BEYAN durumu, HİÇBİRİ birleştirilmez, profil iddiası taşımaz ──
+// Gruplar `allergenGate.tone` (BASKIN durum) yerine `allergenGate.lines`'a göre kurulur: bir
+// üründe hem `declared` hem `trace` satırı varsa (örn. "Beyana göre içerir: X" + "İçerebilir: Y")
+// ürün İKİ grupta da tam birer kez sayılır — dominant tone tek grup seçip diğerini kaybetmez.
+// Gruplar birbirini DIŞLAMAZ (bkz. disclaimer). Satır kartındaki baskın renk/ton (`buildLineView`)
+// bu değişiklikten etkilenmez, orada hâlâ `allergenGate.tone` kullanılır.
 
 export interface BasketAllergenSummaryGroup {
   key: AllergenGateTone;
@@ -101,12 +106,13 @@ const ALLERGEN_GROUP_ORDER: { key: AllergenGateTone; label: string }[] = [
 
 function buildAllergenSummary(lines: readonly WeeklyBasketLine[]): BasketAllergenSummaryView {
   const groups = ALLERGEN_GROUP_ORDER.map(({ key, label }) => {
-    const matches = lines.filter((line) => line.snapshot.allergenGate.tone === key);
+    const matches = lines.filter((line) => line.snapshot.allergenGate.lines.some((gateLine) => gateLine.tone === key));
     return { key, label, count: matches.length, productNames: matches.map((line) => line.snapshot.productName) };
   });
   return {
     groups,
-    disclaimer: 'Bu özet bir güvenlik garantisi değildir; her ürünün kendi alerjen durumu ayrı ayrı kontrol edilmelidir.',
+    disclaimer:
+      'Bu özet bir güvenlik garantisi değildir; her ürünün kendi alerjen durumu ayrı ayrı kontrol edilmelidir. Gruplar birbirini dışlamaz; bir ürün birden fazla beyan grubunda görünebilir.',
   };
 }
 

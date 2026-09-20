@@ -16,7 +16,7 @@ import { buildBasketLineSnapshotFromDecisionView, buildWeeklyBasketView } from '
 import { DEV_WEEKLY_BASKET_FIXTURES } from './basketDevFixtures';
 import { isValidBasketRecordShape } from './basketShapeValidation';
 import type { WeeklyBasketLineSnapshot, WeeklyBasketRecord } from './types';
-import type { AllergenGateView, ConsumerDecisionView, CriticalAllergenNotice, DataTrustView } from '../consumerUx/types';
+import type { AllergenGateLine, AllergenGateView, ConsumerDecisionView, CriticalAllergenNotice, DataTrustView } from '../consumerUx/types';
 
 const WEEK1_NOW = '2026-09-14T09:00:00.000Z'; // Pazartesi
 const WEEK1_LATER_SAME_WEEK = '2026-09-18T09:00:00.000Z'; // aynı hafta, Cuma
@@ -44,6 +44,18 @@ function snapshot(
     dataTrust: dataTrust(opts?.dataStatus ?? 'usable'),
     healthScore: { isAvailable: health !== null, score: health },
     contentScore: { isAvailable: content !== null, score: content },
+  };
+}
+
+/** Birden fazla alerjen kapısı satırı taşıyan ürünler için (declared + trace bir arada). */
+function snapshotWithLines(productName: string, gateLines: AllergenGateLine[]): WeeklyBasketLineSnapshot {
+  return {
+    productName,
+    imageUrl: null,
+    allergenGate: { tone: gateLines[0].tone, lines: gateLines, criticalNotices: [], a11ySummary: gateLines.map((l) => l.text).join(' ') },
+    dataTrust: dataTrust('usable'),
+    healthScore: { isAvailable: true, score: 60 },
+    contentScore: { isAvailable: true, score: 70 },
   };
 }
 
@@ -426,6 +438,38 @@ scenario('31 [dil] per-satır dataStatusLabel: usable → "Kullanılabilir veri"
   const basket = mergeLineIntoBasket(null, '1', snapshot('A', 'not_listed', { dataStatus: 'usable' }), WEEK1_NOW).basket;
   const view = buildWeeklyBasketView(basket, { now: WEEK1_NOW });
   assertEqual('dataStatusLabel', view.lines[0].dataStatusLabel, 'Kullanılabilir veri');
+});
+
+// ══════════════════════════════════════════════════════════════════════════════════════
+// Odaklı düzeltme turu — Alerjen sayım düzeltmesi (dominant tone → lines bazlı gruplama)
+// ══════════════════════════════════════════════════════════════════════════════════════
+
+scenario('32 [alerjen sayım] declared VE trace satırı olan ürün İKİ grupta da tam birer kez görünür', () => {
+  const dualLine = snapshotWithLines('Karışık Beyan Ürünü', [
+    { tone: 'declared', text: 'Beyana göre içerir: milk' },
+    { tone: 'trace', text: 'İçerebilir: nuts' },
+  ]);
+  const basket = mergeLineIntoBasket(null, '1', dualLine, WEEK1_NOW).basket;
+  const view = buildWeeklyBasketView(basket, { now: WEEK1_NOW });
+  const byKey = Object.fromEntries(view.allergenSummary.groups.map((g) => [g.key, g]));
+  assertEqual('declared grubunda 1 kez', byKey.declared.count, 1);
+  assertEqual('declared grubunda ürün adı', byKey.declared.productNames[0], 'Karışık Beyan Ürünü');
+  assertEqual('trace grubunda 1 kez', byKey.trace.count, 1);
+  assertEqual('trace grubunda ürün adı', byKey.trace.productNames[0], 'Karışık Beyan Ürünü');
+  assertEqual('unknown grubunda yok', byKey.unknown.count, 0);
+  assertEqual('not_listed grubunda yok', byKey.not_listed.count, 0);
+  assertTrue('disclaimer "birbirini dışlamaz" içerir', view.allergenSummary.disclaimer.includes('birbirini dışlamaz'));
+});
+
+scenario('33 [alerjen sayım] kritik profil uyarısı yoksa olumlu güvenlik sonucu üretilmez (zaman açısından kesin metin)', () => {
+  const basket = mergeLineIntoBasket(null, '1', snapshot('A', 'not_listed', { criticalNotices: [] }), WEEK1_NOW).basket;
+  const view = buildWeeklyBasketView(basket, { now: WEEK1_NOW });
+  assertEqual(
+    'emptyNotice birebir yeni metin',
+    view.criticalAllergen.emptyNotice,
+    'Sepete eklenme anında kaydedilmiş kritik profil uyarısı yok. Bu, ürünlerin güvenli olduğu anlamına gelmez; profilinizi değiştirdiyseniz ürünleri ve güncel etiketleri yeniden kontrol edin.',
+  );
+  assertNoForbiddenClaims('criticalAllergen (boş) JSON', JSON.stringify(view.criticalAllergen));
 });
 
 console.log(`\n${passed}/${passed + failed} senaryo geçti.`);

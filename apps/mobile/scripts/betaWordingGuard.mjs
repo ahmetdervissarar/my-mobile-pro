@@ -319,6 +319,10 @@ assertIncludes('BasketHeader.tsx', basketHeader, 'Bu sepet önceki haftaya ait')
 // Odaklı düzeltme turu — Sorun 3: ürün beyanı ile profil çakışmasını ayır.
 assertIncludes('BasketCriticalAllergenCard.tsx', basketCriticalAllergenCard, 'Sepete eklenirken profilinizle eşleşen kritik uyarılar');
 assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Alerji profilinizi daha sonra değiştirdiyseniz ürünleri yeniden kontrol edin');
+// Odaklı düzeltme turu (alerjen sayım düzeltmesi): dominant tone yerine lines bazlı gruplama +
+// zaman açısından kesin, olumlu iddia taşımayan boş-durum metni.
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Gruplar birbirini dışlamaz; bir ürün birden fazla beyan grubunda görünebilir');
+assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Sepete eklenme anında kaydedilmiş kritik profil uyarısı yok');
 assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Beyan edilmiş alerjen bulunan ürünler');
 assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'İz/eser beyanı bulunan ürünler');
 assertIncludes('weeklyBasket/basketViewModel.ts', basketViewModel, 'Alerjen verisi eksik veya doğrulanmamış ürünler');
