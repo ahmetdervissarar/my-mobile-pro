@@ -1,16 +1,20 @@
 /**
  * RafSkoru — Haftalık sepet ekranı (Aşama 9). src/weeklyBasket/WeeklyBasketScreen.tsx
  *
- * Zorunlu, SABİT sıra: 1) Bu haftanın sepeti başlığı 2) ürün/adet bilgisi 3) sepet alerjen
- * özeti 4) veri kapsamı + boyut kartları 5–8) ürün satırları (miktar, sil, incele, alternatif).
- * Market seçimi, mesafe, "en ucuz market" veya tahmini toplam YOK (Aşama 9 kapsam dışı). Bu
- * dosya yalnız SUNUM birleştiricisidir — I/O ve kalıcılık `app/weekly-basket.tsx`'tedir.
+ * Zorunlu, SABİT sıra: 1) Bu haftanın sepeti başlığı (+ eski hafta uyarısı/"Yeni haftaya başla")
+ * 2) ürün/adet bilgisi 3) profilinizle eşleşen kritik uyarılar + sepet alerjen özeti 4) veri
+ * kapsamı + boyut kartları 5–8) ürün satırları (miktar, sil, incele, alternatif). Market seçimi,
+ * mesafe, "en ucuz market" veya tahmini toplam YOK (Aşama 9 kapsam dışı). Bu dosya yalnız SUNUM
+ * birleştiricisidir — I/O ve kalıcılık `app/weekly-basket.tsx`'tedir.
+ *
+ * Okuma HATASINDA ("hasLoadError") "Sepetiniz boş" YAZILMAZ — bilinmeyen durum boş sayılmaz (D1).
  */
 
 import { StyleSheet, Text, View } from 'react-native';
 
 import { DEV_PREVIEW_LABEL, color, spacing, typography } from '../consumerUx/tokens';
 import { BasketAllergenSummaryCard } from './BasketAllergenSummaryCard';
+import { BasketCriticalAllergenCard } from './BasketCriticalAllergenCard';
 import { BasketDimensionCoverageCard } from './BasketDimensionCoverageCard';
 import { BasketHeader } from './BasketHeader';
 import { WeeklyBasketLineRow } from './WeeklyBasketLineRow';
@@ -22,11 +26,21 @@ export interface WeeklyBasketScreenProps {
   onDecrement: (gtin: string) => void;
   onRemove: (gtin: string) => void;
   onClearBasket: () => void;
+  onStartNewWeek: () => void;
   onOpenProduct: (gtin: string) => void;
   onOpenAlternatives: (gtin: string) => void;
 }
 
-export function WeeklyBasketScreen({ view, onIncrement, onDecrement, onRemove, onClearBasket, onOpenProduct, onOpenAlternatives }: WeeklyBasketScreenProps) {
+export function WeeklyBasketScreen({
+  view,
+  onIncrement,
+  onDecrement,
+  onRemove,
+  onClearBasket,
+  onStartNewWeek,
+  onOpenProduct,
+  onOpenAlternatives,
+}: WeeklyBasketScreenProps) {
   return (
     <View style={styles.container}>
       {view.isDevPreview ? (
@@ -43,10 +57,16 @@ export function WeeklyBasketScreen({ view, onIncrement, onDecrement, onRemove, o
         </View>
       ) : null}
 
-      {/* 1 + 2. Başlık + ürün/adet bilgisi */}
-      <BasketHeader view={view} onClearBasket={onClearBasket} />
+      {/* 1 + 2. Başlık + ürün/adet bilgisi + eski hafta uyarısı */}
+      <BasketHeader view={view} onClearBasket={onClearBasket} onStartNewWeek={onStartNewWeek} />
 
-      {view.isEmpty ? (
+      {view.hasLoadError ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText} allowFontScaling>
+            Sepet açılamadı. Yukarıdaki hatayı giderip tekrar deneyin.
+          </Text>
+        </View>
+      ) : view.isEmpty ? (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyText} allowFontScaling>
             Sepetiniz boş. Bir ürünün sonuç ekranında "Sepete ekle" ile buraya ekleyebilirsiniz.
@@ -54,10 +74,16 @@ export function WeeklyBasketScreen({ view, onIncrement, onDecrement, onRemove, o
         </View>
       ) : (
         <>
-          {/* 3. Sepet alerjen özeti */}
+          {/* 3. Profilinizle eşleşen kritik uyarılar + sepet alerjen özeti */}
+          <BasketCriticalAllergenCard view={view.criticalAllergen} />
           <BasketAllergenSummaryCard view={view.allergenSummary} />
 
           {/* 4. Veri kapsamı ve boyut kartları */}
+          {view.dimensionMethodologyNote ? (
+            <Text style={styles.methodologyNote} allowFontScaling>
+              {view.dimensionMethodologyNote}
+            </Text>
+          ) : null}
           <View style={styles.dimensionGrid} accessibilityLabel="Veri kapsamı ve boyut kartları">
             {view.dimensionCoverage.map((dimension) => (
               <BasketDimensionCoverageCard key={dimension.key} view={dimension} />
@@ -92,6 +118,7 @@ const styles = StyleSheet.create({
   errorBannerText: { ...typography.bodyStrong, color: color.allergenDeclared },
   emptyCard: { borderRadius: 12, borderWidth: 1, borderColor: color.border, backgroundColor: color.surfaceMuted, padding: spacing.md },
   emptyText: { ...typography.body, color: color.inkMuted },
+  methodologyNote: { ...typography.caption, color: color.inkFaint },
   dimensionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   lines: { gap: spacing.sm },
 });

@@ -2,8 +2,10 @@
  * RafSkoru — Haftalık sepet ekranı rotası (Aşama 9). app/weekly-basket.tsx
  *
  * Yalnız `EXPO_PUBLIC_CONSUMER_UX_V2` açıkken erişilebilir. I/O ve kalıcılık BURADADIR;
- * `WeeklyBasketScreen` ve `src/weeklyBasket/*` view-model dosyaları saf kalır. Silme ve
- * "Sepeti temizle" her zaman `Alert.alert` ile onay ister (geri alınamaz işlem).
+ * `WeeklyBasketScreen` ve `src/weeklyBasket/*` view-model dosyaları saf kalır. Silme, "Sepeti
+ * temizle" VE "Yeni haftaya başla" her zaman `Alert.alert` ile onay ister (geri alınamaz işlem).
+ * Okuma hatasında "Sepetiniz boş" gösterilmez (D1); hata görünür kalır, eski kayıt otomatik
+ * silinmez.
  */
 
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -17,6 +19,7 @@ import {
   clearWeeklyBasket,
   loadWeeklyBasket,
   removeBasketLine,
+  startNewWeeklyBasket,
   updateBasketLineQuantity,
 } from '../src/weeklyBasket/basketStorage';
 import type { WeeklyBasketRecord } from '../src/weeklyBasket/types';
@@ -27,12 +30,22 @@ export default function WeeklyBasketRoute() {
   const isEnabled = isConsumerUxV2Enabled();
   const [basket, setBasket] = useState<WeeklyBasketRecord | null>(null);
   const [persistenceError, setPersistenceError] = useState<string | null>(null);
+  const [hasLoadError, setHasLoadError] = useState(false);
 
   const reload = useCallback(() => {
     if (!isEnabled) return;
     let isActive = true;
-    void loadWeeklyBasket().then((record) => {
-      if (isActive) setBasket(record);
+    void loadWeeklyBasket().then((result) => {
+      if (!isActive) return;
+      if (result.ok) {
+        setBasket(result.basket);
+        setHasLoadError(false);
+        setPersistenceError(null);
+      } else {
+        setBasket(null);
+        setHasLoadError(true);
+        setPersistenceError(result.errorMessage);
+      }
     });
     return () => {
       isActive = false;
@@ -61,6 +74,7 @@ export default function WeeklyBasketRoute() {
     const result = await updateBasketLineQuantity(gtin, current.quantity + 1);
     if (result.ok) {
       setBasket(result.basket);
+      setHasLoadError(false);
       setPersistenceError(null);
     } else {
       setPersistenceError(result.errorMessage);
@@ -73,6 +87,7 @@ export default function WeeklyBasketRoute() {
     const result = await updateBasketLineQuantity(gtin, current.quantity - 1);
     if (result.ok) {
       setBasket(result.basket);
+      setHasLoadError(false);
       setPersistenceError(null);
     } else {
       setPersistenceError(result.errorMessage);
@@ -89,6 +104,7 @@ export default function WeeklyBasketRoute() {
           void removeBasketLine(gtin).then((result) => {
             if (result.ok) {
               setBasket(result.basket);
+              setHasLoadError(false);
               setPersistenceError(null);
             } else {
               setPersistenceError(result.errorMessage);
@@ -109,6 +125,7 @@ export default function WeeklyBasketRoute() {
           void clearWeeklyBasket().then((result) => {
             if (result.ok) {
               setBasket(result.basket);
+              setHasLoadError(false);
               setPersistenceError(null);
             } else {
               setPersistenceError(result.errorMessage);
@@ -119,7 +136,32 @@ export default function WeeklyBasketRoute() {
     ]);
   };
 
-  const view = buildWeeklyBasketView(basket, { persistenceError });
+  const startNewWeek = () => {
+    Alert.alert(
+      'Yeni haftaya başla',
+      'Önceki haftaya ait sepetin yerine yeni, boş bir sepet oluşturulacak. Emin misiniz?',
+      [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Yeni haftaya başla',
+          style: 'destructive',
+          onPress: () => {
+            void startNewWeeklyBasket().then((result) => {
+              if (result.ok) {
+                setBasket(result.basket);
+                setHasLoadError(false);
+                setPersistenceError(null);
+              } else {
+                setPersistenceError(result.errorMessage);
+              }
+            });
+          },
+        },
+      ],
+    );
+  };
+
+  const view = buildWeeklyBasketView(basket, { persistenceError, hasLoadError });
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -129,6 +171,7 @@ export default function WeeklyBasketRoute() {
         onDecrement={(gtin) => void handleDecrement(gtin)}
         onRemove={removeLine}
         onClearBasket={clearBasket}
+        onStartNewWeek={startNewWeek}
         onOpenProduct={openProduct}
         onOpenAlternatives={openProduct}
       />

@@ -2,15 +2,17 @@
  * RafSkoru — Haftalık sepet view-model (Aşama 9). src/weeklyBasket/basketViewModel.ts
  *
  * SALT PROJEKSİYON, I/O YOK. Yeni skor formülü/ağırlık ÜRETMEZ: boyut kartları yalnız satır
- * bazında ZATEN hesaplanmış puanların basit ortalaması + kapsam sayımıdır (eksik ürünler
- * ortalamaya sıfır olarak katılmaz, sayılmaz — dışarıda bırakılır). Tek/bağlamsız bir sepet
- * geneli puanı YOKTUR. Alerjen özeti dört durumu asla birleştirmez; her satır kendi alerjen
- * durumunu korur (sepet özeti bir satırın uyarısını diğerleriyle dengelemez).
+ * bazında ZATEN hesaplanmış puanların basit ortalamasıdır (miktar/tüketim sıklığı hesaba
+ * katılmaz) + kapsam sayımıdır (eksik ürünler ortalamaya sıfır olarak katılmaz, dışarıda
+ * bırakılıp ayrıca sayılır). Tek/bağlamsız bir sepet geneli puanı YOKTUR. Alerjen özeti dört
+ * BEYAN durumunu asla birleştirmez; her satır kendi alerjen durumunu korur. Kullanıcının
+ * PROFİLİYLE çakışan kritik uyarılar ayrı, bağımsız bir bölümdür — ürün beyan grubuyla
+ * karıştırılmaz (bir ürün "beyan edilmiş alerjen" grubunda görünebilir ama profil eşleşmesi
+ * olmayabilir, ya da tersi mümkün değildir çünkü kritik uyarı zaten bir beyan/iz eşleşmesidir).
  */
 
-import type { AllergenGateTone } from '../consumerUx/types';
-import type { ConsumerDecisionView } from '../consumerUx/types';
-import { formatWeekRangeLabel } from './weekUtils';
+import type { AllergenGateTone, ConsumerDecisionView, CriticalAllergenNotice } from '../consumerUx/types';
+import { getIsoWeekStartDate, formatWeekRangeLabel } from './weekUtils';
 import type { WeeklyBasketLine, WeeklyBasketLineSnapshot, WeeklyBasketRecord, WeeklyBasketScoreSnapshot } from './types';
 
 // ── Ekleme anında snapshot üretimi — ZATEN hesaplanmış ConsumerDecisionView'den kopyalar ────
@@ -35,7 +37,46 @@ export function buildBasketLineSnapshotFromDecisionView(
   };
 }
 
-// ── Sepet alerjen özeti — dört durum, HİÇBİRİ birleştirilmez ─────────────────────────────
+// ── Profilinizle eşleşen kritik uyarılar — ürün BEYAN gruplarından AYRI, bağımsız bölüm ────
+// `criticalNotices` yalnız ekleme anında GERÇEKTEN profil eşleşmesi varsa doludur (bkz.
+// consumerUx/decisionViewModel.ts::buildAllergenGateView, riskEngine'in ürettiği uyarılardan).
+// Burada YENİDEN hesaplama YOK — yalnız satırlara zaten kopyalanmış olan bu alan toplanır.
+
+export interface BasketCriticalAllergenItem {
+  gtin: string;
+  productName: string;
+  notices: CriticalAllergenNotice[];
+}
+
+export interface BasketCriticalAllergenView {
+  items: BasketCriticalAllergenItem[];
+  isEmpty: boolean;
+  /** Ekleme anındaki profil eşleşmesi olduğunu açıkça belirtir — güncel profil farklı olabilir. */
+  snapshotDisclaimer: string;
+  /** Kritik uyarı yokken gösterilir; olumlu/güvenli bir sonuç İDDİA ETMEZ (P5, D1). */
+  emptyNotice: string;
+}
+
+function buildCriticalAllergenView(lines: readonly WeeklyBasketLine[]): BasketCriticalAllergenView {
+  const items = lines
+    .filter((line) => line.snapshot.allergenGate.criticalNotices.length > 0)
+    .map((line) => ({
+      gtin: line.gtin,
+      productName: line.snapshot.productName,
+      notices: line.snapshot.allergenGate.criticalNotices,
+    }));
+
+  return {
+    items,
+    isEmpty: items.length === 0,
+    snapshotDisclaimer:
+      'Bu, ürün sepete eklendiği andaki profil eşleşmesidir. Alerji profilinizi daha sonra değiştirdiyseniz ürünleri yeniden kontrol edin.',
+    emptyNotice:
+      'Sepetteki ürünler arasında profilinizle eşleşen kritik bir uyarı bulunmuyor. Bu, ürünlerin güvenli olduğu anlamına gelmez — etiketleri kontrol edin.',
+  };
+}
+
+// ── Sepet alerjen özeti — dört BEYAN durumu, HİÇBİRİ birleştirilmez, profil iddiası taşımaz ──
 
 export interface BasketAllergenSummaryGroup {
   key: AllergenGateTone;
@@ -49,11 +90,13 @@ export interface BasketAllergenSummaryView {
   disclaimer: string;
 }
 
+// Etiketler yalnız ÜRÜNÜN kendi beyanını anlatır; profille bir çakışma/eşleşme İDDİA ETMEZ
+// (profil eşleşmesi ayrı bölümdedir, bkz. buildCriticalAllergenView).
 const ALLERGEN_GROUP_ORDER: { key: AllergenGateTone; label: string }[] = [
-  { key: 'declared', label: 'Beyana göre içerir' },
-  { key: 'trace', label: 'İçerebilir' },
-  { key: 'unknown', label: 'Alerjen verisi eksik / doğrulanmamış' },
-  { key: 'not_listed', label: 'Mevcut veride profil çakışması görünmüyor' },
+  { key: 'declared', label: 'Beyan edilmiş alerjen bulunan ürünler' },
+  { key: 'trace', label: 'İz/eser beyanı bulunan ürünler' },
+  { key: 'unknown', label: 'Alerjen verisi eksik veya doğrulanmamış ürünler' },
+  { key: 'not_listed', label: 'Mevcut kayıtta alerjen belirtilmemiş ürünler' },
 ];
 
 function buildAllergenSummary(lines: readonly WeeklyBasketLine[]): BasketAllergenSummaryView {
@@ -69,6 +112,12 @@ function buildAllergenSummary(lines: readonly WeeklyBasketLine[]): BasketAllerge
 
 // ── Boyut kapsamı — Besin profili / İçerik-katkı / Veri kapsamı ─────────────────────────
 
+export interface BasketDimensionCoverageBreakdownItem {
+  key: string;
+  label: string;
+  count: number;
+}
+
 export interface BasketDimensionCoverageView {
   key: 'health' | 'content' | 'dataCoverage';
   label: string;
@@ -77,6 +126,8 @@ export interface BasketDimensionCoverageView {
   averageText: string | null;
   coveredCountText: string;
   missingCountText: string;
+  /** Yalnız `dataCoverage` boyutunda dolu: kullanılabilir/kısmi/çatışma/yerel aday/bulunamadı ayrı sayılır. */
+  breakdown: BasketDimensionCoverageBreakdownItem[] | null;
 }
 
 function buildScoreDimension(
@@ -102,21 +153,50 @@ function buildScoreDimension(
     isAvailable: available.length > 0,
     averageText: average !== null ? `${average}/100 ortalama` : null,
     coveredCountText: `${available.length}/${total} ürün`,
-    missingCountText: missing > 0 ? `${missing} üründe veri yok` : 'Tüm ürünlerde veri var',
+    missingCountText: missing > 0 ? `${missing} üründe bu boyut hesaplanamadı` : 'Tüm ürünlerde bu boyut hesaplandı',
+    breakdown: null,
   };
 }
 
+const DATA_COVERAGE_BREAKDOWN_LABELS: Record<string, string> = {
+  usable: 'Kullanılabilir veri',
+  partial: 'Kısmi veri',
+  conflict: 'Kaynak çatışması',
+  locally_reviewed_candidate: 'Yerel incelenmiş aday',
+  not_found_or_unloaded: 'Bulunamadı / yüklenemedi',
+};
+
 function buildDataCoverageDimension(lines: readonly WeeklyBasketLine[]): BasketDimensionCoverageView {
   const total = lines.length;
-  const covered = lines.filter((line) => line.snapshot.dataTrust.status === 'usable').length;
-  const missing = total - covered;
+  const counts = { usable: 0, partial: 0, conflict: 0, locally_reviewed_candidate: 0, not_found_or_unloaded: 0 };
+
+  for (const line of lines) {
+    const status = line.snapshot.dataTrust.status;
+    // Yalnız 'usable' kapsanmış sayılır; diğer dört durum ayrı ayrı sayılır, sıfır olarak
+    // ortalamaya EKLENMEZ (burada zaten bir ortalama yok, yalnız sayım var).
+    if (status === 'usable') counts.usable += 1;
+    else if (status === 'partial') counts.partial += 1;
+    else if (status === 'conflict') counts.conflict += 1;
+    else if (status === 'locally_reviewed_candidate') counts.locally_reviewed_candidate += 1;
+    else counts.not_found_or_unloaded += 1; // 'not_found' | 'loading'
+  }
+
+  const breakdown: BasketDimensionCoverageBreakdownItem[] = [
+    { key: 'usable', label: DATA_COVERAGE_BREAKDOWN_LABELS.usable, count: counts.usable },
+    { key: 'partial', label: DATA_COVERAGE_BREAKDOWN_LABELS.partial, count: counts.partial },
+    { key: 'conflict', label: DATA_COVERAGE_BREAKDOWN_LABELS.conflict, count: counts.conflict },
+    { key: 'locally_reviewed_candidate', label: DATA_COVERAGE_BREAKDOWN_LABELS.locally_reviewed_candidate, count: counts.locally_reviewed_candidate },
+    { key: 'not_found_or_unloaded', label: DATA_COVERAGE_BREAKDOWN_LABELS.not_found_or_unloaded, count: counts.not_found_or_unloaded },
+  ];
+
   return {
     key: 'dataCoverage',
     label: 'Veri kapsamı',
-    isAvailable: covered > 0,
+    isAvailable: counts.usable > 0,
     averageText: null,
-    coveredCountText: `${covered}/${total} ürün tam veri`,
-    missingCountText: missing > 0 ? `${missing} üründe veri eksik/doğrulanmamış` : 'Tüm ürünlerde veri tam',
+    coveredCountText: `${counts.usable}/${total} ürün kullanılabilir veri`,
+    missingCountText: `${total - counts.usable} üründe veri kısmi, çatışmalı, aday veya bulunamadı`,
+    breakdown,
   };
 }
 
@@ -124,7 +204,7 @@ function buildDataCoverageDimension(lines: readonly WeeklyBasketLine[]): BasketD
 
 const DATA_STATUS_LABELS: Record<WeeklyBasketLineSnapshot['dataTrust']['status'], string> = {
   loading: 'Veri alınıyor',
-  usable: 'Veri tam',
+  usable: 'Kullanılabilir veri',
   partial: 'Veri kısmi',
   not_found: 'Veri yok',
   locally_reviewed_candidate: 'Yerel aday — doğrulanmadı',
@@ -162,11 +242,18 @@ function buildLineView(line: WeeklyBasketLine): WeeklyBasketLineView {
 export interface WeeklyBasketView {
   weekLabel: string;
   weekRangeText: string | null;
+  /** false = yüklenen sepet ÖNCEKİ bir haftaya ait (bkz. app/weekly-basket.tsx "Yeni haftaya başla"). */
+  isCurrentWeek: boolean;
   itemCount: number;
   totalQuantity: number;
   isEmpty: boolean;
+  /** true = sepet OKUNAMADI/bozuk; bu durumda "Sepetiniz boş" YAZILMAZ (D1: bilinmeyen ≠ boş/güvenli). */
+  hasLoadError: boolean;
+  criticalAllergen: BasketCriticalAllergenView;
   allergenSummary: BasketAllergenSummaryView;
   dimensionCoverage: BasketDimensionCoverageView[];
+  /** Boyut kartlarının ÜZERİNDE bir kez gösterilir; yeni bir skor iddiası değil, yöntem açıklamasıdır. */
+  dimensionMethodologyNote: string | null;
   lines: WeeklyBasketLineView[];
   persistenceError: string | null;
   isDevPreview: boolean;
@@ -174,17 +261,22 @@ export interface WeeklyBasketView {
 
 export function buildWeeklyBasketView(
   record: WeeklyBasketRecord | null,
-  options?: { persistenceError?: string | null; isDevPreview?: boolean },
+  options?: { persistenceError?: string | null; hasLoadError?: boolean; isDevPreview?: boolean; now?: string },
 ): WeeklyBasketView {
   const lines = record?.lines ?? [];
   const totalQuantity = lines.reduce((sum, line) => sum + line.quantity, 0);
+  const now = options?.now ?? new Date().toISOString();
+  const isCurrentWeek = !record || record.weekStart === getIsoWeekStartDate(new Date(now));
 
   return {
     weekLabel: 'Bu haftanın sepeti',
     weekRangeText: record ? formatWeekRangeLabel(record.weekStart) : null,
+    isCurrentWeek,
     itemCount: lines.length,
     totalQuantity,
     isEmpty: lines.length === 0,
+    hasLoadError: options?.hasLoadError ?? false,
+    criticalAllergen: buildCriticalAllergenView(lines),
     allergenSummary: buildAllergenSummary(lines),
     dimensionCoverage:
       lines.length === 0
@@ -194,6 +286,8 @@ export function buildWeeklyBasketView(
             buildScoreDimension(lines, 'content', 'İçerik / katkı değerlendirmesi', (l) => l.snapshot.contentScore),
             buildDataCoverageDimension(lines),
           ],
+    dimensionMethodologyNote:
+      lines.length === 0 ? null : 'Ürün skorlarının basit ortalamasıdır; miktar ve tüketim sıklığı hesaba katılmaz.',
     lines: lines.map(buildLineView),
     persistenceError: options?.persistenceError ?? null,
     isDevPreview: options?.isDevPreview ?? false,

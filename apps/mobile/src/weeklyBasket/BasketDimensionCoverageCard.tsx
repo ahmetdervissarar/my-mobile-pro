@@ -36,6 +36,15 @@ export function BasketDimensionCoverageCard({ view }: { view: BasketDimensionCov
       <Text style={styles.countText} allowFontScaling>
         {view.missingCountText}
       </Text>
+      {view.breakdown ? (
+        <View style={styles.breakdown}>
+          {view.breakdown.map((item) => (
+            <Text key={item.key} style={styles.breakdownText} allowFontScaling>
+              {item.label}: {item.count}
+            </Text>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -56,4 +65,6 @@ const styles = StyleSheet.create({
   value: { ...typography.title, color: color.ink },
   unavailableText: { ...typography.bodyStrong, color: color.inkFaint },
   countText: { ...typography.caption, color: color.inkMuted },
+  breakdown: { marginTop: spacing.xxs, gap: 1 },
+  breakdownText: { ...typography.caption, color: color.inkFaint },
 });

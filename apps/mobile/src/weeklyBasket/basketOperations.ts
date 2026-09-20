@@ -19,30 +19,54 @@ function createEmptyBasket(now: string): WeeklyBasketRecord {
   };
 }
 
-/** Aynı GTIN varsa miktarı 1 artırır ve snapshot'ı günceller; yoksa yeni satır açar. */
+/** Kullanıcının açık onayından SONRA çağrılır (bkz. `app/weekly-basket.tsx`); eski kaydın YERİNE yeni, boş bir haftalık sepet döner. Arşiv oluşturmaz. */
+export function startNewWeek(now: string): WeeklyBasketRecord {
+  return createEmptyBasket(now);
+}
+
+export type MergeLineOutcome =
+  | { status: 'added'; basket: WeeklyBasketRecord }
+  | { status: 'week_mismatch'; basket: WeeklyBasketRecord };
+
+/**
+ * Aynı GTIN varsa miktarı 1 artırır ve snapshot'ı günceller; yoksa yeni satır açar.
+ * Saklanan sepetin `weekStart`i mevcut ISO haftasından FARKLIYSA ekleme YAPILMAZ ve eski kayıt
+ * DEĞİŞTİRİLMEZ — `status:'week_mismatch'` ile aynı (değişmemiş) kayıt geri döner. Yeni haftaya
+ * geçiş yalnız `startNewWeek` ile, yalnız kullanıcı onayından sonra olur.
+ */
 export function mergeLineIntoBasket(
   basket: WeeklyBasketRecord | null,
   gtin: string,
   snapshot: WeeklyBasketLineSnapshot,
   now: string,
-): WeeklyBasketRecord {
+): MergeLineOutcome {
+  if (basket && basket.weekStart !== getIsoWeekStartDate(new Date(now))) {
+    return { status: 'week_mismatch', basket };
+  }
+
   const base = basket ?? createEmptyBasket(now);
   const existingIndex = base.lines.findIndex((line) => line.gtin === gtin);
 
   if (existingIndex === -1) {
     return {
-      ...base,
-      updatedAt: now,
-      lines: [...base.lines, { gtin, quantity: 1, snapshot, addedAt: now, updatedAt: now }],
+      status: 'added',
+      basket: {
+        ...base,
+        updatedAt: now,
+        lines: [...base.lines, { gtin, quantity: 1, snapshot, addedAt: now, updatedAt: now }],
+      },
     };
   }
 
   return {
-    ...base,
-    updatedAt: now,
-    lines: base.lines.map((line, index) =>
-      index === existingIndex ? { ...line, quantity: line.quantity + 1, snapshot, updatedAt: now } : line,
-    ),
+    status: 'added',
+    basket: {
+      ...base,
+      updatedAt: now,
+      lines: base.lines.map((line, index) =>
+        index === existingIndex ? { ...line, quantity: line.quantity + 1, snapshot, updatedAt: now } : line,
+      ),
+    },
   };
 }
 

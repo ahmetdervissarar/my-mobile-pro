@@ -59,6 +59,7 @@ export function DevStateGallery() {
             onDecrement={NOOP}
             onRemove={NOOP}
             onClearBasket={NOOP}
+            onStartNewWeek={NOOP}
             onOpenProduct={NOOP}
             onOpenAlternatives={NOOP}
           />
