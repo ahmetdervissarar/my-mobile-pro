@@ -26,6 +26,8 @@ export interface ProductRowProps {
   trailing?: ReactNode;
   /** Nutri-Score/NOVA rozeti gibi ek göstergeler için satır altına eklenen alan. */
   extraBadges?: ReactNode;
+  /** Alerjen çipiyle ilgili kısa uyarı notu (ör. "Beyanda tanınmayan etiketler var"). */
+  allergenNote?: string | null;
   accessibilityLabel?: string;
 }
 
@@ -39,6 +41,7 @@ export function ProductRow({
   onPress,
   trailing,
   extraBadges,
+  allergenNote,
   accessibilityLabel,
 }: ProductRowProps) {
   const { colors } = useTheme();
@@ -98,6 +101,12 @@ export function ProductRow({
           {score !== undefined ? <ScorePill score={score} /> : null}
           {allergenStatus ? <AllergenChip status={allergenStatus} /> : null}
         </View>
+
+        {allergenNote ? (
+          <Text style={{ fontSize: 11, color: colors.muted }} numberOfLines={2}>
+            {allergenNote}
+          </Text>
+        ) : null}
 
         {extraBadges ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' }}>

@@ -26,12 +26,20 @@ export interface CatalogNova {
   source: 'off' | null;
 }
 
-/** backend'deki AllergenDataStatus ile birebir aynı — burada yeniden yorumlanmaz. */
-export type CatalogAllergenDataStatus = 'present' | 'not_listed_in_available_data' | 'unknown_or_unverified';
+/**
+ * backend'deki CatalogAllergenDataStatus ile birebir aynı — burada yeniden
+ * yorumlanmaz. not_listed_in_available_data BURADA yoktur; o yalnız çip
+ * düzeyinde, profil alerjeni başına bir sonuçtur (bkz. catalogAllergenChip.ts).
+ */
+export type CatalogAllergenDataStatus = 'present' | 'partial' | 'unknown_or_unverified';
 
 export interface CatalogAllergenData {
   declared: AllergenKey[];
   traces: AllergenKey[];
+  /** AB/TR zorunlu ama profilde modellenmemiş, tanınan ham etiketler (ör. 'en:celery'). */
+  recognizedUnmodeled: string[];
+  /** Ne modellenmiş ne tanınan ham etiketler — 'partial' durumunu tetikler. */
+  rawUnmapped: string[];
   dataStatus: CatalogAllergenDataStatus;
 }
 

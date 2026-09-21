@@ -25,8 +25,17 @@ export interface BasketItemRowProps {
  */
 export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityChange, onRemove }: BasketItemRowProps) {
   const { colors } = useTheme();
-  const allergenStatus = getCatalogAllergenChipStatus(item.allergenData, userProfile);
+  const allergenChip = getCatalogAllergenChipStatus(item.allergenData, userProfile);
   const isGroupEstimate = item.scoreSource === 'group_estimate';
+
+  const allergenNoteParts: string[] = [];
+  if (allergenChip.hasUnrecognizedTags) {
+    allergenNoteParts.push('Beyanda tanınmayan etiketler var — etiketi kontrol edin.');
+  }
+  if (allergenChip.recognizedUnmodeledLabels.length > 0) {
+    allergenNoteParts.push(`Beyanda ayrıca: ${allergenChip.recognizedUnmodeledLabels.join(', ')}`);
+  }
+  const allergenNote = allergenNoteParts.length > 0 ? allergenNoteParts.join(' ') : null;
 
   return (
     <View
@@ -52,8 +61,12 @@ export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityCha
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
         <NutriScoreBadge grade={item.nutriScore?.grade ?? null} source={item.nutriScore?.source} />
         <NovaBadge group={item.nova?.group ?? null} />
-        <AllergenChip status={allergenStatus} />
+        <AllergenChip status={allergenChip.status} />
       </View>
+
+      {allergenNote ? (
+        <Text style={{ fontSize: 11, color: colors.muted }}>{allergenNote}</Text>
+      ) : null}
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Stepper

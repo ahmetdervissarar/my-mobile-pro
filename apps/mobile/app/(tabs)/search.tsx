@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { fetchSearchSuggestions, type SearchSuggestion } from '../../src/api/productSuggestionClient';
-import { getCatalogAllergenChipStatus } from '../../src/riskEngine/catalogAllergenChip';
+import { getCatalogAllergenChipStatus, type CatalogAllergenChipResult } from '../../src/riskEngine/catalogAllergenChip';
 import { addToCart, getCartItemKey, suggestionToCartInput, useCart } from '../../src/state/cartStore';
 import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
@@ -13,7 +13,6 @@ import { NutriScoreBadge } from '../../src/ui/NutriScoreBadge';
 import { ProductRow } from '../../src/ui/ProductRow';
 import { SegmentedControl } from '../../src/ui/SegmentedControl';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
-import type { AllergenBannerStatus } from '../../src/ui/AllergenBanner';
 
 type SortKey = 'score' | 'price' | 'unitPrice';
 
@@ -29,15 +28,29 @@ function getSuggestionKey(suggestion: SearchSuggestion): string {
     : `product_group:${suggestion.productGroupKey}`;
 }
 
-function getSuggestionAllergenStatus(
+function getSuggestionAllergenChip(
   suggestion: SearchSuggestion,
   userProfile: UserSensitivityProfile,
-): AllergenBannerStatus {
+): CatalogAllergenChipResult {
   if (suggestion.type !== 'product') {
-    return 'unknown_or_unverified';
+    return { status: 'unknown_or_unverified', hasUnrecognizedTags: false, recognizedUnmodeledLabels: [] };
   }
 
   return getCatalogAllergenChipStatus(suggestion.allergenData, userProfile);
+}
+
+function getAllergenNote(chip: CatalogAllergenChipResult): string | null {
+  const parts: string[] = [];
+
+  if (chip.hasUnrecognizedTags) {
+    parts.push('Beyanda tanınmayan etiketler var — etiketi kontrol edin.');
+  }
+
+  if (chip.recognizedUnmodeledLabels.length > 0) {
+    parts.push(`Beyanda ayrıca: ${chip.recognizedUnmodeledLabels.join(', ')}`);
+  }
+
+  return parts.length > 0 ? parts.join(' ') : null;
 }
 
 function getSuggestionMeta(suggestion: SearchSuggestion): string | null {
@@ -178,6 +191,7 @@ export default function SearchScreen() {
           {sortedSuggestions.map((suggestion) => {
             const key = getSuggestionKey(suggestion);
             const isAdded = cartItems.some((item) => item.key === getCartItemKey(suggestionToCartInput(suggestion)));
+            const allergenChip = getSuggestionAllergenChip(suggestion, userProfile);
 
             return (
               <ProductRow
@@ -186,7 +200,8 @@ export default function SearchScreen() {
                 name={suggestion.label}
                 meta={getSuggestionMeta(suggestion)}
                 score={null}
-                allergenStatus={getSuggestionAllergenStatus(suggestion, userProfile)}
+                allergenStatus={allergenChip.status}
+                allergenNote={getAllergenNote(allergenChip)}
                 extraBadges={
                   suggestion.type === 'product' ? (
                     <>
