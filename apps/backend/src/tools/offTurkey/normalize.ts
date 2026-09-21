@@ -2,23 +2,10 @@
 // Kurallar: tahmin yok; bulunmayan alan null + missingFields; alerjen kararı yalnız OFF etiket verisinden.
 // Kişisel alerji profili burada YOKTUR; profil-ürün eşleşmesi cihazda yapılır.
 
-export type AllergenKey =
-  | 'egg' | 'milk' | 'gluten_wheat' | 'soy' | 'peanut'
-  | 'tree_nuts' | 'sesame' | 'fish' | 'shellfish';
+import { OFF_ALLERGEN_TO_PROFILE_KEY } from './offAllergenMap.js';
+import type { AllergenKey } from './allergenKey.js';
 
-/** OFF taksonomi etiketi → mobil profil anahtarı. Eşleşmeyen etiket rawOther'da korunur. */
-const OFF_ALLERGEN_MAP: Record<string, AllergenKey> = {
-  'en:eggs': 'egg',
-  'en:milk': 'milk',
-  'en:gluten': 'gluten_wheat',
-  'en:soybeans': 'soy',
-  'en:peanuts': 'peanut',
-  'en:nuts': 'tree_nuts',
-  'en:sesame-seeds': 'sesame',
-  'en:fish': 'fish',
-  'en:crustaceans': 'shellfish',
-  'en:molluscs': 'shellfish',
-};
+export type { AllergenKey } from './allergenKey.js';
 
 /** present: OFF'ta beyan/iz etiketi var. not_listed: içerik metni var ama alerjen etiketi yok
  *  (bu "içermez" demek DEĞİLDİR). unknown: içerik metni de alerjen verisi de yok. */
@@ -78,7 +65,7 @@ const num = (v: unknown): number | null => {
   return typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : null;
 };
 const mapAllergens = (tags: string[]): AllergenKey[] =>
-  [...new Set(tags.map((t) => OFF_ALLERGEN_MAP[t]).filter((k): k is AllergenKey => Boolean(k)))];
+  [...new Set(tags.map((t) => OFF_ALLERGEN_TO_PROFILE_KEY[t]).filter((k): k is AllergenKey => Boolean(k)))];
 
 export function isValidGtin(code: string): boolean {
   if (!/^\d{8}$|^\d{12,14}$/.test(code)) return false;

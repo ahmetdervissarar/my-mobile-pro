@@ -9,11 +9,8 @@ import { existsSync, readFileSync } from 'node:fs';
 
 import { computeNutriScore2023 } from '../nutriScore/nutriScore2023.js';
 import { foldSearchText } from '../search/suggestions.js';
-import type {
-  AllergenDataStatus,
-  AllergenKey,
-  OffImportRecord,
-} from '../tools/offTurkey/normalize.js';
+import type { AllergenKey, OffImportRecord } from '../tools/offTurkey/normalize.js';
+import { classifyAllergenTags } from '../tools/offTurkey/offAllergenMap.js';
 import { categoryFromOffTags, hasNonNutritiveSweetenerTag } from './nutriScoreCategory.js';
 import { mapOffCategoriesToProductGroupKey } from './productGroupMap.js';
 
@@ -40,10 +37,24 @@ export interface CatalogNova {
   source: 'off' | null;
 }
 
+/**
+ * Katalog düzeyinde yalnız üç durum vardır — not_listed_in_available_data
+ * BURADA yoktur; o yalnız çip düzeyinde, profil alerjeni başına bir
+ * sonuçtur (bkz. src/riskEngine/catalogAllergenChip.ts, mobil).
+ * - present: ham etiketlerin TAMAMI bilinen bir kovaya (A veya B) düştü.
+ * - partial: en az bir ham etiket hiçbir kovaya düşmedi (rawUnmapped doldu).
+ * - unknown_or_unverified: hiç ham etiket yok (içindekiler olsa da olmasa da).
+ */
+export type CatalogAllergenDataStatus = 'present' | 'partial' | 'unknown_or_unverified';
+
 export interface CatalogAllergenData {
   declared: AllergenKey[];
   traces: AllergenKey[];
-  dataStatus: AllergenDataStatus;
+  /** AB/TR zorunlu alerjenlerden profilde modellenmemiş ama tanınan ham etiketler (ör. en:celery). */
+  recognizedUnmodeled: string[];
+  /** Ne modellenmiş ne tanınan ham etiketler — 'partial' durumunu tetikler. */
+  rawUnmapped: string[];
+  dataStatus: CatalogAllergenDataStatus;
 }
 
 export interface CatalogProduct {
@@ -95,7 +106,23 @@ export function parsePackageSize(quantityText: string | null): CatalogPackageSiz
   return { amount, unit: 'unit' };
 }
 
+/**
+ * OFF notu varsa her zaman ONA öncelik verilir (status='off'); kendi
+ * hesabımız (rafskoru_computed) yalnız OFF'ta not YOKSA denenir. Sıra
+ * bilerek bu şekildedir — bkz. görev onayı: "OFF değeri varsa status='off'
+ * ve OFF değeri gösterilir; computed yalnızca OFF yoksa."
+ */
 function buildNutriScore(record: OffImportRecord): CatalogNutriScore {
+  if (record.nutriscoreGrade) {
+    return {
+      grade: record.nutriscoreGrade.toUpperCase() as 'A' | 'B' | 'C' | 'D' | 'E',
+      status: 'off',
+      source: 'off',
+      algorithmVersion: null,
+      assumptions: [],
+    };
+  }
+
   const category = categoryFromOffTags(record.categories);
   const n = record.nutrition100g;
 
@@ -122,16 +149,6 @@ function buildNutriScore(record: OffImportRecord): CatalogNutriScore {
     };
   }
 
-  if (record.nutriscoreGrade) {
-    return {
-      grade: record.nutriscoreGrade.toUpperCase() as 'A' | 'B' | 'C' | 'D' | 'E',
-      status: 'off',
-      source: 'off',
-      algorithmVersion: null,
-      assumptions: [],
-    };
-  }
-
   return { grade: null, status: 'insufficient_data', source: null, algorithmVersion: null, assumptions: [] };
 }
 
@@ -143,12 +160,33 @@ function buildNova(record: OffImportRecord): CatalogNova {
   return { group: null, source: null };
 }
 
-/** OFF'tan gelen alerjen durumu aynen korunur; burada yeniden yorumlanmaz. */
+/**
+ * OFF kaydının hazır declared/traces/dataStatus alanlarına GÜVENİLMEZ; her
+ * yüklemede ham rawDeclared/rawTraces'ten, paylaşılan üç-kova tablosuyla
+ * yeniden türetilir. Bu sayede eski (fix'ten önce üretilmiş) JSONL
+ * dökümleri bile re-import gerekmeden doğru sınıflanır.
+ */
 function buildAllergenData(record: OffImportRecord): CatalogAllergenData {
+  const declaredClass = classifyAllergenTags(record.allergens.rawDeclared);
+  const tracesClass = classifyAllergenTags(record.allergens.rawTraces);
+
+  const recognizedUnmodeled = [...new Set([...declaredClass.recognizedUnmodeled, ...tracesClass.recognizedUnmodeled])];
+  const rawUnmapped = [...new Set([...declaredClass.unmapped, ...tracesClass.unmapped])];
+
+  const hasRawTags = record.allergens.rawDeclared.length > 0 || record.allergens.rawTraces.length > 0;
+
+  const dataStatus: CatalogAllergenDataStatus = !hasRawTags
+    ? 'unknown_or_unverified'
+    : rawUnmapped.length > 0
+      ? 'partial'
+      : 'present';
+
   return {
-    declared: record.allergens.declared,
-    traces: record.allergens.traces,
-    dataStatus: record.allergens.dataStatus,
+    declared: declaredClass.mapped,
+    traces: tracesClass.mapped,
+    recognizedUnmodeled,
+    rawUnmapped,
+    dataStatus,
   };
 }
 

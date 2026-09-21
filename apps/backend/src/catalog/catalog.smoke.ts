@@ -102,10 +102,14 @@ const unknownAllergenRecord = makeRecord({
 });
 assert.equal(buildCatalogProduct(unknownAllergenRecord).allergenData.dataStatus, 'unknown_or_unverified');
 
-const notListedRecord = makeRecord({
+// not_listed_in_available_data artık bir katalog dataStatus değeri DEĞİL (yalnız çip
+// düzeyinde, profil-alerjeni-başına bir sonuçtur). Ham etiket yoksa (içindekiler olsa
+// da olmasa da) katalog düzeyinde her zaman unknown_or_unverified.
+const noRawTagsWithIngredientsRecord = makeRecord({
+  ingredientsText: 'şeker, süt tozu',
   allergens: { declared: [], traces: [], rawDeclared: [], rawTraces: [], dataStatus: 'not_listed_in_available_data' },
 });
-assert.equal(buildCatalogProduct(notListedRecord).allergenData.dataStatus, 'not_listed_in_available_data');
+assert.equal(buildCatalogProduct(noRawTagsWithIngredientsRecord).allergenData.dataStatus, 'unknown_or_unverified');
 
 const declaredRecord = makeRecord({
   allergens: {
@@ -125,6 +129,81 @@ assert.equal(declaredProduct.allergenData.dataStatus, 'present');
 assert.deepEqual(buildCatalogProduct(makeRecord({ quantity: '1 L' })).packageSize, { amount: 1000, unit: 'ml' });
 assert.deepEqual(buildCatalogProduct(makeRecord({ quantity: '500 g' })).packageSize, { amount: 500, unit: 'g' });
 assert.equal(buildCatalogProduct(makeRecord({ quantity: 'yaklaşık 1 paket' })).packageSize, undefined);
+
+// 8) Üç kova — bkz. görev onayı
+// 8a) en:hazelnuts → tree_nuts (savunmacı eşleme; gerçek OFF kanonik etiketi değil, bkz.
+//     offAllergenMap.ts başlığı). Uygulamadan ÖNCE bu assert kırmızı görüldü.
+const hazelnutRecord = makeRecord({
+  allergens: {
+    declared: [],
+    traces: [],
+    rawDeclared: ['en:hazelnuts'],
+    rawTraces: [],
+    dataStatus: 'present',
+  },
+});
+const hazelnutProduct = buildCatalogProduct(hazelnutRecord);
+assert.deepEqual(hazelnutProduct.allergenData.declared, ['tree_nuts']);
+assert.equal(hazelnutProduct.allergenData.dataStatus, 'present');
+
+// 8b) en:milk (bilinen) + gerçekten tanınmayan bir etiket → milk declared'da kalır,
+//     durum 'partial' (present DEĞİL).
+const partialRecord = makeRecord({
+  allergens: {
+    declared: [],
+    traces: [],
+    rawDeclared: ['en:milk', 'en:some-truly-unknown-tag'],
+    rawTraces: [],
+    dataStatus: 'present',
+  },
+});
+const partialProduct = buildCatalogProduct(partialRecord);
+assert.deepEqual(partialProduct.allergenData.declared, ['milk']);
+assert.equal(partialProduct.allergenData.dataStatus, 'partial');
+assert.deepEqual(partialProduct.allergenData.rawUnmapped, ['en:some-truly-unknown-tag']);
+
+// 8c) Yalnız en:celery (tanınan ama modellenmemiş) → present, partial DEĞİL.
+const celeryOnlyRecord = makeRecord({
+  allergens: {
+    declared: [],
+    traces: [],
+    rawDeclared: ['en:celery'],
+    rawTraces: [],
+    dataStatus: 'present',
+  },
+});
+const celeryOnlyProduct = buildCatalogProduct(celeryOnlyRecord);
+assert.equal(celeryOnlyProduct.allergenData.dataStatus, 'present');
+assert.deepEqual(celeryOnlyProduct.allergenData.declared, []);
+assert.deepEqual(celeryOnlyProduct.allergenData.recognizedUnmodeled, ['en:celery']);
+assert.deepEqual(celeryOnlyProduct.allergenData.rawUnmapped, []);
+
+// 8d) Etiketsiz ürün (rawDeclared/rawTraces boş) → unknown_or_unverified.
+const noTagsRecord = makeRecord({
+  allergens: { declared: [], traces: [], rawDeclared: [], rawTraces: [], dataStatus: 'present' },
+});
+assert.equal(buildCatalogProduct(noTagsRecord).allergenData.dataStatus, 'unknown_or_unverified');
+
+// 9) Nutri-Score: OFF notu varsa her zaman öncelikli — kendi hesabımız yeterli veriyle
+//    çalışabilse bile 'computed' değil 'off' kullanılır.
+const offPriorityRecord = makeRecord({
+  categories: [],
+  nutriscoreGrade: 'b',
+  nutrition100g: {
+    energyKcal: 300,
+    fat: 5,
+    saturatedFat: 2,
+    carbohydrates: 40,
+    sugars: 10,
+    fiber: 3,
+    proteins: 8,
+    salt: 0.5,
+  },
+});
+const offPriorityProduct = buildCatalogProduct(offPriorityRecord);
+assert.equal(offPriorityProduct.nutriScore.status, 'off');
+assert.equal(offPriorityProduct.nutriScore.source, 'off');
+assert.equal(offPriorityProduct.nutriScore.grade, 'B');
 
 // 7) Dosya yokken katalog boş kalır; hata fırlatılmaz
 const emptyCatalog = loadCatalog('/tmp/rafskoru-catalog-smoke-does-not-exist.jsonl');
