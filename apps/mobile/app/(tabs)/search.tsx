@@ -1,19 +1,51 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { fetchSearchSuggestions, type SearchSuggestion } from '../../src/api/productSuggestionClient';
+import { addToCart, getCartItemKey, suggestionToCartInput, useCart } from '../../src/state/cartStore';
+import { EmptyState } from '../../src/ui/EmptyState';
+import { ProductRow } from '../../src/ui/ProductRow';
+import { SegmentedControl } from '../../src/ui/SegmentedControl';
+import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
+
+type SortKey = 'score' | 'price' | 'unitPrice';
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'score', label: 'En yüksek puan' },
+  { key: 'price', label: 'En düşük fiyat' },
+  { key: 'unitPrice', label: 'Litre/kg fiyatı' },
+];
+
+function getSuggestionKey(suggestion: SearchSuggestion): string {
+  return suggestion.type === 'product'
+    ? `product:${suggestion.productId}`
+    : `product_group:${suggestion.productGroupKey}`;
+}
+
+function getSuggestionMeta(suggestion: SearchSuggestion): string | null {
+  if (suggestion.type !== 'product') {
+    return 'Ürün grubu';
+  }
+
+  return (
+    [suggestion.brand, suggestion.packageSize ? `${suggestion.packageSize.amount} ${suggestion.packageSize.unit}` : undefined]
+      .filter(Boolean)
+      .join(' · ') || null
+  );
+}
 
 export default function SearchScreen() {
-  const router = useRouter();
+  const { colors } = useTheme();
   const params = useLocalSearchParams<{ initialQuery?: string | string[] }>();
   const initialQueryParam = params.initialQuery;
-  const initialQuery = Array.isArray(initialQueryParam)
-    ? initialQueryParam[0] ?? ''
-    : initialQueryParam ?? '';
+  const initialQuery = Array.isArray(initialQueryParam) ? initialQueryParam[0] ?? '' : initialQueryParam ?? '';
+
   const [query, setQuery] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [sortKey, setSortKey] = useState<SortKey>('score');
+  const cartItems = useCart();
 
   useEffect(() => {
     const trimmedQuery = query.trim();
@@ -47,190 +79,130 @@ export default function SearchScreen() {
     };
   }, [query]);
 
-  const openTextSearch = (productName: string) => {
-    const trimmedProductName = productName.trim();
+  // Sıralama seçenekleri bilinçli olarak korunur (bkz. görev raporu):
+  // /api/search/suggest puan veya fiyat alanı döndürmüyor, bu yüzden
+  // sıralama şu an sabit kalır (tahmini bir değerle doldurulmaz).
+  const sortedSuggestions = useMemo(() => suggestions, [suggestions]);
 
-    if (!trimmedProductName) {
-      return;
-    }
-
-    router.push({
-      pathname: '/product-result',
-      params: { productName: trimmedProductName },
-    });
-  };
-
-  const handleSearch = () => {
-    openTextSearch(query);
-  };
-
-  const handleSuggestionPress = (suggestion: SearchSuggestion) => {
+  const openProduct = (suggestion: SearchSuggestion) => {
     if (suggestion.type === 'product') {
-      router.push({
-        pathname: '/product-result',
-        params: { productId: suggestion.productId },
-      });
+      router.push({ pathname: '/product-result', params: { productId: suggestion.productId } });
       return;
     }
 
     router.push({
       pathname: '/product-group',
-      params: {
-        productGroupKey: suggestion.productGroupKey,
-        label: suggestion.label,
-      },
+      params: { productGroupKey: suggestion.productGroupKey, label: suggestion.label },
     });
   };
 
+  const handleAddToCart = (suggestion: SearchSuggestion) => {
+    addToCart(suggestionToCartInput(suggestion));
+  };
+
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: '#fff',
-        paddingHorizontal: 24,
-        paddingTop: 32,
-      }}
-    >
-      <Text
-        style={{
-          marginBottom: 20,
-          fontSize: 32,
-          fontWeight: '700',
-          color: '#111827',
-        }}
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxxl }}
+        keyboardShouldPersistTaps="handled"
       >
-        Ürün Ara
-      </Text>
+        <Text style={{ fontSize: 28, fontWeight: '800', color: colors.ink }}>Ürün Ara</Text>
 
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Ürün adı yazın"
-        placeholderTextColor="#9CA3AF"
-        style={{
-          borderWidth: 1,
-          borderColor: '#D1D5DB',
-          borderRadius: 12,
-          paddingHorizontal: 14,
-          paddingVertical: 12,
-          fontSize: 16,
-          color: '#111827',
-        }}
-      />
-
-      {isSuggesting ? (
-        <Text
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Ürün adı yazın"
+          placeholderTextColor={colors.muted}
+          accessibilityLabel="Ürün adı ara"
           style={{
-            marginTop: 8,
-            color: '#6B7280',
-            fontSize: 12,
-          }}
-        >
-          Öneriler aranıyor...
-        </Text>
-      ) : null}
-
-      {suggestions.length > 0 ? (
-        <View
-          style={{
-            marginTop: 8,
-            borderWidth: 1,
-            borderColor: '#E5E7EB',
-            borderRadius: 12,
-            overflow: 'hidden',
-          }}
-        >
-          {suggestions.map((suggestion) => (
-            <Pressable
-              key={`${suggestion.type}:${
-                suggestion.type === 'product' ? suggestion.productId : suggestion.productGroupKey
-              }`}
-              onPress={() => handleSuggestionPress(suggestion)}
-              style={{
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                borderBottomWidth: 1,
-                borderBottomColor: '#F3F4F6',
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 8,
-                }}
-              >
-                <Text
-                  style={{
-                    flex: 1,
-                    color: '#111827',
-                    fontSize: 15,
-                    fontWeight: '600',
-                  }}
-                >
-                  {suggestion.label}
-                </Text>
-
-                <Text
-                  style={{
-                    borderRadius: 999,
-                    backgroundColor: suggestion.type === 'product' ? '#DCFCE7' : '#EEF2FF',
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    color: suggestion.type === 'product' ? '#166534' : '#3730A3',
-                    fontSize: 11,
-                    fontWeight: '700',
-                  }}
-                >
-                  {suggestion.type === 'product' ? 'Ürün' : 'Kategori'}
-                </Text>
-              </View>
-
-              <Text
-                style={{
-                  marginTop: 4,
-                  color: '#6B7280',
-                  fontSize: 12,
-                }}
-              >
-                {suggestion.type === 'product'
-                  ? [
-                      suggestion.brand,
-                      suggestion.packageSize
-                        ? `${suggestion.packageSize.amount} ${suggestion.packageSize.unit}`
-                        : undefined,
-                    ]
-                      .filter(Boolean)
-                      .join(' • ') || 'Ürün önerisi'
-                  : 'Ürün grubu önerisi — seçim arama kutusuna eklenir'}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-
-      <Pressable
-        onPress={handleSearch}
-        style={{
-          marginTop: 12,
-          backgroundColor: '#111827',
-          paddingVertical: 14,
-          borderRadius: 10,
-          alignItems: 'center',
-          opacity: query.trim() ? 1 : 0.7,
-        }}
-      >
-        <Text
-          style={{
-            color: '#fff',
+            minHeight: MIN_TOUCH_TARGET,
+            borderWidth: 2,
+            borderColor: colors.pine2,
+            borderRadius: radii.lg,
+            paddingHorizontal: spacing.lg,
             fontSize: 16,
-            fontWeight: '600',
+            color: colors.ink,
+            backgroundColor: colors.surface,
+          }}
+        />
+
+        {suggestions.length > 0 ? (
+          <SegmentedControl options={SORT_OPTIONS} value={sortKey} onChange={setSortKey} />
+        ) : null}
+
+        {isSuggesting ? <Text style={{ fontSize: 12.5, color: colors.muted }}>Öneriler aranıyor...</Text> : null}
+
+        {!isSuggesting && query.trim().length >= 2 && sortedSuggestions.length === 0 ? (
+          <EmptyState title="Sonuç bulunamadı" message="Farklı bir ürün adıyla tekrar deneyin." />
+        ) : null}
+
+        <View style={{ gap: spacing.sm }}>
+          {sortedSuggestions.map((suggestion) => {
+            const key = getSuggestionKey(suggestion);
+            const isAdded = cartItems.some((item) => item.key === getCartItemKey(suggestionToCartInput(suggestion)));
+
+            return (
+              <ProductRow
+                key={key}
+                name={suggestion.label}
+                meta={getSuggestionMeta(suggestion)}
+                score={null}
+                allergenStatus="unknown_or_unverified"
+                onPress={() => openProduct(suggestion)}
+                trailing={
+                  <Pressable
+                    onPress={() => handleAddToCart(suggestion)}
+                    accessibilityRole="button"
+                    accessibilityLabel={isAdded ? 'Sepete eklendi' : 'Sepete ekle'}
+                    style={{
+                      width: MIN_TOUCH_TARGET,
+                      height: MIN_TOUCH_TARGET,
+                      borderRadius: radii.md,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: isAdded ? colors.leaf : colors.pine,
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>{isAdded ? '✓' : '+'}</Text>
+                  </Pressable>
+                }
+              />
+            );
+          })}
+        </View>
+
+        {sortedSuggestions.length > 0 ? (
+          <Text style={{ fontSize: 11.5, color: colors.muted }}>
+            Puan ve fiyat verisi arama sonuçlarında henüz yok; bu alanlar "Veri yok" olarak gösterilir.
+          </Text>
+        ) : null}
+      </ScrollView>
+
+      {cartItems.length > 0 ? (
+        <Pressable
+          onPress={() => router.push('/basket')}
+          accessibilityRole="button"
+          accessibilityLabel={`Sepet, ${cartItems.length} ürün, sepete git`}
+          style={{
+            position: 'absolute',
+            left: spacing.xl,
+            right: spacing.xl,
+            bottom: spacing.xl,
+            minHeight: MIN_TOUCH_TARGET,
+            borderRadius: radii.lg,
+            backgroundColor: colors.citrus,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: spacing.lg,
           }}
         >
-          Ara
-        </Text>
-      </Pressable>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: '#1B1B1B' }}>
+            Sepet · {cartItems.length} ürün
+          </Text>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: '#1B1B1B' }}>Sepete git</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
