@@ -1,4 +1,11 @@
 import { getPriceApiBaseUrl } from './config';
+import type {
+  CatalogAllergenData,
+  CatalogCompleteness,
+  CatalogNova,
+  CatalogNutriScore,
+  CatalogProvenance,
+} from './catalogTypes';
 
 export type SearchSuggestion = ProductGroupSearchSuggestion | ProductSearchSuggestion;
 
@@ -21,6 +28,13 @@ export interface ProductSearchSuggestion {
     unit: string;
   };
   source: 'product_index';
+  /** Aşağıdakiler yalnız katalogdan (OFF-TR) geldiğinde doludur. */
+  imageUrl?: string | null;
+  nutriScore?: CatalogNutriScore;
+  nova?: CatalogNova;
+  allergenData?: CatalogAllergenData;
+  completeness?: CatalogCompleteness;
+  provenance?: CatalogProvenance;
 }
 
 export interface SearchSuggestResponse {

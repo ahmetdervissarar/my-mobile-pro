@@ -24,6 +24,8 @@ export interface ProductRowProps {
   priceText?: string | null;
   onPress?: () => void;
   trailing?: ReactNode;
+  /** Nutri-Score/NOVA rozeti gibi ek göstergeler için satır altına eklenen alan. */
+  extraBadges?: ReactNode;
   accessibilityLabel?: string;
 }
 
@@ -36,6 +38,7 @@ export function ProductRow({
   priceText,
   onPress,
   trailing,
+  extraBadges,
   accessibilityLabel,
 }: ProductRowProps) {
   const { colors } = useTheme();
@@ -95,6 +98,12 @@ export function ProductRow({
           {score !== undefined ? <ScorePill score={score} /> : null}
           {allergenStatus ? <AllergenChip status={allergenStatus} /> : null}
         </View>
+
+        {extraBadges ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' }}>
+            {extraBadges}
+          </View>
+        ) : null}
 
         {priceText ? (
           <Text style={{ fontSize: 13, fontWeight: '700', color: colors.ink }}>{priceText}</Text>

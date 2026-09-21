@@ -12,6 +12,8 @@ import {
   setCartItemQuantity,
   useCart,
 } from '../../src/state/cartStore';
+import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
+import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import { EmptyState } from '../../src/ui/EmptyState';
 import { PrimaryButton } from '../../src/ui/PrimaryButton';
 import { SegmentedControl } from '../../src/ui/SegmentedControl';
@@ -31,6 +33,13 @@ export default function BasketScreen() {
   const [evaluation, setEvaluation] = useState<BasketEvaluateResponse | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(emptyUserSensitivityProfile);
+
+  useEffect(() => {
+    void loadUserSensitivityProfile()
+      .then(setUserProfile)
+      .catch(() => setUserProfile(emptyUserSensitivityProfile));
+  }, []);
 
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -87,6 +96,7 @@ export default function BasketScreen() {
         <ScoreTab
           basketProfile={evaluation?.basketProfile ?? null}
           cartItems={cartItems}
+          userProfile={userProfile}
           onQuantityChange={setCartItemQuantity}
           onRemove={removeFromCart}
         />

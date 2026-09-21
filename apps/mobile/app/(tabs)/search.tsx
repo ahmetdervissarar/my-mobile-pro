@@ -3,11 +3,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { fetchSearchSuggestions, type SearchSuggestion } from '../../src/api/productSuggestionClient';
+import { getCatalogAllergenChipStatus } from '../../src/riskEngine/catalogAllergenChip';
 import { addToCart, getCartItemKey, suggestionToCartInput, useCart } from '../../src/state/cartStore';
+import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
+import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import { EmptyState } from '../../src/ui/EmptyState';
+import { NovaBadge } from '../../src/ui/NovaBadge';
+import { NutriScoreBadge } from '../../src/ui/NutriScoreBadge';
 import { ProductRow } from '../../src/ui/ProductRow';
 import { SegmentedControl } from '../../src/ui/SegmentedControl';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
+import type { AllergenBannerStatus } from '../../src/ui/AllergenBanner';
 
 type SortKey = 'score' | 'price' | 'unitPrice';
 
@@ -21,6 +27,17 @@ function getSuggestionKey(suggestion: SearchSuggestion): string {
   return suggestion.type === 'product'
     ? `product:${suggestion.productId}`
     : `product_group:${suggestion.productGroupKey}`;
+}
+
+function getSuggestionAllergenStatus(
+  suggestion: SearchSuggestion,
+  userProfile: UserSensitivityProfile,
+): AllergenBannerStatus {
+  if (suggestion.type !== 'product') {
+    return 'unknown_or_unverified';
+  }
+
+  return getCatalogAllergenChipStatus(suggestion.allergenData, userProfile);
 }
 
 function getSuggestionMeta(suggestion: SearchSuggestion): string | null {
@@ -45,7 +62,14 @@ export default function SearchScreen() {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('score');
+  const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(emptyUserSensitivityProfile);
   const cartItems = useCart();
+
+  useEffect(() => {
+    void loadUserSensitivityProfile()
+      .then(setUserProfile)
+      .catch(() => setUserProfile(emptyUserSensitivityProfile));
+  }, []);
 
   useEffect(() => {
     const trimmedQuery = query.trim();
@@ -158,10 +182,19 @@ export default function SearchScreen() {
             return (
               <ProductRow
                 key={key}
+                imageUrl={suggestion.type === 'product' ? suggestion.imageUrl : undefined}
                 name={suggestion.label}
                 meta={getSuggestionMeta(suggestion)}
                 score={null}
-                allergenStatus="unknown_or_unverified"
+                allergenStatus={getSuggestionAllergenStatus(suggestion, userProfile)}
+                extraBadges={
+                  suggestion.type === 'product' ? (
+                    <>
+                      <NutriScoreBadge grade={suggestion.nutriScore?.grade ?? null} source={suggestion.nutriScore?.source} />
+                      <NovaBadge group={suggestion.nova?.group ?? null} />
+                    </>
+                  ) : undefined
+                }
                 onPress={() => openProduct(suggestion)}
                 trailing={
                   <Pressable

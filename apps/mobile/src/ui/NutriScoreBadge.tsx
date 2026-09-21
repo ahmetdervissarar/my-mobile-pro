@@ -20,15 +20,20 @@ const GRADE_COLORS: Record<Grade, string> = {
 
 export interface NutriScoreBadgeProps {
   grade: Grade | null;
+  /** 'off' ise erişilebilirlik etiketine "Open Food Facts verisi" eklenir. */
+  source?: 'rafskoru_computed' | 'off' | null;
 }
 
-export function NutriScoreBadge({ grade }: NutriScoreBadgeProps) {
+export function NutriScoreBadge({ grade, source }: NutriScoreBadgeProps) {
   const { colors } = useTheme();
+
+  const baseLabel = grade ? `Nutri-Score ${grade}` : 'Nutri-Score: veri yok';
+  const label = source === 'off' && grade ? `${baseLabel} (Open Food Facts verisi)` : baseLabel;
 
   return (
     <View
       style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
-      accessibilityLabel={grade ? `Nutri-Score ${grade}` : 'Nutri-Score: veri yok'}
+      accessibilityLabel={label}
     >
       <View
         style={{

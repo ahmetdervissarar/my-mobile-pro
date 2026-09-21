@@ -2,6 +2,7 @@ import { Text, View } from 'react-native';
 
 import type { BasketProfile } from '../../api/basketClient';
 import type { CartItem } from '../../state/cartStore';
+import type { UserSensitivityProfile } from '../../userProfile/userProfileTypes';
 import { EmptyState } from '../../ui/EmptyState';
 import { ScoreRing } from '../../ui/ScoreRing';
 import { radii, spacing, useTheme } from '../../ui/theme';
@@ -11,11 +12,12 @@ import { countCriticalAllergenItems, formatCoverage } from './helpers';
 export interface ScoreTabProps {
   basketProfile: BasketProfile | null;
   cartItems: CartItem[];
+  userProfile: UserSensitivityProfile;
   onQuantityChange: (key: string, nextAmount: number) => void;
   onRemove: (key: string) => void;
 }
 
-export function ScoreTab({ basketProfile, cartItems, onQuantityChange, onRemove }: ScoreTabProps) {
+export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChange, onRemove }: ScoreTabProps) {
   const { colors } = useTheme();
 
   if (!basketProfile) {
@@ -67,6 +69,7 @@ export function ScoreTab({ basketProfile, cartItems, onQuantityChange, onRemove 
               key={cartItem.key}
               item={item}
               quantityAmount={cartItem.quantity.amount}
+              userProfile={userProfile}
               onQuantityChange={(nextAmount) => onQuantityChange(cartItem.key, nextAmount)}
               onRemove={() => onRemove(cartItem.key)}
             />

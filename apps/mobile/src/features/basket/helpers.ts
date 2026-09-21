@@ -87,7 +87,3 @@ export function sortMarketsForDisplay(markets: BasketMarketEvaluation[]): Basket
 export function countCriticalAllergenItems(perItem: BasketEvaluateResponse['basketProfile']['perItem']): number {
   return perItem.filter((item) => item.riskFlags.some((flag) => CRITICAL_ALLERGEN_CODES.includes(flag))).length;
 }
-
-export function hasCriticalAllergenFlag(riskFlags: string[]): boolean {
-  return riskFlags.some((flag) => CRITICAL_ALLERGEN_CODES.includes(flag));
-}

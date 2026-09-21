@@ -1,29 +1,32 @@
 import { Pressable, Text, View } from 'react-native';
 
 import type { BasketProfileItem } from '../../api/basketClient';
+import { getCatalogAllergenChipStatus } from '../../riskEngine/catalogAllergenChip';
+import type { UserSensitivityProfile } from '../../userProfile/userProfileTypes';
 import { AllergenChip } from '../../ui/AllergenChip';
 import { NovaBadge } from '../../ui/NovaBadge';
 import { NutriScoreBadge } from '../../ui/NutriScoreBadge';
 import { ScorePill } from '../../ui/ScorePill';
 import { Stepper } from '../../ui/Stepper';
 import { radii, spacing, useTheme } from '../../ui/theme';
-import { hasCriticalAllergenFlag } from './helpers';
 
 export interface BasketItemRowProps {
   item: BasketProfileItem;
   quantityAmount: number;
+  userProfile: UserSensitivityProfile;
   onQuantityChange: (nextAmount: number) => void;
   onRemove: () => void;
 }
 
 /**
- * Sepet ürün satırı. Nutri-Score ve NOVA backend sepet sözleşmesinde
- * (BasketProfileItem) henüz yok; bu yüzden her zaman "veri yok" gösterilir
- * (bkz. görev raporu — backend için yapılacaklar).
+ * Sepet ürün satırı. productId katalogda bulunursa Nutri-Score/NOVA/alerjen
+ * gerçek veriyle gösterilir; bulunamazsa (veya öğe bir ürün grubuysa)
+ * "veri yok" kalır — asla tahmin edilmez.
  */
-export function BasketItemRow({ item, quantityAmount, onQuantityChange, onRemove }: BasketItemRowProps) {
+export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityChange, onRemove }: BasketItemRowProps) {
   const { colors } = useTheme();
-  const allergenStatus = hasCriticalAllergenFlag(item.riskFlags) ? 'declared_contains' : 'unknown_or_unverified';
+  const allergenStatus = getCatalogAllergenChipStatus(item.allergenData, userProfile);
+  const isGroupEstimate = item.scoreSource === 'group_estimate';
 
   return (
     <View
@@ -38,12 +41,17 @@ export function BasketItemRow({ item, quantityAmount, onQuantityChange, onRemove
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm }}>
         <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: colors.ink }}>{item.label}</Text>
-        <ScorePill score={item.score} />
+        <View style={{ alignItems: 'flex-end', gap: 2 }}>
+          <ScorePill score={item.score} />
+          {isGroupEstimate ? (
+            <Text style={{ fontSize: 10, fontWeight: '700', color: colors.muted }}>grup tahmini</Text>
+          ) : null}
+        </View>
       </View>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-        <NutriScoreBadge grade={null} />
-        <NovaBadge group={null} />
+        <NutriScoreBadge grade={item.nutriScore?.grade ?? null} source={item.nutriScore?.source} />
+        <NovaBadge group={item.nova?.group ?? null} />
         <AllergenChip status={allergenStatus} />
       </View>
 
