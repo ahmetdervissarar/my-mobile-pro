@@ -80,10 +80,75 @@ export interface Catalog {
   byId: Map<string, CatalogProduct>;
   loadedAt: string;
   sourcePath: string | null;
+  /** JSON.parse başarısız olan satır sayısı — bu satırlar sessizce atlanır. */
+  malformedLineCount: number;
+  /** Aynı GTIN'de çelişen alerjen verisiyle karşılaşılan ürün sayısı (bkz. resolveDuplicateProducts). */
+  duplicateConflictCount: number;
 }
 
 function createEmptyCatalog(): Catalog {
-  return { products: [], byId: new Map(), loadedAt: new Date().toISOString(), sourcePath: null };
+  return {
+    products: [],
+    byId: new Map(),
+    loadedAt: new Date().toISOString(),
+    sourcePath: null,
+    malformedLineCount: 0,
+    duplicateConflictCount: 0,
+  };
+}
+
+const UNKNOWN_ALLERGEN_DATA: CatalogAllergenData = {
+  declared: [],
+  traces: [],
+  recognizedUnmodeled: [],
+  rawUnmapped: [],
+  dataStatus: 'unknown_or_unverified',
+};
+
+function allergenSetsDiffer(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return true;
+  return a.some((value) => !b.includes(value));
+}
+
+function allergenDataConflicts(a: CatalogAllergenData, b: CatalogAllergenData): boolean {
+  return a.dataStatus !== b.dataStatus || allergenSetsDiffer(a.declared, b.declared) || allergenSetsDiffer(a.traces, b.traces);
+}
+
+/**
+ * Aynı GTIN birden çok satırda geçebilir (ör. OFF'un farklı Nutri-Score
+ * partisyonlarından çekilmiş çakışan kayıtlar). Alerjen verisi TUTARLIYSA
+ * (aynı declared/traces/dataStatus) son kaydı sessizce kullanır. ÇELİŞİYORSA
+ * — hangisinin doğru olduğunu bilemeyeceğimizden — fail-closed davranır:
+ * o ürünün alerjen verisi unknown_or_unverified'a düşürülür ve sayaç artar.
+ */
+function resolveDuplicateProducts(products: CatalogProduct[]): {
+  products: CatalogProduct[];
+  duplicateConflictCount: number;
+} {
+  const indexById = new Map<string, number>();
+  const resolved: CatalogProduct[] = [];
+  let duplicateConflictCount = 0;
+
+  for (const product of products) {
+    const existingIndex = indexById.get(product.productId);
+
+    if (existingIndex === undefined) {
+      indexById.set(product.productId, resolved.length);
+      resolved.push(product);
+      continue;
+    }
+
+    const existing = resolved[existingIndex]!;
+
+    if (allergenDataConflicts(existing.allergenData, product.allergenData)) {
+      duplicateConflictCount += 1;
+      resolved[existingIndex] = { ...product, allergenData: UNKNOWN_ALLERGEN_DATA };
+    } else {
+      resolved[existingIndex] = product;
+    }
+  }
+
+  return { products: resolved, duplicateConflictCount };
 }
 
 let currentCatalog: Catalog = createEmptyCatalog();
@@ -224,7 +289,8 @@ export function loadCatalog(path: string): Catalog {
 
   try {
     const raw = readFileSync(path, 'utf8');
-    const products: CatalogProduct[] = [];
+    const rawProducts: CatalogProduct[] = [];
+    let malformedLineCount = 0;
 
     for (const line of raw.split('\n')) {
       const trimmed = line.trim();
@@ -232,19 +298,27 @@ export function loadCatalog(path: string): Catalog {
 
       try {
         const record = JSON.parse(trimmed) as OffImportRecord;
-        products.push(buildCatalogProduct(record));
+        rawProducts.push(buildCatalogProduct(record));
       } catch {
         // Bozuk JSONL satırı atlanır; katalog kısmi kalmaya devam eder.
+        malformedLineCount += 1;
       }
     }
+
+    const { products, duplicateConflictCount } = resolveDuplicateProducts(rawProducts);
 
     currentCatalog = {
       products,
       byId: new Map(products.map((product) => [product.productId, product])),
       loadedAt: new Date().toISOString(),
       sourcePath: path,
+      malformedLineCount,
+      duplicateConflictCount,
     };
-    console.log(`[catalog] ${products.length} ürün yüklendi (${path}).`);
+    console.log(
+      `[catalog] ${products.length} ürün yüklendi (${path}). ` +
+        `Bozuk satır: ${malformedLineCount}. Çelişen mükerrer GTIN: ${duplicateConflictCount}.`,
+    );
   } catch (err) {
     console.warn(`[catalog] ${path} okunamadı (${(err as Error).message}); katalog boş kaldı.`);
     currentCatalog = createEmptyCatalog();
