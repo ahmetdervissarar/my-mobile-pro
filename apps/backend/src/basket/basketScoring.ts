@@ -1,4 +1,5 @@
-﻿import type {
+﻿import { getCatalog } from '../catalog/catalog.js';
+import type {
   BasketEvaluateRequest,
   BasketItem,
   BasketProfile,
@@ -247,10 +248,17 @@ function getEstimate(item: BasketItem): ProductGroupScoreEstimate | null {
   return PRODUCT_GROUP_SCORE_ESTIMATES[item.productGroupKey] ?? null;
 }
 
+/**
+ * Katalogda bulunan ürün için isteğe bağlı sunum alanlarını ekler.
+ * Puan (score/subScores/riskFlags) burada ASLA değiştirilmez — yalnız
+ * scoreSource ile hangi kaynaktan geldiği etiketlenir (bkz. görev
+ * değişmez kural 7).
+ */
 function toProfileItem(item: BasketEvaluateRequest['items'][number]): BasketProfileItem {
   const estimate = getEstimate(item);
+  const scoreSource: BasketProfileItem['scoreSource'] = estimate ? 'group_estimate' : 'none';
 
-  return {
+  const base: BasketProfileItem = {
     type: item.type,
     label: item.label,
     productGroupKey: item.productGroupKey,
@@ -258,6 +266,22 @@ function toProfileItem(item: BasketEvaluateRequest['items'][number]): BasketProf
     score: estimate?.score ?? null,
     subScores: estimate?.subScores ?? EMPTY_SUB_SCORES,
     riskFlags: estimate?.riskFlags ?? [],
+    scoreSource,
+  };
+
+  const catalogProduct = item.type === 'product' ? getCatalog().byId.get(item.productId) : undefined;
+
+  if (!catalogProduct) {
+    return { ...base, allergenDataStatus: 'unknown_or_unverified' };
+  }
+
+  return {
+    ...base,
+    brand: catalogProduct.brand ?? undefined,
+    imageUrl: catalogProduct.imageUrl,
+    nutriScore: catalogProduct.nutriScore,
+    nova: catalogProduct.nova,
+    allergenData: catalogProduct.allergenData,
   };
 }
 
