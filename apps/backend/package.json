@@ -8,6 +8,8 @@
     "dev": "tsx src/index.ts",
     "check": "tsc --noEmit",
     "start": "tsx src/index.ts",
+    "import:off-tr": "tsx src/tools/offTurkey/importOffTurkey.ts",
+    "smoke:off-turkey-normalize": "tsx src/tools/offTurkey/normalize.smoke.ts",
     "smoke:product-facts": "tsx src/price/productFacts/adapters.smoke.ts",
     "smoke:data-completeness-guard": "tsx src/price/productFacts/dataCompletenessGuard.smoke.ts",
     "smoke:offers": "tsx src/price/enrich/enrichOffers.smoke.ts",
