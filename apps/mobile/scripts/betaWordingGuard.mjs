@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,6 +8,33 @@ const mobileRoot = resolve(__dirname, '..');
 
 function readMobileFile(relativePath) {
   return readFileSync(resolve(mobileRoot, relativePath), 'utf8');
+}
+
+/**
+ * app/product-result.tsx aşama 2'de src/features/productResult/ altındaki
+ * bölüm bileşenlerine bölündü. Bu fonksiyon ekranı ve tüm bölümlerini tek
+ * bir metinde birleştirir; aşağıdaki assertIncludes/assertNotIncludes
+ * kontrolleri dosya sayısından bağımsız olarak aynı kalır.
+ */
+function readMobileDirRecursive(relativePath) {
+  const absoluteDir = resolve(mobileRoot, relativePath);
+
+  function walk(dir) {
+    let combined = '';
+
+    for (const entry of readdirSync(dir)) {
+      const entryPath = resolve(dir, entry);
+      if (statSync(entryPath).isDirectory()) {
+        combined += walk(entryPath);
+      } else if (entry.endsWith('.ts') || entry.endsWith('.tsx')) {
+        combined += readFileSync(entryPath, 'utf8');
+      }
+    }
+
+    return combined;
+  }
+
+  return walk(absoluteDir);
 }
 
 function assertIncludes(fileName, content, expectedText) {
@@ -31,7 +58,8 @@ function assertNotIncludes(fileName, content, forbiddenText) {
   );
 }
 
-const productResult = readMobileFile('app/product-result.tsx');
+const productResult =
+  readMobileFile('app/product-result.tsx') + readMobileDirRecursive('src/features/productResult');
 const basketResult = readMobileFile('app/basket-result.tsx');
 const priceClient = readMobileFile('src/price/priceClient.ts');
 const rafScoreExplanation = readMobileFile('src/price/rafScoreExplanation.ts');

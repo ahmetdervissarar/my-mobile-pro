@@ -105,6 +105,27 @@ function getRafScoreReasonItems(reasons: RafScoreReason[] | undefined): string[]
     .slice(0, 5);
 }
 
+/**
+ * "Olumlu yönler" bölümü için yalnızca backend'in severity='positive' işaretlediği
+ * gerekçeleri döner. Yeni bir skor mantığı üretmez; var olan rafScore.reasons
+ * çıktısının salt projeksiyonudur (G3).
+ */
+export function getRafScorePositiveItems(
+  priceResult: PriceResolveResponse['result'],
+): string[] {
+  const reasons = priceResult.rafScore?.reasons;
+
+  if (!reasons?.length) {
+    return [];
+  }
+
+  return reasons
+    .filter((reason) => reason.severity === 'positive')
+    .map(formatKnownReason)
+    .filter((item): item is string => Boolean(item))
+    .slice(0, 5);
+}
+
 export function getRafScoreExplanationItems(priceResult: PriceResolveResponse['result']): string[] {
   const rafScore = priceResult.rafScore;
 
