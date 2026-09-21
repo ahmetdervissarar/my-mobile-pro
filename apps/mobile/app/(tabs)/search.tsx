@@ -133,7 +133,21 @@ export default function SearchScreen() {
         {isSuggesting ? <Text style={{ fontSize: 12.5, color: colors.muted }}>Öneriler aranıyor...</Text> : null}
 
         {!isSuggesting && query.trim().length >= 2 && sortedSuggestions.length === 0 ? (
-          <EmptyState title="Sonuç bulunamadı" message="Farklı bir ürün adıyla tekrar deneyin." />
+          <EmptyState
+            title="Sonuç bulunamadı"
+            message="Farklı bir ürün adıyla tekrar deneyin veya bu ürünü kayıtlı olmayan ürün olarak ekleyin."
+            action={
+              <Pressable
+                onPress={() => router.push({ pathname: '/product-contribution', params: { productName: query.trim() } })}
+                accessibilityRole="button"
+                accessibilityLabel="Kayıtlı olmayan ürünü ekle"
+              >
+                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.pine2 }}>
+                  Kayıtlı olmayan ürünü ekle
+                </Text>
+              </Pressable>
+            }
+          />
         ) : null}
 
         <View style={{ gap: spacing.sm }}>
