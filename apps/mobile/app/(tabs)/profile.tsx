@@ -5,7 +5,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import {
   clearUserSensitivityProfile,
   loadUserSensitivityProfile,
-} from '../src/userProfile/userProfileStorage';
+} from '../../src/userProfile/userProfileStorage';
 
 export default function ProfileScreen() {
   const [summary, setSummary] = useState({

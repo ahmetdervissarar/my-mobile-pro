@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
-import { fetchSearchSuggestions, type SearchSuggestion } from '../src/api/productSuggestionClient';
+import { fetchSearchSuggestions, type SearchSuggestion } from '../../src/api/productSuggestionClient';
 
 export default function SearchScreen() {
   const router = useRouter();

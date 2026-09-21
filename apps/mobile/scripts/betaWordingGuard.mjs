@@ -97,7 +97,7 @@ assertIncludes('product-result.tsx', productResult, 'Son güncelleme');
 assertIncludes('product-result.tsx', productResult, 'Beta referans fiyat');
 assertIncludes('product-result.tsx', productResult, 'Fiyat bulunamadı');
 
-const searchScreen = readMobileFile('app/search.tsx');
+const searchScreen = readMobileFile('app/(tabs)/search.tsx');
 assertIncludes('search.tsx', searchScreen, 'useLocalSearchParams');
 assertIncludes('search.tsx', searchScreen, 'initialQuery');
 

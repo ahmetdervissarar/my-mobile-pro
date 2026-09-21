@@ -7,11 +7,11 @@ import {
   type BasketEvaluateResponse,
   type BasketItem,
   type BasketItemQuantity,
-} from '../src/api/basketClient';
+} from '../../src/api/basketClient';
 import {
   fetchSearchSuggestions,
   type SearchSuggestion,
-} from '../src/api/productSuggestionClient';
+} from '../../src/api/productSuggestionClient';
 
 function getBasketItemKey(item: BasketItem): string {
   return item.type === 'product'

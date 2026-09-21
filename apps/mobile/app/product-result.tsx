@@ -18,6 +18,7 @@ import type {
   PriceResolveResponse,
 } from '../src/price/types';
 import { getRafScoreExplanationItems, getRafScorePositiveItems } from '../src/price/rafScoreExplanation';
+import { recordRecentlyViewed } from '../src/state/recentlyViewedStore';
 import { spacing, useTheme } from '../src/ui/theme';
 
 import { AllergenSection } from '../src/features/productResult/AllergenSection';
@@ -422,6 +423,20 @@ export default function ProductResultScreen() {
           imageUrl: displayImageUrl,
         }
       : null;
+
+  useEffect(() => {
+    if (isPriceLoading || isUnknownProduct || !priceResult) return;
+
+    const viewedName = priceResult.productName?.trim() || result.name;
+    if (!viewedName) return;
+
+    recordRecentlyViewed({
+      barcode: normalizedInput.barcode,
+      productName: viewedName,
+      imageUrl: displayImageUrl,
+      score: rafScore?.score ?? null,
+    });
+  }, [isPriceLoading, isUnknownProduct, priceResult, displayImageUrl, rafScore, normalizedInput.barcode, result.name]);
 
   if (isUnknownProduct) {
     return (
