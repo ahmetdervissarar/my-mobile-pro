@@ -25,7 +25,7 @@ async function* fromApi(): AsyncGenerator<Record<string, unknown>> {
       const url = `https://world.openfoodfacts.org/api/v2/search?countries_tags=en:turkey&nutrition_grades_tags=${grade}` +
         `&fields=${OFF_FIELDS}&page_size=${PAGE_SIZE}&page=${page}&sort_by=code`;
       let body: { count?: number; products?: Record<string, unknown>[] } | null = null;
-      for (let attempt = 1; attempt <= 3 && !body; attempt++) {
+      for (let attempt = 1; attempt <= 8 && !body; attempt++) {
         const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
         if (res.ok) body = await res.json();
         else { console.warn(`HTTP ${res.status} (${grade} s.${page}) deneme ${attempt}`); await sleep(SEARCH_DELAY_MS * attempt * 2); }
