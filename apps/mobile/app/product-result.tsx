@@ -390,7 +390,7 @@ export default function ProductResultScreen() {
   const displayAdditives = backendProductFacts ? backendProductFacts.additives ?? [] : result.additives;
   const displayIngredients = backendProductFacts?.ingredientsText ?? result.ingredients;
   const productFactsSourceText = backendProductFacts
-    ? `Ürün analiz verisi: ${backendProductFacts.dataSource === 'off' ? 'Open Food Facts' : 'Beta çıkarım'}${backendProductFacts.isComplete ? '' : ' (kısmi veri)'}`
+    ? `Ürün analiz verisi: ${backendProductFacts.dataSource === 'off' ? 'Open Food Facts (ODbL)' : 'Beta çıkarım'}${backendProductFacts.isComplete ? '' : ' (kısmi veri)'}`
     : null;
   const productFactsMissingText = formatProductFactsMissingFields(backendProductFacts);
 
