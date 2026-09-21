@@ -14,7 +14,10 @@ import type {
 } from '../../price/types';
 import type { ProductResult, TrafficLightNutrition } from '../../types/product';
 import type { RiskLevel, RiskWarning } from '../../riskEngine/riskEngine';
+import { CRITICAL_ALLERGEN_CODES } from '../../riskEngine/criticalAllergenCodes';
 import type { AllergenBannerCriticalMatch, AllergenBannerStatus } from '../../ui/AllergenBanner';
+
+export { CRITICAL_ALLERGEN_CODES };
 
 export function formatOfferStoreLabel(offer: EnrichedMarketOffer): string {
   const branchName = offer.store?.branchName?.trim();
@@ -176,19 +179,6 @@ export function getTransitionSafeProductGroupKey(input: {
 export function isExplicitlyAlternativesIneligible(input: { alternativesEligible?: boolean }): boolean {
   return input.alternativesEligible === false;
 }
-
-/** Profil ile çakışan kritik alerjen uyarı kodları — riskEngine.ts PRIORITY_ORDER ile birebir aynı liste. */
-export const CRITICAL_ALLERGEN_CODES = [
-  'PROFILE_PEANUT_ALLERGEN_MATCH',
-  'PROFILE_SOY_ALLERGEN_MATCH',
-  'PROFILE_GLUTEN_ALLERGEN_MATCH',
-  'PROFILE_MILK_ALLERGEN_MATCH',
-  'PROFILE_LACTOSE_ALLERGEN_MATCH',
-  'PROFILE_TREE_NUTS_ALLERGEN_MATCH',
-  'PROFILE_SESAME_ALLERGEN_MATCH',
-  'PROFILE_FISH_ALLERGEN_MATCH',
-  'PROFILE_SHELLFISH_ALLERGEN_MATCH',
-];
 
 export interface AllergenBannerData {
   status: AllergenBannerStatus;
