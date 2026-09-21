@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { OFF_FIELDS, normalizeOffProduct, type OffImportRecord } from './normalize.js';
 
 const USER_AGENT = 'RafSkoru/0.2 (arastirma pilotu; iletisim: ahmetdervissarar@gmail.com)';
-const SEARCH_DELAY_MS = 6500; // OFF arama uç noktası: dakikada en fazla 10 istek
+const SEARCH_DELAY_MS = 15000; // OFF arama uç noktası: dakikada en fazla 10 istek; art arda 503/401 görülünce daha temkinli hızla düşürüldü
 const PAGE_SIZE = 100;
 const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../../data/off-tr');
 
