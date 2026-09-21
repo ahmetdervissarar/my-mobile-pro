@@ -6,20 +6,10 @@ import { createReadStream, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { computeNutriScore2023, type NutriScoreCategory } from './nutriScore2023.js';
+import { computeNutriScore2023 } from './nutriScore2023.js';
+import { categoryFromOffTags, hasNonNutritiveSweetenerTag } from '../catalog/nutriScoreCategory.js';
 
 const DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../data/off-tr');
-const SWEETENERS = ['en:e950', 'en:e951', 'en:e952', 'en:e954', 'en:e955', 'en:e960', 'en:e961', 'en:e962', 'en:e969'];
-
-function categoryFromOffTags(tags: string[]): NutriScoreCategory {
-  const has = (t: string) => tags.includes(t);
-  if (has('en:waters') && !has('en:flavored-waters')) return 'water';
-  if (has('en:cheeses')) return 'cheese';
-  if (has('en:fats') || has('en:vegetable-oils') || has('en:nuts') || has('en:seeds') || has('en:nut-butters')) return 'fat_oil_nuts_seeds';
-  if (has('en:beverages') || has('en:milks') || has('en:fermented-milk-drinks') || has('en:plant-based-milks')) return 'beverage';
-  if (has('en:beef') || has('en:lamb-meat') || has('en:veal-meat')) return 'red_meat';
-  return 'general';
-}
 
 async function main() {
   const rl = createInterface({ input: createReadStream(resolve(DIR, 'products.jsonl')), crlfDelay: Infinity });
@@ -36,7 +26,7 @@ async function main() {
     const res = computeNutriScore2023({
       category: cat, energyKcal: n.energyKcal, sugars: n.sugars, saturatedFat: n.saturatedFat, fat: n.fat,
       salt: n.salt, proteins: n.proteins, fiber: n.fiber, fruitsVegLegumesPercent: null,
-      hasNonNutritiveSweeteners: (r.additives ?? []).some((a: string) => SWEETENERS.includes(a)),
+      hasNonNutritiveSweeteners: hasNonNutritiveSweetenerTag(r.additives ?? []),
     });
     if (res.status !== 'computed') { insufficient++; continue; }
     computed++;
