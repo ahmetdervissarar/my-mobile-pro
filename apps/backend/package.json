@@ -8,6 +8,8 @@
     "dev": "tsx src/index.ts",
     "check": "tsc --noEmit",
     "start": "tsx src/index.ts",
+    "smoke:nutriscore-2023": "tsx src/nutriScore/nutriScore2023.smoke.ts",
+    "validate:nutriscore-off": "tsx src/nutriScore/validateAgainstOff.ts",
     "import:off-tr": "tsx src/tools/offTurkey/importOffTurkey.ts",
     "smoke:off-turkey-normalize": "tsx src/tools/offTurkey/normalize.smoke.ts",
     "smoke:product-facts": "tsx src/price/productFacts/adapters.smoke.ts",
