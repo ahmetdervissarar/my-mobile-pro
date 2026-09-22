@@ -199,6 +199,69 @@ function generalStatus(data: CatalogAllergenData): AllergenBannerStatus {
   return normalizeDataStatus(data.dataStatus) === 'present' ? 'not_listed_in_available_data' : 'unknown_or_unverified';
 }
 
+export interface AllergenProfileKeyResult {
+  key: AllergenKey;
+  status: AllergenBannerStatus;
+  note: string | null;
+}
+
+export interface AllergenProfileEvaluation {
+  status: AllergenBannerStatus;
+  /** Profildeki her anahtarın kendi (birleştirilmeden önceki) sonucu — banner gibi ayrıntılı sunumlar için. */
+  perKey: AllergenProfileKeyResult[];
+  hasUnrecognizedTags: boolean;
+  recognizedUnmodeledLabels: string[];
+  note: string | null;
+}
+
+/**
+ * PAYLAŞILAN ÇEKİRDEK — arama çipi, sepet satırı VE ürün sayfası banner'ı
+ * AYNI bu fonksiyonu (dolaylı olarak) kullanır; durum hesaplaması TEK yerde
+ * yapılır. `getCatalogAllergenChipStatus` bunun ince bir sarmalayıcısıdır
+ * (çip'e özgü dar sonuç şeklini üretir); ürün sayfası ise `perKey`
+ * ayrıntısını kullanan kendi sarmalayıcısını çağırır (bkz.
+ * productResult/helpers.ts, getAllergenBannerDataFromCatalog) — ikisi de
+ * BU fonksiyonu çağırdığı için sonuç asla farklılaşamaz.
+ */
+export function evaluateCatalogAllergenDataForProfile(
+  allergenData: CatalogAllergenData | undefined,
+  userProfile: UserSensitivityProfile,
+): AllergenProfileEvaluation {
+  if (!allergenData) {
+    return { status: statusForMissingAllergenData(), perKey: [], hasUnrecognizedTags: false, recognizedUnmodeledLabels: [], note: null };
+  }
+
+  const perKey: AllergenProfileKeyResult[] = userProfile.allergens.map((key) => {
+    const classification = classifyForProfileKey(allergenData, key);
+    return { key, status: classification.status, note: classification.note };
+  });
+  const status = perKey.length > 0 ? worstStatus(perKey.map((c) => c.status)) : generalStatus(allergenData);
+
+  const hasUnrecognizedTags = allergenData.rawUnmapped.length > 0;
+  const recognizedUnmodeledLabels = allergenData.recognizedUnmodeled
+    .map((tag) => RECOGNIZED_UNMODELED_ALLERGEN_LABELS[tag])
+    .filter((label): label is string => Boolean(label));
+
+  const noteParts: string[] = [];
+  if (hasUnrecognizedTags) {
+    noteParts.push('Beyanda tanınmayan etiketler var — etiketi kontrol edin.');
+  }
+  if (recognizedUnmodeledLabels.length > 0) {
+    noteParts.push(`Beyanda ayrıca: ${recognizedUnmodeledLabels.join(', ')}`);
+  }
+  for (const note of new Set(perKey.map((c) => c.note).filter((n): n is string => Boolean(n)))) {
+    noteParts.push(note);
+  }
+
+  return {
+    status,
+    perKey,
+    hasUnrecognizedTags,
+    recognizedUnmodeledLabels,
+    note: noteParts.length > 0 ? noteParts.join(' ') : null,
+  };
+}
+
 export interface CatalogAllergenChipResult {
   status: AllergenBannerStatus;
   /** true ise UI "Beyanda tanınmayan etiketler var — etiketi kontrol edin." satırını göstermeli. */
@@ -213,33 +276,11 @@ export function getCatalogAllergenChipStatus(
   allergenData: CatalogAllergenData | undefined,
   userProfile: UserSensitivityProfile,
 ): CatalogAllergenChipResult {
-  if (!allergenData) {
-    return { status: statusForMissingAllergenData(), hasUnrecognizedTags: false, recognizedUnmodeledLabels: [], note: null };
-  }
-
-  const classifications = userProfile.allergens.map((key) => classifyForProfileKey(allergenData, key));
-  const status = classifications.length > 0 ? worstStatus(classifications.map((c) => c.status)) : generalStatus(allergenData);
-
-  const hasUnrecognizedTags = allergenData.rawUnmapped.length > 0;
-  const recognizedUnmodeledLabels = allergenData.recognizedUnmodeled
-    .map((tag) => RECOGNIZED_UNMODELED_ALLERGEN_LABELS[tag])
-    .filter((label): label is string => Boolean(label));
-
-  const noteParts: string[] = [];
-  if (hasUnrecognizedTags) {
-    noteParts.push('Beyanda tanınmayan etiketler var — etiketi kontrol edin.');
-  }
-  if (recognizedUnmodeledLabels.length > 0) {
-    noteParts.push(`Beyanda ayrıca: ${recognizedUnmodeledLabels.join(', ')}`);
-  }
-  for (const note of new Set(classifications.map((c) => c.note).filter((n): n is string => Boolean(n)))) {
-    noteParts.push(note);
-  }
-
+  const evaluation = evaluateCatalogAllergenDataForProfile(allergenData, userProfile);
   return {
-    status,
-    hasUnrecognizedTags,
-    recognizedUnmodeledLabels,
-    note: noteParts.length > 0 ? noteParts.join(' ') : null,
+    status: evaluation.status,
+    hasUnrecognizedTags: evaluation.hasUnrecognizedTags,
+    recognizedUnmodeledLabels: evaluation.recognizedUnmodeledLabels,
+    note: evaluation.note,
   };
 }

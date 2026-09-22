@@ -109,7 +109,7 @@ export default function SearchScreen() {
 
   const openProduct = (suggestion: SearchSuggestion) => {
     if (suggestion.type === 'product') {
-      router.push({ pathname: '/product-result', params: { productId: suggestion.productId } });
+      router.push({ pathname: '/product-result', params: { barcode: suggestion.productId } });
       return;
     }
 

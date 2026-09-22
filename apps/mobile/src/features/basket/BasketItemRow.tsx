@@ -16,6 +16,8 @@ export interface BasketItemRowProps {
   userProfile: UserSensitivityProfile;
   onQuantityChange: (nextAmount: number) => void;
   onRemove: () => void;
+  /** Doluysa kart tıklanabilir olur ve ürün sayfasına götürür (yalnız GTIN'i bilinen 'product' tipi öğeler). */
+  onPress?: () => void;
 }
 
 /**
@@ -23,14 +25,18 @@ export interface BasketItemRowProps {
  * gerçek veriyle gösterilir; bulunamazsa (veya öğe bir ürün grubuysa)
  * "veri yok" kalır — asla tahmin edilmez.
  */
-export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityChange, onRemove }: BasketItemRowProps) {
+export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityChange, onRemove, onPress }: BasketItemRowProps) {
   const { colors } = useTheme();
   const allergenChip = getCatalogAllergenChipStatus(item.allergenData, userProfile);
   const isGroupEstimate = item.scoreSource === 'group_estimate';
   const allergenNote = allergenChip.note;
 
   return (
-    <View
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={onPress ? `${item.label} ürün sayfasını aç` : undefined}
       style={{
         borderRadius: radii.lg,
         borderWidth: 1,
@@ -71,6 +77,6 @@ export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityCha
           <Text style={{ fontSize: 13, fontWeight: '700', color: colors.danger }}>Kaldır</Text>
         </Pressable>
       </View>
-    </View>
+    </Pressable>
   );
 }

@@ -30,6 +30,7 @@ import {
   CRITICAL_ALLERGEN_CODES,
   formatProductFactsMissingFields,
   getAllergenBannerData,
+  getAllergenBannerDataFromCatalog,
   getInitialResult,
   getTransitionSafeProductGroupKey,
   isExplicitlyAlternativesIneligible,
@@ -55,8 +56,10 @@ const sourceLabelMap: Record<string, string> = {
 };
 
 export default function ProductResultScreen() {
-  const { barcode, productName, searchType, photoUri } = useLocalSearchParams<{
+  const { barcode, productId, productName, searchType, photoUri } = useLocalSearchParams<{
     barcode?: string;
+    /** Geriye uyumluluk: eski çağıranlar (arama önerisi) GTIN'i 'productId' olarak gönderiyor olabilir. */
+    productId?: string;
     productName?: string;
     searchType?: string;
     photoUri?: string;
@@ -65,7 +68,7 @@ export default function ProductResultScreen() {
   const { colors } = useTheme();
 
   const normalizedInput = useMemo(() => {
-    const normalizedBarcode = barcode?.trim();
+    const normalizedBarcode = (barcode ?? productId)?.trim();
 
     if (normalizedBarcode) {
       return { barcode: normalizedBarcode, productName: undefined, photoSource: undefined };
@@ -76,7 +79,7 @@ export default function ProductResultScreen() {
       productName: productName?.trim(),
       photoSource: searchType === 'photo' ? photoUri?.trim() || 'camera' : undefined,
     };
-  }, [barcode, productName, searchType, photoUri]);
+  }, [barcode, productId, productName, searchType, photoUri]);
 
   const [result, setResult] = useState(() => getInitialResult(normalizedInput));
   const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(emptyUserSensitivityProfile);
@@ -395,22 +398,38 @@ export default function ProductResultScreen() {
   const productFactsMissingText = formatProductFactsMissingFields(backendProductFacts);
 
   const isBackendCompletedResolve = Boolean(priceResolution && priceResolution.triedProviders.length > 0);
+  // Barkod da, ürün adı da, fotoğraf kaynağı da yoksa — ekranın araştıracağı hiçbir
+  // kimlik sinyali yok demektir (ör. bir çağıran GTIN'i hiç geçirmediyse). Bu durumda
+  // "Bilinmiyor" dolu boş bir sayfa yerine doğrudan bilinmeyen-ürün bildirimini göster.
+  const hasNoIdentitySignal =
+    !normalizedInput.barcode && !normalizedInput.productName && !normalizedInput.photoSource;
   const isUnknownProduct =
-    !isPriceLoading &&
-    Boolean(normalizedInput.barcode) &&
-    priceResolution !== null &&
-    isBackendCompletedResolve &&
-    !backendProductFacts &&
-    priceResult?.rafScore?.status === 'unavailable' &&
-    (priceResult?.price ?? null) === null;
+    (!isPriceLoading &&
+      Boolean(normalizedInput.barcode) &&
+      priceResolution !== null &&
+      isBackendCompletedResolve &&
+      !backendProductFacts &&
+      priceResult?.rafScore?.status === 'unavailable' &&
+      (priceResult?.price ?? null) === null) ||
+    (!isPriceLoading && hasNoIdentitySignal);
   const shouldShowAlternativeUnavailableNotice = Boolean(
     !isPriceLoading && priceResult && !isUnknownProduct && !topAlternativeRecommendation,
   );
 
-  const allergenBannerData = getAllergenBannerData({
-    productFacts: backendProductFacts,
-    riskWarnings: riskResult.warnings,
-  });
+  // Ürün yerel OFF-TR katalogundan geldiyse (catalogAllergenData dolu), banner
+  // arama/sepetle AYNI birleştirme çekirdeğini kullanır (getCatalogAllergenChipStatus'u
+  // DOĞRUDAN ÇAĞIRMAZ — bkz. getAllergenBannerDataFromCatalog). Değilse (canlı OFF veya
+  // OCR/beta çıkarım kaynaklı) eski, profil-farkında olmayan yola düşer.
+  const allergenBannerData = backendProductFacts?.catalogAllergenData
+    ? getAllergenBannerDataFromCatalog({
+        catalogAllergenData: backendProductFacts.catalogAllergenData,
+        userProfile,
+        riskWarnings: riskResult.warnings,
+      })
+    : getAllergenBannerData({
+        productFacts: backendProductFacts,
+        riskWarnings: riskResult.warnings,
+      });
 
   const resolvedGroupKeyForCart = priceResult ? getTransitionSafeProductGroupKey(priceResult) : null;
   const cartInput =

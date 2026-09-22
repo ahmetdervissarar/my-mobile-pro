@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 
 import type { BasketProfile } from '../../api/basketClient';
@@ -63,8 +64,7 @@ export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChan
           {allergenSummary.headline}
         </Text>
         <Text style={{ fontSize: 12, color: colors.muted, lineHeight: 17 }}>
-          Bu sayı yalnızca mevcut ürün verisinden (beyan, iz ve içindekiler eşleşmesi) hesaplanır. Her ürünün
-          kendi kartındaki alerji rozeti esastır.
+          Bu sayı yalnızca mevcut ürün verisinden (beyan, iz ve içindekiler eşleşmesi) hesaplanır.
         </Text>
       </View>
 
@@ -78,6 +78,8 @@ export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChan
           const cartItem = cartItems[index];
           if (!cartItem) return null;
 
+          const canViewDetails = cartItem.type === 'product' && Boolean(cartItem.productId);
+
           return (
             <BasketItemRow
               key={cartItem.key}
@@ -86,6 +88,11 @@ export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChan
               userProfile={userProfile}
               onQuantityChange={(nextAmount) => onQuantityChange(cartItem.key, nextAmount)}
               onRemove={() => onRemove(cartItem.key)}
+              onPress={
+                canViewDetails
+                  ? () => router.push({ pathname: '/product-result', params: { barcode: cartItem.productId! } })
+                  : undefined
+              }
             />
           );
         })}

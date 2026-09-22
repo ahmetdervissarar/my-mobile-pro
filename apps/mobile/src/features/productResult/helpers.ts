@@ -6,16 +6,24 @@
  * Bu dosya saf hesaplama/biçimlendirme katmanıdır; risk motoruna dokunmaz.
  */
 
+import type { CatalogAllergenData } from '../../api/catalogTypes';
 import type { ProductSearchInput } from '../../services/productService';
 import type {
   EnrichedMarketOffer,
   PriceResolveResponse,
   ProductFacts,
 } from '../../price/types';
+import { evaluateCatalogAllergenDataForProfile } from '../../riskEngine/catalogAllergenChip';
 import type { ProductResult, TrafficLightNutrition } from '../../types/product';
 import type { RiskLevel, RiskWarning } from '../../riskEngine/riskEngine';
 import { CRITICAL_ALLERGEN_CODES } from '../../riskEngine/criticalAllergenCodes';
+import { allergenOptions } from '../../userProfile/userProfileTypes';
+import type { UserSensitivityProfile } from '../../userProfile/userProfileTypes';
 import type { AllergenBannerCriticalMatch, AllergenBannerStatus } from '../../ui/AllergenBanner';
+
+const ALLERGEN_KEY_LABELS: Record<string, string> = Object.fromEntries(
+  allergenOptions.map((option) => [option.key, option.label]),
+);
 
 export { CRITICAL_ALLERGEN_CODES };
 
@@ -219,6 +227,43 @@ export function getAllergenBannerData(input: {
   }
 
   return { status: 'unknown_or_unverified', declaredList: [], traceList: [], criticalMatches };
+}
+
+/**
+ * PAYLAŞILAN ÇEKİRDEĞİ (evaluateCatalogAllergenDataForProfile) kullanır —
+ * arama çipi ve sepet satırıyla AYNI birleştirme mantığı, AYNI en-ağır-sonuç
+ * kuralı (bkz. catalogAllergenChip.ts). getCatalogAllergenChipStatus'u
+ * DOĞRUDAN çağırmaz — çip'e özgü dar sonuç şekli yerine, banner'ın kendi
+ * (declaredList/traceList) sunumuna evaluateCatalogAllergenDataForProfile'ın
+ * perKey ayrıntısı üzerinden ulaşır. Yalnız productFacts.catalogAllergenData
+ * DOLUYSA (ürün yerel OFF-TR katalogundan geldiyse) çağrılmalıdır.
+ */
+export function getAllergenBannerDataFromCatalog(input: {
+  catalogAllergenData: CatalogAllergenData;
+  userProfile: UserSensitivityProfile;
+  riskWarnings: RiskWarning[];
+}): AllergenBannerData {
+  const criticalMatches: AllergenBannerCriticalMatch[] = input.riskWarnings
+    .filter((warning) => CRITICAL_ALLERGEN_CODES.includes(warning.code))
+    .map((warning) => ({ code: warning.code, title: warning.title, message: warning.message }));
+
+  const evaluation = evaluateCatalogAllergenDataForProfile(input.catalogAllergenData, input.userProfile);
+
+  if (input.userProfile.allergens.length === 0) {
+    // Profil boş — genel ürün bilgisi: TÜM beyan/iz edilen alerjenler gösterilir (profille filtrelenmez).
+    const declaredList = input.catalogAllergenData.declared.map((key) => ALLERGEN_KEY_LABELS[key] ?? key);
+    const traceList = input.catalogAllergenData.traces.map((key) => ALLERGEN_KEY_LABELS[key] ?? key);
+    return { status: evaluation.status, declaredList, traceList, criticalMatches };
+  }
+
+  const declaredList = evaluation.perKey
+    .filter((keyResult) => keyResult.status === 'declared_contains')
+    .map((keyResult) => ALLERGEN_KEY_LABELS[keyResult.key] ?? keyResult.key);
+  const traceList = evaluation.perKey
+    .filter((keyResult) => keyResult.status === 'trace_may_contain')
+    .map((keyResult) => ALLERGEN_KEY_LABELS[keyResult.key] ?? keyResult.key);
+
+  return { status: evaluation.status, declaredList, traceList, criticalMatches };
 }
 
 export function getPriceSourceLabel(source: PriceResolveResponse['result']['source']): string {
