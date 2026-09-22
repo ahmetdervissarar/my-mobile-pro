@@ -17,7 +17,15 @@
  *   K traces'ta    → trace_may_contain
  *   yoksa, ürün present ise → not_listed_in_available_data
  *   yoksa (partial/unknown_or_unverified) → unknown_or_unverified
- * Profilde birden çok alerjen varsa en kötüsü (en ciddi) gösterilir.
+ * Profilde birden çok alerjen varsa EN CİDDİ (en ağır) sonuç gösterilir —
+ * sıra: declared_contains > içindekiler eşleşmesi (trace_may_contain'e
+ * yükseltilir) > trace_may_contain > unknown_or_unverified >
+ * not_listed_in_available_data (bkz. SEVERITY_RANK). unknown_or_unverified,
+ * not_listed_in_available_data'dan DAHA CİDDİ sayılır: "veri yok" (hiç
+ * bilmiyoruz) "belirtilmemiş" (baktık, listede yok) tarafından asla
+ * MASKELENEMEZ — D1 kuralı (veri yok = güvenli değil) çoklu-anahtar
+ * birleştirmede de geçerlidir. Profil anahtarı eklemek sonucu ASLA
+ * hafifletmez (monotonluk — bkz. allergenChipMonotonicity.smoke.ts).
  * 'partial' durumunda eşlenmiş declared/traces GİZLENMEZ; yalnız
  * eşlenemeyen anahtarlar için sonuç unknown_or_unverified'a düşer.
  *
@@ -121,11 +129,17 @@ function ingredientsMatchKey(key: AllergenKey, ingredientsText: string): boolean
   return result.warnings.some((warning) => warning.code === code);
 }
 
+/**
+ * Sayı ne kadar KÜÇÜKSE o kadar CİDDİ (worstStatus daha küçüğü seçer).
+ * unknown_or_unverified, not_listed_in_available_data'dan ÖNCE gelir —
+ * "hiç veri yok" durumu, başka bir anahtarın "baktık, yok" sonucuyla asla
+ * daha hafif göstermez (bkz. görev onayı, D1).
+ */
 const SEVERITY_RANK: Record<AllergenBannerStatus, number> = {
   declared_contains: 0,
   trace_may_contain: 1,
-  not_listed_in_available_data: 2,
-  unknown_or_unverified: 3,
+  unknown_or_unverified: 2,
+  not_listed_in_available_data: 3,
 };
 
 function worstStatus(statuses: AllergenBannerStatus[]): AllergenBannerStatus {

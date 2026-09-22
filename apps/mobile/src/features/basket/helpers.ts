@@ -8,7 +8,8 @@
  */
 
 import type { BasketEvaluateResponse, BasketMarketEvaluation } from '../../api/basketClient';
-import { CRITICAL_ALLERGEN_CODES } from '../../riskEngine/criticalAllergenCodes';
+import { getCatalogAllergenChipStatus } from '../../riskEngine/catalogAllergenChip';
+import type { UserSensitivityProfile } from '../../userProfile/userProfileTypes';
 
 export function formatScore(value: number | null | undefined): string {
   return typeof value === 'number' ? `${Math.round(value)}` : '—';
@@ -77,13 +78,70 @@ export function sortMarketsForDisplay(markets: BasketMarketEvaluation[]): Basket
   });
 }
 
+export interface BasketAllergenSummary {
+  /** declared_contains veya trace_may_contain (içindekiler eşleşmesi dahil) olan ürün sayısı. */
+  conflictCount: number;
+  /** unknown_or_unverified olan (hiç alerjen verisi olmayan) ürün sayısı. */
+  noDataCount: number;
+  headline: string;
+  tone: 'danger' | 'warning' | 'neutral';
+}
+
 /**
- * Profil ile çakışan kritik alerjen uyarısı olan ürün sayısı — yalnızca
- * backend'in bu ürün için ürettiği riskFlags kodlarından okunur (tahmin
- * yok). Bugün demo ürün kayıtlarının çoğu riskFlags=[] döndürür; bu
- * "alerjen yok" anlamına gelmez, yalnızca "bu kayıt için uyarı üretilmedi"
- * demektir — bu yüzden UI'da her zaman açık bir uyarı notu eşlik eder.
+ * Sepetteki her ürünü, arama ve ürün satırlarıyla AYNI birleştirme
+ * fonksiyonuyla (getCatalogAllergenChipStatus) profille karşılaştırır —
+ * eski riskFlags/CRITICAL_ALLERGEN_CODES yoluna artık dokunmaz (o yol
+ * kullanıcı profiline hiç bakmıyordu, bkz. görev raporu: "tespit edilmedi"
+ * hatası). "Tespit edilmedi" ifadesi yalnız TÜM ürünler present VE hiç
+ * çakışma yoksa kullanılır; en az bir üründe veri yoksa asla kullanılmaz.
  */
-export function countCriticalAllergenItems(perItem: BasketEvaluateResponse['basketProfile']['perItem']): number {
-  return perItem.filter((item) => item.riskFlags.some((flag) => CRITICAL_ALLERGEN_CODES.includes(flag))).length;
+export function summarizeBasketAllergenStatus(
+  perItem: BasketEvaluateResponse['basketProfile']['perItem'],
+  userProfile: UserSensitivityProfile,
+): BasketAllergenSummary {
+  if (userProfile.allergens.length === 0) {
+    return {
+      conflictCount: 0,
+      noDataCount: 0,
+      headline: 'Alerjen profili tanımlı değil — Profilim üzerinden ekleyebilirsiniz.',
+      tone: 'neutral',
+    };
+  }
+
+  let conflictCount = 0;
+  let noDataCount = 0;
+
+  for (const item of perItem) {
+    const chip = getCatalogAllergenChipStatus(item.allergenData, userProfile);
+    if (chip.status === 'declared_contains' || chip.status === 'trace_may_contain') {
+      conflictCount++;
+    } else if (chip.status === 'unknown_or_unverified') {
+      noDataCount++;
+    }
+  }
+
+  if (conflictCount > 0) {
+    return {
+      conflictCount,
+      noDataCount,
+      headline: `${conflictCount} üründe profilinizle çakışan alerjen var`,
+      tone: 'danger',
+    };
+  }
+
+  if (noDataCount > 0) {
+    return {
+      conflictCount,
+      noDataCount,
+      headline: `${noDataCount} üründe alerjen verisi yok — etiketi kontrol edin`,
+      tone: 'warning',
+    };
+  }
+
+  return {
+    conflictCount,
+    noDataCount,
+    headline: 'Mevcut verilerde profil alerjeniniz belirtilmemiş — bu bir garanti değildir',
+    tone: 'neutral',
+  };
 }

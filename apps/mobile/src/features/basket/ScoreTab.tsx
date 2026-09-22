@@ -7,7 +7,7 @@ import { EmptyState } from '../../ui/EmptyState';
 import { ScoreRing } from '../../ui/ScoreRing';
 import { radii, spacing, useTheme } from '../../ui/theme';
 import { BasketItemRow } from './BasketItemRow';
-import { countCriticalAllergenItems, formatCoverage } from './helpers';
+import { formatCoverage, summarizeBasketAllergenStatus } from './helpers';
 
 export interface ScoreTabProps {
   basketProfile: BasketProfile | null;
@@ -24,7 +24,7 @@ export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChan
     return <EmptyState title="Sepet skoru hesaplanıyor..." />;
   }
 
-  const criticalCount = countCriticalAllergenItems(basketProfile.perItem);
+  const allergenSummary = summarizeBasketAllergenStatus(basketProfile.perItem, userProfile);
 
   return (
     <View style={{ gap: spacing.lg }}>
@@ -38,19 +38,33 @@ export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChan
       <View
         style={{
           borderRadius: radii.md,
-          backgroundColor: criticalCount > 0 ? colors.dangerBg : colors.soft,
+          backgroundColor:
+            allergenSummary.tone === 'danger'
+              ? colors.dangerBg
+              : allergenSummary.tone === 'warning'
+                ? colors.warnBg
+                : colors.soft,
           padding: spacing.md,
           gap: 4,
         }}
       >
-        <Text style={{ fontSize: 14, fontWeight: '700', color: criticalCount > 0 ? colors.danger : colors.ink }}>
-          {criticalCount > 0
-            ? `${criticalCount} üründe profilinizle çakışan alerjen uyarısı var`
-            : 'Alerji uyarılı ürün tespit edilmedi'}
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: '700',
+            color:
+              allergenSummary.tone === 'danger'
+                ? colors.danger
+                : allergenSummary.tone === 'warning'
+                  ? colors.warn
+                  : colors.ink,
+          }}
+        >
+          {allergenSummary.headline}
         </Text>
         <Text style={{ fontSize: 12, color: colors.muted, lineHeight: 17 }}>
-          Bu sayı yalnızca mevcut ürün verisinden hesaplanır; veri eksikse 0 görünebilir ve bu "alerjen yok"
-          anlamına gelmez. Her ürünün kendi sayfasındaki alerji bandı esastır.
+          Bu sayı yalnızca mevcut ürün verisinden (beyan, iz ve içindekiler eşleşmesi) hesaplanır. Her ürünün
+          kendi kartındaki alerji rozeti esastır.
         </Text>
       </View>
 
