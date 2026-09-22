@@ -27,15 +27,7 @@ export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityCha
   const { colors } = useTheme();
   const allergenChip = getCatalogAllergenChipStatus(item.allergenData, userProfile);
   const isGroupEstimate = item.scoreSource === 'group_estimate';
-
-  const allergenNoteParts: string[] = [];
-  if (allergenChip.hasUnrecognizedTags) {
-    allergenNoteParts.push('Beyanda tanınmayan etiketler var — etiketi kontrol edin.');
-  }
-  if (allergenChip.recognizedUnmodeledLabels.length > 0) {
-    allergenNoteParts.push(`Beyanda ayrıca: ${allergenChip.recognizedUnmodeledLabels.join(', ')}`);
-  }
-  const allergenNote = allergenNoteParts.length > 0 ? allergenNoteParts.join(' ') : null;
+  const allergenNote = allergenChip.note;
 
   return (
     <View

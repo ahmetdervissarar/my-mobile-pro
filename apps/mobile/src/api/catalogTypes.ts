@@ -33,6 +33,12 @@ export interface CatalogNova {
  */
 export type CatalogAllergenDataStatus = 'present' | 'partial' | 'unknown_or_unverified';
 
+export interface CatalogIngredientsEvidence {
+  text: string | null;
+  lang: 'tr' | 'other' | null;
+  source: 'off';
+}
+
 export interface CatalogAllergenData {
   declared: AllergenKey[];
   traces: AllergenKey[];
@@ -41,6 +47,8 @@ export interface CatalogAllergenData {
   /** Ne modellenmiş ne tanınan ham etiketler — 'partial' durumunu tetikler. */
   rawUnmapped: string[];
   dataStatus: CatalogAllergenDataStatus;
+  /** Yalnız çipin "daha az temkinli olamaz" yükseltmesi için — içerik skoru KULLANMAZ. */
+  ingredientsEvidence: CatalogIngredientsEvidence;
 }
 
 export interface CatalogProvenance {

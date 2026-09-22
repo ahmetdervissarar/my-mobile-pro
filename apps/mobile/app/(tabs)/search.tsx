@@ -33,24 +33,10 @@ function getSuggestionAllergenChip(
   userProfile: UserSensitivityProfile,
 ): CatalogAllergenChipResult {
   if (suggestion.type !== 'product') {
-    return { status: 'unknown_or_unverified', hasUnrecognizedTags: false, recognizedUnmodeledLabels: [] };
+    return { status: 'unknown_or_unverified', hasUnrecognizedTags: false, recognizedUnmodeledLabels: [], note: null };
   }
 
   return getCatalogAllergenChipStatus(suggestion.allergenData, userProfile);
-}
-
-function getAllergenNote(chip: CatalogAllergenChipResult): string | null {
-  const parts: string[] = [];
-
-  if (chip.hasUnrecognizedTags) {
-    parts.push('Beyanda tanınmayan etiketler var — etiketi kontrol edin.');
-  }
-
-  if (chip.recognizedUnmodeledLabels.length > 0) {
-    parts.push(`Beyanda ayrıca: ${chip.recognizedUnmodeledLabels.join(', ')}`);
-  }
-
-  return parts.length > 0 ? parts.join(' ') : null;
 }
 
 function getSuggestionMeta(suggestion: SearchSuggestion): string | null {
@@ -201,7 +187,7 @@ export default function SearchScreen() {
                 meta={getSuggestionMeta(suggestion)}
                 score={null}
                 allergenStatus={allergenChip.status}
-                allergenNote={getAllergenNote(allergenChip)}
+                allergenNote={allergenChip.note}
                 extraBadges={
                   suggestion.type === 'product' ? (
                     <>
