@@ -65,6 +65,7 @@ export default function SearchScreen() {
   const [query, setQuery] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [searchErrorMessage, setSearchErrorMessage] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('score');
   const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(emptyUserSensitivityProfile);
   const cartItems = useCart();
@@ -81,17 +82,25 @@ export default function SearchScreen() {
     if (trimmedQuery.length < 2) {
       setSuggestions([]);
       setIsSuggesting(false);
+      setSearchErrorMessage(null);
       return;
     }
 
     let isActive = true;
     setIsSuggesting(true);
+    setSearchErrorMessage(null);
 
     const timeout = setTimeout(() => {
       fetchSearchSuggestions(trimmedQuery)
         .then((nextSuggestions) => {
           if (isActive) {
             setSuggestions(nextSuggestions);
+          }
+        })
+        .catch(() => {
+          if (isActive) {
+            setSuggestions([]);
+            setSearchErrorMessage('Bağlantı kurulamadı, tekrar deneyin');
           }
         })
         .finally(() => {
@@ -160,7 +169,9 @@ export default function SearchScreen() {
 
         {isSuggesting ? <Text style={{ fontSize: 12.5, color: colors.muted }}>Öneriler aranıyor...</Text> : null}
 
-        {!isSuggesting && query.trim().length >= 2 && sortedSuggestions.length === 0 ? (
+        {!isSuggesting && searchErrorMessage ? (
+          <EmptyState title="Bağlantı kurulamadı, tekrar deneyin" />
+        ) : !isSuggesting && query.trim().length >= 2 && sortedSuggestions.length === 0 ? (
           <EmptyState
             title="Sonuç bulunamadı"
             message="Farklı bir ürün adıyla tekrar deneyin veya bu ürünü kayıtlı olmayan ürün olarak ekleyin."

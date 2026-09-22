@@ -43,6 +43,11 @@ export interface SearchSuggestResponse {
   suggestions?: SearchSuggestion[];
 }
 
+/**
+ * Ağ/HTTP/parse hatalarını genuine "sıfır sonuç" ile karıştırmamak için
+ * bunları YUTMAZ, fırlatır — çağıran taraf "Bağlantı kurulamadı" ile
+ * "Sonuç bulunamadı"yı ayırt edebilsin diye.
+ */
 export async function fetchSearchSuggestions(query: string): Promise<SearchSuggestion[]> {
   const trimmedQuery = query.trim();
 
@@ -50,18 +55,14 @@ export async function fetchSearchSuggestions(query: string): Promise<SearchSugge
     return [];
   }
 
-  try {
-    const url = `${getPriceApiBaseUrl()}/api/search/suggest?q=${encodeURIComponent(trimmedQuery)}`;
-    const response = await fetch(url);
+  const url = `${getPriceApiBaseUrl()}/api/search/suggest?q=${encodeURIComponent(trimmedQuery)}`;
+  const response = await fetch(url);
 
-    if (!response.ok) {
-      return [];
-    }
-
-    const json = (await response.json()) as SearchSuggestResponse;
-
-    return Array.isArray(json.suggestions) ? json.suggestions : [];
-  } catch {
-    return [];
+  if (!response.ok) {
+    throw new Error(`search_suggest_http_${response.status}`);
   }
+
+  const json = (await response.json()) as SearchSuggestResponse;
+
+  return Array.isArray(json.suggestions) ? json.suggestions : [];
 }

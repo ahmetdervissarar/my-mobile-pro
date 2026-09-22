@@ -57,7 +57,7 @@ export default function BasketScreen() {
           if (!isCancelled) setEvaluation(response);
         })
         .catch(() => {
-          if (!isCancelled) setErrorMessage('Sepet değerlendirmesi şu anda tamamlanamadı.');
+          if (!isCancelled) setErrorMessage('Bağlantı kurulamadı, tekrar deneyin');
         })
         .finally(() => {
           if (!isCancelled) setIsEvaluating(false);
