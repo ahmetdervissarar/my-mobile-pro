@@ -2,6 +2,7 @@ import { submitBetaFeedback, type BetaFeedbackType } from '../src/api/betaFeedba
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getFallbackProductSummary } from '../src/services/productService';
 import type { ProductSearchInput } from '../src/services/productService';
@@ -66,6 +67,7 @@ export default function ProductResultScreen() {
   }>();
 
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const normalizedInput = useMemo(() => {
     const normalizedBarcode = (barcode ?? productId)?.trim();
@@ -465,7 +467,7 @@ export default function ProductResultScreen() {
     return (
       <ScrollView
         style={{ flex: 1, backgroundColor: colors.bg }}
-        contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}
+        contentContainerStyle={{ padding: spacing.xl, paddingTop: Math.max(insets.top, spacing.xl), gap: spacing.lg }}
       >
         <ProductHero
           name={displayProductName}
@@ -490,7 +492,14 @@ export default function ProductResultScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.xl, paddingBottom: spacing.xl }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: spacing.xl,
+          paddingTop: Math.max(insets.top, spacing.xl),
+          gap: spacing.xl,
+          paddingBottom: spacing.xl,
+        }}
+      >
         <AllergenSection data={allergenBannerData} />
 
         <ProductHero

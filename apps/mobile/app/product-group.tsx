@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../src/ui/theme';
 
@@ -14,6 +15,7 @@ function getSingleParam(value: string | string[] | undefined): string {
 export default function ProductGroupScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     productGroupKey?: string;
     label?: string;
@@ -27,7 +29,7 @@ export default function ProductGroupScreen() {
         flex: 1,
         backgroundColor: colors.bg,
         paddingHorizontal: spacing.xl,
-        paddingTop: spacing.xxxl,
+        paddingTop: Math.max(insets.top, spacing.xxxl),
       }}
     >
       <Text

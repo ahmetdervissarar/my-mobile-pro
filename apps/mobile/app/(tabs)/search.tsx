@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchSearchSuggestions, type SearchSuggestion } from '../../src/api/productSuggestionClient';
 import {
@@ -58,6 +59,7 @@ function getSuggestionMeta(suggestion: SearchSuggestion): string | null {
 
 export default function SearchScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ initialQuery?: string | string[] }>();
   const initialQueryParam = params.initialQuery;
   const initialQuery = Array.isArray(initialQueryParam) ? initialQueryParam[0] ?? '' : initialQueryParam ?? '';
@@ -140,7 +142,12 @@ export default function SearchScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
-        contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxxl }}
+        contentContainerStyle={{
+          padding: spacing.xl,
+          paddingTop: Math.max(insets.top, spacing.xl),
+          gap: spacing.lg,
+          paddingBottom: spacing.xxxl,
+        }}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={{ fontSize: 28, fontWeight: '800', color: colors.ink }}>Ürün Ara</Text>
