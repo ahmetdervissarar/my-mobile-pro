@@ -8,6 +8,7 @@ import { createGunzip } from 'node:zlib';
 import { createInterface } from 'node:readline';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildAllergenData } from '../../catalog/catalog.js';
 import { OFF_FIELDS, normalizeOffProduct, type OffImportRecord } from './normalize.js';
 
 const USER_AGENT = 'RafSkoru/0.2 (arastirma pilotu; iletisim: ahmetdervissarar@gmail.com)';
@@ -71,7 +72,12 @@ async function main() {
     out.write(JSON.stringify(rec) + '\n');
     stats.written++;
     inc(stats.completeness, rec.completeness);
-    inc(stats.allergenStatus, rec.allergens.dataStatus);
+    // catalog.ts'in ürünlere uyguladığı AYNI paylaşılan sınıflandırmayı (classifyAllergenTags
+    // üzerinden buildAllergenData) kullanır — normalize.ts'in vestigial dataStatus'una GÜVENMEZ.
+    // Bu sayede etiketsiz (rawDeclared/rawTraces boş) bir ürün, içindekiler metni olsa bile
+    // yanlışlıkla "not_listed_in_available_data" değil, doğru biçimde "unknown_or_unverified"
+    // sayılır (bkz. src/catalog/catalog.ts buildAllergenData: hasRawTags kontrolü).
+    inc(stats.allergenStatus, buildAllergenData(rec).dataStatus);
     if (rec.ingredientsLang === 'tr') stats.withTurkishIngredients++;
     if (rec.nutriscoreGrade) stats.withNutriScore++;
     if (rec.novaGroup) stats.withNova++;

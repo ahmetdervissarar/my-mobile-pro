@@ -255,7 +255,7 @@ function buildNova(record: OffImportRecord): CatalogNova {
  * yeniden türetilir. Bu sayede eski (fix'ten önce üretilmiş) JSONL
  * dökümleri bile re-import gerekmeden doğru sınıflanır.
  */
-function buildAllergenData(record: OffImportRecord): CatalogAllergenData {
+export function buildAllergenData(record: OffImportRecord): CatalogAllergenData {
   const declaredClass = classifyAllergenTags(record.allergens.rawDeclared);
   const tracesClass = classifyAllergenTags(record.allergens.rawTraces);
 
