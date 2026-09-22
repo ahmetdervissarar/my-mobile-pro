@@ -924,4 +924,94 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
     ],
   },
 
+  // ── Senaryo 29 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-29",
+    title: "Yumurta alerjisi + declared alerjen dizisinde 'yumurta'",
+    description:
+      "Kullanıcı profilinde yumurta alerjisi tanımlı. Ürünün allergens dizisi " +
+      "'yumurta' beyanı içeriyor (declared) — ingredients yok ama allergens dolu " +
+      "olduğu için hasAllergenInfo=true, PROFILE_ALLERGEN_INFO_MISSING VE " +
+      "MISSING_ALLERGEN_INFO tetiklenmez. Ürün adı hiçbir kategori (işlenmiş et/ " +
+      "tatlı/vegan) anahtar kelimesiyle eşleşmediğinden PROFILE_EGG_PRECAUTION " +
+      "tetiklenmez — yalnız yeni PROFILE_EGG_ALLERGEN_MATCH beklenir.",
+    input: {
+      name: "ev yapımı erişte",
+      ingredients: null,
+      allergenInfo: null,
+      allergens: ["yumurta"],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["egg"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_EGG_ALLERGEN_MATCH",
+      "MISSING_INGREDIENTS",
+    ],
+  },
+
+  // ── Senaryo 30 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-30",
+    title: "Yumurta alerjisi + içindekilerde 'yumurta' geçiyor",
+    description:
+      "Kullanıcı profilinde yumurta alerjisi tanımlı. Ingredients metninde " +
+      "'yumurta' geçiyor (hasIngredients=true) ama allergenInfo/allergens boş " +
+      "(hasAllergenInfo=false). PROFILE_ALLERGEN_INFO_MISSING kuralı !hasIngredients " +
+      "gerektirdiğinden tetiklenmez; MISSING_ALLERGEN_INFO ise bastırılmadan kalır. " +
+      "PROFILE_EGG_ALLERGEN_MATCH ingredients anahtar kelimesiyle tetiklenir.",
+    input: {
+      name: "ev yapımı erişte",
+      ingredients: "un, yumurta, tuz",
+      allergenInfo: null,
+      allergens: [],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["egg"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_EGG_ALLERGEN_MATCH",
+      "MISSING_ALLERGEN_INFO",
+    ],
+  },
+
+  // ── Senaryo 31 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-31",
+    title: "Yumurta alerjisi + veri yok — PROFILE_EGG_ALLERGEN_MATCH tetiklenmemeli",
+    description:
+      "Kullanıcı profilinde yumurta alerjisi tanımlı ama ürünün ne ingredients " +
+      "ne allergenInfo ne de allergens verisi var. productContainsAny boş metinde " +
+      "hiçbir eşleşme bulamayacağından PROFILE_EGG_ALLERGEN_MATCH TETİKLENMEMELİ — " +
+      "yalnız mevcut eksik-veri uyarıları (PROFILE_ALLERGEN_INFO_MISSING + " +
+      "MISSING_INGREDIENTS) beklenir; MISSING_ALLERGEN_INFO bastırılır. Ürün adı " +
+      "hiçbir kategori anahtar kelimesiyle eşleşmediğinden PROFILE_EGG_PRECAUTION da " +
+      "tetiklenmez.",
+    input: {
+      name: "ev yapımı erişte",
+      ingredients: null,
+      allergenInfo: null,
+      allergens: [],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["egg"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_ALLERGEN_INFO_MISSING",
+      "MISSING_INGREDIENTS",
+    ],
+  },
+
 ];
