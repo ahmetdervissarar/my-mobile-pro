@@ -47,6 +47,12 @@ export interface CatalogNova {
  */
 export type CatalogAllergenDataStatus = 'present' | 'partial' | 'unknown_or_unverified';
 
+export interface CatalogIngredientsEvidence {
+  text: string | null;
+  lang: 'tr' | 'other' | null;
+  source: 'off';
+}
+
 export interface CatalogAllergenData {
   declared: AllergenKey[];
   traces: AllergenKey[];
@@ -55,6 +61,12 @@ export interface CatalogAllergenData {
   /** Ne modellenmiş ne tanınan ham etiketler — 'partial' durumunu tetikler. */
   rawUnmapped: string[];
   dataStatus: CatalogAllergenDataStatus;
+  /**
+   * Ham içindekiler metni — yalnız çipin "daha az temkinli olamaz" yükseltmesi
+   * için kullanılır (bkz. mobil catalogAllergenChip.ts). İçerik skoru bu alanı
+   * KULLANMAZ.
+   */
+  ingredientsEvidence: CatalogIngredientsEvidence;
 }
 
 export interface CatalogProduct {
@@ -103,6 +115,7 @@ const UNKNOWN_ALLERGEN_DATA: CatalogAllergenData = {
   recognizedUnmodeled: [],
   rawUnmapped: [],
   dataStatus: 'unknown_or_unverified',
+  ingredientsEvidence: { text: null, lang: null, source: 'off' },
 };
 
 function allergenSetsDiffer(a: string[], b: string[]): boolean {
@@ -252,6 +265,7 @@ function buildAllergenData(record: OffImportRecord): CatalogAllergenData {
     recognizedUnmodeled,
     rawUnmapped,
     dataStatus,
+    ingredientsEvidence: { text: record.ingredientsText, lang: record.ingredientsLang, source: 'off' },
   };
 }
 
