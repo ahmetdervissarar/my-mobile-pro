@@ -140,6 +140,18 @@ export function normalizeOffProduct(raw: Record<string, unknown>, fetchedAt: str
 
   const risk = dataStatus !== 'unknown_or_unverified';
   const health = Boolean(nutriscoreGrade) || coreNutrients.length === 0;
-  rec.completeness = risk && health && rec.name ? 'complete' : risk ? 'usable_for_risk' : health ? 'usable_for_health' : 'insufficient';
+  // P1-8 (device-test bulgusu): 'complete' eskiden yalnız nutriscoreGrade VEYA
+  // tam beslenim (health) yeterliydi — NOVA ve/veya beslenim eksikken bile
+  // "Veri güveni: Yüksek" gösteriliyordu. 'complete' artık nutriscoreGrade VE
+  // tam çekirdek beslenim VE NOVA'nın TÜMÜNÜ ister (missingFields ile tutarlı);
+  // 'usable_for_health' (daha zayıf) hâlâ eski gevşek `health` sinyalini kullanır.
+  const hasFullHealthData = Boolean(nutriscoreGrade) && coreNutrients.length === 0 && Boolean(novaGroup);
+  rec.completeness = risk && hasFullHealthData && rec.name
+    ? 'complete'
+    : risk
+      ? 'usable_for_risk'
+      : health
+        ? 'usable_for_health'
+        : 'insufficient';
   return rec;
 }

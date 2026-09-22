@@ -40,4 +40,17 @@ const neg = normalizeOffProduct({ code: '8690504000013', nutriments: { 'sugars_1
 assert.equal(neg.nutrition100g.sugars, null);
 assert.equal(neg.nutrition100g.salt, null);
 
-console.log('offTurkey normalize smoke: 4 senaryo geçti');
+// 5) P1-8 (device-test bulgusu): nutriscoreGrade VAR ama NOVA ve beslenim
+// EKSİK — eskiden 'complete' dönüyordu (→ mobilde "Veri güveni: Yüksek"),
+// artık en fazla 'usable_for_risk' (→ "Orta") olmalı; missingFields nova ve
+// nutrition.* alanlarını göstermeye devam eder.
+const partialHealth = normalizeOffProduct({
+  code: '8690504000013', product_name: 'Kısmi Ürün', allergens_tags: ['en:milk'],
+  nutrition_grades: 'c',
+}, at)!;
+assert.notEqual(partialHealth.completeness, 'complete', 'NOVA/beslenim eksikken completeness "complete" OLAMAZ');
+assert.equal(partialHealth.completeness, 'usable_for_risk');
+assert.ok(partialHealth.missingFields.includes('nova'));
+assert.ok(partialHealth.missingFields.some((f) => f.startsWith('nutrition.')));
+
+console.log('offTurkey normalize smoke: 5 senaryo geçti');
