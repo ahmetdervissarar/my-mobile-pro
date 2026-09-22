@@ -191,7 +191,11 @@ export default function SearchScreen() {
                 extraBadges={
                   suggestion.type === 'product' ? (
                     <>
-                      <NutriScoreBadge grade={suggestion.nutriScore?.grade ?? null} source={suggestion.nutriScore?.source} />
+                      <NutriScoreBadge
+                        grade={suggestion.nutriScore?.grade ?? null}
+                        source={suggestion.nutriScore?.source}
+                        status={suggestion.nutriScore?.status}
+                      />
                       <NovaBadge group={suggestion.nova?.group ?? null} />
                     </>
                   ) : undefined

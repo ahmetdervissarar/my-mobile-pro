@@ -70,6 +70,7 @@ const milkRecord: OffImportRecord = {
   ingredientsLang: 'tr',
   allergens: { declared: ['milk'], traces: [], rawDeclared: ['en:milk'], rawTraces: [], dataStatus: 'present' },
   nutriscoreGrade: 'c',
+  offGradeRaw: 'c',
   novaGroup: 1,
   nutrition100g: {
     energyKcal: 60,

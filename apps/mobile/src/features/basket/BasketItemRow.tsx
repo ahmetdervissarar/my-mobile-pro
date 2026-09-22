@@ -51,7 +51,7 @@ export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityCha
       </View>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-        <NutriScoreBadge grade={item.nutriScore?.grade ?? null} source={item.nutriScore?.source} />
+        <NutriScoreBadge grade={item.nutriScore?.grade ?? null} source={item.nutriScore?.source} status={item.nutriScore?.status} />
         <NovaBadge group={item.nova?.group ?? null} />
         <AllergenChip status={allergenChip.status} />
       </View>

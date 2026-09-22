@@ -20,15 +20,20 @@ const GRADE_COLORS: Record<Grade, string> = {
 
 export interface NutriScoreBadgeProps {
   grade: Grade | null;
-  /** 'off' ise erişilebilirlik etiketine "Open Food Facts verisi" eklenir. */
+  /** 'off' ise erişilebilirlik etiketine "Open Food Facts verisi", 'rafskoru_computed' ise "(hesaplanmış)" eklenir. */
   source?: 'rafskoru_computed' | 'off' | null;
+  /** 'not_applicable' ise OFF bu ürün için Nutri-Score'un uygulanamaz olduğunu belirtmiştir. */
+  status?: 'computed' | 'off' | 'insufficient_data' | 'not_applicable' | null;
 }
 
-export function NutriScoreBadge({ grade, source }: NutriScoreBadgeProps) {
+export function NutriScoreBadge({ grade, source, status }: NutriScoreBadgeProps) {
   const { colors } = useTheme();
 
-  const baseLabel = grade ? `Nutri-Score ${grade}` : 'Nutri-Score: veri yok';
-  const label = source === 'off' && grade ? `${baseLabel} (Open Food Facts verisi)` : baseLabel;
+  const baseLabel =
+    status === 'not_applicable' ? 'Nutri-Score: Uygulanamaz' : grade ? `Nutri-Score ${grade}` : 'Nutri-Score: veri yok';
+  const qualifier =
+    source === 'off' && grade ? ' (Open Food Facts verisi)' : source === 'rafskoru_computed' && grade ? ' (hesaplanmış)' : '';
+  const label = `${baseLabel}${qualifier}`;
 
   return (
     <View
@@ -69,9 +74,7 @@ export function NutriScoreBadge({ grade, source }: NutriScoreBadgeProps) {
           );
         })}
       </View>
-      <Text style={{ fontSize: 11, fontWeight: '700', color: colors.muted }}>
-        {grade ? `Nutri-Score ${grade}` : 'Nutri-Score: veri yok'}
-      </Text>
+      <Text style={{ fontSize: 11, fontWeight: '700', color: colors.muted }}>{baseLabel}</Text>
     </View>
   );
 }

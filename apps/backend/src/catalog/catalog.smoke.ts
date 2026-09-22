@@ -23,6 +23,7 @@ function makeRecord(overrides: Partial<OffImportRecord>): OffImportRecord {
     ingredientsLang: null,
     allergens: { declared: [], traces: [], rawDeclared: [], rawTraces: [], dataStatus: 'unknown_or_unverified' },
     nutriscoreGrade: null,
+    offGradeRaw: null,
     novaGroup: null,
     nutrition100g: {
       energyKcal: null,
@@ -95,6 +96,45 @@ const noGradeProduct = buildCatalogProduct(noGradeRecord);
 assert.equal(noGradeProduct.nutriScore.status, 'insufficient_data');
 assert.equal(noGradeProduct.nutriScore.grade, null);
 assert.equal(noGradeProduct.nutriScore.source, null);
+
+// 4b) OFF "not-applicable" derse hesaplama hiç DENENMEZ — yeterli besin verisi olsa bile.
+const notApplicableRecord = makeRecord({
+  categories: [],
+  nutriscoreGrade: null,
+  offGradeRaw: 'not-applicable',
+  nutrition100g: {
+    energyKcal: 300, fat: 5, saturatedFat: 2, carbohydrates: 40, sugars: 10, fiber: null, proteins: 8, salt: 0.5,
+  },
+});
+const notApplicableProduct = buildCatalogProduct(notApplicableRecord);
+assert.equal(notApplicableProduct.nutriScore.status, 'not_applicable');
+assert.equal(notApplicableProduct.nutriScore.grade, null);
+assert.equal(notApplicableProduct.nutriScore.source, null);
+
+// 4c) OFF "unknown" derse (not-applicable DEĞİL) hesaplama normal şekilde denenir.
+const unknownGradeRecord = makeRecord({
+  categories: [],
+  nutriscoreGrade: null,
+  offGradeRaw: 'unknown',
+  nutrition100g: {
+    energyKcal: 300, fat: 5, saturatedFat: 2, carbohydrates: 40, sugars: 10, fiber: null, proteins: 8, salt: 0.5,
+  },
+});
+const unknownGradeProduct = buildCatalogProduct(unknownGradeRecord);
+assert.equal(unknownGradeProduct.nutriScore.status, 'computed');
+
+// 4d) Eski/migrasyon-öncesi kayıt (offGradeRaw alanı hiç yok) — yeterli besin verisi
+// olsa bile hesaplama YAPILMAZ (belirsizlikte temkinli, bkz. görev onayı).
+const { offGradeRaw: _omitted, ...oldRecordWithoutOffGradeRaw } = makeRecord({
+  categories: [],
+  nutriscoreGrade: null,
+  nutrition100g: {
+    energyKcal: 300, fat: 5, saturatedFat: 2, carbohydrates: 40, sugars: 10, fiber: null, proteins: 8, salt: 0.5,
+  },
+});
+const oldRecordProduct = buildCatalogProduct(oldRecordWithoutOffGradeRaw as OffImportRecord);
+assert.equal(oldRecordProduct.nutriScore.status, 'insufficient_data');
+assert.equal(oldRecordProduct.nutriScore.grade, null);
 
 // 5) unknown_or_unverified korunur — "içermez/güvenli" gibi başka bir duruma dönüştürülmez
 const unknownAllergenRecord = makeRecord({

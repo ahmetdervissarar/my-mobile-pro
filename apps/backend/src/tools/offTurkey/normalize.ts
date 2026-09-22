@@ -30,6 +30,8 @@ export interface OffImportRecord {
     dataStatus: AllergenDataStatus;
   };
   nutriscoreGrade: 'a' | 'b' | 'c' | 'd' | 'e' | null;
+  /** OFF'un ham nutrition_grades değeri — 'not-applicable'/'unknown' dahil, hiç normalize edilmeden saklanır. */
+  offGradeRaw: string | null;
   novaGroup: 1 | 2 | 3 | 4 | null;
   nutrition100g: Record<NutrientKey, number | null>;
   additives: string[];
@@ -88,8 +90,8 @@ export function normalizeOffProduct(raw: Record<string, unknown>, fetchedAt: str
     : ingAny ? 'not_listed_in_available_data'
     : 'unknown_or_unverified';
 
-  const grade = str(raw.nutrition_grades)?.toLowerCase();
-  const nutriscoreGrade = grade && ['a', 'b', 'c', 'd', 'e'].includes(grade) ? (grade as OffImportRecord['nutriscoreGrade']) : null;
+  const offGradeRaw = str(raw.nutrition_grades)?.toLowerCase() ?? null;
+  const nutriscoreGrade = offGradeRaw && ['a', 'b', 'c', 'd', 'e'].includes(offGradeRaw) ? (offGradeRaw as OffImportRecord['nutriscoreGrade']) : null;
   const nova = num(raw.nova_group);
   const novaGroup = nova && [1, 2, 3, 4].includes(nova) ? (nova as 1 | 2 | 3 | 4) : null;
 
@@ -110,6 +112,7 @@ export function normalizeOffProduct(raw: Record<string, unknown>, fetchedAt: str
     ingredientsLang: ingTr ? 'tr' : ingAny ? 'other' : null,
     allergens: { declared: mapAllergens(rawDeclared), traces: mapAllergens(rawTraces), rawDeclared, rawTraces, dataStatus },
     nutriscoreGrade,
+    offGradeRaw,
     novaGroup,
     nutrition100g,
     additives: arr(raw.additives_tags),

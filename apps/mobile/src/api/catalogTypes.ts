@@ -10,7 +10,7 @@
 import type { AllergenKey } from '../userProfile/userProfileTypes';
 
 export type CatalogNutriScoreGrade = 'A' | 'B' | 'C' | 'D' | 'E';
-export type CatalogNutriScoreStatus = 'computed' | 'off' | 'insufficient_data';
+export type CatalogNutriScoreStatus = 'computed' | 'off' | 'insufficient_data' | 'not_applicable';
 export type CatalogNutriScoreSource = 'rafskoru_computed' | 'off' | null;
 
 export interface CatalogNutriScore {

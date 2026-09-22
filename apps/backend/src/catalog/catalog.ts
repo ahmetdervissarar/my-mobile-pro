@@ -22,7 +22,7 @@ export interface CatalogPackageSize {
 }
 
 export type CatalogNutriScoreSource = 'rafskoru_computed' | 'off' | null;
-export type CatalogNutriScoreStatus = 'computed' | 'off' | 'insufficient_data';
+export type CatalogNutriScoreStatus = 'computed' | 'off' | 'insufficient_data' | 'not_applicable';
 
 export interface CatalogNutriScore {
   grade: 'A' | 'B' | 'C' | 'D' | 'E' | null;
@@ -199,6 +199,17 @@ function buildNutriScore(record: OffImportRecord): CatalogNutriScore {
       algorithmVersion: null,
       assumptions: [],
     };
+  }
+
+  // Eski/migrasyon-öncesi kayıt (offGradeRaw alanı hiç yok) — OFF'un ham değeri
+  // bilinmiyor; belirsizlikte temkinli davranılır, hesaplama YAPILMAZ.
+  if (!('offGradeRaw' in record)) {
+    return { grade: null, status: 'insufficient_data', source: null, algorithmVersion: null, assumptions: [] };
+  }
+
+  // OFF açıkça "uygulanamaz" demişse kendi hesabımız da denenmez.
+  if (record.offGradeRaw === 'not-applicable') {
+    return { grade: null, status: 'not_applicable', source: null, algorithmVersion: null, assumptions: [] };
   }
 
   const category = categoryFromOffTags(record.categories);

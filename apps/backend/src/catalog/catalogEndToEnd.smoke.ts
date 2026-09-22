@@ -42,6 +42,7 @@ function makeRecord(overrides: Partial<OffImportRecord>): OffImportRecord {
     ingredientsLang: null,
     allergens: { declared: [], traces: [], rawDeclared: [], rawTraces: [], dataStatus: 'unknown_or_unverified' },
     nutriscoreGrade: null,
+    offGradeRaw: null,
     novaGroup: null,
     nutrition100g: EMPTY_NUTRITION,
     additives: [],
