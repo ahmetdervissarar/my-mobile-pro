@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 
 import type { BasketProfileItem } from '../../api/basketClient';
-import { getCatalogAllergenChipStatus } from '../../riskEngine/catalogAllergenChip';
+import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel } from '../../riskEngine/catalogAllergenChip';
 import type { UserSensitivityProfile } from '../../userProfile/userProfileTypes';
 import { AllergenChip } from '../../ui/AllergenChip';
 import { NovaBadge } from '../../ui/NovaBadge';
@@ -27,9 +27,11 @@ export interface BasketItemRowProps {
  */
 export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityChange, onRemove, onPress }: BasketItemRowProps) {
   const { colors } = useTheme();
-  const allergenChip = getCatalogAllergenChipStatus(item.allergenData, userProfile);
+  const evaluation = evaluateCatalogAllergenDataForProfile(item.allergenData, userProfile);
+  const displayInfo = getAllergenDisplayLevel(evaluation.perKey);
   const isGroupEstimate = item.scoreSource === 'group_estimate';
-  const allergenNote = allergenChip.note;
+  const allergenNote = evaluation.note;
+  const isAllergenConflict = displayInfo?.isConflict ?? false;
 
   return (
     <Pressable
@@ -39,8 +41,8 @@ export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityCha
       accessibilityLabel={onPress ? `${item.label} ürün sayfasını aç` : undefined}
       style={{
         borderRadius: radii.lg,
-        borderWidth: 1,
-        borderColor: colors.line,
+        borderWidth: isAllergenConflict ? 2 : 1,
+        borderColor: isAllergenConflict ? colors.danger : colors.line,
         backgroundColor: colors.surface,
         padding: spacing.md,
         gap: spacing.sm,
@@ -56,11 +58,19 @@ export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityCha
         </View>
       </View>
 
+      {isAllergenConflict ? (
+        <Text style={{ fontSize: 11.5, fontWeight: '700', color: colors.danger }}>Profilinizle çakışıyor</Text>
+      ) : null}
+
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
         <NutriScoreBadge grade={item.nutriScore?.grade ?? null} source={item.nutriScore?.source} status={item.nutriScore?.status} />
         <NovaBadge group={item.nova?.group ?? null} />
-        <AllergenChip status={allergenChip.status} />
+        <AllergenChip status={evaluation.status} displayInfo={displayInfo} />
       </View>
+
+      {displayInfo && displayInfo.otherLabels.length > 0 ? (
+        <Text style={{ fontSize: 11, color: colors.muted }}>Ayrıca: {displayInfo.otherLabels.join(', ')}</Text>
+      ) : null}
 
       {allergenNote ? (
         <Text style={{ fontSize: 11, color: colors.muted }}>{allergenNote}</Text>

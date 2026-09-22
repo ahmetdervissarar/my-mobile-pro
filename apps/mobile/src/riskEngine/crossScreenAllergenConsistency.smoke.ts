@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import type { CatalogAllergenData } from '../api/catalogTypes';
 import { getAllergenBannerDataFromCatalog } from '../features/productResult/helpers';
 import type { UserSensitivityProfile } from '../userProfile/userProfileTypes';
-import { getCatalogAllergenChipStatus } from './catalogAllergenChip';
+import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel, getCatalogAllergenChipStatus } from './catalogAllergenChip';
 
 function profileFor(allergens: UserSensitivityProfile['allergens']): UserSensitivityProfile {
   return { allergens, chronicSensitivities: [], healthPreferences: [] };
@@ -61,6 +61,31 @@ for (const { name, data, profile, expected } of CASES) {
   assert.equal(banner.status, expected, `[${name}] ürün sayfası banner: beklenen ${expected}, gelen ${banner.status}`);
   assert.equal(searchChip.status, banner.status, `[${name}] TUTARSIZLIK: arama "${searchChip.status}" ≠ ürün sayfası "${banner.status}"`);
   assert.equal(basketChip.status, banner.status, `[${name}] TUTARSIZLIK: sepet "${basketChip.status}" ≠ ürün sayfası "${banner.status}"`);
+
+  // P1: basis/seviye de üç ekranda AYNI olmalı — arama ve sepet çipi aynı
+  // evaluateCatalogAllergenDataForProfile çekirdeğini kullanır; ürün sayfası
+  // banner'ı da (getAllergenBannerDataFromCatalog üzerinden) aynı perKey'den türetir.
+  const searchDisplay = getAllergenDisplayLevel(evaluateCatalogAllergenDataForProfile(data, userProfile).perKey);
+  const basketDisplay = getAllergenDisplayLevel(evaluateCatalogAllergenDataForProfile(data, userProfile).perKey);
+  const bannerDisplay = banner.displayInfo;
+
+  assert.ok(searchDisplay, `[${name}] arama seviyesi null olamaz (profil dolu)`);
+  assert.ok(bannerDisplay, `[${name}] ürün sayfası seviyesi null olamaz (profil dolu)`);
+  assert.equal(
+    searchDisplay!.level,
+    bannerDisplay!.level,
+    `[${name}] TUTARSIZLIK: arama seviyesi "${searchDisplay!.level}" ≠ ürün sayfası seviyesi "${bannerDisplay!.level}"`,
+  );
+  assert.equal(
+    basketDisplay!.level,
+    bannerDisplay!.level,
+    `[${name}] TUTARSIZLIK: sepet seviyesi "${basketDisplay!.level}" ≠ ürün sayfası seviyesi "${bannerDisplay!.level}"`,
+  );
+  assert.equal(
+    searchDisplay!.text,
+    bannerDisplay!.text,
+    `[${name}] TUTARSIZLIK: arama rozet metni "${searchDisplay!.text}" ≠ ürün sayfası metni "${bannerDisplay!.text}"`,
+  );
 }
 
-console.log(`CROSS_SCREEN_ALLERGEN_CONSISTENCY_SMOKE_OK (${CASES.length} senaryo × 3 ekran)`);
+console.log(`CROSS_SCREEN_ALLERGEN_CONSISTENCY_SMOKE_OK (${CASES.length} senaryo × 3 ekran × durum+seviye)`);

@@ -21,10 +21,25 @@ export type AllergenBannerStatus =
   | 'not_listed_in_available_data'
   | 'unknown_or_unverified';
 
+/**
+ * P1: AllergenBannerStatus'a ek, yalnızca SUNUM için 5 seviyeli kırılım —
+ * bkz. catalogAllergenChip.ts getAllergenDisplayLevel. AllergenBannerStatus'a
+ * yeni değer eklemez (o dört değerli enum kapalıdır); basis, perKey sonucunun
+ * yapılandırılmış kaynağıdır (not metninden ayrıştırılmaz).
+ */
+export type AllergenDisplayLevel = 'declared' | 'ingredients' | 'trace' | 'no_data' | 'not_listed';
+
 export interface AllergenBannerCriticalMatch {
   code: string;
   title: string;
   message: string;
+}
+
+export interface AllergenBannerDisplayInfo {
+  level: AllergenDisplayLevel;
+  text: string;
+  otherLabels: string[];
+  isConflict: boolean;
 }
 
 export interface AllergenBannerProps {
@@ -34,9 +49,11 @@ export interface AllergenBannerProps {
   traceList?: string[];
   /** Profil ile çakışan riskEngine uyarıları (PROFILE_*_ALLERGEN_MATCH / PROFILE_ALLERGEN_INFO_MISSING). */
   criticalMatches?: AllergenBannerCriticalMatch[];
+  /** Profil doluyken paylaşılan çekirdekten (getAllergenDisplayLevel) gelen, alerjen adını içeren seviye gösterimi. */
+  displayInfo?: AllergenBannerDisplayInfo | null;
 }
 
-type Tone = 'danger' | 'warning' | 'info' | 'unknown';
+type Tone = 'danger' | 'warning' | 'caution' | 'info' | 'unknown';
 
 function getTone(status: AllergenBannerStatus, hasCritical: boolean): Tone {
   if (hasCritical) return 'danger';
@@ -44,6 +61,14 @@ function getTone(status: AllergenBannerStatus, hasCritical: boolean): Tone {
   if (status === 'trace_may_contain') return 'warning';
   if (status === 'not_listed_in_available_data') return 'info';
   return 'unknown';
+}
+
+function getToneForLevel(level: AllergenDisplayLevel, hasCritical: boolean): Tone {
+  if (hasCritical) return 'danger';
+  if (level === 'declared' || level === 'ingredients') return 'danger';
+  if (level === 'trace') return 'warning';
+  if (level === 'no_data') return 'caution';
+  return 'info';
 }
 
 function getBaseTitle(status: AllergenBannerStatus): string {
@@ -69,20 +94,26 @@ export function AllergenBanner({
   declaredList = [],
   traceList = [],
   criticalMatches = [],
+  displayInfo,
 }: AllergenBannerProps) {
   const { colors } = useTheme();
   const hasCritical = criticalMatches.length > 0;
-  const tone = getTone(status, hasCritical);
+  const tone = displayInfo ? getToneForLevel(displayInfo.level, hasCritical) : getTone(status, hasCritical);
 
   const toneStyles: Record<Tone, { bg: string; fg: string; iconBg: string }> = {
     danger: { bg: colors.dangerBg, fg: colors.danger, iconBg: colors.danger },
     warning: { bg: colors.warnBg, fg: colors.warn, iconBg: colors.warn },
+    caution: { bg: colors.cautionBg, fg: colors.caution, iconBg: colors.caution },
     info: { bg: colors.surface, fg: colors.ink, iconBg: colors.soft },
     unknown: { bg: colors.infoBg, fg: colors.info, iconBg: colors.info },
   };
   const style = toneStyles[tone];
 
-  const title = hasCritical ? 'Profilinizle çakışan alerjen uyarısı' : getBaseTitle(status);
+  const title = hasCritical
+    ? 'Profilinizle çakışan alerjen uyarısı'
+    : displayInfo
+      ? displayInfo.text
+      : getBaseTitle(status);
 
   return (
     <View
@@ -96,7 +127,7 @@ export function AllergenBanner({
         borderColor: colors.line,
       }}
       accessibilityRole="alert"
-      accessibilityLabel={`${title}. ${getBaseMessage(status)}`}
+      accessibilityLabel={`${title}. ${displayInfo ? displayInfo.text : getBaseMessage(status)}`}
     >
       <View
         style={{
@@ -125,19 +156,25 @@ export function AllergenBanner({
               </Text>
             ))}
           </View>
+        ) : displayInfo ? (
+          displayInfo.otherLabels.length > 0 ? (
+            <Text style={{ fontSize: 13, color: tone === 'info' ? colors.muted : style.fg }}>
+              Ayrıca: {displayInfo.otherLabels.join(', ')}
+            </Text>
+          ) : null
         ) : (
           <Text style={{ fontSize: 14, color: tone === 'info' ? colors.muted : style.fg }}>
             {getBaseMessage(status)}
           </Text>
         )}
 
-        {!hasCritical && status === 'declared_contains' && declaredList.length > 0 ? (
+        {!hasCritical && !displayInfo && status === 'declared_contains' && declaredList.length > 0 ? (
           <Text style={{ fontSize: 13, fontWeight: '600', color: style.fg, marginTop: 2 }}>
             {declaredList.join(', ')}
           </Text>
         ) : null}
 
-        {!hasCritical && status === 'trace_may_contain' && traceList.length > 0 ? (
+        {!hasCritical && !displayInfo && status === 'trace_may_contain' && traceList.length > 0 ? (
           <Text style={{ fontSize: 13, fontWeight: '600', color: style.fg, marginTop: 2 }}>
             {traceList.join(', ')}
           </Text>

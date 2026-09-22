@@ -47,7 +47,8 @@
 
 import { evaluateProductRisks } from './riskEngine';
 import type { CatalogAllergenData, CatalogAllergenDataStatus } from '../api/catalogTypes';
-import type { AllergenBannerStatus } from '../ui/AllergenBanner';
+import type { AllergenBannerStatus, AllergenDisplayLevel } from '../ui/AllergenBanner';
+import { allergenOptions } from '../userProfile/userProfileTypes';
 import type { AllergenKey, UserSensitivityProfile } from '../userProfile/userProfileTypes';
 
 /**
@@ -148,6 +149,14 @@ function worstStatus(statuses: AllergenBannerStatus[]): AllergenBannerStatus {
   );
 }
 
+/** status → basis'in düz eşlemesi; ingredients-yükseltmesi ve lactose istisnaları çağıran yerde override eder. */
+function basisForStatus(status: AllergenBannerStatus): AllergenProfileKeyBasis {
+  if (status === 'declared_contains') return 'declared';
+  if (status === 'trace_may_contain') return 'trace';
+  if (status === 'unknown_or_unverified') return 'no_data';
+  return 'not_listed';
+}
+
 /** declared/traces/present-ise-not_listed temel kuralı; lactose istisnasını ve ingredients yükseltmesini İÇERMEZ. */
 function baseClassify(data: CatalogAllergenData, key: AllergenKey): AllergenBannerStatus {
   if (data.declared.includes(key)) return 'declared_contains';
@@ -159,6 +168,7 @@ function baseClassify(data: CatalogAllergenData, key: AllergenKey): AllergenBann
 
 interface KeyClassification {
   status: AllergenBannerStatus;
+  basis: AllergenProfileKeyBasis;
   note: string | null;
 }
 
@@ -170,14 +180,25 @@ function classifyForProfileKey(data: CatalogAllergenData, key: AllergenKey): Key
   if (key === 'lactose' && !data.declared.includes('lactose') && !data.traces.includes('lactose')) {
     const milkStatus = baseClassify(data, 'milk');
     if (milkStatus === 'declared_contains' || milkStatus === 'trace_may_contain') {
-      return { status: 'trace_may_contain', note: 'Beyana göre süt içerir; laktoz içeriği doğrulanmamış.' };
+      // Süt beyanı var ama laktoz miktarı doğrulanmamış — bu bir 'içindekiler'
+      // eşleşmesi değil (metinden değil, milk beyanından türetildi), bu yüzden
+      // basis 'trace' kalır.
+      return {
+        status: 'trace_may_contain',
+        basis: 'trace',
+        note: 'Beyana göre süt içerir; laktoz içeriği doğrulanmamış.',
+      };
     }
     // Milk sinyali yok ama ingredients metninde "laktoz" doğrudan geçebilir —
     // "daha az temkinli olamaz" kuralı burada da uygulanır (bkz. kural 3).
     if (data.ingredientsEvidence.text && ingredientsMatchKey('lactose', data.ingredientsEvidence.text)) {
-      return { status: 'trace_may_contain', note: 'İçindekilerde geçiyor olabilir — etiketi kontrol edin.' };
+      return {
+        status: 'trace_may_contain',
+        basis: 'ingredients',
+        note: 'İçindekilerde geçiyor olabilir — etiketi kontrol edin.',
+      };
     }
-    return { status: 'unknown_or_unverified', note: null };
+    return { status: 'unknown_or_unverified', basis: 'no_data', note: null };
   }
 
   const status = baseClassify(data, key);
@@ -186,9 +207,13 @@ function classifyForProfileKey(data: CatalogAllergenData, key: AllergenKey): Key
     data.ingredientsEvidence.text &&
     ingredientsMatchKey(key, data.ingredientsEvidence.text)
   ) {
-    return { status: 'trace_may_contain', note: 'İçindekilerde geçiyor olabilir — etiketi kontrol edin.' };
+    return {
+      status: 'trace_may_contain',
+      basis: 'ingredients',
+      note: 'İçindekilerde geçiyor olabilir — etiketi kontrol edin.',
+    };
   }
-  return { status, note: null };
+  return { status, basis: basisForStatus(status), note: null };
 }
 
 /** Profilde hiç alerjen seçilmemişse gösterilecek genel (kişiselleştirilmemiş) durum. */
@@ -199,9 +224,17 @@ function generalStatus(data: CatalogAllergenData): AllergenBannerStatus {
   return normalizeDataStatus(data.dataStatus) === 'present' ? 'not_listed_in_available_data' : 'unknown_or_unverified';
 }
 
+/**
+ * P1: perKey sonucunun yapılandırılmış kaynağı — UI seviyesi (badge metni/rengi)
+ * BUNDAN türetilir, not metninden ASLA parse edilmez. AllergenBannerStatus'a
+ * yeni bir değer eklemez; onun üzerine sunum amaçlı ince bir kırılımdır.
+ */
+export type AllergenProfileKeyBasis = 'declared' | 'ingredients' | 'trace' | 'no_data' | 'not_listed';
+
 export interface AllergenProfileKeyResult {
   key: AllergenKey;
   status: AllergenBannerStatus;
+  basis: AllergenProfileKeyBasis;
   note: string | null;
 }
 
@@ -233,7 +266,7 @@ export function evaluateCatalogAllergenDataForProfile(
 
   const perKey: AllergenProfileKeyResult[] = userProfile.allergens.map((key) => {
     const classification = classifyForProfileKey(allergenData, key);
-    return { key, status: classification.status, note: classification.note };
+    return { key, status: classification.status, basis: classification.basis, note: classification.note };
   });
   const status = perKey.length > 0 ? worstStatus(perKey.map((c) => c.status)) : generalStatus(allergenData);
 
@@ -282,5 +315,80 @@ export function getCatalogAllergenChipStatus(
     hasUnrecognizedTags: evaluation.hasUnrecognizedTags,
     recognizedUnmodeledLabels: evaluation.recognizedUnmodeledLabels,
     note: evaluation.note,
+  };
+}
+
+/** Sayı ne kadar KÜÇÜKSE seviye o kadar CİDDİ — declared > ingredients > trace > no_data > not_listed. */
+const DISPLAY_LEVEL_RANK: Record<AllergenDisplayLevel, number> = {
+  declared: 0,
+  ingredients: 1,
+  trace: 2,
+  no_data: 3,
+  not_listed: 4,
+};
+
+const ALLERGEN_KEY_LABELS: Record<AllergenKey, string> = Object.fromEntries(
+  allergenOptions.map((option) => [option.key, option.label]),
+) as Record<AllergenKey, string>;
+
+function joinAllergenLabels(labels: string[]): string {
+  return labels.join(', ');
+}
+
+function textForDisplayLevel(level: AllergenDisplayLevel, labels: string[]): string {
+  const joined = joinAllergenLabels(labels);
+  const joinedLower = joined.toLocaleLowerCase('tr-TR');
+
+  switch (level) {
+    case 'declared':
+      return `${joined} içerir (beyan)`;
+    case 'ingredients':
+      return `İçindekilerde ${joinedLower} geçiyor — etiketi kontrol edin`;
+    case 'trace':
+      return `Eser miktarda ${joinedLower} içerebilir`;
+    case 'no_data':
+      return `${joined}: Alerjen verisi yok — etiketi kontrol edin`;
+    case 'not_listed':
+      return `${joined}: Belirtilmemiş`;
+  }
+}
+
+export interface AllergenDisplayInfo {
+  level: AllergenDisplayLevel;
+  /** En ağır seviyedeki profil anahtarlarının adını İÇEREN, gösterime hazır metin. */
+  text: string;
+  /** Diğer (daha az ağır) seviyelerdeki profil anahtarlarının adları — alt satırda listelenir. */
+  otherLabels: string[];
+  /** declared/ingredients/trace seviyelerinde true — kart kırmızı kenar + "Profilinizle çakışıyor" alır. */
+  isConflict: boolean;
+}
+
+/**
+ * perKey'den (profil boşsa null) sunuma hazır tek bir seviye türetir — arama
+ * çipi, sepet çipi VE ürün sayfası banner'ı bunu kullanır, böylece "alerjen
+ * adı her zaman rozette" kuralı üç ekranda da aynı kaynaktan gelir.
+ */
+export function getAllergenDisplayLevel(perKey: AllergenProfileKeyResult[]): AllergenDisplayInfo | null {
+  if (perKey.length === 0) {
+    return null;
+  }
+
+  const worstLevel = perKey.reduce<AllergenDisplayLevel>(
+    (worst, current) => (DISPLAY_LEVEL_RANK[current.basis] < DISPLAY_LEVEL_RANK[worst] ? current.basis : worst),
+    perKey[0].basis,
+  );
+
+  const primaryLabels = perKey
+    .filter((keyResult) => keyResult.basis === worstLevel)
+    .map((keyResult) => ALLERGEN_KEY_LABELS[keyResult.key]);
+  const otherLabels = perKey
+    .filter((keyResult) => keyResult.basis !== worstLevel)
+    .map((keyResult) => ALLERGEN_KEY_LABELS[keyResult.key]);
+
+  return {
+    level: worstLevel,
+    text: textForDisplayLevel(worstLevel, primaryLabels),
+    otherLabels,
+    isConflict: worstLevel === 'declared' || worstLevel === 'ingredients' || worstLevel === 'trace',
   };
 }

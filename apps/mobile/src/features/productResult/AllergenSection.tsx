@@ -13,6 +13,7 @@ export function AllergenSection({ data }: AllergenSectionProps) {
       declaredList={data.declaredList}
       traceList={data.traceList}
       criticalMatches={data.criticalMatches}
+      displayInfo={data.displayInfo}
     />
   );
 }

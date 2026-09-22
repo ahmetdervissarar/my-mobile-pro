@@ -25,6 +25,8 @@ export interface ThemeColors {
   dangerBg: string;
   warn: string;
   warnBg: string;
+  caution: string;
+  cautionBg: string;
   info: string;
   infoBg: string;
 }
@@ -44,6 +46,8 @@ const lightColors: ThemeColors = {
   dangerBg: '#FDECEA',
   warn: '#9A4D00',
   warnBg: '#FFF2DD',
+  caution: '#8A6D00',
+  cautionBg: '#FFF9DB',
   info: '#44524B',
   infoBg: '#EDF1EF',
 };
@@ -63,6 +67,8 @@ const darkColors: ThemeColors = {
   dangerBg: '#3A1714',
   warn: '#FFB74D',
   warnBg: '#382711',
+  caution: '#FFD54F',
+  cautionBg: '#332B05',
   info: '#C3D0C9',
   infoBg: '#1D2923',
 };

@@ -10,6 +10,7 @@
 import type { ReactNode } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 
+import type { AllergenDisplayInfo } from '../riskEngine/catalogAllergenChip';
 import type { AllergenBannerStatus } from './AllergenBanner';
 import { AllergenChip } from './AllergenChip';
 import { ScorePill } from './ScorePill';
@@ -21,6 +22,8 @@ export interface ProductRowProps {
   meta?: string | null;
   score?: number | null;
   allergenStatus?: AllergenBannerStatus | null;
+  /** Profil doluyken paylaşılan çekirdekten gelen, alerjen adını içeren seviye gösterimi. */
+  allergenDisplayInfo?: AllergenDisplayInfo | null;
   priceText?: string | null;
   onPress?: () => void;
   trailing?: ReactNode;
@@ -37,6 +40,7 @@ export function ProductRow({
   meta,
   score,
   allergenStatus,
+  allergenDisplayInfo,
   priceText,
   onPress,
   trailing,
@@ -47,6 +51,7 @@ export function ProductRow({
   const { colors } = useTheme();
 
   const Container = onPress ? Pressable : View;
+  const isAllergenConflict = allergenDisplayInfo?.isConflict ?? false;
 
   return (
     <Container
@@ -59,8 +64,8 @@ export function ProductRow({
         gap: spacing.md,
         minHeight: MIN_TOUCH_TARGET,
         backgroundColor: colors.surface,
-        borderWidth: 1,
-        borderColor: colors.line,
+        borderWidth: isAllergenConflict ? 2 : 1,
+        borderColor: isAllergenConflict ? colors.danger : colors.line,
         borderRadius: radii.lg,
         padding: spacing.md,
       }}
@@ -97,10 +102,20 @@ export function ProductRow({
           </Text>
         ) : null}
 
+        {isAllergenConflict ? (
+          <Text style={{ fontSize: 11.5, fontWeight: '700', color: colors.danger }}>Profilinizle çakışıyor</Text>
+        ) : null}
+
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' }}>
           {score !== undefined ? <ScorePill score={score} /> : null}
-          {allergenStatus ? <AllergenChip status={allergenStatus} /> : null}
+          {allergenStatus ? <AllergenChip status={allergenStatus} displayInfo={allergenDisplayInfo} /> : null}
         </View>
+
+        {allergenDisplayInfo && allergenDisplayInfo.otherLabels.length > 0 ? (
+          <Text style={{ fontSize: 11, color: colors.muted }} numberOfLines={2}>
+            Ayrıca: {allergenDisplayInfo.otherLabels.join(', ')}
+          </Text>
+        ) : null}
 
         {allergenNote ? (
           <Text style={{ fontSize: 11, color: colors.muted }} numberOfLines={2}>

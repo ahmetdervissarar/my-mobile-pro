@@ -8,11 +8,18 @@
 
 import { Text, View } from 'react-native';
 
-import type { AllergenBannerStatus } from './AllergenBanner';
+import type { AllergenBannerStatus, AllergenDisplayLevel } from './AllergenBanner';
 import { radii, spacing, useTheme } from './theme';
+
+export interface AllergenChipDisplayInfo {
+  level: AllergenDisplayLevel;
+  text: string;
+}
 
 export interface AllergenChipProps {
   status: AllergenBannerStatus;
+  /** Profil doluyken paylaşılan çekirdekten (getAllergenDisplayLevel) gelen, alerjen adını içeren gösterim. */
+  displayInfo?: AllergenChipDisplayInfo | null;
 }
 
 const LABELS: Record<AllergenBannerStatus, string> = {
@@ -22,16 +29,29 @@ const LABELS: Record<AllergenBannerStatus, string> = {
   unknown_or_unverified: 'Veri yok',
 };
 
-export function AllergenChip({ status }: AllergenChipProps) {
+const TONES_BY_LEVEL: Record<AllergenDisplayLevel, (colors: ReturnType<typeof useTheme>['colors']) => { bg: string; fg: string }> = {
+  declared: (colors) => ({ bg: colors.dangerBg, fg: colors.danger }),
+  ingredients: (colors) => ({ bg: colors.dangerBg, fg: colors.danger }),
+  trace: (colors) => ({ bg: colors.warnBg, fg: colors.warn }),
+  no_data: (colors) => ({ bg: colors.cautionBg, fg: colors.caution }),
+  not_listed: (colors) => ({ bg: colors.soft, fg: colors.muted }),
+};
+
+export function AllergenChip({ status, displayInfo }: AllergenChipProps) {
   const { colors } = useTheme();
 
-  const tones: Record<AllergenBannerStatus, { bg: string; fg: string }> = {
-    declared_contains: { bg: colors.dangerBg, fg: colors.danger },
-    trace_may_contain: { bg: colors.warnBg, fg: colors.warn },
-    not_listed_in_available_data: { bg: colors.soft, fg: colors.muted },
-    unknown_or_unverified: { bg: colors.infoBg, fg: colors.info },
-  };
-  const tone = tones[status];
+  const tone = displayInfo
+    ? TONES_BY_LEVEL[displayInfo.level](colors)
+    : (
+        {
+          declared_contains: { bg: colors.dangerBg, fg: colors.danger },
+          trace_may_contain: { bg: colors.warnBg, fg: colors.warn },
+          not_listed_in_available_data: { bg: colors.soft, fg: colors.muted },
+          unknown_or_unverified: { bg: colors.infoBg, fg: colors.info },
+        } satisfies Record<AllergenBannerStatus, { bg: string; fg: string }>
+      )[status];
+
+  const label = displayInfo ? displayInfo.text : LABELS[status];
 
   return (
     <View
@@ -42,9 +62,9 @@ export function AllergenChip({ status }: AllergenChipProps) {
         paddingHorizontal: spacing.sm,
         backgroundColor: tone.bg,
       }}
-      accessibilityLabel={`Alerjen durumu: ${LABELS[status]}`}
+      accessibilityLabel={`Alerjen durumu: ${label}`}
     >
-      <Text style={{ fontSize: 12, fontWeight: '700', color: tone.fg }}>{LABELS[status]}</Text>
+      <Text style={{ fontSize: 12, fontWeight: '700', color: tone.fg }}>{label}</Text>
     </View>
   );
 }

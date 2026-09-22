@@ -13,9 +13,9 @@
 import assert from 'node:assert/strict';
 
 import type { CatalogAllergenData } from '../api/catalogTypes';
-import type { AllergenBannerStatus } from '../ui/AllergenBanner';
+import type { AllergenBannerStatus, AllergenDisplayLevel } from '../ui/AllergenBanner';
 import type { AllergenKey, UserSensitivityProfile } from '../userProfile/userProfileTypes';
-import { getCatalogAllergenChipStatus } from './catalogAllergenChip';
+import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel, getCatalogAllergenChipStatus } from './catalogAllergenChip';
 
 const EXPECTED_RANK: Record<AllergenBannerStatus, number> = {
   declared_contains: 0,
@@ -23,6 +23,24 @@ const EXPECTED_RANK: Record<AllergenBannerStatus, number> = {
   unknown_or_unverified: 2,
   not_listed_in_available_data: 3,
 };
+
+// P1: basis/seviye sırası — declared > ingredients > trace > no_data > not_listed
+// (KULLANICI TARAFINDAN belirtildiği gibi, implementasyondaki DISPLAY_LEVEL_RANK'tan
+// BAĞIMSIZ olarak burada ayrıca tanımlanır).
+const EXPECTED_LEVEL_RANK: Record<AllergenDisplayLevel, number> = {
+  declared: 0,
+  ingredients: 1,
+  trace: 2,
+  no_data: 3,
+  not_listed: 4,
+};
+
+function displayLevelFor(data: CatalogAllergenData, profile: UserSensitivityProfile): AllergenDisplayLevel {
+  const evaluation = evaluateCatalogAllergenDataForProfile(data, profile);
+  const displayInfo = getAllergenDisplayLevel(evaluation.perKey);
+  assert.ok(displayInfo, 'profil dolu iken getAllergenDisplayLevel null dönemez');
+  return displayInfo!.level;
+}
 
 const ALL_KEYS: AllergenKey[] = [
   'egg', 'milk', 'lactose', 'gluten_wheat', 'soy', 'peanut', 'tree_nuts', 'sesame', 'fish', 'shellfish',
@@ -76,8 +94,10 @@ let checkedSubsets = 0;
 for (const { name, data } of SCENARIOS) {
   // Her anahtarın TEK BAŞINA ürettiği durumu bir kez hesapla.
   const singleKeyStatus = new Map<AllergenKey, AllergenBannerStatus>();
+  const singleKeyLevel = new Map<AllergenKey, AllergenDisplayLevel>();
   for (const key of ALL_KEYS) {
     singleKeyStatus.set(key, getCatalogAllergenChipStatus(data, profileFor([key])).status);
+    singleKeyLevel.set(key, displayLevelFor(data, profileFor([key])));
   }
 
   for (const subset of nonEmptySubsets(ALL_KEYS)) {
@@ -87,6 +107,14 @@ for (const { name, data } of SCENARIOS) {
       EXPECTED_RANK[actual],
       expectedRank,
       `[${name}] profil={${subset.join(',')}}: beklenen sıra ${expectedRank} (en ciddi tekil anahtar), gelen "${actual}" (sıra ${EXPECTED_RANK[actual]})`,
+    );
+
+    const actualLevel = displayLevelFor(data, profileFor(subset));
+    const expectedLevelRank = Math.min(...subset.map((k) => EXPECTED_LEVEL_RANK[singleKeyLevel.get(k)!]));
+    assert.equal(
+      EXPECTED_LEVEL_RANK[actualLevel],
+      expectedLevelRank,
+      `[${name}] profil={${subset.join(',')}}: beklenen seviye sırası ${expectedLevelRank} (en ciddi tekil anahtar), gelen "${actualLevel}" (sıra ${EXPECTED_LEVEL_RANK[actualLevel]})`,
     );
     checkedSubsets++;
   }
@@ -104,6 +132,14 @@ for (const { name, data } of SCENARIOS) {
     assert.ok(
       EXPECTED_RANK[statusSuperset] <= EXPECTED_RANK[statusSubset],
       `[${name}] MONOTONLUK İHLALİ: {${subset.join(',')}}→"${statusSubset}" iken {${superset.join(',')}}→"${statusSuperset}" — anahtar eklemek hafifletti`,
+    );
+
+    const levelSubset = displayLevelFor(data, profileFor(subset));
+    const levelSuperset = displayLevelFor(data, profileFor(superset));
+
+    assert.ok(
+      EXPECTED_LEVEL_RANK[levelSuperset] <= EXPECTED_LEVEL_RANK[levelSubset],
+      `[${name}] SEVİYE MONOTONLUK İHLALİ: {${subset.join(',')}}→"${levelSubset}" iken {${superset.join(',')}}→"${levelSuperset}" — anahtar eklemek hafifletti`,
     );
   }
 }

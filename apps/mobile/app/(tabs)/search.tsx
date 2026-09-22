@@ -3,7 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { fetchSearchSuggestions, type SearchSuggestion } from '../../src/api/productSuggestionClient';
-import { getCatalogAllergenChipStatus, type CatalogAllergenChipResult } from '../../src/riskEngine/catalogAllergenChip';
+import {
+  evaluateCatalogAllergenDataForProfile,
+  getAllergenDisplayLevel,
+  type AllergenDisplayInfo,
+  type AllergenProfileEvaluation,
+} from '../../src/riskEngine/catalogAllergenChip';
 import { addToCart, getCartItemKey, suggestionToCartInput, useCart } from '../../src/state/cartStore';
 import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
@@ -28,15 +33,15 @@ function getSuggestionKey(suggestion: SearchSuggestion): string {
     : `product_group:${suggestion.productGroupKey}`;
 }
 
-function getSuggestionAllergenChip(
+function getSuggestionAllergenEvaluation(
   suggestion: SearchSuggestion,
   userProfile: UserSensitivityProfile,
-): CatalogAllergenChipResult {
+): AllergenProfileEvaluation {
   if (suggestion.type !== 'product') {
-    return { status: 'unknown_or_unverified', hasUnrecognizedTags: false, recognizedUnmodeledLabels: [], note: null };
+    return { status: 'unknown_or_unverified', perKey: [], hasUnrecognizedTags: false, recognizedUnmodeledLabels: [], note: null };
   }
 
-  return getCatalogAllergenChipStatus(suggestion.allergenData, userProfile);
+  return evaluateCatalogAllergenDataForProfile(suggestion.allergenData, userProfile);
 }
 
 function getSuggestionMeta(suggestion: SearchSuggestion): string | null {
@@ -177,7 +182,8 @@ export default function SearchScreen() {
           {sortedSuggestions.map((suggestion) => {
             const key = getSuggestionKey(suggestion);
             const isAdded = cartItems.some((item) => item.key === getCartItemKey(suggestionToCartInput(suggestion)));
-            const allergenChip = getSuggestionAllergenChip(suggestion, userProfile);
+            const allergenEvaluation = getSuggestionAllergenEvaluation(suggestion, userProfile);
+            const allergenDisplayInfo: AllergenDisplayInfo | null = getAllergenDisplayLevel(allergenEvaluation.perKey);
 
             return (
               <ProductRow
@@ -186,8 +192,9 @@ export default function SearchScreen() {
                 name={suggestion.label}
                 meta={getSuggestionMeta(suggestion)}
                 score={null}
-                allergenStatus={allergenChip.status}
-                allergenNote={allergenChip.note}
+                allergenStatus={allergenEvaluation.status}
+                allergenDisplayInfo={allergenDisplayInfo}
+                allergenNote={allergenEvaluation.note}
                 extraBadges={
                   suggestion.type === 'product' ? (
                     <>
