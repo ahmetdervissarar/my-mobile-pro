@@ -1,6 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
+import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../src/ui/theme';
+
 function getSingleParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) {
     return value[0] ?? '';
@@ -11,26 +13,26 @@ function getSingleParam(value: string | string[] | undefined): string {
 
 export default function ProductGroupScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const params = useLocalSearchParams<{
     productGroupKey?: string;
     label?: string;
   }>();
 
-  const productGroupKey = getSingleParam(params.productGroupKey);
-  const label = getSingleParam(params.label) || 'Ürün Grubu';
+  const label = getSingleParam(params.label) || 'Kategori';
 
   return (
     <View
       style={{
         flex: 1,
-        backgroundColor: '#fff',
-        paddingHorizontal: 24,
-        paddingTop: 32,
+        backgroundColor: colors.bg,
+        paddingHorizontal: spacing.xl,
+        paddingTop: spacing.xxxl,
       }}
     >
       <Text
         style={{
-          color: '#6B7280',
+          color: colors.muted,
           fontSize: 13,
           fontWeight: '700',
           letterSpacing: 0.4,
@@ -42,8 +44,8 @@ export default function ProductGroupScreen() {
 
       <Text
         style={{
-          marginTop: 8,
-          color: '#111827',
+          marginTop: spacing.sm,
+          color: colors.ink,
           fontSize: 32,
           fontWeight: '800',
         }}
@@ -51,88 +53,50 @@ export default function ProductGroupScreen() {
         {label}
       </Text>
 
-      {productGroupKey ? (
-        <Text
-          style={{
-            marginTop: 6,
-            color: '#6B7280',
-            fontSize: 13,
-          }}
-        >
-          Grup anahtarı: {productGroupKey}
-        </Text>
-      ) : null}
-
       <View
         style={{
-          marginTop: 24,
-          borderRadius: 16,
-          backgroundColor: '#F9FAFB',
-          padding: 16,
+          marginTop: spacing.xxl,
+          borderRadius: radii.xl,
+          backgroundColor: colors.surface,
+          padding: spacing.lg,
           borderWidth: 1,
-          borderColor: '#E5E7EB',
+          borderColor: colors.line,
         }}
       >
         <Text
           style={{
-            color: '#111827',
+            color: colors.ink,
             fontSize: 17,
             fontWeight: '700',
           }}
         >
-          Ürün grubu ekranı hazır
+          Bu kategori için henüz ürün verisi yok
         </Text>
 
         <Text
           style={{
-            marginTop: 8,
-            color: '#4B5563',
+            marginTop: spacing.sm,
+            color: colors.muted,
             fontSize: 14,
             lineHeight: 21,
           }}
         >
-          Bu ekran şu anda kategori önerisinin ürün sonucu gibi davranmasını engeller. Gerçek ürün verisi bağlandığında bu sayfada aynı gruptaki markalı ürünler, fiyatlar ve karşılaştırılabilir seçenekler listelenecek.
-        </Text>
-      </View>
-
-      <View
-        style={{
-          marginTop: 16,
-          borderRadius: 16,
-          backgroundColor: '#EEF2FF',
-          padding: 16,
-        }}
-      >
-        <Text
-          style={{
-            color: '#3730A3',
-            fontSize: 14,
-            fontWeight: '700',
-          }}
-        >
-          Sonraki veri aşaması
-        </Text>
-
-        <Text
-          style={{
-            marginTop: 6,
-            color: '#4338CA',
-            fontSize: 13,
-            lineHeight: 20,
-          }}
-        >
-          Bu kategoriye ürün indeksi bağlandığında örneğin X Marka Baldo Pirinç 1 kg, Y Marka Osmancık Pirinç 1 kg gibi gerçek ürün önerileri burada görünecek.
+          Gerçek ürün verisi eklendiğinde bu sayfada aynı kategorideki markalı ürünler, fiyatlar ve karşılaştırılabilir seçenekler listelenecek.
         </Text>
       </View>
 
       <Pressable
         onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Aramaya dön"
         style={{
-          marginTop: 20,
-          borderRadius: 12,
-          backgroundColor: '#111827',
-          paddingVertical: 14,
+          marginTop: spacing.xl,
+          minHeight: MIN_TOUCH_TARGET,
+          borderRadius: radii.md,
+          backgroundColor: colors.pine,
+          paddingVertical: spacing.md,
           alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
         <Text

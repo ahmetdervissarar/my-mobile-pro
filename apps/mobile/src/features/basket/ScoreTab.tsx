@@ -68,11 +68,6 @@ export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChan
         </Text>
       </View>
 
-      <EmptyState
-        title="Daha iyi RafSkoru'lu sepet"
-        message="Bu öneri, aynı ürün grubundan ve profille çakışmayan adayları karşılaştıran ayrı bir backend uç noktası gerektirir; henüz eklenmedi. Grubunda en yüksek puanlı markalar listesi de aynı nedenle şu an gösterilmiyor."
-      />
-
       <View style={{ gap: spacing.sm }}>
         {basketProfile.perItem.map((item, index) => {
           const cartItem = cartItems[index];
