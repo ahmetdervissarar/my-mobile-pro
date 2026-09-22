@@ -69,6 +69,60 @@ const num = (v: unknown): number | null => {
 const mapAllergens = (tags: string[]): AllergenKey[] =>
   [...new Set(tags.map((t) => OFF_ALLERGEN_TO_PROFILE_KEY[t]).filter((k): k is AllergenKey => Boolean(k)))];
 
+export interface CompletenessInput {
+  name: string | null;
+  brand: string | null;
+  imageUrl: string | null;
+  ingredientsText: string | null;
+  /** true, allerjen durumu unknown_or_unverified DIŞINDAYSA (present/not_listed veya katalogun kendi present/partial). */
+  hasAllergenData: boolean;
+  /** Yalnız truthy/null ayrımı kullanılır — harf büyüklüğü/kaynak (OFF ham veya RafSkoru hesaplanmış nihai grade) önemsizdir. */
+  nutriscoreGrade: string | null;
+  novaGroup: OffImportRecord['novaGroup'];
+  nutrition100g: OffImportRecord['nutrition100g'];
+}
+
+export interface CompletenessResult {
+  missingFields: string[];
+  completeness: Completeness;
+}
+
+/**
+ * missingFields + completeness hesaplaması — hem içe aktarma zamanında
+ * (normalizeOffProduct) hem katalog yükleme zamanında (catalog.ts) AYNI
+ * fonksiyondan çağrılır. Böylece completeness, alerjenlerde olduğu gibi,
+ * products.jsonl'daki KAYITLI alandan değil her yüklemede HAM alanlardan
+ * yeniden türetilir — eski (fix'ten önce üretilmiş) JSONL dökümleri bile
+ * re-import gerekmeden doğru sınıflanır (bkz. P1-8 device-test bulgusu).
+ */
+export function computeCompletenessAndMissingFields(input: CompletenessInput): CompletenessResult {
+  const missing: string[] = [];
+  if (!input.name) missing.push('name');
+  if (!input.brand) missing.push('brand');
+  if (!input.imageUrl) missing.push('image');
+  if (!input.ingredientsText) missing.push('ingredients');
+  if (!input.hasAllergenData) missing.push('allergens');
+  if (!input.nutriscoreGrade) missing.push('nutriscore');
+  if (!input.novaGroup) missing.push('nova');
+  const coreNutrients = (['energyKcal', 'sugars', 'saturatedFat', 'salt'] as NutrientKey[]).filter(
+    (k) => input.nutrition100g[k] === null,
+  );
+  if (coreNutrients.length) missing.push(...coreNutrients.map((k) => `nutrition.${k}`));
+
+  const risk = input.hasAllergenData;
+  const health = Boolean(input.nutriscoreGrade) || coreNutrients.length === 0;
+  const hasFullHealthData = Boolean(input.nutriscoreGrade) && coreNutrients.length === 0 && Boolean(input.novaGroup);
+  const completeness: Completeness = risk && hasFullHealthData && Boolean(input.name)
+    ? 'complete'
+    : risk
+      ? 'usable_for_risk'
+      : health
+        ? 'usable_for_health'
+        : 'insufficient';
+
+  return { missingFields: missing, completeness };
+}
+
 export function isValidGtin(code: string): boolean {
   if (!/^\d{8}$|^\d{12,14}$/.test(code)) return false;
   const digits = code.split('').map(Number);
@@ -126,32 +180,17 @@ export function normalizeOffProduct(raw: Record<string, unknown>, fetchedAt: str
     completeness: 'insufficient',
   };
 
-  const missing: string[] = [];
-  if (!rec.name) missing.push('name');
-  if (!rec.brand) missing.push('brand');
-  if (!rec.imageUrl) missing.push('image');
-  if (!rec.ingredientsText) missing.push('ingredients');
-  if (dataStatus === 'unknown_or_unverified') missing.push('allergens');
-  if (!nutriscoreGrade) missing.push('nutriscore');
-  if (!novaGroup) missing.push('nova');
-  const coreNutrients = (['energyKcal', 'sugars', 'saturatedFat', 'salt'] as NutrientKey[]).filter((k) => nutrition100g[k] === null);
-  if (coreNutrients.length) missing.push(...coreNutrients.map((k) => `nutrition.${k}`));
-  rec.missingFields = missing;
-
-  const risk = dataStatus !== 'unknown_or_unverified';
-  const health = Boolean(nutriscoreGrade) || coreNutrients.length === 0;
-  // P1-8 (device-test bulgusu): 'complete' eskiden yalnız nutriscoreGrade VEYA
-  // tam beslenim (health) yeterliydi — NOVA ve/veya beslenim eksikken bile
-  // "Veri güveni: Yüksek" gösteriliyordu. 'complete' artık nutriscoreGrade VE
-  // tam çekirdek beslenim VE NOVA'nın TÜMÜNÜ ister (missingFields ile tutarlı);
-  // 'usable_for_health' (daha zayıf) hâlâ eski gevşek `health` sinyalini kullanır.
-  const hasFullHealthData = Boolean(nutriscoreGrade) && coreNutrients.length === 0 && Boolean(novaGroup);
-  rec.completeness = risk && hasFullHealthData && rec.name
-    ? 'complete'
-    : risk
-      ? 'usable_for_risk'
-      : health
-        ? 'usable_for_health'
-        : 'insufficient';
+  const { missingFields, completeness } = computeCompletenessAndMissingFields({
+    name: rec.name,
+    brand: rec.brand,
+    imageUrl: rec.imageUrl,
+    ingredientsText: rec.ingredientsText,
+    hasAllergenData: dataStatus !== 'unknown_or_unverified',
+    nutriscoreGrade,
+    novaGroup,
+    nutrition100g,
+  });
+  rec.missingFields = missingFields;
+  rec.completeness = completeness;
   return rec;
 }

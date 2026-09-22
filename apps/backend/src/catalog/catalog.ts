@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'node:fs';
 
 import { computeNutriScore2023 } from '../nutriScore/nutriScore2023.js';
 import { foldSearchText } from '../search/suggestions.js';
+import { computeCompletenessAndMissingFields } from '../tools/offTurkey/normalize.js';
 import type { AllergenKey, OffImportRecord } from '../tools/offTurkey/normalize.js';
 import { classifyAllergenTags } from '../tools/offTurkey/offAllergenMap.js';
 import { categoryFromOffTags, hasNonNutritiveSweetenerTag } from './nutriScoreCategory.js';
@@ -282,6 +283,27 @@ export function buildAllergenData(record: OffImportRecord): CatalogAllergenData 
 
 export function buildCatalogProduct(record: OffImportRecord): CatalogProduct {
   const packageSize = parsePackageSize(record.quantity);
+  const nutriScore = buildNutriScore(record);
+  const allergenData = buildAllergenData(record);
+
+  // P1-8 (device-test bulgusu): record.completeness/missingFields, o kayıt
+  // en son import edildiğinde HESAPLANMIŞ ve JSONL'e YAZILMIŞ değerlerdir —
+  // allergenData gibi her yüklemede ham alanlardan YENİDEN TÜRETİLMEZLERDİ.
+  // Bu yüzden completeness kuralı düzeltildiğinde (bkz. normalize.ts) mevcut
+  // yerel products.jsonl re-import edilmeden eski (yanlış) değeri taşımaya
+  // devam ediyordu. Artık allergens'te olduğu gibi her yüklemede ham
+  // alanlardan (+ bu katmanın kendi hesapladığı nihai nutriScore.grade)
+  // yeniden hesaplanır.
+  const { missingFields, completeness } = computeCompletenessAndMissingFields({
+    name: record.name,
+    brand: record.brand,
+    imageUrl: record.imageUrl,
+    ingredientsText: record.ingredientsText,
+    hasAllergenData: allergenData.dataStatus !== 'unknown_or_unverified',
+    nutriscoreGrade: nutriScore.grade,
+    novaGroup: record.novaGroup,
+    nutrition100g: record.nutrition100g,
+  });
 
   return {
     productId: record.gtin,
@@ -291,12 +313,12 @@ export function buildCatalogProduct(record: OffImportRecord): CatalogProduct {
     ...(packageSize ? { packageSize } : {}),
     productGroupKey: mapOffCategoriesToProductGroupKey(record.categories),
     imageUrl: record.imageUrl,
-    nutriScore: buildNutriScore(record),
+    nutriScore,
     nova: buildNova(record),
-    allergenData: buildAllergenData(record),
+    allergenData,
     provenance: record.provenance,
-    missingFields: record.missingFields,
-    completeness: record.completeness,
+    missingFields,
+    completeness,
     searchText: foldSearchText(`${record.name ?? ''} ${record.brand ?? ''}`),
   };
 }

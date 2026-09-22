@@ -245,6 +245,36 @@ assert.equal(offPriorityProduct.nutriScore.status, 'off');
 assert.equal(offPriorityProduct.nutriScore.source, 'off');
 assert.equal(offPriorityProduct.nutriScore.grade, 'B');
 
+// 10) P1-8 (device-test bulgusu): completeness/missingFields, allergens gibi
+// KAYITLI ALANDAN OKUNMAZ — her yüklemede ham alanlardan yeniden türetilir.
+// Bu kayıt, düzeltmeden ÖNCE üretilmiş STALE bir JSONL satırını simüle eder:
+// completeness='complete' + missingFields=[] olarak diskte YAZILMIŞ ama
+// gerçekte NOVA ve çekirdek beslenim eksik. buildCatalogProduct bu stale
+// değerleri KÖRÜKÖRÜNE TAŞIMAMALI, yeniden hesaplamalı.
+const staleCompleteRecord = makeRecord({
+  categories: [],
+  nutriscoreGrade: 'c',
+  offGradeRaw: 'c',
+  novaGroup: null,
+  nutrition100g: {
+    energyKcal: null, fat: null, saturatedFat: null, carbohydrates: null,
+    sugars: null, fiber: null, proteins: null, salt: null,
+  },
+  allergens: { declared: ['milk'], traces: [], rawDeclared: ['en:milk'], rawTraces: [], dataStatus: 'present' },
+  // Stale/yanlış değerler — gerçek bir import öncesi hatayı simüle eder.
+  completeness: 'complete',
+  missingFields: [],
+});
+const staleCompleteProduct = buildCatalogProduct(staleCompleteRecord);
+assert.notEqual(
+  staleCompleteProduct.completeness,
+  'complete',
+  'NOVA/beslenim eksikken completeness KAYITLI "complete" değerini KÖRÜKÖRÜNE TAŞIMAMALI',
+);
+assert.equal(staleCompleteProduct.completeness, 'usable_for_risk');
+assert.ok(staleCompleteProduct.missingFields.includes('nova'), 'missingFields de yeniden hesaplanmalı, kayıtlı boş dizi taşınmamalı');
+assert.ok(staleCompleteProduct.missingFields.some((f) => f.startsWith('nutrition.')));
+
 // 7) Dosya yokken katalog boş kalır; hata fırlatılmaz
 const emptyCatalog = loadCatalog('/tmp/rafskoru-catalog-smoke-does-not-exist.jsonl');
 assert.equal(emptyCatalog.products.length, 0);
