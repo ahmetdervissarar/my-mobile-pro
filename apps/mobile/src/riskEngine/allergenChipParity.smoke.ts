@@ -26,9 +26,8 @@ const ALL_ALLERGEN_KEYS: AllergenKey[] = [
 
 // riskEngine.ts'in ÖZEL (dışa açık olmayan) anahtar kelime listelerinden gerçek
 // eşleşen örnek metinler — dosyaya dokunmadan, yalnız okunarak alınmıştır.
-// 'egg' KASITLI olarak yok: riskEngine'de yumurta kuralı (PROFILE_EGG_PRECAUTION)
-// kategori tabanlıdır, ingredients anahtar kelimesine bakmaz — onaylı istisna.
 const INGREDIENT_TEXT_FOR_KEY: Partial<Record<AllergenKey, string>> = {
+  egg: 'yumurta içerir',
   milk: 'süt proteini içerir',
   lactose: 'laktoz içerir',
   gluten_wheat: 'buğday unu içerir',
@@ -116,10 +115,7 @@ for (const key of ALL_ALLERGEN_KEYS) {
     });
     const chip = getCatalogAllergenChipStatus(data, profile);
 
-    if (key === 'egg') {
-      // Onaylı istisna: ingredients sinyali olsa da (varsayımsal) egg için yükseltme yok.
-      assert.equal(chip.status, 'not_listed_in_available_data', 'egg: ingredients yükseltmesi kapsam dışı (onaylı istisna)');
-    } else if (key === 'lactose') {
+    if (key === 'lactose') {
       assert.equal(chip.status, 'trace_may_contain', 'lactose: ingredients\'ta doğrudan "laktoz" geçiyor → yükseltilmeli');
     } else {
       assert.equal(chip.status, 'trace_may_contain', `${key}: ingredients'ta geçiyor → yükseltilmeli, not_listed KALAMAZ`);
@@ -128,11 +124,10 @@ for (const key of ALL_ALLERGEN_KEYS) {
 
     // ─── PARİTE ÇEKİRDEĞİ ────────────────────────────────────────────────────
     // riskEngine bu ingredients metniyle bu anahtar için gerçekten bir uyarı
-    // üretiyorsa (egg hariç — onaylı istisna), çip AYNI ürün+profil için
-    // not_listed_in_available_data DÖNEMEZ. Bu, riskEngine'in ÖZEL kelime
-    // listelerine dokunmadan, yalnız onun dışa açık evaluateProductRisks()
-    // çıktısını okuyarak doğrulanır.
-    if (ingredientsText && key !== 'egg') {
+    // üretiyorsa çip AYNI ürün+profil için not_listed_in_available_data
+    // DÖNEMEZ. Bu, riskEngine'in ÖZEL kelime listelerine dokunmadan, yalnız
+    // onun dışa açık evaluateProductRisks() çıktısını okuyarak doğrulanır.
+    if (ingredientsText) {
       const riskResult = evaluateProductRisks({ ingredients: ingredientsText, userProfile: profile });
       const riskEngineWarnsForKey = riskResult.warnings.length > 0;
       assert.ok(riskEngineWarnsForKey, `${key}: riskEngine test metniyle uyarı üretmiyor — örnek metin geçersiz`);

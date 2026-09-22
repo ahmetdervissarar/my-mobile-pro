@@ -35,9 +35,6 @@
  *    evaluateProductRisks üzerinden — özel anahtar kelime listelerine
  *    dokunulmaz). Eşleşme varsa not_listed_in_available_data yerine
  *    trace_may_contain + "İçindekilerde geçiyor olabilir" notu gösterilir.
- *    'egg' bu mekanizmanın dışındadır: riskEngine'de yumurta kuralı
- *    (PROFILE_EGG_PRECAUTION) kategori tabanlıdır, ingredients anahtar
- *    kelimesine dayanmaz.
  */
 
 import { evaluateProductRisks } from './riskEngine';
@@ -97,11 +94,10 @@ const CATALOG_MODELED_ALLERGEN_KEYS: ReadonlySet<AllergenKey> = new Set<Allergen
  * riskEngine.ts'in ingredients anahtar-kelime eşleştiricisiyle ürettiği
  * PROFILE_*_ALLERGEN_MATCH kodları — yalnız evaluateProductRisks'in dışa
  * açık sonucu üzerinden dolaylı tüketilir, özel kelime listelerine
- * dokunulmaz/import edilmez. 'egg' burada YOKTUR: riskEngine'de yumurta
- * kuralı (PROFILE_EGG_PRECAUTION) kategori tabanlıdır, ingredients metnine
- * bakmaz.
+ * dokunulmaz/import edilmez.
  */
 const INGREDIENT_MATCH_CODE_BY_KEY: Partial<Record<AllergenKey, string>> = {
+  egg: 'PROFILE_EGG_ALLERGEN_MATCH',
   milk: 'PROFILE_MILK_ALLERGEN_MATCH',
   lactose: 'PROFILE_LACTOSE_ALLERGEN_MATCH',
   gluten_wheat: 'PROFILE_GLUTEN_ALLERGEN_MATCH',
