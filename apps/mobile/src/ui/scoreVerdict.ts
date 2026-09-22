@@ -15,7 +15,7 @@ export interface ScorePillTextInput {
   score: number | null;
   /** Profille çakışan alerjen varsa true — hüküm kelimesi ASLA gösterilmez. */
   allergenPriority?: boolean;
-  /** Grup tahmini puan — hüküm kelimesi ASLA gösterilmez, yalnız "Tahmini: N". */
+  /** Grup tahmini puan — hüküm kelimesi ASLA gösterilmez, yalnız "Puan (tahmini): N". */
   isEstimate?: boolean;
 }
 
@@ -24,7 +24,7 @@ export function getScorePillLabel({ score, allergenPriority = false, isEstimate 
     return 'Puan: Alerjen uyarısı öncelikli';
   }
   if (isEstimate) {
-    return `Puan: Tahmini: ${score === null ? '—' : Math.round(score)}`;
+    return `Puan (tahmini): ${score === null ? '—' : Math.round(score)}`;
   }
   const band = getScoreBand(score);
   return score === null ? 'Puan: Veri yok' : `Puan: ${Math.round(score)} · ${band?.label ?? ''}`;
