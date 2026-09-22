@@ -43,6 +43,12 @@ export interface SearchSuggestResponse {
   suggestions?: SearchSuggestion[];
 }
 
+export interface ProductGroupBrowseResponse {
+  ok?: boolean;
+  productGroupKey?: string;
+  suggestions?: ProductSearchSuggestion[];
+}
+
 /**
  * Ağ/HTTP/parse hatalarını genuine "sıfır sonuç" ile karıştırmamak için
  * bunları YUTMAZ, fırlatır — çağıran taraf "Bağlantı kurulamadı" ile
@@ -63,6 +69,31 @@ export async function fetchSearchSuggestions(query: string): Promise<SearchSugge
   }
 
   const json = (await response.json()) as SearchSuggestResponse;
+
+  return Array.isArray(json.suggestions) ? json.suggestions : [];
+}
+
+/**
+ * Kategori sayfası için: productGroupKey'e göre katalog taraması —
+ * /api/search/suggest ile AYNI ProductSearchSuggestion şekli ve AYNI
+ * katalog alerjen verisi. Ağ/HTTP/parse hataları fırlatılır (yutulmaz),
+ * fetchSearchSuggestions ile aynı sebeple.
+ */
+export async function fetchProductsByGroup(productGroupKey: string): Promise<ProductSearchSuggestion[]> {
+  const trimmedGroupKey = productGroupKey.trim();
+
+  if (!trimmedGroupKey) {
+    return [];
+  }
+
+  const url = `${getPriceApiBaseUrl()}/api/search/by-group?groupKey=${encodeURIComponent(trimmedGroupKey)}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`search_by_group_http_${response.status}`);
+  }
+
+  const json = (await response.json()) as ProductGroupBrowseResponse;
 
   return Array.isArray(json.suggestions) ? json.suggestions : [];
 }

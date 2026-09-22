@@ -120,4 +120,41 @@ assert.equal(
   'present',
 );
 
+// Aşama 3 (P1-6): /api/search/by-group — kategori sayfasının kullanacağı,
+// productGroupKey'e göre katalog taraması. AYNI ProductSearchSuggestion
+// şekli, AYNI allergenData; yeni bir skor/sıralama mantığı YOK (yalnız ad).
+const milkProductGroupKey = (milkProductSuggestion as { productGroupKey: string }).productGroupKey;
+
+const groupResponse = await get(`/api/search/by-group?groupKey=${milkProductGroupKey}`);
+assert.equal(groupResponse.status, 200);
+
+const groupJson = (await groupResponse.json()) as {
+  ok: boolean;
+  productGroupKey: string;
+  suggestions: Array<Record<string, unknown>>;
+};
+
+assert.equal(groupJson.ok, true);
+assert.equal(groupJson.productGroupKey, milkProductGroupKey);
+assert.equal(groupJson.suggestions.length, 1);
+assert.equal(groupJson.suggestions[0]?.type, 'product');
+assert.equal(groupJson.suggestions[0]?.productGroupKey, milkProductGroupKey);
+assert.equal(
+  (groupJson.suggestions[0] as { allergenData?: { dataStatus?: string } }).allergenData?.dataStatus,
+  'present',
+  'by-group AYNI katalog alerjen verisini taşımalı (yeni bir karar üretmez)',
+);
+
+const emptyGroupResponse = await get('/api/search/by-group?groupKey=unclassified_does_not_exist');
+assert.equal(emptyGroupResponse.status, 200);
+const emptyGroupJson = (await emptyGroupResponse.json()) as { ok: boolean; suggestions: unknown[] };
+assert.equal(emptyGroupJson.ok, true);
+assert.deepEqual(emptyGroupJson.suggestions, []);
+
+const noGroupKeyResponse = await get('/api/search/by-group');
+assert.equal(noGroupKeyResponse.status, 200);
+const noGroupKeyJson = (await noGroupKeyResponse.json()) as { ok: boolean; suggestions: unknown[] };
+assert.equal(noGroupKeyJson.ok, true);
+assert.deepEqual(noGroupKeyJson.suggestions, []);
+
 console.log('SEARCH_ROUTES_SUGGESTIONS_SMOKE_OK');

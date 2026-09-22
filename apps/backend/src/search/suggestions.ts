@@ -170,6 +170,38 @@ function compareCatalogProducts(a: CatalogProduct, b: CatalogProduct, topGroupKe
   return (a.name ?? '').localeCompare(b.name ?? '', 'tr-TR');
 }
 
+export interface ProductGroupBrowseResponse {
+  productGroupKey: string;
+  suggestions: ProductSearchSuggestion[];
+}
+
+const GROUP_BROWSE_LIMIT = 50;
+
+/**
+ * P1-6 (device-test bulgusu): kategori sayfası "veri yok" diyordu çünkü
+ * hiçbir uç nokta productGroupKey'e göre ürün listeleyemiyordu (yalnız
+ * metin sorgulu /api/search/suggest vardı). Sınırlı kapsam: suggestSearch
+ * ile AYNI ProductSearchSuggestion şekli ve AYNI katalog alerjen verisi
+ * (yeni bir alerjen/skor kararı ÜRETMEZ), en fazla GROUP_BROWSE_LIMIT ürün,
+ * ada göre alfabetik sıralama — yeni bir skor/sıralama mantığı YOK.
+ */
+export function suggestByProductGroup(productGroupKey: string, options: SuggestSearchOptions = {}): ProductGroupBrowseResponse {
+  const trimmedGroupKey = productGroupKey.trim();
+  const limit = Math.min(Math.max(options.limit ?? GROUP_BROWSE_LIMIT, 1), GROUP_BROWSE_LIMIT);
+
+  if (!trimmedGroupKey) {
+    return { productGroupKey: trimmedGroupKey, suggestions: [] };
+  }
+
+  const suggestions = getCatalog()
+    .products.filter((product) => product.productGroupKey === trimmedGroupKey)
+    .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'tr-TR'))
+    .slice(0, limit)
+    .map(catalogProductToSuggestion);
+
+  return { productGroupKey: trimmedGroupKey, suggestions };
+}
+
 export function suggestSearch(query: string, options: SuggestSearchOptions = {}): SearchSuggestResponse {
   const rawQuery = query.trim();
   const foldedQuery = foldSearchText(rawQuery);
