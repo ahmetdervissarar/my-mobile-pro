@@ -17,7 +17,7 @@ export function ScorePill({ score }: ScorePillProps) {
   const { colors } = useTheme();
   const band = getScoreBand(score);
   const color = band ? colors[band.colorToken] : colors.muted;
-  const label = score === null ? 'Veri yok' : `${Math.round(score)} · ${band?.label ?? ''}`;
+  const label = score === null ? 'Puan: Veri yok' : `Puan: ${Math.round(score)} · ${band?.label ?? ''}`;
 
   return (
     <View

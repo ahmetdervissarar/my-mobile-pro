@@ -62,9 +62,9 @@ export function AllergenChip({ status, displayInfo }: AllergenChipProps) {
         paddingHorizontal: spacing.sm,
         backgroundColor: tone.bg,
       }}
-      accessibilityLabel={`Alerjen durumu: ${label}`}
+      accessibilityLabel={`Alerjen: ${label}`}
     >
-      <Text style={{ fontSize: 12, fontWeight: '700', color: tone.fg }}>{label}</Text>
+      <Text style={{ fontSize: 12, fontWeight: '700', color: tone.fg }}>Alerjen: {label}</Text>
     </View>
   );
 }
