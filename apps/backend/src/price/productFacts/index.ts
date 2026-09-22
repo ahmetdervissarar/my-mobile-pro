@@ -2,3 +2,4 @@
 export * from './adapters.js';
 export * from './openFoodFactsAdapter.js';
 export * from './openFoodFactsFetcher.js';
+export * from './catalogAdapter.js';
