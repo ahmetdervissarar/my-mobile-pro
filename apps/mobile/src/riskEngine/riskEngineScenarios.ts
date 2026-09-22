@@ -924,6 +924,13 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
     ],
   },
 
+  // Senaryo 29-30, EGG_KEYWORDS'ün (riskEngine.ts) bilinen güvenli yönde yanlış
+  // pozitif riskleriyle çalışır — bunlar KASITLI olarak listede tutulur, ayrı bir
+  // senaryo/düzeltme gerektirmez: "yumurtasız" (olumsuzluk eki içerir ama yine de
+  // eşleşir — "yumurta yok" bilgisini bastırmayız); "albumin" süt kaynaklı da
+  // olabilir (laktalbümin) ama biz yine de dikkat uyarısı veririz; "eggplant"
+  // (patlıcan) İngilizce "egg" alt dizesini içerir. Üçü de GÜVENLİ yönde
+  // (fazladan uyarı, kaçırılan uyarı değil).
   // ── Senaryo 29 ───────────────────────────────────────────────────────────────
   {
     id: "scenario-29",
