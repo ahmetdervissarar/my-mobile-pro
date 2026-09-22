@@ -149,6 +149,9 @@ const r1 = getCatalogAllergenChipStatus(dostSut, profileFor(['milk']));
 assert.equal(r1.status, 'declared_contains');
 const r2 = getCatalogAllergenChipStatus(dostSut, profileFor(['milk', 'lactose']));
 assert.equal(r2.status, 'declared_contains', 'profile={milk,lactose}: declared_contains KALMALI (İçerir)');
-assert.ok(r2.note?.includes('laktoz'), 'lactose notu declared_contains yanında da görünmeli');
+assert.ok(r2.note?.toLocaleLowerCase('tr-TR').includes('laktoz'), 'lactose notu declared_contains yanında da görünmeli');
+// TGK: milk declared iken lactose de declared'a yükselir ama not metni
+// "laktoz içerir" gibi laktozun kendisi hakkında kesin bir iddia ETMEZ.
+assert.ok(!r2.note?.toLocaleLowerCase('tr-TR').includes('laktoz içerir'), 'not metni "laktoz içerir" DEMEMELİ (TGK kuralı)');
 
 console.log(`MOBILE_ALLERGEN_CHIP_MONOTONICITY_SMOKE_OK (${SCENARIOS.length} senaryo × ${checkedSubsets / SCENARIOS.length} alt küme)`);

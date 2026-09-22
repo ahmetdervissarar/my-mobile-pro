@@ -96,13 +96,11 @@ for (const key of ALL_ALLERGEN_KEYS) {
   {
     const data = baseAllergenData({ dataStatus: 'present' });
     const chip = getCatalogAllergenChipStatus(data, profile);
-    if (key === 'lactose') {
-      // Kural 1: katalogda modellenmeyen anahtar asla not_listed olamaz.
-      // Milk sinyali de yoksa lactose tavanı unknown_or_unverified'dır.
-      assert.equal(chip.status, 'unknown_or_unverified', 'lactose: present + milk-sinyali-yok → unknown_or_unverified bekleniyor');
-    } else {
-      assert.equal(chip.status, 'not_listed_in_available_data', `${key}: present + listede-yok → not_listed bekleniyor`);
-    }
+    // TGK: laktoz sütün durumunu izler — present + milk declared/traces'ta yoksa
+    // lactose de not_listed_in_available_data olur (ör. Arbella Makarna: present,
+    // milk yok → lactose not_listed). Bu, önceki "modellenmemiş anahtar tavanı
+    // unknown_or_unverified'dır" istisnasının YERİNİ ALIR (görev onayı, madde 4).
+    assert.equal(chip.status, 'not_listed_in_available_data', `${key}: present + listede-yok → not_listed bekleniyor`);
     scenarioCount++;
   }
 

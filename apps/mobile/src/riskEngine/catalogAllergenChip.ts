@@ -30,13 +30,22 @@
  * eşlenemeyen anahtarlar için sonuç unknown_or_unverified'a düşer.
  *
  * İki istisna, üstteki kuralı override eder:
- * 1. Katalogda hiç modellenmeyen profil anahtarı (bugün yalnız 'lactose' —
- *    CATALOG_MODELED_ALLERGEN_KEYS'te yok) asla not_listed_in_available_data
- *    gösteremez; tavanı unknown_or_unverified'dır (declared/traces zaten
- *    hiç içeremeyeceği için "beyanda yok" YANLIŞ bir kesinlik iddiası olur).
- *    'lactose' için ayrıca: milk declared/trace ise → trace_may_contain +
- *    özel not; milk sinyali yoksa → unknown_or_unverified. "Laktoz içermez"
- *    anlamına gelen hiçbir metin üretilmez.
+ * 1. 'lactose' katalogda hiç modellenmeyen bir profil anahtarıdır (OFF'ta
+ *    ayrı bir kanonik laktoz etiketi yok — bkz. CATALOG_MODELED_ALLERGEN_KEYS).
+ *    TGK Etiketleme Yönetmeliği'nin "süt ve süt ürünleri (laktoz dahil)"
+ *    tanımına göre laktoz SÜTÜN DURUMUNU İZLER (bkz. ADR-004, gıda uzmanı
+ *    teyidi gerekir): milk declared → lactose declared; milk trace → lactose
+ *    trace; ürün present VE milk declared/traces'ta yoksa → lactose
+ *    not_listed_in_available_data; veri partial/unknown ise → lactose de
+ *    unknown_or_unverified. declared/trace seviyelerinde rozet/not metni
+ *    ASLA "laktoz içerir" DEMEZ — sütün beyanını yansıtır, laktoza özgü bir
+ *    kesinlik iddia etmez (bkz. classifyForProfileKey, displayLabelForKey).
+ *    İçindekiler metninde "laktoz" geçmesi ayrıca (milk sinyalinden bağımsız)
+ *    uyarı üretir — bu, riskEngine'in LACTOSE_KEYWORDS listesindeki naif alt
+ *    dizge eşleşmesi yüzünden "laktozsuz" gibi kelimeleri de YANLIŞ POZİTİF
+ *    olarak tetikler; bu bilinçli bir kabul çünkü hata yönü temkinli
+ *    (D1: fazla uyarmak, az uyarmaktan daha güvenli) — riskEngine'in kelime
+ *    listesine bu yüzden dokunulmaz (bkz. lactoseKeywordFalsePositive testi).
  * 2. "Daha az temkinli olamaz": sonuç not_listed_in_available_data olacaksa
  *    VE ingredientsEvidence.text doluysa, riskEngine'in aynı anahtar için
  *    ürettiği PROFILE_*_ALLERGEN_MATCH uyarısı kontrol edilir (yalnız
@@ -176,27 +185,36 @@ function classifyForProfileKey(data: CatalogAllergenData, key: AllergenKey): Key
   // 'lactose' bugün hiçbir zaman declared/traces'ta doğrudan bulunmaz (katalog
   // bu anahtarı üretmiyor — bkz. CATALOG_MODELED_ALLERGEN_KEYS), ama tip
   // düzeyinde mümkün olduğundan (ileride bir kaynak eklerse) doğrudan sinyal
-  // ÖNCELİKLİDİR; yalnız o sinyal YOKSA milk-türetilmiş özel kurala düşülür.
+  // ÖNCELİKLİDİR; yalnız o sinyal YOKSA milk-türetilmiş TGK kuralına düşülür.
   if (key === 'lactose' && !data.declared.includes('lactose') && !data.traces.includes('lactose')) {
     const milkStatus = baseClassify(data, 'milk');
-    if (milkStatus === 'declared_contains' || milkStatus === 'trace_may_contain') {
-      // Süt beyanı var ama laktoz miktarı doğrulanmamış — bu bir 'içindekiler'
-      // eşleşmesi değil (metinden değil, milk beyanından türetildi), bu yüzden
-      // basis 'trace' kalır.
-      return {
-        status: 'trace_may_contain',
-        basis: 'trace',
-        note: 'Beyana göre süt içerir; laktoz içeriği doğrulanmamış.',
-      };
+    const ingredientsLactoseMatch = Boolean(
+      data.ingredientsEvidence.text && ingredientsMatchKey('lactose', data.ingredientsEvidence.text),
+    );
+
+    // TGK: "süt ve süt ürünleri (laktoz dahil)" — laktoz sütün durumunu izler.
+    // Not metni "laktoz içerir/eser miktarda içerebilir" DEMEZ (rozet zaten
+    // displayLabelForKey ile "Süt" adını gösterir — bkz. aşağı); yalnız DELTA
+    // bilgiyi ekler, rozetle aynı cümleyi tekrar etmez.
+    if (milkStatus === 'declared_contains') {
+      return { status: 'declared_contains', basis: 'declared', note: 'Laktoz hassasiyeti için etiketi kontrol edin.' };
     }
-    // Milk sinyali yok ama ingredients metninde "laktoz" doğrudan geçebilir —
-    // "daha az temkinli olamaz" kuralı burada da uygulanır (bkz. kural 3).
-    if (data.ingredientsEvidence.text && ingredientsMatchKey('lactose', data.ingredientsEvidence.text)) {
+    if (milkStatus === 'trace_may_contain') {
+      return { status: 'trace_may_contain', basis: 'trace', note: 'Laktoz hassasiyeti için etiketi kontrol edin.' };
+    }
+
+    // milkStatus 'not_listed_in_available_data' veya 'unknown_or_unverified' —
+    // her iki durumda da ingredients'te doğrudan "laktoz" geçmesi ayrıca uyarı
+    // üretir ("daha az temkinli olamaz" kuralı, bkz. kural 3 üstte).
+    if (ingredientsLactoseMatch) {
       return {
         status: 'trace_may_contain',
         basis: 'ingredients',
         note: 'İçindekilerde geçiyor olabilir — etiketi kontrol edin.',
       };
+    }
+    if (milkStatus === 'not_listed_in_available_data') {
+      return { status: 'not_listed_in_available_data', basis: 'not_listed', note: null };
     }
     return { status: 'unknown_or_unverified', basis: 'no_data', note: null };
   }
@@ -331,12 +349,33 @@ const ALLERGEN_KEY_LABELS: Record<AllergenKey, string> = Object.fromEntries(
   allergenOptions.map((option) => [option.key, option.label]),
 ) as Record<AllergenKey, string>;
 
-function joinAllergenLabels(labels: string[]): string {
-  return labels.join(', ');
+/**
+ * 'lactose' declared/trace seviyesinde (milk'ten mirror edilmiş) rozet adı
+ * olarak "Laktoz" DEĞİL "Süt" kullanılır — böylece rozet asla "Laktoz
+ * içerir" gibi laktozun kendisi hakkında doğrudan bir kesinlik iddiası
+ * ETMEZ (bkz. TGK notu, dosya başı). not_listed/no_data seviyelerinde bu
+ * risk yok (bir "içerir" iddiası değiller), bu yüzden "Laktoz" kalır.
+ */
+function displayLabelForKey(key: AllergenKey, basis: AllergenProfileKeyBasis): string {
+  if (key === 'lactose' && (basis === 'declared' || basis === 'trace')) {
+    return ALLERGEN_KEY_LABELS.milk;
+  }
+  return ALLERGEN_KEY_LABELS[key];
+}
+
+/** Eşit seviyede sıralama: alerji (süt vb.) intoleranstan (laktoz) ÖNCE gösterilir. */
+const ALLERGEN_TIE_BREAK_RANK: Partial<Record<AllergenKey, number>> = { lactose: 1 };
+
+function sortAllergenTieBreak(results: AllergenProfileKeyResult[]): AllergenProfileKeyResult[] {
+  return [...results].sort((a, b) => (ALLERGEN_TIE_BREAK_RANK[a.key] ?? 0) - (ALLERGEN_TIE_BREAK_RANK[b.key] ?? 0));
+}
+
+function dedupePreserveOrder(labels: string[]): string[] {
+  return [...new Set(labels)];
 }
 
 function textForDisplayLevel(level: AllergenDisplayLevel, labels: string[]): string {
-  const joined = joinAllergenLabels(labels);
+  const joined = labels.join(', ');
   const joinedLower = joined.toLocaleLowerCase('tr-TR');
 
   switch (level) {
@@ -347,9 +386,9 @@ function textForDisplayLevel(level: AllergenDisplayLevel, labels: string[]): str
     case 'trace':
       return `Eser miktarda ${joinedLower} içerebilir`;
     case 'no_data':
-      return `${joined}: Alerjen verisi yok — etiketi kontrol edin`;
+      return `Alerjen verisi yok (${joinedLower}) — etiketi kontrol edin`;
     case 'not_listed':
-      return `${joined}: Belirtilmemiş`;
+      return `Belirtilmemiş (${joinedLower})`;
   }
 }
 
@@ -378,12 +417,15 @@ export function getAllergenDisplayLevel(perKey: AllergenProfileKeyResult[]): All
     perKey[0].basis,
   );
 
-  const primaryLabels = perKey
-    .filter((keyResult) => keyResult.basis === worstLevel)
-    .map((keyResult) => ALLERGEN_KEY_LABELS[keyResult.key]);
-  const otherLabels = perKey
-    .filter((keyResult) => keyResult.basis !== worstLevel)
-    .map((keyResult) => ALLERGEN_KEY_LABELS[keyResult.key]);
+  const atWorstLevel = sortAllergenTieBreak(perKey.filter((keyResult) => keyResult.basis === worstLevel));
+  const atOtherLevels = sortAllergenTieBreak(perKey.filter((keyResult) => keyResult.basis !== worstLevel));
+
+  const primaryLabels = dedupePreserveOrder(
+    atWorstLevel.map((keyResult) => displayLabelForKey(keyResult.key, keyResult.basis)),
+  );
+  const otherLabels = dedupePreserveOrder(
+    atOtherLevels.map((keyResult) => displayLabelForKey(keyResult.key, keyResult.basis)),
+  );
 
   return {
     level: worstLevel,
