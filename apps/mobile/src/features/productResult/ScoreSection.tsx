@@ -9,16 +9,18 @@ import { radii, spacing, useTheme } from '../../ui/theme';
 export interface ScoreSectionProps {
   rafScore: RafScoreResult | null;
   explanationItems: string[];
+  /** Profille çakışan alerjen varsa true — hüküm kelimesi bastırılır (bkz. P2 invariant). */
+  allergenPriority?: boolean;
 }
 
 /** Puan halkası + "Nasıl hesaplandı?" açılır ayrıntı. */
-export function ScoreSection({ rafScore, explanationItems }: ScoreSectionProps) {
+export function ScoreSection({ rafScore, explanationItems, allergenPriority = false }: ScoreSectionProps) {
   const { colors } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <View style={{ alignItems: 'center', gap: spacing.sm }}>
-      <ScoreRing score={rafScore?.score ?? null} caption="RafSkoru" />
+      <ScoreRing score={rafScore?.score ?? null} caption="RafSkoru" allergenPriority={allergenPriority} />
 
       <Text style={{ fontSize: 13, color: colors.muted, textAlign: 'center' }}>
         {getRafScoreStatusText(rafScore)}

@@ -431,6 +431,10 @@ export default function ProductResultScreen() {
         riskWarnings: riskResult.warnings,
       });
 
+  // P2 invariant: skor bandı, profille çakışan alerjenin ÜSTÜNDE bir hüküm kelimesi göstermez.
+  const isAllergenConflict =
+    allergenBannerData.criticalMatches.length > 0 || (allergenBannerData.displayInfo?.isConflict ?? false);
+
   const resolvedGroupKeyForCart = priceResult ? getTransitionSafeProductGroupKey(priceResult) : null;
   const cartInput =
     resolvedGroupKeyForCart && !isUnknownProduct
@@ -498,7 +502,11 @@ export default function ProductResultScreen() {
 
         <DataQualityNotice productFacts={backendProductFacts} />
 
-        <ScoreSection rafScore={rafScore} explanationItems={rafScoreExplanationItems} />
+        <ScoreSection
+          rafScore={rafScore}
+          explanationItems={rafScoreExplanationItems}
+          allergenPriority={isAllergenConflict}
+        />
 
         <NutriNovaSection
           nutriScoreGrade={backendProductFacts?.nutriScoreGrade ?? (result.nutriScore as 'A' | 'B' | 'C' | 'D' | 'E' | null) ?? null}

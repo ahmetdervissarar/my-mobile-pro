@@ -107,7 +107,7 @@ export function ProductRow({
         ) : null}
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' }}>
-          {score !== undefined ? <ScorePill score={score} /> : null}
+          {score !== undefined ? <ScorePill score={score} allergenPriority={isAllergenConflict} /> : null}
           {allergenStatus ? <AllergenChip status={allergenStatus} displayInfo={allergenDisplayInfo} /> : null}
         </View>
 

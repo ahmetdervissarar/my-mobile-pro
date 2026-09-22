@@ -8,6 +8,7 @@
 
 import { Text, View } from 'react-native';
 
+import { getScoreRingBandText } from './scoreVerdict';
 import { getScoreBand, spacing, useTheme } from './theme';
 
 export interface ScoreRingProps {
@@ -16,12 +17,14 @@ export interface ScoreRingProps {
   thickness?: number;
   /** Halka altında/merkezinde gösterilecek küçük etiket (ör. "RafSkoru"). */
   caption?: string;
+  /** Profille çakışan alerjen varsa true — hüküm kelimesi bastırılır, halka gri, merkez puan küçük+gri (bkz. P2 invariant). */
+  allergenPriority?: boolean;
 }
 
-export function ScoreRing({ score, size = 132, thickness = 12, caption }: ScoreRingProps) {
+export function ScoreRing({ score, size = 132, thickness = 12, caption, allergenPriority = false }: ScoreRingProps) {
   const { colors } = useTheme();
-  const band = getScoreBand(score);
-  const activeColor = band ? colors[band.colorToken] : colors.muted;
+  const band = allergenPriority ? null : getScoreBand(score);
+  const activeColor = allergenPriority ? colors.muted : band ? colors[band.colorToken] : colors.muted;
   const radius = size / 2;
   const percentage = score === null ? 0 : Math.max(0, Math.min(100, score));
 
@@ -47,9 +50,11 @@ export function ScoreRing({ score, size = 132, thickness = 12, caption }: ScoreR
         }}
         accessibilityRole="image"
         accessibilityLabel={
-          score === null
-            ? 'RafSkoru henüz hesaplanmadı'
-            : `RafSkoru ${Math.round(score)} üzerinden 100, ${band?.label ?? ''}`
+          allergenPriority
+            ? 'RafSkoru: alerjen uyarısı öncelikli'
+            : score === null
+              ? 'RafSkoru henüz hesaplanmadı'
+              : `RafSkoru ${Math.round(score)} üzerinden 100, ${band?.label ?? ''}`
         }
       >
         <View style={{ position: 'absolute', width: size, height: size, flexDirection: 'row' }}>
@@ -97,7 +102,13 @@ export function ScoreRing({ score, size = 132, thickness = 12, caption }: ScoreR
             justifyContent: 'center',
           }}
         >
-          <Text style={{ fontSize: 28, fontWeight: '800', color: colors.ink }}>
+          <Text
+            style={{
+              fontSize: allergenPriority ? 18 : 28,
+              fontWeight: '800',
+              color: allergenPriority ? colors.muted : colors.ink,
+            }}
+          >
             {score === null ? '—' : Math.round(score)}
           </Text>
           {caption ? (
@@ -110,7 +121,7 @@ export function ScoreRing({ score, size = 132, thickness = 12, caption }: ScoreR
         style={{ fontSize: 14, fontWeight: '700', color: activeColor }}
         accessibilityElementsHidden
       >
-        {band ? band.label : 'Veri yok'}
+        {getScoreRingBandText(score, allergenPriority)}
       </Text>
     </View>
   );

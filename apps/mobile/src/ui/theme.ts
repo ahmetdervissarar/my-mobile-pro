@@ -105,28 +105,8 @@ export const typography = {
 /** Erişilebilirlik: her dokunulabilir öğe için en küçük hedef alan (44 pt). */
 export const MIN_TOUCH_TARGET = 44;
 
-export type ScoreBandKey = 'very_good' | 'good' | 'medium' | 'weak';
-
-export interface ScoreBand {
-  key: ScoreBandKey;
-  label: string;
-  colorToken: keyof ThemeColors;
-}
-
-/**
- * Puan eşikleri: ≥75 Çok iyi, 50–74 İyi, 25–49 Orta, <25 Zayıf.
- * Renk tek başına anlam taşımaz; label her zaman birlikte gösterilmelidir.
- */
-export function getScoreBand(score: number | null | undefined): ScoreBand | null {
-  if (score === null || score === undefined || Number.isNaN(score)) {
-    return null;
-  }
-
-  if (score >= 75) return { key: 'very_good', label: 'Çok iyi', colorToken: 'leaf' };
-  if (score >= 50) return { key: 'good', label: 'İyi', colorToken: 'pine2' };
-  if (score >= 25) return { key: 'medium', label: 'Orta', colorToken: 'warn' };
-  return { key: 'weak', label: 'Zayıf', colorToken: 'danger' };
-}
+export type { ScoreBand, ScoreBandKey } from './scoreBand';
+export { getScoreBand } from './scoreBand';
 
 export function useTheme(): { colors: ThemeColors; scheme: ColorScheme } {
   const scheme: ColorScheme = useColorScheme() === 'dark' ? 'dark' : 'light';

@@ -26,47 +26,68 @@ export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChan
   }
 
   const allergenSummary = summarizeBasketAllergenStatus(basketProfile.perItem, userProfile);
+  const hasConflict = allergenSummary.conflictCount > 0;
+
+  const allergenBand = (
+    <View
+      style={{
+        borderRadius: radii.md,
+        backgroundColor:
+          allergenSummary.tone === 'danger'
+            ? colors.dangerBg
+            : allergenSummary.tone === 'warning'
+              ? colors.warnBg
+              : colors.soft,
+        padding: spacing.md,
+        gap: 4,
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 14,
+          fontWeight: '700',
+          color:
+            allergenSummary.tone === 'danger'
+              ? colors.danger
+              : allergenSummary.tone === 'warning'
+                ? colors.warn
+                : colors.ink,
+        }}
+      >
+        {allergenSummary.headline}
+      </Text>
+      {hasConflict && allergenSummary.noDataCount > 0 ? (
+        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.warn }}>
+          {allergenSummary.noDataCount} üründe alerjen verisi yok — etiketi kontrol edin
+        </Text>
+      ) : null}
+      <Text style={{ fontSize: 12, color: colors.muted, lineHeight: 17 }}>
+        Bu sayı yalnızca mevcut ürün verisinden (beyan, iz ve içindekiler eşleşmesi) hesaplanır.
+      </Text>
+    </View>
+  );
+
+  const scoreBlock = (
+    <View style={{ alignItems: 'center', gap: spacing.sm }}>
+      <ScoreRing score={basketProfile.basketRafSkoru} caption="Sepet RafSkoru" allergenPriority={hasConflict} />
+      {hasConflict ? (
+        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.muted, textAlign: 'center' }}>
+          {allergenSummary.conflictCount} ürün profilinizle çakışıyor; puan bu ürünler için anlamlı değil
+        </Text>
+      ) : null}
+      <Text style={{ fontSize: 13, color: colors.muted }}>
+        Kapsam: {formatCoverage(basketProfile.coverage)} · Ürün sayısı: {basketProfile.itemCount}
+      </Text>
+    </View>
+  );
 
   return (
     <View style={{ gap: spacing.lg }}>
-      <View style={{ alignItems: 'center', gap: spacing.sm }}>
-        <ScoreRing score={basketProfile.basketRafSkoru} caption="Sepet RafSkoru" />
-        <Text style={{ fontSize: 13, color: colors.muted }}>
-          Kapsam: {formatCoverage(basketProfile.coverage)} · Ürün sayısı: {basketProfile.itemCount}
-        </Text>
-      </View>
+      {hasConflict ? allergenBand : null}
 
-      <View
-        style={{
-          borderRadius: radii.md,
-          backgroundColor:
-            allergenSummary.tone === 'danger'
-              ? colors.dangerBg
-              : allergenSummary.tone === 'warning'
-                ? colors.warnBg
-                : colors.soft,
-          padding: spacing.md,
-          gap: 4,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 14,
-            fontWeight: '700',
-            color:
-              allergenSummary.tone === 'danger'
-                ? colors.danger
-                : allergenSummary.tone === 'warning'
-                  ? colors.warn
-                  : colors.ink,
-          }}
-        >
-          {allergenSummary.headline}
-        </Text>
-        <Text style={{ fontSize: 12, color: colors.muted, lineHeight: 17 }}>
-          Bu sayı yalnızca mevcut ürün verisinden (beyan, iz ve içindekiler eşleşmesi) hesaplanır.
-        </Text>
-      </View>
+      {scoreBlock}
+
+      {hasConflict ? null : allergenBand}
 
       <View style={{ gap: spacing.sm }}>
         {basketProfile.perItem.map((item, index) => {

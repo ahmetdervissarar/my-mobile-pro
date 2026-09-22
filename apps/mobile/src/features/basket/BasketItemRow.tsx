@@ -51,10 +51,7 @@ export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityCha
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm }}>
         <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: colors.ink }}>{item.label}</Text>
         <View style={{ alignItems: 'flex-end', gap: 2 }}>
-          <ScorePill score={item.score} />
-          {isGroupEstimate ? (
-            <Text style={{ fontSize: 10, fontWeight: '700', color: colors.muted }}>grup tahmini</Text>
-          ) : null}
+          <ScorePill score={item.score} allergenPriority={isAllergenConflict} isEstimate={isGroupEstimate} />
         </View>
       </View>
 
