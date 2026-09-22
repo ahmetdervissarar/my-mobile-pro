@@ -91,9 +91,10 @@ export interface BasketAllergenSummary {
  * Sepetteki her ürünü, arama ve ürün satırlarıyla AYNI birleştirme
  * fonksiyonuyla (getCatalogAllergenChipStatus) profille karşılaştırır —
  * eski riskFlags/CRITICAL_ALLERGEN_CODES yoluna artık dokunmaz (o yol
- * kullanıcı profiline hiç bakmıyordu, bkz. görev raporu: "tespit edilmedi"
- * hatası). "Tespit edilmedi" ifadesi yalnız TÜM ürünler present VE hiç
- * çakışma yoksa kullanılır; en az bir üründe veri yoksa asla kullanılmaz.
+ * kullanıcı profiline hiç bakmıyordu, bkz. görev raporu: yanlışlıkla
+ * "hiçbir uyarı yok" izlenimi veren başlık hatası). "Garanti değildir"
+ * başlığı yalnız TÜM ürünler present VE hiç çakışma yoksa kullanılır;
+ * en az bir üründe veri yoksa asla kullanılmaz.
  */
 export function summarizeBasketAllergenStatus(
   perItem: BasketEvaluateResponse['basketProfile']['perItem'],

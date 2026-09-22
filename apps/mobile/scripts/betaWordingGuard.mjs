@@ -131,4 +131,77 @@ for (const [fileName, content] of [
   assertNotIncludes(fileName, content, 'qanlÄ±ÅŸ');
 }
 
-console.log('MOBILE_BETA_WORDING_GUARD_OK');
+// P1: geniş kapsamlı tarama — apps/mobile/app ve apps/mobile/src altının
+// TAMAMI (test/smoke dosyaları hariç), riskEngine.ts'in kendi uyarı metinleri
+// DAHİL. Yukarıdaki dosyaya-özel kontrollerin YERİNE değil, EK olarak çalışır.
+const TEST_FILE_PATTERN = /\.(smoke|test|spec)\.tsx?$/;
+const SOURCE_FILE_PATTERN = /\.tsx?$/;
+
+function collectSourceFiles(relativeDir) {
+  const absoluteDir = resolve(mobileRoot, relativeDir);
+  const files = [];
+
+  function walk(dir) {
+    for (const entry of readdirSync(dir)) {
+      const entryPath = resolve(dir, entry);
+      if (statSync(entryPath).isDirectory()) {
+        walk(entryPath);
+      } else if (SOURCE_FILE_PATTERN.test(entry) && !TEST_FILE_PATTERN.test(entry)) {
+        files.push(entryPath);
+      }
+    }
+  }
+
+  walk(absoluteDir);
+  return files;
+}
+
+/**
+ * Olumlu/kesin güvenlik iddiaları — D1 kuralının ("veri yok/belirsiz asla
+ * güvenli/temiz olarak gösterilmez") somut, aranabilir karşılıkları.
+ * Negatif/ihtiyatlı ifadeler (ör. "güvenli sayılmaz", "garanti değildir")
+ * bunlarla AYNI literal dizgeler DEĞİLDİR — bu yüzden asla tetiklenmezler
+ * (bkz. aşağıdaki NEGATIVE_PHRASE_SAMPLES kanıtı).
+ */
+const FORBIDDEN_POSITIVE_SAFETY_PHRASES = [
+  'tespit edilmedi',
+  'alerjen içermez',
+  'güvenli alternatif',
+  'garanti eder',
+  'sorun yok',
+];
+
+const allSourceFiles = [...collectSourceFiles('app'), ...collectSourceFiles('src')];
+
+for (const filePath of allSourceFiles) {
+  const relativePath = filePath.slice(mobileRoot.length + 1);
+  const content = readFileSync(filePath, 'utf8');
+  const lowerContent = content.toLocaleLowerCase('tr-TR');
+
+  for (const phrase of FORBIDDEN_POSITIVE_SAFETY_PHRASES) {
+    assert.ok(
+      !lowerContent.includes(phrase.toLocaleLowerCase('tr-TR')),
+      `${relativePath} must not include user-facing wording: ${phrase}`,
+    );
+  }
+}
+
+// Kanıt: negatif/ihtiyatlı ifadeler yasaklı kalıpları TETİKLEMEMELİ —
+// gerçek bir üretim metniyle (helpers.ts, "garanti değildir") aynı yapıda,
+// somut örneklerle doğrulanır.
+const NEGATIVE_PHRASE_SAMPLES = [
+  'Mevcut verilerde profil alerjeniniz belirtilmemiş — bu bir garanti değildir',
+  'Bu bir güvenlik garantisi değildir; hiçbir ürün güvenli sayılmaz.',
+];
+
+for (const sample of NEGATIVE_PHRASE_SAMPLES) {
+  const lowerSample = sample.toLocaleLowerCase('tr-TR');
+  for (const phrase of FORBIDDEN_POSITIVE_SAFETY_PHRASES) {
+    assert.ok(
+      !lowerSample.includes(phrase.toLocaleLowerCase('tr-TR')),
+      `negatif ifade örneği yanlışlıkla yasaklı kalıbı tetikliyor: "${phrase}" in "${sample}"`,
+    );
+  }
+}
+
+console.log(`MOBILE_BETA_WORDING_GUARD_OK (${allSourceFiles.length} dosya geniş taramadan geçti)`);
