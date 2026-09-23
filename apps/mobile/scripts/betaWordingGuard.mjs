@@ -89,7 +89,10 @@ assertIncludes('product-result.tsx', productResult, 'Ürün bulunamadı');
 assertIncludes('product-result.tsx', productResult, 'Ürün adını yazarak ara');
 assertIncludes('product-result.tsx', productResult, 'Ürün fotoğrafı ile dene');
 assertIncludes('product-result.tsx', productResult, 'Ürünü beta verisine katkı olarak gönder');
-assertIncludes('product-result.tsx', productResult, 'product_contribution');
+// Barkod bulunamadığında "katkı gönder" butonu artık telemetri değil, katkı
+// formuna yönlendirir (bkz. görev bulgusu, product-result.tsx:481) — bu satır
+// o yönlendirmenin sessizce kaybolmadığını doğrular.
+assertIncludes('product-result.tsx', productResult, '/product-contribution');
 assertIncludes('product-result.tsx', productResult, 'initialQuery');
 assertIncludes('product-result.tsx', productResult, 'priceConfidence');
 assertIncludes('product-result.tsx', productResult, 'Canlı fiyat');

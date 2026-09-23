@@ -1,5 +1,5 @@
 import { submitBetaFeedback, type BetaFeedbackType } from '../../src/api/betaFeedbackClient';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -478,7 +478,12 @@ export default function ProductResultScreen() {
         <UnknownProductNotice
           initialQuery={normalizedInput.productName ?? ''}
           isSubmittingBetaFeedback={isSubmittingBetaFeedback}
-          onContributeProduct={() => void handleBetaFeedbackPress('product_contribution')}
+          onContributeProduct={() =>
+            router.push({
+              pathname: '/product-contribution',
+              params: { barcode: normalizedInput.barcode, productName: normalizedInput.productName },
+            })
+          }
         />
         <FooterSection
           submittedFeedbackType={submittedFeedbackType}
