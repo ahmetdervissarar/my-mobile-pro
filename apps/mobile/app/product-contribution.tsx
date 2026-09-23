@@ -2,6 +2,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { submitBetaFeedback } from '../src/api/betaFeedbackClient';
 import { PrimaryButton } from '../src/ui/PrimaryButton';
@@ -78,6 +79,7 @@ function PhotoSlot({
 
 export default function ProductContributionScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ barcode?: string; productName?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView | null>(null);
@@ -126,7 +128,15 @@ export default function ProductContributionScreen() {
     const slot = SLOTS.find((s) => s.key === activeSlot)!;
 
     return (
-      <View style={{ flex: 1, backgroundColor: '#000', padding: spacing.lg, gap: spacing.md }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: '#000',
+          padding: spacing.lg,
+          paddingTop: Math.max(insets.top, spacing.lg),
+          gap: spacing.md,
+        }}
+      >
         <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>{slot.title} fotoğrafı</Text>
         <CameraView ref={cameraRef} style={{ flex: 1, borderRadius: radii.lg, overflow: 'hidden' }} facing="back" />
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
@@ -144,7 +154,12 @@ export default function ProductContributionScreen() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxxl }}
+      contentContainerStyle={{
+        padding: spacing.xl,
+        paddingTop: Math.max(insets.top, spacing.xl),
+        gap: spacing.lg,
+        paddingBottom: spacing.xxxl,
+      }}
     >
       <Text style={{ fontSize: 24, fontWeight: '800', color: colors.ink }}>Kayıtlı olmayan ürünü ekle</Text>
       <Text style={{ fontSize: 13, color: colors.muted, lineHeight: 19 }}>

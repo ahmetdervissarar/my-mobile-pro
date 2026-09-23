@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   ChronicSensitivityKey,
@@ -12,6 +13,7 @@ import {
 } from '../src/userProfile/userProfileStorage';
 
 export default function ProfileChronicScreen() {
+  const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<ChronicSensitivityKey[]>([]);
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export default function ProfileChronicScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[styles.contentContainer, { paddingTop: Math.max(insets.top, styles.contentContainer.paddingTop) }]}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.card}>

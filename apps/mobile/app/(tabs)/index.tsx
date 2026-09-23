@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useCartItemCount } from '../../src/state/cartStore';
 import { useRecentlyViewed } from '../../src/state/recentlyViewedStore';
@@ -52,13 +53,14 @@ function GridTile({
 
 export default function HomeScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const cartCount = useCartItemCount();
   const recentlyViewed = useRecentlyViewed();
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ padding: spacing.xl, gap: spacing.xl }}
+      contentContainerStyle={{ padding: spacing.xl, paddingTop: Math.max(insets.top, spacing.xl), gap: spacing.xl }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.citrus }} />

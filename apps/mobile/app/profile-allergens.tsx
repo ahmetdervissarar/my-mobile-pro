@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AllergenKey, allergenOptions } from '../src/userProfile/userProfileTypes';
 import {
@@ -12,6 +13,7 @@ import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../src/ui/theme';
 
 export default function ProfileAllergensScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<AllergenKey[]>([]);
 
   useEffect(() => {
@@ -32,7 +34,12 @@ export default function ProfileAllergensScreen() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxxl }}
+      contentContainerStyle={{
+        padding: spacing.xl,
+        paddingTop: Math.max(insets.top, spacing.xl),
+        gap: spacing.lg,
+        paddingBottom: spacing.xxxl,
+      }}
       showsVerticalScrollIndicator={false}
     >
       <Text style={{ fontSize: 24, fontWeight: '800', color: colors.ink }}>Alerjen Profilim</Text>

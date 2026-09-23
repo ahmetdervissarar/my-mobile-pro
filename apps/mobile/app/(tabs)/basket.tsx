@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { evaluateBasket, type BasketEvaluateResponse } from '../../src/api/basketClient';
 import { PriceTab } from '../../src/features/basket/PriceTab';
@@ -28,6 +29,7 @@ const TAB_OPTIONS: { key: BasketTabKey; label: string }[] = [
 
 export default function BasketScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const cartItems = useCart();
   const [activeTab, setActiveTab] = useState<BasketTabKey>('score');
   const [evaluation, setEvaluation] = useState<BasketEvaluateResponse | null>(null);
@@ -72,7 +74,14 @@ export default function BasketScreen() {
 
   if (cartItems.length === 0) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.bg, padding: spacing.xl }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.bg,
+          padding: spacing.xl,
+          paddingTop: Math.max(insets.top, spacing.xl),
+        }}
+      >
         <EmptyState
           title="Sepetin boş"
           message="Ara sekmesinden veya bir ürün sayfasından sepete ürün ekleyebilirsin."
@@ -85,7 +94,12 @@ export default function BasketScreen() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg, paddingBottom: spacing.xxxl }}
+      contentContainerStyle={{
+        padding: spacing.xl,
+        paddingTop: Math.max(insets.top, spacing.xl),
+        gap: spacing.lg,
+        paddingBottom: spacing.xxxl,
+      }}
     >
       <SegmentedControl options={TAB_OPTIONS} value={activeTab} onChange={setActiveTab} />
 
