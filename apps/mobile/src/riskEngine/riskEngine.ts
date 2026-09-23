@@ -395,6 +395,173 @@ function sortWarningsByPriority(warnings: RiskWarning[]): RiskWarning[] {
   });
 }
 
+// ─── Kronik Eşik Kuralları (diyabet / hipertansiyon / kalp-damar-kolesterol) ──
+//
+// Kapsam kararı: ADR-005 (kidney_sensitivity ve celiac_gluten'in neden bu
+// eşik sistemine dahil OLMADIĞI orada gerekçelendirilmiştir). Eşik sayıları
+// ve kaynaklar: ADR-006.
+//
+// Üç durum: "exceeds" | "within" | "no_data". Yalnız "exceeds" bir RiskWarning
+// üretir — "no_data" SESSİZCE atlanır (uyarı yorgunluğu yaratmamak için);
+// çağıran taraf (product-result.tsx) bunun yerine besin bölümünde nötr, tek
+// satırlık bir "veri yok" notu göstermek isterse getChronicNutritionDataGap
+// fonksiyonunu ayrıca çağırır.
+
+/** Kronik eşik değerlendirmesinin üç olası sonucu. */
+export type ChronicNutritionStatus = "exceeds" | "within" | "no_data";
+
+/**
+ * Ham gram değerini önce product.nutrition'dan, orada yoksa (eski çağıranlarla
+ * geriye dönük uyumluluk için) product.trafficLight'ın kendi .value alanından
+ * okur — trafficLight.value tarih olarak ham değeri taşıyan tek yerdi ve hâlâ
+ * bazı çağıranlar (örn. manuel test senaryoları) yalnız onu dolduruyor.
+ */
+function getRawNutrientGrams(
+  product: ProductRiskInput,
+  nutrient: "sugars" | "salt" | "saturatedFat",
+): number | null {
+  const fromNutrition = product.nutrition?.[nutrient];
+  if (typeof fromNutrition === "number") return fromNutrition;
+
+  const fromTrafficLight = product.trafficLight?.[nutrient]?.value;
+  return typeof fromTrafficLight === "number" ? fromTrafficLight : null;
+}
+
+function getEnergyKcal(product: ProductRiskInput): number | null {
+  const energy = product.nutrition?.energyKcal;
+  return typeof energy === "number" ? energy : null;
+}
+
+function getTransFatGrams(product: ProductRiskInput): number | null {
+  const transFat = product.nutrition?.transFat;
+  return typeof transFat === "number" ? transFat : null;
+}
+
+/**
+ * Tuz (g) → sodyum (mg) dönüşümü için TEK nokta.
+ * sodyum(mg) = tuz(g) × 400 — NaCl'nin kütlece ~%39.3 sodyum içermesinden
+ * gelen, gıda etiketlemesinde standart kabul edilen yuvarlanmış katsayı.
+ */
+function saltGramsToSodiumMg(saltGrams: number): number {
+  return saltGrams * 400;
+}
+
+/**
+ * Diyabet / kan şekeri eşiği.
+ * Kaynak: DSÖ (WHO, 2015) "Guideline: Sugars intake for adults and children"
+ * — serbest şekerden gelen enerji, toplam enerjinin %10'unu geçmemeli.
+ * OFF verisi serbest ve doğal şekeri ayırmadığından TOPLAM şeker burada
+ * ihtiyatlı bir vekil olarak kullanılır (bilinen sınır — bkz. ADR-006).
+ * Enerji verisi yoksa FSA'nın per-100g "yüksek şeker" eşiği (>22.5 g)
+ * kullanılır (bkz. trafficLightClassifier.ts / trafficLight.ts ile aynı sayı).
+ */
+function classifySugarsForDiabetes(
+  sugarsGrams: number | null,
+  energyKcal: number | null,
+): ChronicNutritionStatus {
+  if (sugarsGrams === null) return "no_data";
+
+  if (energyKcal !== null && energyKcal > 0) {
+    return sugarsGrams * 4 >= 0.10 * energyKcal ? "exceeds" : "within";
+  }
+
+  return sugarsGrams > 22.5 ? "exceeds" : "within";
+}
+
+/**
+ * Hipertansiyon / sodyum eşiği.
+ * Kaynak: TGK Beslenme Beyanları Yönetmeliği'nin "düşük sodyum" referans
+ * çerçevesi ve PAHO (Pan American Health Organization) Besin Profili
+ * Modeli — sodyum ≥1 mg/kcal (≈100 mg/100 kcal sınırının karşılığı) VEYA
+ * tuz ≥0.75 g/100g (PAHO/Meksika modelindeki 300 mg sodyum/100g "aşırı"
+ * eşiğinin tuz karşılığı: 300 ÷ 400 = 0.75 g).
+ * İkinci koşul enerjiden bağımsız olduğundan enerji verisi olmayan
+ * ürünlerde de tek başına değerlendirilebilir.
+ */
+function classifySaltForHypertension(
+  saltGrams: number | null,
+  energyKcal: number | null,
+): ChronicNutritionStatus {
+  if (saltGrams === null) return "no_data";
+
+  const exceedsBySaltAlone = saltGrams >= 0.75;
+
+  if (energyKcal !== null && energyKcal > 0) {
+    const sodiumMg = saltGramsToSodiumMg(saltGrams);
+    const exceedsBySodiumPerKcal = sodiumMg / energyKcal >= 1;
+    return exceedsBySodiumPerKcal || exceedsBySaltAlone ? "exceeds" : "within";
+  }
+
+  return exceedsBySaltAlone ? "exceeds" : "within";
+}
+
+/**
+ * Kalp-damar / kolesterol (doymuş yağ) eşiği.
+ * Kaynak: DSÖ (WHO, 2018 taslak kılavuz) — doymuş yağdan gelen enerji,
+ * toplam enerjinin %10'unu geçmemeli. Enerji verisi yoksa FSA'nın per-100g
+ * "yüksek doymuş yağ" eşiği (>5 g) kullanılır.
+ * Trans yağ verisi VARSA (bugün hiçbir veri kaynağı doldurmuyor — bkz.
+ * ChronicNutritionInput.transFat) ayrıca değerlendirilir: DSÖ trans yağdan
+ * gelen enerjinin toplam enerjinin %1'ini geçmemesini önerir.
+ */
+function classifySaturatedFatForCardio(
+  saturatedFatGrams: number | null,
+  energyKcal: number | null,
+  transFatGrams: number | null,
+): ChronicNutritionStatus {
+  if (saturatedFatGrams === null) return "no_data";
+
+  if (energyKcal !== null && energyKcal > 0) {
+    const exceedsBySaturatedFat = saturatedFatGrams * 9 >= 0.10 * energyKcal;
+    const exceedsByTransFat =
+      transFatGrams !== null && transFatGrams * 9 >= 0.01 * energyKcal;
+    return exceedsBySaturatedFat || exceedsByTransFat ? "exceeds" : "within";
+  }
+
+  return saturatedFatGrams > 5 ? "exceeds" : "within";
+}
+
+/**
+ * Kullanıcının profilinde aktif olan üç kronik eşik ekseninden (diyabet,
+ * hipertansiyon, kalp-damar/kolesterol) EN AZ BİRİ için ürünün ilgili besin
+ * verisi eksikse true döner. product-result.tsx bunu evaluateProductRisks'ten
+ * BAĞIMSIZ çağırıp besin bölümünde tek satırlık nötr bir not göstermek için
+ * kullanır — bu bir RiskWarning DEĞİLDİR ve warnings listesine girmez.
+ */
+export function getChronicNutritionDataGap(
+  product: ProductRiskInput,
+  profile: UserSensitivityProfile | undefined,
+): boolean {
+  if (!profile) return false;
+
+  const wantsSugarsCheck =
+    profile.healthPreferences.includes("less_sugar") ||
+    profile.chronicSensitivities.includes("blood_sugar_diabetes");
+  const wantsSaltCheck = profile.chronicSensitivities.includes("hypertension_sodium");
+  const wantsSaturatedFatCheck =
+    profile.chronicSensitivities.includes("cholesterol_saturated_fat") ||
+    profile.chronicSensitivities.includes("cardiovascular");
+
+  const energyKcal = getEnergyKcal(product);
+
+  if (wantsSugarsCheck && classifySugarsForDiabetes(getRawNutrientGrams(product, "sugars"), energyKcal) === "no_data") {
+    return true;
+  }
+
+  if (wantsSaltCheck && classifySaltForHypertension(getRawNutrientGrams(product, "salt"), energyKcal) === "no_data") {
+    return true;
+  }
+
+  if (
+    wantsSaturatedFatCheck &&
+    classifySaturatedFatForCardio(getRawNutrientGrams(product, "saturatedFat"), energyKcal, getTransFatGrams(product)) === "no_data"
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Uyarı listesindeki en yüksek ağırlıklı seviyeyi döndürür.
  * Hiç uyarı yoksa "low" döner.
@@ -779,23 +946,30 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
     }
 
     // ── Profil Kural B3: Kolesterol/doymuş yağ veya kalp-damar hassasiyeti ───
+    // Eşik: classifySaturatedFatForCardio (DSÖ %10-enerji / FSA >5g fallback).
     if (
-      (
-        profile.chronicSensitivities.includes("cholesterol_saturated_fat") ||
-        profile.chronicSensitivities.includes("cardiovascular")
-      ) &&
-      product.trafficLight?.saturatedFat.level === "high"
+      profile.chronicSensitivities.includes("cholesterol_saturated_fat") ||
+      profile.chronicSensitivities.includes("cardiovascular")
     ) {
-      warnings.push({
-        code: "PROFILE_SATURATED_FAT_SENSITIVITY",
-        title: "Doymuş yağ hassasiyeti için dikkat",
-        message:
-          "Profilinizde kolesterol/doymuş yağ veya kalp-damar hassasiyeti tanımlı. " +
-          "Traffic Light besin etiketine göre bu üründe doymuş yağ seviyesi yüksek görünüyor. " +
-          "Porsiyon ve besin değerleri dikkatle kontrol edilmelidir. " +
-          "Bu uyarı tıbbi hüküm niteliği taşımaz.",
-        level: "medium",
-      });
+      const saturatedFatStatus = classifySaturatedFatForCardio(
+        getRawNutrientGrams(product, "saturatedFat"),
+        getEnergyKcal(product),
+        getTransFatGrams(product),
+      );
+
+      if (saturatedFatStatus === "exceeds") {
+        warnings.push({
+          code: "PROFILE_SATURATED_FAT_SENSITIVITY",
+          title: "Doymuş yağ hassasiyeti için dikkat",
+          message:
+            "Profilinizde kolesterol/doymuş yağ veya kalp-damar hassasiyeti tanımlı. " +
+            "Bu üründe doymuş yağ miktarı, enerji değeriyle birlikte değerlendirildiğinde " +
+            "dikkat gerektiren düzeyde görünüyor. " +
+            "Porsiyon ve besin değerleri dikkatle kontrol edilmelidir. " +
+            "Bu uyarı tıbbi hüküm niteliği taşımaz.",
+          level: "medium",
+        });
+      }
     }
 
     // ── Profil Kural C1: Daha az şeker tercihi + tatlı/şekerli ürün ──────────
@@ -914,35 +1088,50 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
       });
     }
 
-    // ── Profil Kural D1: Traffic Light yüksek şeker + şeker hassasiyeti/tercihi ─
+    // ── Profil Kural D1: Şeker hassasiyeti/tercihi ───────────────────────────
+    // Eşik: classifySugarsForDiabetes (DSÖ %10-enerji / FSA >22.5g fallback).
     if (
-      product.trafficLight?.sugars.level === "high" &&
-      (
-        profile.healthPreferences.includes("less_sugar") ||
-        profile.chronicSensitivities.includes("blood_sugar_diabetes")
-      )
+      profile.healthPreferences.includes("less_sugar") ||
+      profile.chronicSensitivities.includes("blood_sugar_diabetes")
     ) {
-      warnings.push({
-        code: "PROFILE_TRAFFIC_LIGHT_HIGH_SUGAR",
-        title: "Traffic Light şeker seviyesi yüksek",
-        message:
-          "Traffic Light besin etiketine göre bu üründe şeker seviyesi yüksek görünüyor. Profilinizde şekerle ilgili tercih veya hassasiyet bulunduğu için porsiyon ve besin değerleri dikkatle kontrol edilmelidir.",
-        level: "medium",
-      });
+      const sugarsStatus = classifySugarsForDiabetes(
+        getRawNutrientGrams(product, "sugars"),
+        getEnergyKcal(product),
+      );
+
+      if (sugarsStatus === "exceeds") {
+        warnings.push({
+          code: "PROFILE_TRAFFIC_LIGHT_HIGH_SUGAR",
+          title: "Şeker seviyesi yüksek",
+          message:
+            "Bu üründe şeker miktarı, enerji değeriyle birlikte değerlendirildiğinde dikkat " +
+            "gerektiren düzeyde görünüyor. Profilinizde şekerle ilgili tercih veya hassasiyet " +
+            "bulunduğu için porsiyon ve besin değerleri dikkatle kontrol edilmelidir. " +
+            "Bu uyarı tıbbi hüküm niteliği taşımaz.",
+          level: "medium",
+        });
+      }
     }
 
-    // ── Profil Kural D2: Traffic Light yüksek tuz + sodyum hassasiyeti ───────
-    if (
-      product.trafficLight?.salt.level === "high" &&
-      profile.chronicSensitivities.includes("hypertension_sodium")
-    ) {
-      warnings.push({
-        code: "PROFILE_TRAFFIC_LIGHT_HIGH_SALT",
-        title: "Traffic Light tuz seviyesi yüksek",
-        message:
-          "Traffic Light besin etiketine göre bu üründe tuz seviyesi yüksek görünüyor. Profilinizde sodyum hassasiyeti bulunduğu için porsiyon ve besin değerleri dikkatle kontrol edilmelidir.",
-        level: "medium",
-      });
+    // ── Profil Kural D2: Sodyum hassasiyeti ──────────────────────────────────
+    // Eşik: classifySaltForHypertension (sodyum ≥1mg/kcal VEYA tuz ≥0.75g/100g).
+    if (profile.chronicSensitivities.includes("hypertension_sodium")) {
+      const saltStatus = classifySaltForHypertension(
+        getRawNutrientGrams(product, "salt"),
+        getEnergyKcal(product),
+      );
+
+      if (saltStatus === "exceeds") {
+        warnings.push({
+          code: "PROFILE_TRAFFIC_LIGHT_HIGH_SALT",
+          title: "Tuz/sodyum seviyesi yüksek",
+          message:
+            "Bu üründe tuz/sodyum miktarı dikkat gerektiren düzeyde görünüyor. Profilinizde " +
+            "sodyum hassasiyeti bulunduğu için porsiyon ve besin değerleri dikkatle kontrol " +
+            "edilmelidir. Bu uyarı tıbbi hüküm niteliği taşımaz.",
+          level: "medium",
+        });
+      }
     }
   }
   // ─────────────────────────────────────────────────────────────────────────
