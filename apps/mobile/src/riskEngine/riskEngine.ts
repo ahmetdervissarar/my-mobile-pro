@@ -716,7 +716,17 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
   const profile = product.userProfile;
 
   if (profile) {
-    const hasAllergenProfile = profile.allergens.length > 0;
+    // celiac_gluten, gluten_wheat allerjeninin TÜM davranışını (beyan/iz/
+    // içindekiler eşleşmesi + veri-yok kapısı) devralır — ayrı bir kural
+    // yazılmaz, aynı kod yoluna celiac_gluten seçiliyken gluten_wheat da
+    // seçilmiş GİBİ davranılır. Alerjen kapısının kendi mantığı DEĞİŞMEZ.
+    const effectiveAllergens =
+      profile.chronicSensitivities.includes("celiac_gluten") &&
+      !profile.allergens.includes("gluten_wheat")
+        ? [...profile.allergens, "gluten_wheat"]
+        : profile.allergens;
+
+    const hasAllergenProfile = effectiveAllergens.length > 0;
 
     // ── Profil Kural A1: Alerjen profili var + içerik/alerjen bilgisi eksik ──
     if (hasAllergenProfile && !hasIngredients && !hasAllergenInfo) {
@@ -766,8 +776,9 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
     }
 
     // ── Profil Kural A4: Gluten/buğday hassasiyeti + içerikte gluten beyanı ──
+    // effectiveAllergens sayesinde celiac_gluten de bu kuralı tetikler.
     if (
-      profile.allergens.includes("gluten_wheat") &&
+      effectiveAllergens.includes("gluten_wheat") &&
       productContainsAny(product, GLUTEN_KEYWORDS)
     ) {
       warnings.push({
