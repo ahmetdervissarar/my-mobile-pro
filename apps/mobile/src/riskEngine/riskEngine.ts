@@ -937,7 +937,9 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
         code: "PROFILE_BLOOD_SUGAR_PRECAUTION",
         title: "Kan şekeri hassasiyeti için dikkat",
         message:
-          "Profilinizde kan şekeri hassasiyeti tanımlı. Bu ürün şeker içeriği açısından dikkatle değerlendirilmelidir; besin değerleri ve porsiyon bilgisi kontrol edilmelidir.",
+          "Profilinizde kan şekeri hassasiyeti tanımlı. Bu ürün şeker içeriği açısından dikkatle " +
+          "değerlendirilmelidir; besin değerleri ve porsiyon bilgisi kontrol edilmelidir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz.",
         level: "medium",
       });
     }
@@ -951,7 +953,8 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
         code: "PROFILE_SODIUM_PRECAUTION",
         title: "Sodyum hassasiyeti için dikkat",
         message:
-          "Profilinizde sodyum hassasiyeti tanımlı. Bu ürün grubunda tuz/sodyum içeriği yüksek olabileceğinden besin etiketi kontrol edilmelidir.",
+          "Profilinizde sodyum hassasiyeti tanımlı. Bu ürün grubunda tuz/sodyum içeriği yüksek " +
+          "olabileceğinden besin etiketi kontrol edilmelidir. Bu uyarı tıbbi hüküm niteliği taşımaz.",
         level: "medium",
       });
     }
