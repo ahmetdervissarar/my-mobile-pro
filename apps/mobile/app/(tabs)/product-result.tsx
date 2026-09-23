@@ -35,6 +35,7 @@ import {
   getInitialResult,
   getTransitionSafeProductGroupKey,
   isExplicitlyAlternativesIneligible,
+  productFactsToChronicNutritionInput,
   productFactsToRiskTrafficLight,
 } from '../../src/features/productResult/helpers';
 import { MoreDetailsSection } from '../../src/features/productResult/MoreDetailsSection';
@@ -116,6 +117,8 @@ export default function ProductResultScreen() {
         additives: backendProductFacts.additives ?? [],
         novaGroup: backendProductFacts.novaGroup ?? null,
         trafficLight: productFactsToRiskTrafficLight(backendProductFacts),
+        nutrition: productFactsToChronicNutritionInput(backendProductFacts),
+        nutritionBasis: backendProductFacts.nutritionBasis ?? null,
         nutriScore: backendProductFacts.nutriScoreGrade ?? null,
         userProfile,
       });

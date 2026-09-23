@@ -21,7 +21,7 @@ import {
 } from '../../riskEngine/catalogAllergenChip';
 import type { AllergenDisplayInfo } from '../../riskEngine/catalogAllergenChip';
 import type { ProductResult, TrafficLightNutrition } from '../../types/product';
-import type { RiskLevel, RiskWarning } from '../../riskEngine/riskEngine';
+import type { ChronicNutritionInput, RiskLevel, RiskWarning } from '../../riskEngine/riskEngine';
 import { CRITICAL_ALLERGEN_CODES } from '../../riskEngine/criticalAllergenCodes';
 import { allergenOptions } from '../../userProfile/userProfileTypes';
 import type { UserSensitivityProfile } from '../../userProfile/userProfileTypes';
@@ -85,6 +85,30 @@ export function productFactsToRiskTrafficLight(
     },
     sugars: { value: null, unit: null, level: normalizeProductFactsTrafficLightLevel(trafficLight.sugars) },
     salt: { value: null, unit: null, level: normalizeProductFactsTrafficLightLevel(trafficLight.salt) },
+  };
+}
+
+/**
+ * ProductFacts.nutrition100g'i (backend katalog/OFF sözleşmesi) riskEngine'in
+ * kronik eşik kuralları için beklediği ham girdiye taşır. trafficLight'ın
+ * aksine burada değerler HİÇ null'a sabitlenmez — eşik hesaplaması gerçek
+ * gram/kcal değerine ihtiyaç duyar.
+ */
+export function productFactsToChronicNutritionInput(
+  productFacts: ProductFacts,
+): ChronicNutritionInput | null {
+  const nutrition = productFacts.nutrition100g;
+
+  if (!nutrition) {
+    return null;
+  }
+
+  return {
+    energyKcal: nutrition.energyKcal,
+    sugars: nutrition.sugars,
+    salt: nutrition.salt,
+    saturatedFat: nutrition.saturatedFat,
+    transFat: nutrition.transFat,
   };
 }
 

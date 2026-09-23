@@ -36,6 +36,24 @@ export interface ProductRiskResult {
   isEvaluated: boolean;
 }
 
+/** Besin verisinin porsiyon tabanı. */
+export type ChronicNutritionBasis = "per_100g" | "per_100ml";
+
+/**
+ * Ham (sınıflandırılmamış) besin değerleri, gram/kcal cinsinden — kronik
+ * durum eşik kurallarının girdisidir (bkz. aşağıdaki "Kronik Eşik Kuralları"
+ * bölümü). trafficLight yalnız BİLGİ amaçlı düşük/orta/yüksek bandı taşır;
+ * eşik hesaplaması buradan, ham değerden yapılır.
+ */
+export interface ChronicNutritionInput {
+  energyKcal: number | null;
+  sugars: number | null;
+  salt: number | null;
+  saturatedFat: number | null;
+  /** Bugün hiçbir veri kaynağı bu alanı doldurmuyor — var olduğunda kullanılır. */
+  transFat: number | null;
+}
+
 /**
  * evaluateProductRisks'e aktarılan ürün verisi.
  * Tüm alanlar opsiyoneldir — motor eksik alanlara göre uyarı üretir.
@@ -56,8 +74,12 @@ export interface ProductRiskInput {
   additives?: string[];
   /** NOVA grubu (1–4) — gıda işleme düzeyi sınıflandırması */
   novaGroup?: number | null;
-  /** Traffic Light besin etiketi — yağ, doymuş yağ, şeker ve tuz düzeyleri */
+  /** Traffic Light besin etiketi — yağ, doymuş yağ, şeker ve tuz düzeyleri (yalnız BİLGİ bandı) */
   trafficLight?: TrafficLightNutrition | null;
+  /** Ham besin değerleri — kronik durum eşik kuralları bunu kullanır (bant değil). */
+  nutrition?: ChronicNutritionInput | null;
+  /** nutrition alanının porsiyon tabanı. Belirtilmezse per_100g varsayılır. */
+  nutritionBasis?: ChronicNutritionBasis | null;
   /**
    * Nutri-Score kategorisi (A–E).
    * Kaynak: Hercberg S. et al. (2017). The Nutri-Score: A Five-Colour Nutrition Label.
