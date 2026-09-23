@@ -1,3 +1,5 @@
+import type { CatalogAllergenData } from '../api/catalogTypes';
+
 export type PriceSource =
   | 'manual_beta'
   | 'beta_reference'
@@ -308,6 +310,13 @@ export interface ProductFacts {
   allergens?: string[];
   traceAllergens?: string[];
   allergenInfo?: ProductFactsAllergenInfo;
+  /**
+   * Yerel OFF-TR katalogdan geldiyse zaten sınıflandırılmış (AllergenKey[])
+   * alerjen verisi — doluysa ürün sayfası bunu arama/sepetle AYNI
+   * birleştirme fonksiyonuyla (evaluateCatalogAllergenDataForProfile)
+   * değerlendirir; boşsa eski allergenInfo tabanlı yola düşer.
+   */
+  catalogAllergenData?: CatalogAllergenData;
   dataSource: ProductFactsSource;
   isComplete: boolean;
   missingFields?: ProductFactsMissingField[];

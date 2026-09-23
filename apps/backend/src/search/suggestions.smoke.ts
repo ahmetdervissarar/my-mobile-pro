@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-import { foldSearchText, suggestSearch } from './suggestions.js';
+import { foldSearchText, suggestByProductGroup, suggestSearch } from './suggestions.js';
 
 assert.equal(foldSearchText('SÜT'), 'sut');
 assert.equal(foldSearchText('İçecek'), 'ıcecek');
@@ -31,5 +31,13 @@ assert.deepEqual(shortSuggestions, {
 
 const limitedSuggestions = suggestSearch('ma', { limit: 1 });
 assert.ok(limitedSuggestions.suggestions.length <= 1);
+
+// P1-6: boş groupKey → boş sonuç (katalog fixture gerektiren asıl senaryo
+// searchRoutes.smoke.ts'te, gerçek bir yüklü katalogla test edilir).
+const emptyGroupBrowse = suggestByProductGroup('');
+assert.deepEqual(emptyGroupBrowse, { productGroupKey: '', suggestions: [] });
+
+const unknownGroupBrowse = suggestByProductGroup('this_group_does_not_exist');
+assert.deepEqual(unknownGroupBrowse, { productGroupKey: 'this_group_does_not_exist', suggestions: [] });
 
 console.log('SEARCH_SUGGESTIONS_SMOKE_OK');

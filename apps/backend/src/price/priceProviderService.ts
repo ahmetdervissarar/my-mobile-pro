@@ -21,6 +21,7 @@ import {
 } from './contentScore/index.js';
 import {
   fetchOpenFoodFactsProductFactsByBarcode,
+  productFactsFromCatalog,
   productFactsToContentScoreInput,
   productFactsToHealthScoreInput,
   productFactsToSustainabilityInput,
@@ -42,11 +43,22 @@ export interface PriceResolveResponse {
   triedProviders: string[];
 }
 
+/**
+ * Önce yerel OFF-TR katalogda (bellekte, sunucu açılışında yüklenmiş) arar —
+ * bulursa canlı OFF isteği HİÇ yapılmaz ve isComplete kapısı uygulanmaz
+ * (katalogda ne varsa gösterilir; arama/sepetle tutarlılık, canlı-eksik-veri
+ * filtresinden daha öncelikli). Katalogda yoksa eski canlı OFF yoluna düşer.
+ */
 async function tryFetchProductFacts(query: PriceQuery): Promise<ProductFacts | null> {
   const barcode = query.barcode?.trim();
 
   if (!barcode) {
     return null;
+  }
+
+  const catalogFacts = productFactsFromCatalog(barcode);
+  if (catalogFacts) {
+    return catalogFacts;
   }
 
   try {

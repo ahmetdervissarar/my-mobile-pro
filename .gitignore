@@ -37,3 +37,6 @@ apps/mobile/.env
 
 .env
 .env.*
+
+# OFF Türkiye içe aktarma çıktısı (ODbL; repoya eklenmez)
+apps/backend/data/off-tr/

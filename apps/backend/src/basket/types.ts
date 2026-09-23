@@ -1,3 +1,5 @@
+import type { CatalogAllergenData, CatalogNova, CatalogNutriScore } from '../catalog/catalog.js';
+
 export type Score0To100 = number;
 
 export type BasketItem = ProductGroupBasketItem | ProductBasketItem;
@@ -46,6 +48,14 @@ export interface BasketProfileSubScores {
   sustainability: Score0To100 | null;
 }
 
+/**
+ * Bu görevin puanı hangi kaynaktan geldiğini gösterir; puanlama mantığını
+ * değiştirmez, yalnız etiketler. 'product' bu görevde henüz üretilmiyor
+ * (ürün düzeyinde gerçek skor hesaplama ayrı bir görev) — tip ileriye
+ * dönük olarak tanımlıdır.
+ */
+export type BasketItemScoreSource = 'product' | 'group_estimate' | 'none';
+
 export interface BasketProfileItem {
   type: BasketItem['type'];
   label: string;
@@ -54,6 +64,15 @@ export interface BasketProfileItem {
   score: Score0To100 | null;
   subScores: BasketProfileSubScores;
   riskFlags: string[];
+  scoreSource: BasketItemScoreSource;
+  /** Aşağıdakiler yalnız productId katalogda bulunduğunda doludur. */
+  brand?: string;
+  imageUrl?: string | null;
+  nutriScore?: CatalogNutriScore;
+  nova?: CatalogNova;
+  allergenData?: CatalogAllergenData;
+  /** Katalogda bulunamayan (veya product_group tipi) her öğede bunun yerine bu alan set edilir. */
+  allergenDataStatus?: 'unknown_or_unverified';
 }
 
 export interface BasketProfile {

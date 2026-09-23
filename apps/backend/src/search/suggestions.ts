@@ -1,3 +1,5 @@
+import type { CatalogAllergenData, CatalogNova, CatalogNutriScore, CatalogProduct } from '../catalog/catalog.js';
+import { getCatalog } from '../catalog/catalog.js';
 import { PRODUCT_GROUP_REGISTRY } from '../price/productGroups/registry.js';
 
 export type SearchSuggestion = ProductGroupSearchSuggestion | ProductSearchSuggestion;
@@ -21,6 +23,13 @@ export interface ProductSearchSuggestion {
     unit: string;
   };
   source: 'product_index';
+  /** Aşağıdakiler yalnız katalogdan (OFF-TR) geldiğinde doludur; katalog boşsa hiç eklenmez. */
+  imageUrl?: string | null;
+  nutriScore?: CatalogNutriScore;
+  nova?: CatalogNova;
+  allergenData?: CatalogAllergenData;
+  completeness?: CatalogProduct['completeness'];
+  provenance?: CatalogProduct['provenance'];
 }
 
 export interface SearchSuggestResponse {
@@ -109,6 +118,90 @@ function getMatchScore(foldedQuery: string, terms: string[], betaCoverage: strin
   return score;
 }
 
+const PRODUCT_SUGGESTION_LIMIT = 25;
+
+const NUTRISCORE_GRADE_RANK: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, E: 4 };
+const COMPLETENESS_RANK: Record<CatalogProduct['completeness'], number> = {
+  complete: 0,
+  usable_for_risk: 1,
+  usable_for_health: 2,
+  insufficient: 2,
+};
+
+function catalogProductToSuggestion(product: CatalogProduct): ProductSearchSuggestion {
+  return {
+    type: 'product',
+    productId: product.productId,
+    productGroupKey: product.productGroupKey,
+    label: product.name ?? product.brand ?? product.productId,
+    brand: product.brand ?? undefined,
+    packageSize: product.packageSize,
+    source: 'product_index',
+    imageUrl: product.imageUrl,
+    nutriScore: product.nutriScore,
+    nova: product.nova,
+    allergenData: product.allergenData,
+    completeness: product.completeness,
+    provenance: product.provenance,
+  };
+}
+
+/**
+ * Sıralama: (1) en üstteki grup önerisiyle aynı ürün grubu önce, (2) veri
+ * tamlığı (complete > usable_for_risk > diğerleri), (3) Nutri-Score (A→E;
+ * notu olmayan en sonda), (4) ad. Ürün grubu ürün adından ÇIKARILMAZ —
+ * yalnız katalogda zaten hesaplanmış productGroupKey kullanılır.
+ */
+function compareCatalogProducts(a: CatalogProduct, b: CatalogProduct, topGroupKey: string | null): number {
+  if (topGroupKey) {
+    const aInTopGroup = a.productGroupKey === topGroupKey ? 0 : 1;
+    const bInTopGroup = b.productGroupKey === topGroupKey ? 0 : 1;
+    if (aInTopGroup !== bInTopGroup) return aInTopGroup - bInTopGroup;
+  }
+
+  const aCompleteness = COMPLETENESS_RANK[a.completeness];
+  const bCompleteness = COMPLETENESS_RANK[b.completeness];
+  if (aCompleteness !== bCompleteness) return aCompleteness - bCompleteness;
+
+  const aGradeRank = a.nutriScore.grade ? NUTRISCORE_GRADE_RANK[a.nutriScore.grade] : 5;
+  const bGradeRank = b.nutriScore.grade ? NUTRISCORE_GRADE_RANK[b.nutriScore.grade] : 5;
+  if (aGradeRank !== bGradeRank) return aGradeRank - bGradeRank;
+
+  return (a.name ?? '').localeCompare(b.name ?? '', 'tr-TR');
+}
+
+export interface ProductGroupBrowseResponse {
+  productGroupKey: string;
+  suggestions: ProductSearchSuggestion[];
+}
+
+const GROUP_BROWSE_LIMIT = 50;
+
+/**
+ * P1-6 (device-test bulgusu): kategori sayfası "veri yok" diyordu çünkü
+ * hiçbir uç nokta productGroupKey'e göre ürün listeleyemiyordu (yalnız
+ * metin sorgulu /api/search/suggest vardı). Sınırlı kapsam: suggestSearch
+ * ile AYNI ProductSearchSuggestion şekli ve AYNI katalog alerjen verisi
+ * (yeni bir alerjen/skor kararı ÜRETMEZ), en fazla GROUP_BROWSE_LIMIT ürün,
+ * ada göre alfabetik sıralama — yeni bir skor/sıralama mantığı YOK.
+ */
+export function suggestByProductGroup(productGroupKey: string, options: SuggestSearchOptions = {}): ProductGroupBrowseResponse {
+  const trimmedGroupKey = productGroupKey.trim();
+  const limit = Math.min(Math.max(options.limit ?? GROUP_BROWSE_LIMIT, 1), GROUP_BROWSE_LIMIT);
+
+  if (!trimmedGroupKey) {
+    return { productGroupKey: trimmedGroupKey, suggestions: [] };
+  }
+
+  const suggestions = getCatalog()
+    .products.filter((product) => product.productGroupKey === trimmedGroupKey)
+    .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'tr-TR'))
+    .slice(0, limit)
+    .map(catalogProductToSuggestion);
+
+  return { productGroupKey: trimmedGroupKey, suggestions };
+}
+
 export function suggestSearch(query: string, options: SuggestSearchOptions = {}): SearchSuggestResponse {
   const rawQuery = query.trim();
   const foldedQuery = foldSearchText(rawQuery);
@@ -121,7 +214,7 @@ export function suggestSearch(query: string, options: SuggestSearchOptions = {})
     };
   }
 
-  const suggestions = PRODUCT_GROUP_REGISTRY
+  const groupSuggestions: ProductGroupSearchSuggestion[] = PRODUCT_GROUP_REGISTRY
     .map((entry) => ({
       entry,
       score: getMatchScore(foldedQuery, getEntryTerms(entry), entry.betaCoverage),
@@ -140,8 +233,16 @@ export function suggestSearch(query: string, options: SuggestSearchOptions = {})
       source: 'product_group_registry',
     }));
 
+  const topGroupKey = groupSuggestions[0]?.productGroupKey ?? null;
+
+  const productSuggestions: ProductSearchSuggestion[] = getCatalog()
+    .products.filter((product) => product.searchText.includes(foldedQuery))
+    .sort((a, b) => compareCatalogProducts(a, b, topGroupKey))
+    .slice(0, PRODUCT_SUGGESTION_LIMIT)
+    .map(catalogProductToSuggestion);
+
   return {
     query: rawQuery,
-    suggestions,
+    suggestions: [...groupSuggestions, ...productSuggestions],
   };
 }

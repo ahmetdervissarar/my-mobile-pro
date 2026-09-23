@@ -1,13 +1,15 @@
 ﻿import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   clearUserSensitivityProfile,
   loadUserSensitivityProfile,
-} from '../src/userProfile/userProfileStorage';
+} from '../../src/userProfile/userProfileStorage';
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const [summary, setSummary] = useState({
     allergens: 0,
     chronicSensitivities: 0,
@@ -63,7 +65,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[styles.contentContainer, { paddingTop: Math.max(insets.top, styles.contentContainer.paddingTop) }]}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.card}>

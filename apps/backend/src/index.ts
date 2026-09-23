@@ -1,7 +1,10 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+import { loadCatalog } from './catalog/catalog.js';
 import { ManualBetaPriceProvider } from './price/providers/manualBetaPriceProvider.js';
 import { PriceProviderService } from './price/priceProviderService.js';
 import { createPriceRouter } from './routes/priceRoutes.js';
@@ -13,6 +16,9 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3001);
+
+const catalogPath = resolve(fileURLToPath(new URL('.', import.meta.url)), '../data/off-tr/products.jsonl');
+loadCatalog(catalogPath);
 
 app.use(cors());
 app.use(express.json());

@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { BasketEvaluateResponse, BasketMarketEvaluation } from '../src/api/basketClient';
 
@@ -178,6 +179,7 @@ function MarketHighlightCard({
 
 export default function BasketResultScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ result?: string }>();
   const result = parseBasketResult(getSingleParam(params.result));
 
@@ -188,7 +190,7 @@ export default function BasketResultScreen() {
           flex: 1,
           backgroundColor: '#fff',
           paddingHorizontal: 24,
-          paddingTop: 32,
+          paddingTop: Math.max(insets.top, 32),
         }}
       >
         <Text
@@ -253,7 +255,7 @@ export default function BasketResultScreen() {
       }}
       contentContainerStyle={{
         paddingHorizontal: 24,
-        paddingTop: 32,
+        paddingTop: Math.max(insets.top, 32),
         paddingBottom: 40,
       }}
     >

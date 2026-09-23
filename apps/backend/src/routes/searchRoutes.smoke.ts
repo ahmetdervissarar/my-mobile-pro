@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import express from 'express';
 
+import { loadCatalog } from '../catalog/catalog.js';
+import type { OffImportRecord } from '../tools/offTurkey/normalize.js';
 import { createSearchRouter } from './searchRoutes.js';
 
 const app = express();
@@ -53,5 +58,103 @@ const shortJson = (await shortResponse.json()) as {
 assert.equal(shortJson.ok, true);
 assert.equal(shortJson.query, 'p');
 assert.deepEqual(shortJson.suggestions, []);
+
+// Aşama 2 (katalog): "süt" sorgusu hem grup hem katalog ürün önerisi döndürür;
+// ürün önerisinde allergenData.dataStatus taşınır (bkz. görev değişmez kural 3).
+const milkRecord: OffImportRecord = {
+  gtin: '8690504000013',
+  name: 'Tam Yağlı Süt',
+  brand: 'Örnek Marka',
+  quantity: '1 L',
+  categories: ['en:milks'],
+  imageUrl: null,
+  ingredientsText: 'süt',
+  ingredientsLang: 'tr',
+  allergens: { declared: ['milk'], traces: [], rawDeclared: ['en:milk'], rawTraces: [], dataStatus: 'present' },
+  nutriscoreGrade: 'c',
+  offGradeRaw: 'c',
+  novaGroup: 1,
+  nutrition100g: {
+    energyKcal: 60,
+    fat: 3.2,
+    saturatedFat: 2,
+    carbohydrates: 4.7,
+    sugars: 4.7,
+    fiber: 0,
+    proteins: 3.2,
+    salt: 0.1,
+  },
+  additives: [],
+  provenance: {
+    source: 'off',
+    license: 'ODbL-1.0',
+    url: 'https://world.openfoodfacts.org/product/8690504000013',
+    observedAt: null,
+    fetchedAt: '2026-09-21T00:00:00.000Z',
+  },
+  missingFields: [],
+  completeness: 'complete',
+};
+
+const fixtureDir = mkdtempSync(join(tmpdir(), 'rafskoru-search-catalog-'));
+const fixturePath = join(fixtureDir, 'products.jsonl');
+writeFileSync(fixturePath, `${JSON.stringify(milkRecord)}\n`);
+loadCatalog(fixturePath);
+
+const milkResponse = await get('/api/search/suggest?q=sut');
+assert.equal(milkResponse.status, 200);
+
+const milkJson = (await milkResponse.json()) as {
+  suggestions: Array<Record<string, unknown>>;
+};
+
+assert.ok(
+  milkJson.suggestions.some((suggestion) => suggestion.type === 'product_group'),
+  '"sut" sorgusu bir grup önerisi döndürmeli',
+);
+
+const milkProductSuggestion = milkJson.suggestions.find((suggestion) => suggestion.type === 'product');
+assert.ok(milkProductSuggestion, '"sut" sorgusu bir katalog ürün önerisi döndürmeli');
+assert.equal(
+  (milkProductSuggestion as { allergenData?: { dataStatus?: string } }).allergenData?.dataStatus,
+  'present',
+);
+
+// Aşama 3 (P1-6): /api/search/by-group — kategori sayfasının kullanacağı,
+// productGroupKey'e göre katalog taraması. AYNI ProductSearchSuggestion
+// şekli, AYNI allergenData; yeni bir skor/sıralama mantığı YOK (yalnız ad).
+const milkProductGroupKey = (milkProductSuggestion as { productGroupKey: string }).productGroupKey;
+
+const groupResponse = await get(`/api/search/by-group?groupKey=${milkProductGroupKey}`);
+assert.equal(groupResponse.status, 200);
+
+const groupJson = (await groupResponse.json()) as {
+  ok: boolean;
+  productGroupKey: string;
+  suggestions: Array<Record<string, unknown>>;
+};
+
+assert.equal(groupJson.ok, true);
+assert.equal(groupJson.productGroupKey, milkProductGroupKey);
+assert.equal(groupJson.suggestions.length, 1);
+assert.equal(groupJson.suggestions[0]?.type, 'product');
+assert.equal(groupJson.suggestions[0]?.productGroupKey, milkProductGroupKey);
+assert.equal(
+  (groupJson.suggestions[0] as { allergenData?: { dataStatus?: string } }).allergenData?.dataStatus,
+  'present',
+  'by-group AYNI katalog alerjen verisini taşımalı (yeni bir karar üretmez)',
+);
+
+const emptyGroupResponse = await get('/api/search/by-group?groupKey=unclassified_does_not_exist');
+assert.equal(emptyGroupResponse.status, 200);
+const emptyGroupJson = (await emptyGroupResponse.json()) as { ok: boolean; suggestions: unknown[] };
+assert.equal(emptyGroupJson.ok, true);
+assert.deepEqual(emptyGroupJson.suggestions, []);
+
+const noGroupKeyResponse = await get('/api/search/by-group');
+assert.equal(noGroupKeyResponse.status, 200);
+const noGroupKeyJson = (await noGroupKeyResponse.json()) as { ok: boolean; suggestions: unknown[] };
+assert.equal(noGroupKeyJson.ok, true);
+assert.deepEqual(noGroupKeyJson.suggestions, []);
 
 console.log('SEARCH_ROUTES_SUGGESTIONS_SMOKE_OK');

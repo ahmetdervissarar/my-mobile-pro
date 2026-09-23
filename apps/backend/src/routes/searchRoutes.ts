@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { suggestSearch } from '../search/suggestions.js';
+import { suggestByProductGroup, suggestSearch } from '../search/suggestions.js';
 
 function parseLimit(value: unknown): number | undefined {
   if (typeof value !== 'string') {
@@ -26,6 +26,16 @@ export function createSearchRouter(): Router {
     res.json({
       ok: true,
       ...suggestSearch(query, { limit }),
+    });
+  });
+
+  router.get('/by-group', (req, res) => {
+    const groupKey = typeof req.query.groupKey === 'string' ? req.query.groupKey : '';
+    const limit = parseLimit(req.query.limit);
+
+    res.json({
+      ok: true,
+      ...suggestByProductGroup(groupKey, { limit }),
     });
   });
 

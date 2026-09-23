@@ -1,4 +1,5 @@
 import { getPriceApiBaseUrl } from './config';
+import type { CatalogAllergenData, CatalogNova, CatalogNutriScore } from './catalogTypes';
 
 export type BasketItem = ProductGroupBasketItem | ProductBasketItem;
 
@@ -44,6 +45,8 @@ export interface BasketProfileSubScores {
   sustainability: number | null;
 }
 
+export type BasketItemScoreSource = 'product' | 'group_estimate' | 'none';
+
 export interface BasketProfileItem {
   type: BasketItem['type'];
   label: string;
@@ -52,6 +55,13 @@ export interface BasketProfileItem {
   score: number | null;
   subScores: BasketProfileSubScores;
   riskFlags: string[];
+  scoreSource: BasketItemScoreSource;
+  brand?: string;
+  imageUrl?: string | null;
+  nutriScore?: CatalogNutriScore;
+  nova?: CatalogNova;
+  allergenData?: CatalogAllergenData;
+  allergenDataStatus?: 'unknown_or_unverified';
 }
 
 export interface BasketProfile {

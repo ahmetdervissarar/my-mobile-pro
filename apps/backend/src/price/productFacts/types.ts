@@ -1,3 +1,5 @@
+import type { CatalogAllergenData } from '../../catalog/catalog.js';
+
 export type ProductFactsSource = 'off' | 'beta_inference';
 
 export type ProductFactsNutriScoreGrade = 'A' | 'B' | 'C' | 'D' | 'E';
@@ -50,6 +52,14 @@ export interface ProductFacts {
   allergens?: string[];
   traceAllergens?: string[];
   allergenInfo?: ProductFactsAllergenInfo;
+  /**
+   * Yerel OFF-TR katalogdan geldiyse zaten sınıflandırılmış (AllergenKey[])
+   * alerjen verisi — ham etikete geri dönüştürülmeden taşınır. Doluysa,
+   * mobil ürün sayfası bunu arama/sepetle AYNI birleştirme fonksiyonuyla
+   * (evaluateCatalogAllergenDataForProfile) değerlendirir; boşsa eski
+   * allergenInfo tabanlı (profil-farkında olmayan) yola düşer.
+   */
+  catalogAllergenData?: CatalogAllergenData;
 
   dataSource: ProductFactsSource;
   isComplete: boolean;

@@ -92,6 +92,7 @@ const PRIORITY_ORDER: string[] = [
   "PROFILE_SESAME_ALLERGEN_MATCH",
   "PROFILE_FISH_ALLERGEN_MATCH",
   "PROFILE_SHELLFISH_ALLERGEN_MATCH",
+  "PROFILE_EGG_ALLERGEN_MATCH",
   "PROFILE_EGG_PRECAUTION",
   "PROFILE_BLOOD_SUGAR_PRECAUTION",
   "PROFILE_SODIUM_PRECAUTION",
@@ -295,6 +296,24 @@ const FISH_KEYWORDS = [
   "sea bass",
   "balık",
   "fish",
+];
+
+/**
+ * Yumurta alerjisi arama terimleri.
+ * Bilinen güvenli yönde yanlış pozitif riskleri: "yumurtasız" (olumsuzluk eki
+ * içerir ama normalizeText alt dizeyi yine de bulur — kasıtlı olarak ihtiyat
+ * yönünde tutulur, "yumurta yok" bilgisini bastırmayız); "albumin" süt
+ * kaynaklı da olabilir (laktalbümin) ama biz yine de dikkat uyarısı veririz;
+ * "eggplant" (patlıcan) İngilizce'de "egg" alt dizesini içerir — İngilizce
+ * ürün adı/ingredients metninde nadir de olsa yanlış eşleşme riski taşır.
+ * Üçü de GÜVENLİ yönde (fazladan uyarı, kaçırılan uyarı değil) olduğundan
+ * listeden çıkarılmadı.
+ */
+const EGG_KEYWORDS = [
+  "yumurta",
+  "egg",
+  "albümin",
+  "albumin",
 ];
 
 /** Kabuklu deniz ürünleri alerjisi arama terimleri. */
@@ -672,6 +691,23 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
           "Bu üründe karides, yengeç, midye veya diğer kabuklu deniz ürünleriyle ilişkili " +
           "içerik ya da alerjen beyanı bulunuyor. " +
           "Profilinizde kabuklu deniz ürünleri alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
+          "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
+          "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
+        level: "high",
+      });
+    }
+
+    // ── Profil Kural A11: Yumurta alerjisi + içerikte yumurta beyanı ─────────
+    if (
+      profile.allergens.includes("egg") &&
+      productContainsAny(product, EGG_KEYWORDS)
+    ) {
+      warnings.push({
+        code: "PROFILE_EGG_ALLERGEN_MATCH",
+        title: "Yumurta alerjisi için yüksek dikkat",
+        message:
+          "Bu üründe yumurta veya yumurta bileşenleriyle ilişkili içerik ya da alerjen beyanı bulunuyor. " +
+          "Profilinizde yumurta alerjisi tanımlı olduğu için ürünü tüketmeden önce " +
           "ambalajdaki içerik ve alerjen beyanını dikkatle kontrol etmeniz önerilir. " +
           "Bu uyarı tıbbi hüküm niteliği taşımaz; son karar için uzman görüşü alınmalıdır.",
         level: "high",
