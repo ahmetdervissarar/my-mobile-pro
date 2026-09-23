@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getFallbackProductSummary } from '../../src/services/productService';
 import type { ProductSearchInput } from '../../src/services/productService';
 import { getUserLocationForPricing } from '../../src/services/locationService';
-import { evaluateProductRisks } from '../../src/riskEngine/riskEngine';
+import { evaluateProductRisks, getChronicNutritionDataGap } from '../../src/riskEngine/riskEngine';
 import type { ProductRiskResult } from '../../src/riskEngine/riskEngine';
 import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
@@ -154,6 +154,22 @@ export default function ProductResultScreen() {
       userProfile,
     });
   }, [backendProductFacts, hasBackendFoodAnalysis, priceResolution?.result.productName, result, userProfile]);
+
+  // Kronik eşik kurallarının (diyabet/hipertansiyon/kalp-damar) ihtiyaç duyduğu
+  // besin verisi eksikse — ve profilde bu eksenlerden biri aktifse — ayrı,
+  // nötr bir "veri yok" notu gösterilir. Bu bir RiskWarning DEĞİLDİR; her
+  // eksik veri için tam bir uyarı üretmek uyarı yorgunluğu yaratır (ADR-006).
+  const chronicNutritionDataGap = useMemo(() => {
+    if (!backendProductFacts?.isComplete) return false;
+
+    return getChronicNutritionDataGap(
+      {
+        nutrition: productFactsToChronicNutritionInput(backendProductFacts),
+        trafficLight: productFactsToRiskTrafficLight(backendProductFacts),
+      },
+      userProfile,
+    );
+  }, [backendProductFacts, userProfile]);
 
   useEffect(() => {
     setResult(getInitialResult(normalizedInput));
@@ -523,6 +539,7 @@ export default function ProductResultScreen() {
         <NutriNovaSection
           nutriScoreGrade={backendProductFacts?.nutriScoreGrade ?? (result.nutriScore as 'A' | 'B' | 'C' | 'D' | 'E' | null) ?? null}
           novaGroup={backendProductFacts?.novaGroup ?? (result.novaGroup as 1 | 2 | 3 | 4 | null) ?? null}
+          chronicNutritionDataGap={chronicNutritionDataGap}
         />
 
         <WarningsSection warnings={nonCriticalWarnings} />
