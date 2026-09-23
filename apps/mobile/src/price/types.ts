@@ -260,7 +260,8 @@ export interface EnrichedMarketOffer {
   note?: string;
 }
 
-export type ProductFactsSource = 'off' | 'beta_inference';
+/** Backend contract'ıyla birebir aynı (bkz. apps/backend/src/price/productFacts/types.ts). */
+export type ProductFactsSource = 'off' | 'beta_inference' | 'user_contributed' | 'verified_db';
 
 export type ProductFactsNutriScoreGrade = 'A' | 'B' | 'C' | 'D' | 'E';
 

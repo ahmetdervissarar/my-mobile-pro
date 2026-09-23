@@ -1,6 +1,14 @@
 import type { CatalogAllergenData } from '../../catalog/catalog.js';
 
-export type ProductFactsSource = 'off' | 'beta_inference';
+/**
+ * 'user_contributed': kullanıcının cihazda elle (veya ileride OCR adayıyla)
+ * girdiği, sunucuya HENÜZ gönderilmeyen/doğrulanmayan katkı (bkz. mobil
+ * localProduct/types.ts). 'verified_db': çoklu-kullanıcı mutabakatı veya
+ * insan/üretici doğrulamasından geçmiş sunucu kaydı — bu sürümde henüz
+ * hiçbir kod bu değeri ÜRETMİYOR; sözleşme ileriki sunucu-taraflı mutabakat
+ * görevi için şimdiden eklendi (additive-only).
+ */
+export type ProductFactsSource = 'off' | 'beta_inference' | 'user_contributed' | 'verified_db';
 
 export type ProductFactsNutriScoreGrade = 'A' | 'B' | 'C' | 'D' | 'E';
 
