@@ -10,7 +10,7 @@ import {
   type AllergenDisplayInfo,
   type AllergenProfileEvaluation,
 } from '../../src/riskEngine/catalogAllergenChip';
-import { addToCart, getCartItemKey, suggestionToCartInput, useCart } from '../../src/state/cartStore';
+import { addToCart, getCartItemKey, removeFromCart, suggestionToCartInput, useCart } from '../../src/state/cartStore';
 import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import { EmptyState } from '../../src/ui/EmptyState';
@@ -135,8 +135,13 @@ export default function SearchScreen() {
     });
   };
 
-  const handleAddToCart = (suggestion: SearchSuggestion) => {
-    addToCart(suggestionToCartInput(suggestion));
+  const handleToggleCart = (suggestion: SearchSuggestion) => {
+    const cartInput = suggestionToCartInput(suggestion);
+    if (cartItems.some((item) => item.key === getCartItemKey(cartInput))) {
+      removeFromCart(getCartItemKey(cartInput));
+      return;
+    }
+    addToCart(cartInput);
   };
 
   return (
@@ -228,9 +233,9 @@ export default function SearchScreen() {
                 onPress={() => openProduct(suggestion)}
                 trailing={
                   <Pressable
-                    onPress={() => handleAddToCart(suggestion)}
+                    onPress={() => handleToggleCart(suggestion)}
                     accessibilityRole="button"
-                    accessibilityLabel={isAdded ? 'Sepete eklendi' : 'Sepete ekle'}
+                    accessibilityLabel={isAdded ? 'Sepetten çıkar' : 'Sepete ekle'}
                     style={{
                       width: MIN_TOUCH_TARGET,
                       height: MIN_TOUCH_TARGET,
