@@ -13,7 +13,12 @@ import type {
   PriceResolveResponse,
   ProductFacts,
 } from '../../price/types';
-import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel } from '../../riskEngine/catalogAllergenChip';
+import {
+  displayLabelForKey,
+  evaluateCatalogAllergenDataForProfile,
+  getAllergenDisplayLevel,
+  sortAllergenTieBreak,
+} from '../../riskEngine/catalogAllergenChip';
 import type { AllergenDisplayInfo } from '../../riskEngine/catalogAllergenChip';
 import type { ProductResult, TrafficLightNutrition } from '../../types/product';
 import type { RiskLevel, RiskWarning } from '../../riskEngine/riskEngine';
@@ -259,12 +264,13 @@ export function getAllergenBannerDataFromCatalog(input: {
     return { status: evaluation.status, declaredList, traceList, criticalMatches, displayInfo };
   }
 
-  const declaredList = evaluation.perKey
-    .filter((keyResult) => keyResult.status === 'declared_contains')
-    .map((keyResult) => ALLERGEN_KEY_LABELS[keyResult.key] ?? keyResult.key);
-  const traceList = evaluation.perKey
-    .filter((keyResult) => keyResult.status === 'trace_may_contain')
-    .map((keyResult) => ALLERGEN_KEY_LABELS[keyResult.key] ?? keyResult.key);
+  // sortAllergenTieBreak + displayLabelForKey kullanılır — aksi halde bu
+  // listeler userProfile.allergens dizisinin SIRASINA bağlı kalır ve lactose
+  // "Laktoz" olarak (mirror edildiği "Süt" yerine) görünür (bkz. cihaz bulgusu).
+  const declaredList = sortAllergenTieBreak(evaluation.perKey.filter((keyResult) => keyResult.status === 'declared_contains'))
+    .map((keyResult) => displayLabelForKey(keyResult.key, keyResult.basis));
+  const traceList = sortAllergenTieBreak(evaluation.perKey.filter((keyResult) => keyResult.status === 'trace_may_contain'))
+    .map((keyResult) => displayLabelForKey(keyResult.key, keyResult.basis));
 
   return { status: evaluation.status, declaredList, traceList, criticalMatches, displayInfo };
 }

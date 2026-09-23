@@ -7,6 +7,7 @@
 import assert from 'node:assert/strict';
 
 import type { CatalogAllergenData } from '../api/catalogTypes';
+import { getAllergenBannerDataFromCatalog } from '../features/productResult/helpers';
 import type { UserSensitivityProfile } from '../userProfile/userProfileTypes';
 import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel } from './catalogAllergenChip';
 
@@ -95,6 +96,10 @@ function lactosePerKey(evaluation: ReturnType<typeof evaluateCatalogAllergenData
   const lactose = lactosePerKey(evaluation);
   assert.equal(lactose.status, 'trace_may_contain');
   assert.equal(lactose.basis, 'ingredients');
+  // Madde 5: not METNİ YOK — rozet ("İçindekilerde laktoz geçiyor...") zaten
+  // aynı bilgiyi taşır; ayrı bir "İçindekilerde geçiyor olabilir" satırı
+  // rozetle birebir aynı anlamı tekrarlardı.
+  assert.equal(lactose.note, null, 'ingredients basis notu artık null olmalı (rozetle aynı anlam tekrarlanmaz)');
 }
 
 // 6) BİLİNEN yanlış pozitif: "laktozsuz" (lactose-free) metni de riskEngine'in
@@ -139,4 +144,50 @@ function lactosePerKey(evaluation: ReturnType<typeof evaluateCatalogAllergenData
   assert.equal((displayInfo!.text.match(/:/g) ?? []).length, 0, 'no_data rozet metninde ":" olmamalı');
 }
 
-console.log('LACTOSE_TRACKS_MILK_SMOKE_OK (8 senaryo)');
+// 9) CİHAZ BULGUSU (kırmızı test) — Harras %1.5 Yarım Yağlı Süt: hiç alerjen
+// etiketi (declared/traces) YOK, yalnız içindekiler metninde "inek sütü"
+// geçiyor. milk VE lactose ikisi de basis='ingredients'te EŞİT seviyede
+// buluşur; cihazda laktoz önde/tek başına görünmüştü. Rozet, süt+laktoz
+// İKİSİNİ DE aynı sırada göstermeli — HER İKİ profil dizisi sırasında da
+// (["milk","lactose"] ve ["lactose","milk"]) AYNI sonuç çıkmalı; aksi halde
+// sıralama profil dizisinin sırasına bağlıdır ve bu bir hatadır.
+//
+// Test, ProductRow/BasketItemRow'un GERÇEKTEN çağırdığı fonksiyon üzerinden
+// gider: evaluateCatalogAllergenDataForProfile + getAllergenDisplayLevel
+// (AllergenChip'in `displayInfo` prop'unu besleyen çekirdek — bkz. search.tsx,
+// BasketItemRow.tsx). Ürün sayfası banner'ının çağırdığı
+// getAllergenBannerDataFromCatalog da AYNI veriyle ayrıca doğrulanır.
+{
+  const harras = data({
+    declared: [],
+    traces: [],
+    ingredientsEvidence: { text: 'inek sütü içerir', lang: 'tr', source: 'off' },
+  });
+
+  for (const order of [['milk', 'lactose'], ['lactose', 'milk']] as const) {
+    const userProfile = profile([...order]);
+
+    // ProductRow / BasketItemRow'un GERÇEKTEN çağırdığı fonksiyonlar.
+    const evaluation = evaluateCatalogAllergenDataForProfile(harras, userProfile);
+    const displayInfo = getAllergenDisplayLevel(evaluation.perKey);
+    assert.ok(displayInfo, `[${order.join(',')}] displayInfo null olamaz`);
+    assert.equal(displayInfo!.level, 'ingredients');
+    assert.equal(
+      displayInfo!.text,
+      'İçindekilerde süt, laktoz geçiyor — etiketi kontrol edin',
+      `[${order.join(',')}] rozet metni profil dizisinin SIRASINA bağlı olmamalı: "${displayInfo!.text}"`,
+    );
+    assert.deepEqual(displayInfo!.otherLabels, [], `[${order.join(',')}] süt "Ayrıca" satırına düşmemeli — eşit seviyede birlikte gösterilmeli`);
+
+    // Ürün sayfası banner'ının GERÇEKTEN çağırdığı fonksiyon.
+    const bannerData = getAllergenBannerDataFromCatalog({ catalogAllergenData: harras, userProfile, riskWarnings: [] });
+    assert.deepEqual(
+      bannerData.traceList,
+      ['Süt', 'Laktoz'],
+      `[${order.join(',')}] banner traceList profil dizisinin SIRASINA bağlı olmamalı: ${JSON.stringify(bannerData.traceList)}`,
+    );
+    assert.equal(bannerData.displayInfo?.text, displayInfo!.text);
+  }
+}
+
+console.log('LACTOSE_TRACKS_MILK_SMOKE_OK (9 senaryo)');

@@ -51,7 +51,9 @@
  *    ürettiği PROFILE_*_ALLERGEN_MATCH uyarısı kontrol edilir (yalnız
  *    evaluateProductRisks üzerinden — özel anahtar kelime listelerine
  *    dokunulmaz). Eşleşme varsa not_listed_in_available_data yerine
- *    trace_may_contain + "İçindekilerde geçiyor olabilir" notu gösterilir.
+ *    trace_may_contain + basis 'ingredients' gösterilir. Ayrı bir NOT METNİ
+ *    YOKTUR — rozetin kendisi ("İçindekilerde X geçiyor — etiketi kontrol
+ *    edin") zaten aynı bilgiyi taşır; ayrı bir not satırı bunu tekrar ederdi.
  */
 
 import { evaluateProductRisks } from './riskEngine';
@@ -205,13 +207,12 @@ function classifyForProfileKey(data: CatalogAllergenData, key: AllergenKey): Key
 
     // milkStatus 'not_listed_in_available_data' veya 'unknown_or_unverified' —
     // her iki durumda da ingredients'te doğrudan "laktoz" geçmesi ayrıca uyarı
-    // üretir ("daha az temkinli olamaz" kuralı, bkz. kural 3 üstte).
+    // üretir ("daha az temkinli olamaz" kuralı, bkz. kural 3 üstte). Not METNİ
+    // YOK — rozet zaten basis='ingredients' şablonuyla ("İçindekilerde X
+    // geçiyor — etiketi kontrol edin") AYNI bilgiyi taşır; ayrı bir not satırı
+    // rozetle birebir aynı anlamı tekrar ederdi (bkz. görev bulgusu, madde 5).
     if (ingredientsLactoseMatch) {
-      return {
-        status: 'trace_may_contain',
-        basis: 'ingredients',
-        note: 'İçindekilerde geçiyor olabilir — etiketi kontrol edin.',
-      };
+      return { status: 'trace_may_contain', basis: 'ingredients', note: null };
     }
     if (milkStatus === 'not_listed_in_available_data') {
       return { status: 'not_listed_in_available_data', basis: 'not_listed', note: null };
@@ -225,11 +226,8 @@ function classifyForProfileKey(data: CatalogAllergenData, key: AllergenKey): Key
     data.ingredientsEvidence.text &&
     ingredientsMatchKey(key, data.ingredientsEvidence.text)
   ) {
-    return {
-      status: 'trace_may_contain',
-      basis: 'ingredients',
-      note: 'İçindekilerde geçiyor olabilir — etiketi kontrol edin.',
-    };
+    // Not METNİ YOK — bkz. yukarıdaki lactose dalındaki aynı gerekçe (madde 5).
+    return { status: 'trace_may_contain', basis: 'ingredients', note: null };
   }
   return { status, basis: basisForStatus(status), note: null };
 }
@@ -356,17 +354,23 @@ const ALLERGEN_KEY_LABELS: Record<AllergenKey, string> = Object.fromEntries(
  * ETMEZ (bkz. TGK notu, dosya başı). not_listed/no_data seviyelerinde bu
  * risk yok (bir "içerir" iddiası değiller), bu yüzden "Laktoz" kalır.
  */
-function displayLabelForKey(key: AllergenKey, basis: AllergenProfileKeyBasis): string {
+export function displayLabelForKey(key: AllergenKey, basis: AllergenProfileKeyBasis): string {
   if (key === 'lactose' && (basis === 'declared' || basis === 'trace')) {
     return ALLERGEN_KEY_LABELS.milk;
   }
   return ALLERGEN_KEY_LABELS[key];
 }
 
-/** Eşit seviyede sıralama: alerji (süt vb.) intoleranstan (laktoz) ÖNCE gösterilir. */
-const ALLERGEN_TIE_BREAK_RANK: Partial<Record<AllergenKey, number>> = { lactose: 1 };
+/**
+ * Eşit seviyede sıralama: alerji (süt vb.) intoleranstan (laktoz) ÖNCE
+ * gösterilir. Dışa açıktır — perKey'den TÜRETİLEN her liste (getAllergenDisplayLevel
+ * dahil, productResult/helpers.ts'in declaredList/traceList'i dahil) BUNU
+ * kullanmalı; aksi halde sonuç userProfile.allergens dizisinin SIRASINA bağlı
+ * kalır — bu bir hatadır (bkz. lactoseTracksMilk.smoke.ts, cihaz bulgusu).
+ */
+export const ALLERGEN_TIE_BREAK_RANK: Partial<Record<AllergenKey, number>> = { lactose: 1 };
 
-function sortAllergenTieBreak(results: AllergenProfileKeyResult[]): AllergenProfileKeyResult[] {
+export function sortAllergenTieBreak(results: AllergenProfileKeyResult[]): AllergenProfileKeyResult[] {
   return [...results].sort((a, b) => (ALLERGEN_TIE_BREAK_RANK[a.key] ?? 0) - (ALLERGEN_TIE_BREAK_RANK[b.key] ?? 0));
 }
 
