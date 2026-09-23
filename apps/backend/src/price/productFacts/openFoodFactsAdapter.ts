@@ -1,3 +1,5 @@
+import type { CatalogAllergenData, CatalogAllergenDataStatus } from '../../catalog/catalog.js';
+import { classifyAllergenTags } from '../../tools/offTurkey/offAllergenMap.js';
 import type {
   ProductFacts,
   ProductFactsConfidence,
@@ -15,6 +17,14 @@ export interface OpenFoodFactsProductInfoLike {
   ingredientsText?: string | null;
   allergens?: string[] | null;
   traceAllergens?: string[] | null;
+  /**
+   * Ham OFF taksonomi etiketleri (ör. "en:milk"), dil öneki ATILMADAN.
+   * `allergens`/`traceAllergens` kozmetik gösterim için önek atılmış halidir
+   * (bkz. openFoodFactsFetcher.ts parseTagList) — profil eşleştirmesi için
+   * KULLANILAMAZ. classifyAllergenTags yalnız bu ham alanları okur.
+   */
+  rawAllergenTags?: string[] | null;
+  rawTraceAllergenTags?: string[] | null;
   nutriScore?: string | null;
   novaGroup?: number | null;
   additives?: string[] | null;
@@ -190,6 +200,46 @@ function getConfidence(missingFields: ProductFactsMissingField[]): ProductFactsC
   return 'medium';
 }
 
+/**
+ * Canlı tek-ürün OFF çağrısı için catalog.ts'in buildAllergenData'sıyla AYNI
+ * mantık: ham etiketleri classifyAllergenTags ile sınıflar, dataStatus'ü
+ * 'present' yalnız TÜM ham etiketler bilinen bir kovaya düştüyse verir.
+ * Üretilen CatalogAllergenData, katalog kaynaklı ürünlerle AYNI birleştirme
+ * fonksiyonunu (evaluateCatalogAllergenDataForProfile, mobil) besler — bu
+ * yolun kendi ayrı, profil-farkında olmayan bir banner mantığı YOKTUR.
+ */
+function buildLiveOffAllergenData(
+  rawDeclared: string[],
+  rawTraces: string[],
+  ingredientsText: string | null,
+): CatalogAllergenData {
+  const declaredClass = classifyAllergenTags(rawDeclared);
+  const tracesClass = classifyAllergenTags(rawTraces);
+
+  const recognizedUnmodeled = [
+    ...new Set([...declaredClass.recognizedUnmodeled, ...tracesClass.recognizedUnmodeled]),
+  ];
+  const rawUnmapped = [...new Set([...declaredClass.unmapped, ...tracesClass.unmapped])];
+  const hasRawTags = rawDeclared.length > 0 || rawTraces.length > 0;
+
+  const dataStatus: CatalogAllergenDataStatus = !hasRawTags
+    ? 'unknown_or_unverified'
+    : rawUnmapped.length > 0
+      ? 'partial'
+      : 'present';
+
+  return {
+    declared: declaredClass.mapped,
+    traces: tracesClass.mapped,
+    recognizedUnmodeled,
+    rawUnmapped,
+    dataStatus,
+    // Canlı OFF yanıtı dil bilgisi taşımıyor (yalnız `ingredients_text` istendi,
+    // `ingredients_text_tr` değil) — 'other' yerine null: bilinmediğini gizlemez.
+    ingredientsEvidence: { text: ingredientsText, lang: null, source: 'off' },
+  };
+}
+
 function hasMeaningfulFoodFacts(facts: ProductFacts): boolean {
   return (
     !!facts.ingredientsText?.trim() ||
@@ -206,15 +256,24 @@ export function openFoodFactsInfoToProductFacts(
 ): ProductFacts {
   const declaredAllergens = normalizeStringList(input.allergens);
   const traceAllergens = normalizeStringList(input.traceAllergens);
+  const ingredientsText = normalizeText(input.ingredientsText);
 
   const facts: ProductFacts = {
     barcode: normalizeText(input.barcode),
     productName: normalizeText(input.productName),
     imageUrl: normalizeText(input.imageUrl),
-    ingredientsText: normalizeText(input.ingredientsText),
+    ingredientsText,
     allergens: Array.isArray(input.allergens) ? declaredAllergens : undefined,
     traceAllergens: Array.isArray(input.traceAllergens) ? traceAllergens : undefined,
     allergenInfo: buildAllergenInfo(declaredAllergens, traceAllergens),
+    // Katalog kaynaklı ürünlerle AYNI alan: doluysa mobil, arama/sepetle AYNI
+    // profil-farkında birleştirme fonksiyonunu (evaluateCatalogAllergenDataForProfile)
+    // kullanır — eski, profil-farkında olmayan allergenInfo yoluna DÜŞMEZ.
+    catalogAllergenData: buildLiveOffAllergenData(
+      normalizeStringList(input.rawAllergenTags),
+      normalizeStringList(input.rawTraceAllergenTags),
+      ingredientsText,
+    ),
     additives: Array.isArray(input.additives) ? normalizeStringList(input.additives) : undefined,
     nutriScoreGrade: normalizeNutriScoreGrade(input.nutriScore),
     novaGroup: normalizeNovaGroup(input.novaGroup),

@@ -99,16 +99,16 @@ export default function ProductResultScreen() {
       .catch(() => setUserProfile(emptyUserSensitivityProfile));
   }, []);
 
-  const hasBackendFoodAnalysis =
-    priceResolution?.result.healthScore?.status === 'ready' ||
-    priceResolution?.result.healthScore?.status === 'partial' ||
-    priceResolution?.result.contentScore?.status === 'ready' ||
-    priceResolution?.result.contentScore?.status === 'partial' ||
-    priceResolution?.result.rafScore?.status === 'ready';
   const backendProductFacts = priceResolution?.result.productFacts ?? null;
 
   const riskResult: ProductRiskResult = useMemo(() => {
-    if (backendProductFacts?.isComplete) {
+    // isComplete yalnız "kısmi veri" etiketini belirler — risk motorunu
+    // ÇALIŞTIRIP ÇALIŞTIRMAYACAĞINI belirlemez. backendProductFacts varsa
+    // (canlı OFF dahil), eksik alanlar null geçilir; evaluateProductRisks
+    // zaten tüm alanları opsiyonel kabul edip elindeki veriyle değerlendirir
+    // (bkz. P0 bulgusu: isComplete=false + kısmi veri → önceden risk motoru
+    // hiç çalışmıyordu).
+    if (backendProductFacts) {
       return evaluateProductRisks({
         name: backendProductFacts.productName ?? priceResolution?.result.productName ?? result.name ?? null,
         ingredients: backendProductFacts.ingredientsText ?? null,
@@ -119,10 +119,6 @@ export default function ProductResultScreen() {
         nutriScore: backendProductFacts.nutriScoreGrade ?? null,
         userProfile,
       });
-    }
-
-    if (hasBackendFoodAnalysis) {
-      return { overallRisk: 'unknown', warnings: [], isEvaluated: true };
     }
 
     if (result.analysisStatus !== 'ready') {
@@ -150,7 +146,7 @@ export default function ProductResultScreen() {
       nutriScore: result.nutriScore ?? null,
       userProfile,
     });
-  }, [backendProductFacts, hasBackendFoodAnalysis, priceResolution?.result.productName, result, userProfile]);
+  }, [backendProductFacts, priceResolution?.result.productName, result, userProfile]);
 
   useEffect(() => {
     setResult(getInitialResult(normalizedInput));
