@@ -7,7 +7,7 @@
  */
 
 import { useEffect } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { radii, spacing, useTheme } from './theme';
 
@@ -16,9 +16,11 @@ export interface ToastProps {
   visible: boolean;
   onHide: () => void;
   durationMs?: number;
+  /** Doluysa toast dokunulabilir olur (ör. "Sepete git") ve dokununca hem bu hem onHide çağrılır. */
+  onPress?: () => void;
 }
 
-export function Toast({ message, visible, onHide, durationMs = 2200 }: ToastProps) {
+export function Toast({ message, visible, onHide, durationMs = 2200, onPress }: ToastProps) {
   const { colors } = useTheme();
 
   useEffect(() => {
@@ -30,8 +32,18 @@ export function Toast({ message, visible, onHide, durationMs = 2200 }: ToastProp
 
   if (!visible) return null;
 
+  const Container = onPress ? Pressable : View;
+
   return (
-    <View
+    <Container
+      onPress={
+        onPress
+          ? () => {
+              onHide();
+              onPress();
+            }
+          : undefined
+      }
       style={{
         position: 'absolute',
         left: spacing.xl,
@@ -43,10 +55,10 @@ export function Toast({ message, visible, onHide, durationMs = 2200 }: ToastProp
         paddingHorizontal: spacing.lg,
         alignItems: 'center',
       }}
-      accessibilityRole="alert"
+      accessibilityRole={onPress ? 'button' : 'alert'}
       accessibilityLiveRegion="polite"
     >
       <Text style={{ color: colors.bg, fontWeight: '700', fontSize: 14 }}>{message}</Text>
-    </View>
+    </Container>
   );
 }

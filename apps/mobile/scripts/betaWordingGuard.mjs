@@ -59,7 +59,7 @@ function assertNotIncludes(fileName, content, forbiddenText) {
 }
 
 const productResult =
-  readMobileFile('app/product-result.tsx') + readMobileDirRecursive('src/features/productResult');
+  readMobileFile('app/(tabs)/product-result.tsx') + readMobileDirRecursive('src/features/productResult');
 const basketResult = readMobileFile('app/basket-result.tsx');
 const priceClient = readMobileFile('src/price/priceClient.ts');
 const rafScoreExplanation = readMobileFile('src/price/rafScoreExplanation.ts');

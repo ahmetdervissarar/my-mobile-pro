@@ -1,32 +1,32 @@
-import { submitBetaFeedback, type BetaFeedbackType } from '../src/api/betaFeedbackClient';
+import { submitBetaFeedback, type BetaFeedbackType } from '../../src/api/betaFeedbackClient';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { getFallbackProductSummary } from '../src/services/productService';
-import type { ProductSearchInput } from '../src/services/productService';
-import { getUserLocationForPricing } from '../src/services/locationService';
-import { evaluateProductRisks } from '../src/riskEngine/riskEngine';
-import type { ProductRiskResult } from '../src/riskEngine/riskEngine';
-import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorage';
-import { emptyUserSensitivityProfile } from '../src/userProfile/userProfileTypes';
-import type { UserSensitivityProfile } from '../src/userProfile/userProfileTypes';
-import { PriceClient } from '../src/price/priceClient';
+import { getFallbackProductSummary } from '../../src/services/productService';
+import type { ProductSearchInput } from '../../src/services/productService';
+import { getUserLocationForPricing } from '../../src/services/locationService';
+import { evaluateProductRisks } from '../../src/riskEngine/riskEngine';
+import type { ProductRiskResult } from '../../src/riskEngine/riskEngine';
+import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
+import { emptyUserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
+import type { UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
+import { PriceClient } from '../../src/price/priceClient';
 import type {
   AlternativeCategoryKey,
   AlternativeRecommendation,
   PriceResolveResponse,
-} from '../src/price/types';
-import { getRafScoreExplanationItems, getRafScorePositiveItems } from '../src/price/rafScoreExplanation';
-import { recordRecentlyViewed } from '../src/state/recentlyViewedStore';
-import { spacing, useTheme } from '../src/ui/theme';
+} from '../../src/price/types';
+import { getRafScoreExplanationItems, getRafScorePositiveItems } from '../../src/price/rafScoreExplanation';
+import { recordRecentlyViewed } from '../../src/state/recentlyViewedStore';
+import { spacing, useTheme } from '../../src/ui/theme';
 
-import { AllergenSection } from '../src/features/productResult/AllergenSection';
-import { AllergensDetailSection } from '../src/features/productResult/AllergensDetailSection';
-import { AlternativesSection } from '../src/features/productResult/AlternativesSection';
-import { DataQualityNotice } from '../src/features/productResult/DataQualityNotice';
-import { FooterSection } from '../src/features/productResult/FooterSection';
+import { AllergenSection } from '../../src/features/productResult/AllergenSection';
+import { AllergensDetailSection } from '../../src/features/productResult/AllergensDetailSection';
+import { AlternativesSection } from '../../src/features/productResult/AlternativesSection';
+import { DataQualityNotice } from '../../src/features/productResult/DataQualityNotice';
+import { FooterSection } from '../../src/features/productResult/FooterSection';
 import {
   CRITICAL_ALLERGEN_CODES,
   formatProductFactsMissingFields,
@@ -36,16 +36,16 @@ import {
   getTransitionSafeProductGroupKey,
   isExplicitlyAlternativesIneligible,
   productFactsToRiskTrafficLight,
-} from '../src/features/productResult/helpers';
-import { MoreDetailsSection } from '../src/features/productResult/MoreDetailsSection';
-import { NutriNovaSection } from '../src/features/productResult/NutriNovaSection';
-import { PositivesSection } from '../src/features/productResult/PositivesSection';
-import { PriceSection } from '../src/features/productResult/PriceSection';
-import { ProductHero } from '../src/features/productResult/ProductHero';
-import { ScoreSection } from '../src/features/productResult/ScoreSection';
-import { StickyAddBar } from '../src/features/productResult/StickyAddBar';
-import { UnknownProductNotice } from '../src/features/productResult/UnknownProductNotice';
-import { WarningsSection } from '../src/features/productResult/WarningsSection';
+} from '../../src/features/productResult/helpers';
+import { MoreDetailsSection } from '../../src/features/productResult/MoreDetailsSection';
+import { NutriNovaSection } from '../../src/features/productResult/NutriNovaSection';
+import { PositivesSection } from '../../src/features/productResult/PositivesSection';
+import { PriceSection } from '../../src/features/productResult/PriceSection';
+import { ProductHero } from '../../src/features/productResult/ProductHero';
+import { ScoreSection } from '../../src/features/productResult/ScoreSection';
+import { StickyAddBar } from '../../src/features/productResult/StickyAddBar';
+import { UnknownProductNotice } from '../../src/features/productResult/UnknownProductNotice';
+import { WarningsSection } from '../../src/features/productResult/WarningsSection';
 
 const priceClient = new PriceClient();
 

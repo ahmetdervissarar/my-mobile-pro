@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -58,7 +59,12 @@ export function StickyAddBar({ cartInput }: StickyAddBarProps) {
         accessibilityLabel="Ürünü sepete ekle"
       />
 
-      <Toast message="Sepete eklendi" visible={isToastVisible} onHide={() => setIsToastVisible(false)} />
+      <Toast
+        message="Sepete eklendi · Sepete git"
+        visible={isToastVisible}
+        onHide={() => setIsToastVisible(false)}
+        onPress={() => router.push('/basket')}
+      />
     </View>
   );
 }

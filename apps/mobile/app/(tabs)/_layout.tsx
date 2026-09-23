@@ -120,6 +120,17 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused }) => <TabGlyph glyph="◍" focused={focused} />,
         }}
       />
+      <Tabs.Screen
+        name="product-result"
+        options={{
+          // href:null: sekme çubuğunda görünmez ama AYNI Tabs navigatörünün
+          // parçası kalır — bu yüzden ürün sayfasına gidildiğinde alt sekme
+          // çubuğu (kök Stack'in üstüne push edilen bir ekranın aksine)
+          // görünür kalır (bkz. görev bulgusu, madde 2).
+          href: null,
+          title: 'Ürün',
+        }}
+      />
     </Tabs>
   );
 }
