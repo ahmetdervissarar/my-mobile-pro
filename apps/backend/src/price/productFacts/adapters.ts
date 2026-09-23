@@ -42,7 +42,18 @@ export function productFactsToHealthScoreInput(facts: ProductFacts): HealthScore
     productName: facts.productName ?? undefined,
     nutriScoreGrade: facts.nutriScoreGrade ?? null,
     novaGroup: facts.novaGroup ?? null,
-    trafficLight: facts.trafficLight ?? null,
+    // HealthScoreInput kendi bağımsız sözleşmesinde hâlâ 'sugar' (tekil) adını
+    // kullanıyor; ProductFactsTrafficLight'ın 'sugars' (çoğul) alanı buradan
+    // AÇIKÇA eşlenmezse iki opsiyonel alan yapısal olarak uyumlu göründüğünden
+    // tsc hatayı yakalamaz ve şeker sağlık-skoru katkısı sessizce sıfırlanır.
+    trafficLight: facts.trafficLight
+      ? {
+          sugar: facts.trafficLight.sugars,
+          salt: facts.trafficLight.salt,
+          saturatedFat: facts.trafficLight.saturatedFat,
+          fat: facts.trafficLight.fat,
+        }
+      : null,
   };
 }
 

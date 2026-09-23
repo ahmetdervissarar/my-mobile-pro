@@ -83,7 +83,7 @@ export function productFactsToRiskTrafficLight(
       unit: null,
       level: normalizeProductFactsTrafficLightLevel(trafficLight.saturatedFat),
     },
-    sugars: { value: null, unit: null, level: normalizeProductFactsTrafficLightLevel(trafficLight.sugar) },
+    sugars: { value: null, unit: null, level: normalizeProductFactsTrafficLightLevel(trafficLight.sugars) },
     salt: { value: null, unit: null, level: normalizeProductFactsTrafficLightLevel(trafficLight.salt) },
   };
 }

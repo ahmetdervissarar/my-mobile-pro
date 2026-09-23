@@ -38,6 +38,26 @@ export interface CatalogNova {
   source: 'off' | null;
 }
 
+/** Besin verisinin porsiyon tabanı. OFF-TR içe aktarımı bugün yalnız per_100g üretir. */
+export type CatalogNutritionBasis = 'per_100g' | 'per_100ml';
+
+/**
+ * Ham besin değerleri (gram/kcal, /100g veya /100ml) — kronik durum eşik
+ * kurallarının (bkz. mobil riskEngine.ts) girdisidir. record.nutrition100g'den
+ * doğrudan taşınır; bu katman herhangi bir yuvarlama/bant hesaplaması YAPMAZ.
+ */
+export interface CatalogNutrition100g {
+  energyKcal: number | null;
+  sugars: number | null;
+  salt: number | null;
+  saturatedFat: number | null;
+  fiber: number | null;
+  proteins: number | null;
+  carbohydrates: number | null;
+  /** OFF-TR içe aktarımı bu alanı bugün üretmiyor — veri kaynağı eklenene kadar hep null. */
+  transFat: number | null;
+}
+
 /**
  * Katalog düzeyinde yalnız üç durum vardır — not_listed_in_available_data
  * BURADA yoktur; o yalnız çip düzeyinde, profil alerjeni başına bir
@@ -81,6 +101,8 @@ export interface CatalogProduct {
   nutriScore: CatalogNutriScore;
   nova: CatalogNova;
   allergenData: CatalogAllergenData;
+  nutrition100g: CatalogNutrition100g;
+  nutritionBasis: CatalogNutritionBasis;
   provenance: OffImportRecord['provenance'];
   missingFields: string[];
   completeness: OffImportRecord['completeness'];
@@ -316,6 +338,20 @@ export function buildCatalogProduct(record: OffImportRecord): CatalogProduct {
     nutriScore,
     nova: buildNova(record),
     allergenData,
+    nutrition100g: {
+      energyKcal: record.nutrition100g.energyKcal,
+      sugars: record.nutrition100g.sugars,
+      salt: record.nutrition100g.salt,
+      saturatedFat: record.nutrition100g.saturatedFat,
+      fiber: record.nutrition100g.fiber,
+      proteins: record.nutrition100g.proteins,
+      carbohydrates: record.nutrition100g.carbohydrates,
+      // OFF-TR içe aktarımı (normalize.ts NutrientKey) trans yağı hiç taşımıyor.
+      transFat: null,
+    },
+    // OFF-TR içe aktarımı tüm besin alanlarını "_100g" OFF alanlarından okur
+    // (bkz. normalize.ts NUTRIENTS) — sıvılar için ayrı bir per_100ml yolu yok.
+    nutritionBasis: 'per_100g',
     provenance: record.provenance,
     missingFields,
     completeness,

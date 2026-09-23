@@ -32,10 +32,31 @@ export interface ProductFactsAllergenInfo {
 }
 
 export interface ProductFactsTrafficLight {
-  sugar?: ProductFactsTrafficLightValue | null;
+  sugars?: ProductFactsTrafficLightValue | null;
   salt?: ProductFactsTrafficLightValue | null;
   saturatedFat?: ProductFactsTrafficLightValue | null;
   fat?: ProductFactsTrafficLightValue | null;
+}
+
+/** Besin verisinin hangi porsiyon tabanına göre verildiği. OFF-TR bugün yalnız per_100g üretir. */
+export type ProductFactsNutritionBasis = 'per_100g' | 'per_100ml';
+
+/**
+ * Ham (sınıflandırılmamış) besin değerleri, gram/kcal cinsinden — kronik durum
+ * eşik kurallarının (bkz. riskEngine.ts) girdisidir. trafficLight yalnız
+ * bunlardan türetilmiş düşük/orta/yüksek BİLGİ bandını taşır; kural
+ * hesaplaması bu alandan, ham değerden yapılır.
+ */
+export interface ProductFactsNutrition100g {
+  energyKcal: number | null;
+  sugars: number | null;
+  salt: number | null;
+  saturatedFat: number | null;
+  fiber: number | null;
+  proteins: number | null;
+  carbohydrates: number | null;
+  /** OFF-TR içe aktarımı bu alanı bugün üretmiyor; veri kaynağı eklenene kadar hep null. */
+  transFat: number | null;
 }
 
 export interface ProductFacts {
@@ -46,6 +67,8 @@ export interface ProductFacts {
   nutriScoreGrade?: ProductFactsNutriScoreGrade | null;
   novaGroup?: ProductFactsNovaGroup | null;
   trafficLight?: ProductFactsTrafficLight | null;
+  nutrition100g?: ProductFactsNutrition100g | null;
+  nutritionBasis?: ProductFactsNutritionBasis | null;
 
   ingredientsText?: string | null;
   additives?: string[];

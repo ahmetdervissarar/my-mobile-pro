@@ -2,6 +2,7 @@
 // üretir — canlı OFF isteği YAPILMAZ. Katalogda GTIN yoksa null döner; çağıran
 // bu durumda canlı OFF yoluna düşer (bkz. priceProviderService.ts, tryFetchProductFacts).
 import { getCatalog, type CatalogProduct } from '../../catalog/catalog.js';
+import { classifyTrafficLightLevel } from './trafficLightClassifier.js';
 import type {
   ProductFacts,
   ProductFactsAllergenInfo,
@@ -9,7 +10,19 @@ import type {
   ProductFactsMissingField,
   ProductFactsNovaGroup,
   ProductFactsNutriScoreGrade,
+  ProductFactsTrafficLight,
 } from './types.js';
+
+function buildTrafficLightFromCatalogNutrition(
+  nutrition: CatalogProduct['nutrition100g'],
+): ProductFactsTrafficLight {
+  return {
+    fat: null, // Katalog nutrition100g bugün toplam yağ taşımıyor (yalnız doymuş yağ).
+    saturatedFat: classifyTrafficLightLevel(nutrition.saturatedFat, 'saturatedFat'),
+    sugars: classifyTrafficLightLevel(nutrition.sugars, 'sugars'),
+    salt: classifyTrafficLightLevel(nutrition.salt, 'salt'),
+  };
+}
 
 const MISSING_FIELD_MAP: Record<string, ProductFactsMissingField> = {
   name: 'productName',
@@ -65,7 +78,9 @@ export function productFactsFromCatalog(gtin: string): ProductFacts | null {
     imageUrl: product.imageUrl,
     nutriScoreGrade: (product.nutriScore.grade as ProductFactsNutriScoreGrade | null) ?? null,
     novaGroup: (product.nova.group as ProductFactsNovaGroup | null) ?? null,
-    trafficLight: null,
+    trafficLight: buildTrafficLightFromCatalogNutrition(product.nutrition100g),
+    nutrition100g: product.nutrition100g,
+    nutritionBasis: product.nutritionBasis,
     ingredientsText: product.allergenData.ingredientsEvidence.text,
     additives: [],
     allergens: product.allergenData.declared,

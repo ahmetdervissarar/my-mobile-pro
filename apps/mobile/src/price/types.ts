@@ -292,10 +292,25 @@ export interface ProductFactsAllergenInfo {
 }
 
 export interface ProductFactsTrafficLight {
-  sugar?: ProductFactsTrafficLightValue | null;
+  sugars?: ProductFactsTrafficLightValue | null;
   salt?: ProductFactsTrafficLightValue | null;
   saturatedFat?: ProductFactsTrafficLightValue | null;
   fat?: ProductFactsTrafficLightValue | null;
+}
+
+/** Besin verisinin porsiyon tabanı. Backend contract'ıyla birebir aynı (bkz. productFacts/types.ts). */
+export type ProductFactsNutritionBasis = 'per_100g' | 'per_100ml';
+
+/** Ham besin değerleri — kronik durum eşik kurallarının girdisi (bkz. riskEngine.ts). */
+export interface ProductFactsNutrition100g {
+  energyKcal: number | null;
+  sugars: number | null;
+  salt: number | null;
+  saturatedFat: number | null;
+  fiber: number | null;
+  proteins: number | null;
+  carbohydrates: number | null;
+  transFat: number | null;
 }
 
 export interface ProductFacts {
@@ -305,6 +320,8 @@ export interface ProductFacts {
   nutriScoreGrade?: ProductFactsNutriScoreGrade | null;
   novaGroup?: ProductFactsNovaGroup | null;
   trafficLight?: ProductFactsTrafficLight | null;
+  nutrition100g?: ProductFactsNutrition100g | null;
+  nutritionBasis?: ProductFactsNutritionBasis | null;
   ingredientsText?: string | null;
   additives?: string[];
   allergens?: string[];

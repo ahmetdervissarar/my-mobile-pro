@@ -1,3 +1,4 @@
+import { classifyTrafficLightLevel, hasAnyTrafficLightValue } from './trafficLightClassifier.js';
 import type {
   ProductFacts,
   ProductFactsConfidence,
@@ -5,7 +6,6 @@ import type {
   ProductFactsNovaGroup,
   ProductFactsNutriScoreGrade,
   ProductFactsTrafficLight,
-  ProductFactsTrafficLightValue,
 } from './types.js';
 
 export interface OpenFoodFactsProductInfoLike {
@@ -26,27 +26,6 @@ export interface OpenFoodFactsProductInfoLike {
   } | null;
   sourceUrl?: string | null;
 }
-
-type TrafficLightNutrient = 'fat' | 'saturatedFat' | 'sugars' | 'salt';
-
-const SOLID_FOOD_THRESHOLDS: Record<TrafficLightNutrient, { lowMax: number; highMinExclusive: number }> = {
-  fat: {
-    lowMax: 3,
-    highMinExclusive: 17.5,
-  },
-  saturatedFat: {
-    lowMax: 1.5,
-    highMinExclusive: 5,
-  },
-  sugars: {
-    lowMax: 5,
-    highMinExclusive: 22.5,
-  },
-  salt: {
-    lowMax: 0.3,
-    highMinExclusive: 1.5,
-  },
-};
 
 function normalizeText(value: string | null | undefined): string | null {
   const normalized = value?.trim();
@@ -102,27 +81,6 @@ function normalizeNovaGroup(value: number | null | undefined): ProductFactsNovaG
   return null;
 }
 
-function classifyTrafficLightLevel(
-  value: number | null | undefined,
-  nutrient: TrafficLightNutrient,
-): ProductFactsTrafficLightValue | null {
-  if (value === null || value === undefined || !Number.isFinite(value)) {
-    return null;
-  }
-
-  const threshold = SOLID_FOOD_THRESHOLDS[nutrient];
-
-  if (value <= threshold.lowMax) {
-    return 'low';
-  }
-
-  if (value > threshold.highMinExclusive) {
-    return 'high';
-  }
-
-  return 'medium';
-}
-
 function mapNutritionValuesToTrafficLight(
   nutritionValues: OpenFoodFactsProductInfoLike['nutritionValues'],
 ): ProductFactsTrafficLight | null {
@@ -133,26 +91,9 @@ function mapNutritionValuesToTrafficLight(
   return {
     fat: classifyTrafficLightLevel(nutritionValues.fat, 'fat'),
     saturatedFat: classifyTrafficLightLevel(nutritionValues.saturatedFat, 'saturatedFat'),
-    sugar: classifyTrafficLightLevel(nutritionValues.sugars, 'sugars'),
+    sugars: classifyTrafficLightLevel(nutritionValues.sugars, 'sugars'),
     salt: classifyTrafficLightLevel(nutritionValues.salt, 'salt'),
   };
-}
-
-function hasAnyTrafficLightValue(trafficLight: ProductFactsTrafficLight | null | undefined): boolean {
-  if (!trafficLight) {
-    return false;
-  }
-
-  return (
-    trafficLight.fat !== null &&
-    trafficLight.fat !== undefined ||
-    trafficLight.saturatedFat !== null &&
-    trafficLight.saturatedFat !== undefined ||
-    trafficLight.sugar !== null &&
-    trafficLight.sugar !== undefined ||
-    trafficLight.salt !== null &&
-    trafficLight.salt !== undefined
-  );
 }
 
 function getMissingFields(facts: ProductFacts): ProductFactsMissingField[] {

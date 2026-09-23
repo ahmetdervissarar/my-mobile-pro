@@ -27,7 +27,7 @@ function makeBaseResult(overrides: Partial<PriceResult> = {}): PriceResult {
       nutriScoreGrade: 'A',
       novaGroup: 1,
       trafficLight: {
-        sugar: 'low',
+        sugars: 'low',
         salt: 'low',
         saturatedFat: 'low',
         fat: 'low',

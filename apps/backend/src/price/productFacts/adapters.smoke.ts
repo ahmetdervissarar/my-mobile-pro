@@ -18,7 +18,7 @@ const facts: ProductFacts = {
   nutriScoreGrade: 'B',
   novaGroup: 4,
   trafficLight: {
-    sugar: 'low',
+    sugars: 'low',
     salt: 'medium',
     saturatedFat: 'high',
     fat: 'low',
