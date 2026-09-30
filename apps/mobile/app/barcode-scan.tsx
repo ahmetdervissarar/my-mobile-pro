@@ -6,10 +6,13 @@ import {
   type BarcodeScanningResult,
   useCameraPermissions,
 } from 'expo-camera';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function BarcodeScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scannedBarcode, setScannedBarcode] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
+  const containerStyle = [styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }];
 
   const handleBarcodeScanned = (result: BarcodeScanningResult) => {
     if (scannedBarcode) {
@@ -28,12 +31,12 @@ export default function BarcodeScanScreen() {
   };
 
   if (!permission) {
-    return <View style={styles.container} />;
+    return <View style={containerStyle} />;
   }
 
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
+      <View style={containerStyle}>
         <Text style={styles.title}>Barkod Okut</Text>
         <Text style={styles.infoText}>Barkod okutmak için kamera izni gerekli.</Text>
         <Button title="Kamera izni ver" onPress={requestPermission} />
@@ -42,7 +45,7 @@ export default function BarcodeScanScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={containerStyle}>
       <Text style={styles.title}>Barkod Okut</Text>
 
       <View style={styles.cameraWrapper}>
