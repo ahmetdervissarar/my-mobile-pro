@@ -19,6 +19,7 @@ import { EmptyState } from '../../src/ui/EmptyState';
 import { PrimaryButton } from '../../src/ui/PrimaryButton';
 import { SegmentedControl } from '../../src/ui/SegmentedControl';
 import { spacing, useTheme } from '../../src/ui/theme';
+import { Toast } from '../../src/ui/Toast';
 
 type BasketTabKey = 'score' | 'price';
 
@@ -36,6 +37,22 @@ export default function BasketScreen() {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(emptyUserSensitivityProfile);
+  const [cartActionErrorVisible, setCartActionErrorVisible] = useState(false);
+
+  // P0-2: sepet kaydı (miktar değişikliği/çıkarma) başarısız olursa sessizce
+  // geçilmez — kullanıcıya ayrı bir toast ile bildirilir. Değerlendirme
+  // ağ hatası (errorMessage) ile karıştırılmaz, farklı bir başarısızlık türüdür.
+  const handleQuantityChange = (key: string, amount: number) => {
+    void setCartItemQuantity(key, amount).then((ok) => {
+      if (!ok) setCartActionErrorVisible(true);
+    });
+  };
+
+  const handleRemove = (key: string) => {
+    void removeFromCart(key).then((ok) => {
+      if (!ok) setCartActionErrorVisible(true);
+    });
+  };
 
   useEffect(() => {
     void loadUserSensitivityProfile()
@@ -111,14 +128,20 @@ export default function BasketScreen() {
           basketProfile={evaluation?.basketProfile ?? null}
           cartItems={cartItems}
           userProfile={userProfile}
-          onQuantityChange={setCartItemQuantity}
-          onRemove={removeFromCart}
+          onQuantityChange={handleQuantityChange}
+          onRemove={handleRemove}
         />
       ) : (
         <PriceTab marketEvaluations={evaluation?.marketEvaluations ?? null} />
       )}
 
       <PrimaryButton label="Sepeti temizle" variant="ghost" onPress={clearCart} />
+
+      <Toast
+        message="Sepete kaydedilemedi, tekrar deneyin"
+        visible={cartActionErrorVisible}
+        onHide={() => setCartActionErrorVisible(false)}
+      />
     </ScrollView>
   );
 }

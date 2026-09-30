@@ -26,12 +26,16 @@ export interface StickyAddBarProps {
 export function StickyAddBar({ cartInput }: StickyAddBarProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const [isToastVisible, setIsToastVisible] = useState(false);
+  const [toast, setToast] = useState<{ message: string; ok: boolean } | null>(null);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!cartInput) return;
-    addToCart(cartInput);
-    setIsToastVisible(true);
+    const ok = await addToCart(cartInput);
+    setToast(
+      ok
+        ? { message: 'Sepete eklendi · Sepete git', ok: true }
+        : { message: 'Sepete eklenemedi, tekrar deneyin', ok: false },
+    );
   };
 
   return (
@@ -55,15 +59,15 @@ export function StickyAddBar({ cartInput }: StickyAddBarProps) {
         label="Sepete ekle"
         variant="citrus"
         disabled={!cartInput}
-        onPress={handleAdd}
+        onPress={() => void handleAdd()}
         accessibilityLabel="Ürünü sepete ekle"
       />
 
       <Toast
-        message="Sepete eklendi · Sepete git"
-        visible={isToastVisible}
-        onHide={() => setIsToastVisible(false)}
-        onPress={() => router.push('/basket')}
+        message={toast?.message ?? ''}
+        visible={toast !== null}
+        onHide={() => setToast(null)}
+        onPress={toast?.ok ? () => router.push('/basket') : undefined}
       />
     </View>
   );

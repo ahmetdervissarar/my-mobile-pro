@@ -89,6 +89,7 @@ export default function ProductContributionScreen() {
   const [offConsent, setOffConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitErrorVisible, setSubmitErrorVisible] = useState(false);
 
   const filledCount = SLOTS.filter((slot) => photos[slot.key] !== null).length;
 
@@ -115,13 +116,21 @@ export default function ProductContributionScreen() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    await submitBetaFeedback({
+    setSubmitErrorVisible(false);
+    const ok = await submitBetaFeedback({
       feedbackType: 'product_contribution',
       barcode: params.barcode,
       productName: params.productName,
     });
     setIsSubmitting(false);
-    setSubmitted(true);
+    // P0-2: ağ isteği başarısızsa "alındı" DENMEZ — submitBetaFeedback'in
+    // dönüşü (response.ok / bağlantı hatası) kontrol edilmeden önce burada
+    // sessizce yutuluyordu.
+    if (ok) {
+      setSubmitted(true);
+    } else {
+      setSubmitErrorVisible(true);
+    }
   };
 
   if (activeSlot) {
@@ -236,12 +245,19 @@ export default function ProductContributionScreen() {
           Katkı isteğin alındı. Teşekkürler!
         </Text>
       ) : (
-        <PrimaryButton
-          label="Gönder"
-          disabled={filledCount === 0 || isSubmitting}
-          loading={isSubmitting}
-          onPress={() => void handleSubmit()}
-        />
+        <>
+          {submitErrorVisible ? (
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.danger }}>
+              Gönderilemedi, bağlantını kontrol edip tekrar dene.
+            </Text>
+          ) : null}
+          <PrimaryButton
+            label="Gönder"
+            disabled={filledCount === 0 || isSubmitting}
+            loading={isSubmitting}
+            onPress={() => void handleSubmit()}
+          />
+        </>
       )}
 
       <PrimaryButton label="Geri dön" variant="ghost" onPress={() => router.back()} />

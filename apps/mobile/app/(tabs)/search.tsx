@@ -19,6 +19,7 @@ import { NutriScoreBadge } from '../../src/ui/NutriScoreBadge';
 import { ProductRow } from '../../src/ui/ProductRow';
 import { SegmentedControl } from '../../src/ui/SegmentedControl';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
+import { Toast } from '../../src/ui/Toast';
 
 type SortKey = 'score' | 'price' | 'unitPrice';
 
@@ -70,6 +71,7 @@ export default function SearchScreen() {
   const [searchErrorMessage, setSearchErrorMessage] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('score');
   const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(emptyUserSensitivityProfile);
+  const [cartActionErrorVisible, setCartActionErrorVisible] = useState(false);
   const cartItems = useCart();
 
   useEffect(() => {
@@ -135,13 +137,15 @@ export default function SearchScreen() {
     });
   };
 
-  const handleToggleCart = (suggestion: SearchSuggestion) => {
+  const handleToggleCart = async (suggestion: SearchSuggestion) => {
     const cartInput = suggestionToCartInput(suggestion);
-    if (cartItems.some((item) => item.key === getCartItemKey(cartInput))) {
-      removeFromCart(getCartItemKey(cartInput));
-      return;
+    const ok = cartItems.some((item) => item.key === getCartItemKey(cartInput))
+      ? await removeFromCart(getCartItemKey(cartInput))
+      : await addToCart(cartInput);
+
+    if (!ok) {
+      setCartActionErrorVisible(true);
     }
-    addToCart(cartInput);
   };
 
   return (
@@ -233,7 +237,7 @@ export default function SearchScreen() {
                 onPress={() => openProduct(suggestion)}
                 trailing={
                   <Pressable
-                    onPress={() => handleToggleCart(suggestion)}
+                    onPress={() => void handleToggleCart(suggestion)}
                     accessibilityRole="button"
                     accessibilityLabel={isAdded ? 'Sepetten çıkar' : 'Sepete ekle'}
                     style={{
@@ -285,6 +289,12 @@ export default function SearchScreen() {
           <Text style={{ fontSize: 15, fontWeight: '800', color: '#1B1B1B' }}>Sepete git</Text>
         </Pressable>
       ) : null}
+
+      <Toast
+        message="Sepete kaydedilemedi, tekrar deneyin"
+        visible={cartActionErrorVisible}
+        onHide={() => setCartActionErrorVisible(false)}
+      />
     </View>
   );
 }

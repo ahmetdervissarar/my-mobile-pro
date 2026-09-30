@@ -36,15 +36,50 @@ function emit(): void {
   for (const listener of listeners) listener();
 }
 
-function persist(): void {
-  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(items)).catch(() => {
-    // Kayıt başarısız olursa sessizce geç — sepet bellekte kalmaya devam eder.
-  });
+interface CartStorageAdapter {
+  getItem(key: string): Promise<string | null>;
+  setItem(key: string, value: string): Promise<void>;
+}
+
+/**
+ * Gerçek AsyncStorage native bir modüldür ve React Native çalışma zamanı
+ * dışında (ör. `tsx` ile düz Node'da) çalışmaz — bu yüzden P0-2'nin "kayıt
+ * başarısız olursa geri alınır" davranışı yalnızca bu değiştirilebilir
+ * referans üzerinden test edilebilir (bkz. cartStorePersistFailure.smoke.ts).
+ * Üretimde her zaman gerçek AsyncStorage kullanılır.
+ */
+let storageAdapter: CartStorageAdapter = AsyncStorage;
+
+/** Yalnız testler için — üretim kodu bunu hiç çağırmaz. */
+export function __setCartStorageAdapterForTesting(adapter: CartStorageAdapter): void {
+  storageAdapter = adapter;
+}
+
+/** Yalnız testler için — modül durumunu (items, isHydrated) sıfırlar. */
+export function __resetCartForTesting(initialItems: CartItem[] = []): void {
+  items = initialItems;
+  isHydrated = true;
+}
+
+/**
+ * P0-2: kayıt başarısızsa artık SESSİZCE geçilmez — çağıran taraf `false`
+ * dönüşünü görüp başarı mesajı göstermekten vazgeçebilir, kullanıcıya hata
+ * gösterebilir. Bellekteki `items` bu fonksiyonun içinde geri alınmaz;
+ * geri alma, mutasyonu yapan üst fonksiyonların sorumluluğundadır (böylece
+ * her çağıran kendi "önceki durum" anlık görüntüsünü tutar).
+ */
+async function persist(): Promise<boolean> {
+  try {
+    await storageAdapter.setItem(STORAGE_KEY, JSON.stringify(items));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function hydrate(): Promise<void> {
   try {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    const raw = await storageAdapter.getItem(STORAGE_KEY);
     if (raw) {
       items = JSON.parse(raw) as CartItem[];
     }
@@ -89,7 +124,8 @@ function getDefaultQuantity(productGroupKey: string): BasketItemQuantity {
   return { amount: 1, unit: 'piece' };
 }
 
-export function addToCart(input: {
+/** Kayıt başarılıysa true, AsyncStorage'a yazılamadıysa false döner (bellekteki değişiklik geri alınır). */
+export async function addToCart(input: {
   type: BasketItem['type'];
   productId?: string;
   productGroupKey: string;
@@ -97,7 +133,8 @@ export function addToCart(input: {
   brand?: string;
   packageSize?: { amount: number; unit: string };
   imageUrl?: string | null;
-}): void {
+}): Promise<boolean> {
+  const previousItems = items;
   const key = getCartItemKey(input);
   const existing = items.find((item) => item.key === key);
 
@@ -124,8 +161,13 @@ export function addToCart(input: {
     ];
   }
 
-  persist();
   emit();
+  const ok = await persist();
+  if (!ok) {
+    items = previousItems;
+    emit();
+  }
+  return ok;
 }
 
 export function suggestionToCartInput(
@@ -149,29 +191,46 @@ export function suggestionToCartInput(
   };
 }
 
-export function removeFromCart(key: string): void {
+export async function removeFromCart(key: string): Promise<boolean> {
+  const previousItems = items;
   items = items.filter((item) => item.key !== key);
-  persist();
   emit();
+  const ok = await persist();
+  if (!ok) {
+    items = previousItems;
+    emit();
+  }
+  return ok;
 }
 
-export function setCartItemQuantity(key: string, amount: number): void {
+export async function setCartItemQuantity(key: string, amount: number): Promise<boolean> {
   if (amount <= 0) {
-    removeFromCart(key);
-    return;
+    return removeFromCart(key);
   }
 
+  const previousItems = items;
   items = items.map((item) =>
     item.key === key ? { ...item, quantity: { ...item.quantity, amount } } : item,
   );
-  persist();
   emit();
+  const ok = await persist();
+  if (!ok) {
+    items = previousItems;
+    emit();
+  }
+  return ok;
 }
 
-export function clearCart(): void {
+export async function clearCart(): Promise<boolean> {
+  const previousItems = items;
   items = [];
-  persist();
   emit();
+  const ok = await persist();
+  if (!ok) {
+    items = previousItems;
+    emit();
+  }
+  return ok;
 }
 
 export function cartItemToBasketItem(item: CartItem): BasketItem {
