@@ -20,6 +20,9 @@ import { __resetVolunteersCacheForTesting } from './volunteers.js';
 const fixtureDir = mkdtempSync(join(tmpdir(), 'rafskoru-intake-routes-'));
 const volunteersPath = join(fixtureDir, 'volunteers.json');
 writeFileSync(volunteersPath, JSON.stringify({ 'MRS-01': 'key-1' }));
+// Gerçek apps/backend/data/intake/photos/ yerine geçici bir dizine yazar —
+// testler ÜRETİM veri dizinini asla kirletmemeli.
+const testPhotosDir = join(fixtureDir, 'photos');
 
 // routes.ts kendi volunteersFilePath'ini config.ts'ten türetir; test burada
 // INTAKE_VOLUNTEERS_JSON ile o yolu bypass edip sabit bir fixture'a bağlar.
@@ -69,6 +72,10 @@ function makeCatalogRecord(overrides: Partial<OffImportRecord>): OffImportRecord
 
 const ALREADY_COMPLETE_GTIN = '8690504000037';
 const MISSING_INGREDIENTS_ONLY_GTIN = '8690504000044';
+const NEW_GTIN = '8690504000013';
+// Submissions bloğunda bir kez doldurulur, admin bloğu foto önizlemeyi
+// GERÇEK bir submissionId ile test edebilsin diye modül seviyesinde tutulur.
+let frontPhotoSubmissionId = '';
 const catalogPath = join(fixtureDir, 'products.jsonl');
 const completeRecord = makeCatalogRecord({
   gtin: ALREADY_COMPLETE_GTIN,
@@ -109,7 +116,7 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
 {
   const app = express();
   app.use(express.json());
-  app.use('/api/intake', createIntakeRouter());
+  app.use('/api/intake', createIntakeRouter({ photosDir: testPhotosDir }));
 
   await withServer(app, async (baseUrl) => {
     const ok = await fetch(`${baseUrl}/api/intake/auth/verify`, {
@@ -145,7 +152,7 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
 {
   const app = express();
   app.use(express.json());
-  app.use('/api/intake', createIntakeRouter());
+  app.use('/api/intake', createIntakeRouter({ photosDir: testPhotosDir }));
   const authHeaders = { [VOLUNTEER_CODE_HEADER]: 'MRS-01', [VOLUNTEER_KEY_HEADER]: 'key-1' };
 
   await withServer(app, async (baseUrl) => {
@@ -172,7 +179,7 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
 // ── GET /meta ──────────────────────────────────────────────────────────────
 {
   const app = express();
-  app.use('/api/intake', createIntakeRouter());
+  app.use('/api/intake', createIntakeRouter({ photosDir: testPhotosDir }));
 
   await withServer(app, async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/intake/meta`);
@@ -188,9 +195,8 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
 {
   const app = express();
   app.use(express.json());
-  app.use('/api/intake', createIntakeRouter());
+  app.use('/api/intake', createIntakeRouter({ photosDir: testPhotosDir }));
   const authHeaders = { [VOLUNTEER_CODE_HEADER]: 'MRS-01', [VOLUNTEER_KEY_HEADER]: 'key-1' };
-  const NEW_GTIN = '8690504000013';
   const REAL_JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]);
   const FAKE_JPEG = Buffer.from('bu bir jpeg degil', 'utf8');
 
@@ -249,6 +255,7 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
     });
     assert.equal(uploadFront.status, 200);
     assert.deepEqual(await uploadFront.json(), { ok: true, receivedSlots: ['front'] });
+    frontPhotoSubmissionId = submissionId;
 
     // "YANLIŞ BAŞLIKLA GÖNDERİLEN DOSYA REDDEDİLİR" — Content-Type
     // image/jpeg İDDİA EDİYOR ama gerçek baytlar JPEG değil (bkz. görev
@@ -308,6 +315,68 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
     });
     assert.equal(noAuthUpload.status, 401);
   });
+}
+
+// ── GET /progress + GET /admin/stats, /admin/pending, /admin/photos, /admin/export.csv ─
+{
+  const app = express();
+  app.use(express.json());
+  app.use('/api/intake', createIntakeRouter({ photosDir: testPhotosDir }));
+  const authHeaders = { [VOLUNTEER_CODE_HEADER]: 'MRS-01', [VOLUNTEER_KEY_HEADER]: 'key-1' };
+  process.env.INTAKE_ADMIN_KEY = 'super-secret-admin';
+  const adminHeaders = { [ADMIN_KEY_HEADER]: 'super-secret-admin' };
+
+  await withServer(app, async (baseUrl) => {
+    // /progress: bu araçtaki önceki test bloklarından zaten en az bir
+    // MRS-01 kaydı var (aynı süreç, aynı :memory: db) — today/total >= 1.
+    const progressNoAuth = await fetch(`${baseUrl}/api/intake/progress`);
+    assert.equal(progressNoAuth.status, 401);
+
+    const progress = await fetch(`${baseUrl}/api/intake/progress`, { headers: authHeaders });
+    assert.equal(progress.status, 200);
+    const progressBody = (await progress.json()) as { today: number; total: number; totalAll: number };
+    assert.ok(progressBody.today >= 1);
+    assert.ok(progressBody.totalAll >= progressBody.total);
+
+    // /admin/stats: gönüllü kimliğiyle DEĞİL, yalnız admin anahtarıyla açılır.
+    const statsNoAdmin = await fetch(`${baseUrl}/api/intake/admin/stats`, { headers: authHeaders });
+    assert.equal(statsNoAdmin.status, 401, 'gönüllü kimliği admin uç noktasını açmamalı');
+
+    const stats = await fetch(`${baseUrl}/api/intake/admin/stats`, { headers: adminHeaders });
+    assert.equal(stats.status, 200);
+    const statsBody = (await stats.json()) as { stats: { totalSubmissions: number; dailyTrend: unknown[] } };
+    assert.ok(statsBody.stats.totalSubmissions >= 1);
+    assert.equal(statsBody.stats.dailyTrend.length, 14);
+
+    // /admin/pending: bu testten önce PUT edilmemiş en az bir eksik-slotlu
+    // kayıt (MISSING_INGREDIENTS_ONLY_GTIN submission'ı) bekleyen kalmalı.
+    const pending = await fetch(`${baseUrl}/api/intake/admin/pending`, { headers: adminHeaders });
+    assert.equal(pending.status, 200);
+    const pendingBody = (await pending.json()) as { submissions: { barcode: string }[] };
+    assert.ok(pendingBody.submissions.some((s) => s.barcode === MISSING_INGREDIENTS_ONLY_GTIN));
+
+    // /admin/photos/:filename: gerçek yüklenen fotoğrafı (submissionId-front.jpg) geri verir.
+    const photoResponse = await fetch(`${baseUrl}/api/intake/admin/photos/${frontPhotoSubmissionId}-front.jpg`, {
+      headers: adminHeaders,
+    });
+    assert.equal(photoResponse.status, 200);
+    assert.equal(photoResponse.headers.get('content-type'), 'image/jpeg');
+
+    const invalidFilename = await fetch(`${baseUrl}/api/intake/admin/photos/..%2F..%2Fetc%2Fpasswd`, {
+      headers: adminHeaders,
+    });
+    assert.equal(invalidFilename.status, 400, 'yol geçişi denemesi (path traversal) reddedilmeli');
+
+    // /admin/export.csv
+    const csvResponse = await fetch(`${baseUrl}/api/intake/admin/export.csv`, { headers: adminHeaders });
+    assert.equal(csvResponse.status, 200);
+    assert.match(csvResponse.headers.get('content-type') ?? '', /text\/csv/);
+    const csvText = await csvResponse.text();
+    assert.match(csvText, /barcode,volunteer_code/);
+    assert.match(csvText, new RegExp(NEW_GTIN));
+  });
+
+  delete process.env.INTAKE_ADMIN_KEY;
 }
 
 // ── /api/intake devre dışıyken her istek 503 dönmeli ─────────────────────

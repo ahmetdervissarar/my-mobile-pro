@@ -268,6 +268,11 @@ export function getVolunteerProgress(volunteerCode: string): { today: number; to
   return { today, total };
 }
 
+/** Tüm gönüllülerin toplamı — progress ekranındaki "toplam: N" için (bkz. gönüllü akışı madde 7). */
+export function getTotalSubmissionCount(): number {
+  return (requireDb().prepare('SELECT COUNT(*) as c FROM submissions').get() as { c: number }).c;
+}
+
 function countGroupedBy(column: 'volunteer_code' | 'city' | 'market_chain' | 'category'): AdminCountRow[] {
   const rows = requireDb()
     .prepare(`SELECT ${column} as key, COUNT(*) as count FROM submissions GROUP BY ${column} ORDER BY count DESC`)

@@ -5,9 +5,11 @@
  * Bu router yalnızca db.ts/volunteers.ts'in dışa açtığı fonksiyonları
  * çağırır — hiçbir yerde doğrudan SQL yazmaz (bkz. db.ts başlık yorumu).
  */
+import { existsSync, readFileSync } from 'node:fs';
+
 import express, { Router } from 'express';
 
-import { requireVolunteerAuth } from './auth.js';
+import { requireAdminAuth, requireVolunteerAuth } from './auth.js';
 import { getIntakePhotosDir, getIntakeVolunteersFilePath } from './config.js';
 import {
   INTAKE_CATEGORIES,
@@ -18,7 +20,18 @@ import {
   isKnownCity,
   isKnownMarketChain,
 } from './constants.js';
-import { createSubmission, DuplicateBarcodeError, getSubmissionById, markSlotReceived } from './db.js';
+import { buildCsv } from './csv.js';
+import {
+  createSubmission,
+  DuplicateBarcodeError,
+  getAdminStats,
+  getAllSubmissionsForExport,
+  getPendingSubmissions,
+  getSubmissionById,
+  getTotalSubmissionCount,
+  getVolunteerProgress,
+  markSlotReceived,
+} from './db.js';
 import { evaluateBarcodeLookup, type IntakePhotoSlot } from './lookup.js';
 import { savePhoto } from './photoStorage.js';
 import { validatePhotoUpload } from './photoValidation.js';
@@ -26,11 +39,18 @@ import { createRateLimiter, keyByVolunteerOrIp } from './rateLimit.js';
 import { verifyVolunteer } from './volunteers.js';
 
 const PHOTO_SLOTS: IntakePhotoSlot[] = ['front', 'ingredients', 'nutrition'];
+/** submissionId (UUID) + '-' + slot + uzantı — istemciden gelen serbest bir yol DEĞİL. */
+const PHOTO_FILENAME_PATTERN = /^[0-9a-f-]+-(front|ingredients|nutrition)\.(jpg|png)$/;
 
-export function createIntakeRouter(): Router {
+export interface CreateIntakeRouterOptions {
+  /** Yalnız testler için — production'da her zaman config.ts'in gerçek yolu kullanılır. */
+  photosDir?: string;
+}
+
+export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Router {
   const router = Router();
   const volunteersFilePath = getIntakeVolunteersFilePath();
-  const photosDir = getIntakePhotosDir();
+  const photosDir = options.photosDir ?? getIntakePhotosDir();
   const volunteerAuth = requireVolunteerAuth({ volunteersFilePath });
 
   // Giriş denemesi kaba kuvvetine karşı IP başına sınır (henüz kimlik
@@ -192,6 +212,73 @@ export function createIntakeRouter(): Router {
       res.json({ ok: true, receivedSlots: updated?.receivedSlots ?? [] });
     },
   );
+
+  router.get('/progress', volunteerAuth, (req, res) => {
+    const { today, total } = getVolunteerProgress(req.intakeVolunteerCode!);
+    res.json({ ok: true, today, total, totalAll: getTotalSubmissionCount() });
+  });
+
+  router.get('/admin/stats', requireAdminAuth, (_req, res) => {
+    res.json({ ok: true, stats: getAdminStats() });
+  });
+
+  router.get('/admin/pending', requireAdminAuth, (_req, res) => {
+    res.json({ ok: true, submissions: getPendingSubmissions() });
+  });
+
+  // Dosya adı yalnızca submissionId+slot'tan türetilmiş olabilir (bkz.
+  // PHOTO_FILENAME_PATTERN) — istemciden serbest bir yol asla kabul edilmez.
+  router.get('/admin/photos/:filename', requireAdminAuth, (req, res) => {
+    const filename = String(req.params.filename);
+
+    if (!PHOTO_FILENAME_PATTERN.test(filename)) {
+      res.status(400).json({ ok: false, error: 'invalid_filename' });
+      return;
+    }
+
+    const filePath = `${photosDir}/${filename}`;
+    if (!existsSync(filePath)) {
+      res.status(404).json({ ok: false, error: 'photo_not_found' });
+      return;
+    }
+
+    res.setHeader('Content-Type', filename.endsWith('.png') ? 'image/png' : 'image/jpeg');
+    res.send(readFileSync(filePath));
+  });
+
+  router.get('/admin/export.csv', requireAdminAuth, (_req, res) => {
+    const rows = getAllSubmissionsForExport().map((submission) => [
+      submission.barcode,
+      submission.volunteerCode,
+      submission.marketChain,
+      submission.city,
+      submission.category,
+      submission.status,
+      submission.requestedSlots.join('|'),
+      submission.receivedSlots.join('|'),
+      submission.createdAt,
+      submission.clientCreatedAt,
+    ]);
+    const csv = buildCsv(
+      [
+        'barcode',
+        'volunteer_code',
+        'market_chain',
+        'city',
+        'category',
+        'status',
+        'requested_slots',
+        'received_slots',
+        'created_at',
+        'client_created_at',
+      ],
+      rows,
+    );
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="intake-export.csv"');
+    res.send(csv);
+  });
 
   return router;
 }
