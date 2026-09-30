@@ -9,6 +9,7 @@ import { Router } from 'express';
 
 import { requireVolunteerAuth } from './auth.js';
 import { getIntakeVolunteersFilePath } from './config.js';
+import { evaluateBarcodeLookup } from './lookup.js';
 import { verifyVolunteer } from './volunteers.js';
 
 export function createIntakeRouter(): Router {
@@ -31,6 +32,24 @@ export function createIntakeRouter(): Router {
 
   router.get('/auth/ping', requireVolunteerAuth({ volunteersFilePath }), (req, res) => {
     res.json({ ok: true, volunteerCode: req.intakeVolunteerCode });
+  });
+
+  router.get('/lookup', requireVolunteerAuth({ volunteersFilePath }), (req, res) => {
+    const barcode = typeof req.query.barcode === 'string' ? req.query.barcode.trim() : '';
+
+    if (!barcode) {
+      res.status(400).json({ ok: false, error: 'missing_barcode' });
+      return;
+    }
+
+    const result = evaluateBarcodeLookup(barcode);
+
+    if (result.status === 'invalid_gtin') {
+      res.status(400).json({ ok: false, error: 'invalid_gtin' });
+      return;
+    }
+
+    res.json({ ok: true, ...result });
   });
 
   return router;
