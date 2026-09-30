@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { mapAllergenKeysToDisplayLabels } from '../../riskEngine/catalogAllergenChip';
 import { radii, spacing, useTheme } from '../../ui/theme';
 
 export interface AllergensDetailSectionProps {
@@ -34,7 +35,7 @@ export function AllergensDetailSection({
       <View>
         <Text style={{ fontSize: 12, fontWeight: '700', color: colors.muted }}>Alerjenler</Text>
         <Text style={{ fontSize: 14, color: colors.ink, marginTop: 2 }}>
-          {allergens.length > 0 ? allergens.join(', ') : 'Bilinmiyor'}
+          {allergens.length > 0 ? mapAllergenKeysToDisplayLabels(allergens).join(', ') : 'Bilinmiyor'}
         </Text>
       </View>
 

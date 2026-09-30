@@ -120,6 +120,13 @@ const betaFeedbackClient = readMobileFile('src/api/betaFeedbackClient.ts');
 assertIncludes('betaFeedbackClient.ts', betaFeedbackClient, 'product_contribution');
 assertIncludes('betaFeedbackClient.ts', betaFeedbackClient, 'Ürün katkısı');
 
+// D1 (device test 30 Eylül): "egg, gluten_wheat, milk" gibi ham kanonik
+// alerjen anahtarları kullanıcıya asla ham haliyle gösterilmemeli — her zaman
+// mapAllergenKeysToDisplayLabels() ile TR etikete çevrilmeli.
+const allergensDetailSection = readMobileFile('src/features/productResult/AllergensDetailSection.tsx');
+assertIncludes('AllergensDetailSection.tsx', allergensDetailSection, 'mapAllergenKeysToDisplayLabels');
+assertNotIncludes('AllergensDetailSection.tsx', allergensDetailSection, 'allergens.join(');
+
 for (const [fileName, content] of [
   ['product-result.tsx', productResult],
   ['basket-result.tsx', basketResult],
