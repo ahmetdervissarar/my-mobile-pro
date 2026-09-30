@@ -146,10 +146,29 @@ function catalogProductToSuggestion(product: CatalogProduct): ProductSearchSugge
   };
 }
 
+const GENERIC_GROUP_NAME_BY_KEY: Map<string, string> = new Map(
+  PRODUCT_GROUP_REGISTRY.map((entry) => [entry.canonicalProductGroupKey, entry.displayName.tr]),
+);
+
 /**
- * Sıralama: (1) en üstteki grup önerisiyle aynı ürün grubu önce, (2) veri
- * tamlığı (complete > usable_for_risk > diğerleri), (3) Nutri-Score (A→E;
- * notu olmayan en sonda), (4) ad. Ürün grubu ürün adından ÇIKARILMAZ —
+ * D4 (device test 30 Eylül): "Süt" ve "%3.1 Yağlı Süt" gibi iki FARKLI GTIN,
+ * aynı marka+boyutta, kullanıcının ayırt edemediği isimlerle listeleniyordu.
+ * Mükerrer GTIN değil — silinmez/tekilleştirilmez (veri kaybı riski). Bunun
+ * yerine adı, kendi ürün grubunun jenerik Türkçe adıyla (ör. "Süt") birebir
+ * aynı olan kayıt, aynı gruptaki diğer (daha açıklayıcı isimli) kayıtların
+ * ARKASINA sıralanır — listeden ÇIKARILMAZ.
+ */
+function hasGenericGroupName(product: CatalogProduct): boolean {
+  const genericName = GENERIC_GROUP_NAME_BY_KEY.get(product.productGroupKey);
+  if (!genericName) return false;
+  return foldSearchText(product.name ?? '') === foldSearchText(genericName);
+}
+
+/**
+ * Sıralama: (1) en üstteki grup önerisiyle aynı ürün grubu önce, (2) adı
+ * yalnızca ürün grubunun jenerik adıyla aynı olan kayıtlar sona (D4), (3)
+ * veri tamlığı (complete > usable_for_risk > diğerleri), (4) Nutri-Score
+ * (A→E; notu olmayan en sonda), (5) ad. Ürün grubu ürün adından ÇIKARILMAZ —
  * yalnız katalogda zaten hesaplanmış productGroupKey kullanılır.
  */
 function compareCatalogProducts(a: CatalogProduct, b: CatalogProduct, topGroupKey: string | null): number {
@@ -158,6 +177,10 @@ function compareCatalogProducts(a: CatalogProduct, b: CatalogProduct, topGroupKe
     const bInTopGroup = b.productGroupKey === topGroupKey ? 0 : 1;
     if (aInTopGroup !== bInTopGroup) return aInTopGroup - bInTopGroup;
   }
+
+  const aGeneric = hasGenericGroupName(a) ? 1 : 0;
+  const bGeneric = hasGenericGroupName(b) ? 1 : 0;
+  if (aGeneric !== bGeneric) return aGeneric - bGeneric;
 
   const aCompleteness = COMPLETENESS_RANK[a.completeness];
   const bCompleteness = COMPLETENESS_RANK[b.completeness];

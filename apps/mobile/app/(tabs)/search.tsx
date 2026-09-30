@@ -1,9 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchSearchSuggestions, type SearchSuggestion } from '../../src/api/productSuggestionClient';
+import { getDuplicateBarcodeSuffixes } from '../../src/features/search/suggestionDisambiguation';
 import {
   evaluateCatalogAllergenDataForProfile,
   getAllergenDisplayLevel,
@@ -37,13 +38,17 @@ function getSuggestionAllergenEvaluation(
   return evaluateCatalogAllergenDataForProfile(suggestion.allergenData, userProfile);
 }
 
-function getSuggestionMeta(suggestion: SearchSuggestion): string | null {
+function getSuggestionMeta(suggestion: SearchSuggestion, duplicateBarcodeSuffix?: string): string | null {
   if (suggestion.type !== 'product') {
     return 'Ürün grubu';
   }
 
   return (
-    [suggestion.brand, suggestion.packageSize ? `${suggestion.packageSize.amount} ${suggestion.packageSize.unit}` : undefined]
+    [
+      suggestion.brand,
+      suggestion.packageSize ? `${suggestion.packageSize.amount} ${suggestion.packageSize.unit}` : undefined,
+      duplicateBarcodeSuffix,
+    ]
       .filter(Boolean)
       .join(' · ') || null
   );
@@ -63,6 +68,7 @@ export default function SearchScreen() {
   const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(emptyUserSensitivityProfile);
   const [cartActionErrorVisible, setCartActionErrorVisible] = useState(false);
   const cartItems = useCart();
+  const duplicateBarcodeSuffixes = useMemo(() => getDuplicateBarcodeSuffixes(suggestions), [suggestions]);
 
   useEffect(() => {
     void loadUserSensitivityProfile()
@@ -198,7 +204,10 @@ export default function SearchScreen() {
                 key={key}
                 imageUrl={suggestion.type === 'product' ? suggestion.imageUrl : undefined}
                 name={suggestion.label}
-                meta={getSuggestionMeta(suggestion)}
+                meta={getSuggestionMeta(
+                  suggestion,
+                  suggestion.type === 'product' ? duplicateBarcodeSuffixes.get(suggestion.productId) : undefined,
+                )}
                 score={null}
                 allergenStatus={allergenEvaluation.status}
                 allergenDisplayInfo={allergenDisplayInfo}
