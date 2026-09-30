@@ -9,6 +9,9 @@ import { join } from 'node:path';
 
 import express from 'express';
 
+import { loadCatalog } from '../catalog/catalog.js';
+import type { OffImportRecord } from '../tools/offTurkey/normalize.js';
+
 import { ADMIN_KEY_HEADER, requireAdminAuth, VOLUNTEER_CODE_HEADER, VOLUNTEER_KEY_HEADER } from './auth.js';
 import { __resetIntakeDbForTesting } from './db.js';
 import { createIntakeRouter, createIntakeUnavailableRouter } from './routes.js';
@@ -23,6 +26,71 @@ writeFileSync(volunteersPath, JSON.stringify({ 'MRS-01': 'key-1' }));
 __resetVolunteersCacheForTesting();
 process.env.INTAKE_VOLUNTEERS_JSON = JSON.stringify({ 'MRS-01': 'key-1' });
 __resetIntakeDbForTesting(':memory:');
+
+const BASE_PROVENANCE: OffImportRecord['provenance'] = {
+  source: 'off',
+  license: 'ODbL-1.0',
+  url: 'https://world.openfoodfacts.org/product/0000000000000',
+  observedAt: '2026-09-01T00:00:00.000Z',
+  fetchedAt: '2026-09-21T00:00:00.000Z',
+};
+
+function makeCatalogRecord(overrides: Partial<OffImportRecord>): OffImportRecord {
+  return {
+    gtin: '0000000000000',
+    name: 'Test Ürünü',
+    brand: 'Test Marka',
+    quantity: null,
+    categories: [],
+    imageUrl: null,
+    ingredientsText: null,
+    ingredientsLang: null,
+    allergens: { declared: [], traces: [], rawDeclared: [], rawTraces: [], dataStatus: 'unknown_or_unverified' },
+    nutriscoreGrade: null,
+    offGradeRaw: null,
+    novaGroup: null,
+    nutrition100g: {
+      energyKcal: null,
+      fat: null,
+      saturatedFat: null,
+      carbohydrates: null,
+      sugars: null,
+      fiber: null,
+      proteins: null,
+      salt: null,
+    },
+    additives: [],
+    provenance: BASE_PROVENANCE,
+    missingFields: [],
+    completeness: 'insufficient',
+    ...overrides,
+  };
+}
+
+const ALREADY_COMPLETE_GTIN = '8690504000037';
+const MISSING_INGREDIENTS_ONLY_GTIN = '8690504000044';
+const catalogPath = join(fixtureDir, 'products.jsonl');
+const completeRecord = makeCatalogRecord({
+  gtin: ALREADY_COMPLETE_GTIN,
+  imageUrl: 'https://example.com/front.jpg',
+  ingredientsText: 'Su, şeker.',
+  allergens: { declared: [], traces: [], rawDeclared: [], rawTraces: [], dataStatus: 'not_listed_in_available_data' },
+  nutriscoreGrade: 'c',
+  novaGroup: 2,
+  nutrition100g: { energyKcal: 40, fat: 0, saturatedFat: 0, carbohydrates: 10, sugars: 10, fiber: 0, proteins: 0, salt: 0 },
+});
+// Yalnız 'ingredients' eksik: front (imageUrl) ve nutrition (nutriscore/nova/çekirdek besinler) zaten tam.
+const missingIngredientsOnlyRecord = makeCatalogRecord({
+  gtin: MISSING_INGREDIENTS_ONLY_GTIN,
+  imageUrl: 'https://example.com/front.jpg',
+  ingredientsText: null,
+  allergens: { declared: ['milk'], traces: [], rawDeclared: ['en:milk'], rawTraces: [], dataStatus: 'present' },
+  nutriscoreGrade: 'c',
+  novaGroup: 2,
+  nutrition100g: { energyKcal: 40, fat: 0, saturatedFat: 0, carbohydrates: 10, sugars: 10, fiber: 0, proteins: 0, salt: 0 },
+});
+writeFileSync(catalogPath, `${JSON.stringify(completeRecord)}\n${JSON.stringify(missingIngredientsOnlyRecord)}\n`);
+loadCatalog(catalogPath);
 
 async function withServer<T>(app: express.Express, run: (baseUrl: string) => Promise<T>): Promise<T> {
   const server = app.listen(0);
@@ -98,6 +166,147 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
     assert.equal(newBody.ok, true);
     assert.equal(newBody.status, 'new');
     assert.deepEqual(newBody.neededSlots, ['front', 'ingredients', 'nutrition']);
+  });
+}
+
+// ── GET /meta ──────────────────────────────────────────────────────────────
+{
+  const app = express();
+  app.use('/api/intake', createIntakeRouter());
+
+  await withServer(app, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/intake/meta`);
+    assert.equal(response.status, 200, 'meta kimlik doğrulama gerektirmemeli — girişten önce listeler gerekir');
+    const body = (await response.json()) as { marketChains: unknown[]; cities: unknown[]; categories: unknown[] };
+    assert.ok(body.marketChains.length > 0);
+    assert.ok(body.cities.length > 0);
+    assert.ok(body.categories.length > 0);
+  });
+}
+
+// ── POST /submissions + PUT /submissions/:id/photos/:slot ──────────────────
+{
+  const app = express();
+  app.use(express.json());
+  app.use('/api/intake', createIntakeRouter());
+  const authHeaders = { [VOLUNTEER_CODE_HEADER]: 'MRS-01', [VOLUNTEER_KEY_HEADER]: 'key-1' };
+  const NEW_GTIN = '8690504000013';
+  const REAL_JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]);
+  const FAKE_JPEG = Buffer.from('bu bir jpeg degil', 'utf8');
+
+  await withServer(app, async (baseUrl) => {
+    const validSubmissionBody = {
+      barcode: NEW_GTIN,
+      marketChain: 'migros',
+      city: 'istanbul',
+      category: 'atistirmalik',
+      clientCreatedAt: new Date().toISOString(),
+    };
+
+    // Geçersiz metadata (listede olmayan market zinciri) → 400.
+    const invalidMeta = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ ...validSubmissionBody, marketChain: 'olmayan-market' }),
+    });
+    assert.equal(invalidMeta.status, 400);
+    assert.equal(((await invalidMeta.json()) as { error: string }).error, 'invalid_metadata');
+
+    // Zaten tam olan bir katalog ürünü için gönderim → 409 already_complete.
+    const alreadyComplete = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ ...validSubmissionBody, barcode: ALREADY_COMPLETE_GTIN }),
+    });
+    assert.equal(alreadyComplete.status, 409);
+    assert.equal(((await alreadyComplete.json()) as { error: string }).error, 'already_complete');
+
+    // Yeni ürün → 201, 3 slot istenir.
+    const created = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify(validSubmissionBody),
+    });
+    assert.equal(created.status, 201);
+    const createdBody = (await created.json()) as { submissionId: string; requestedSlots: string[] };
+    assert.deepEqual(createdBody.requestedSlots, ['front', 'ingredients', 'nutrition']);
+    const submissionId = createdBody.submissionId;
+
+    // Aynı barkod tekrar gönderilirse → 409 duplicate_barcode.
+    const duplicate = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify(validSubmissionBody),
+    });
+    assert.equal(duplicate.status, 409);
+    assert.equal(((await duplicate.json()) as { error: string }).error, 'duplicate_barcode');
+
+    // Gerçek bir JPEG yükleme → kabul edilir, receivedSlots güncellenir.
+    const uploadFront = await fetch(`${baseUrl}/api/intake/submissions/${submissionId}/photos/front`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/jpeg', ...authHeaders },
+      body: REAL_JPEG,
+    });
+    assert.equal(uploadFront.status, 200);
+    assert.deepEqual(await uploadFront.json(), { ok: true, receivedSlots: ['front'] });
+
+    // "YANLIŞ BAŞLIKLA GÖNDERİLEN DOSYA REDDEDİLİR" — Content-Type
+    // image/jpeg İDDİA EDİYOR ama gerçek baytlar JPEG değil (bkz. görev
+    // onayı, madde 2: bu testin varlığı açıkça istendi).
+    const fakeUpload = await fetch(`${baseUrl}/api/intake/submissions/${submissionId}/photos/ingredients`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/jpeg', ...authHeaders },
+      body: FAKE_JPEG,
+    });
+    assert.equal(fakeUpload.status, 400);
+    assert.equal(((await fakeUpload.json()) as { error: string }).error, 'invalid_file_type');
+
+    // Bilinmeyen submission id → 404.
+    const notFound = await fetch(`${baseUrl}/api/intake/submissions/olmayan-id/photos/front`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/jpeg', ...authHeaders },
+      body: REAL_JPEG,
+    });
+    assert.equal(notFound.status, 404);
+
+    // İstenmeyen bir slota yükleme → 400 slot_not_requested. Bu ürünün
+    // yalnızca 'ingredients' eksik (front/nutrition katalogda zaten tam) —
+    // 'front' slotu hiç istenmedi.
+    const missingIngredientsSubmission = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ ...validSubmissionBody, barcode: MISSING_INGREDIENTS_ONLY_GTIN }),
+    });
+    assert.equal(missingIngredientsSubmission.status, 201);
+    const missingIngredientsBody = (await missingIngredientsSubmission.json()) as {
+      submissionId: string;
+      requestedSlots: string[];
+    };
+    assert.deepEqual(missingIngredientsBody.requestedSlots, ['ingredients']);
+
+    const unrequestedSlot = await fetch(
+      `${baseUrl}/api/intake/submissions/${missingIngredientsBody.submissionId}/photos/front`,
+      { method: 'PUT', headers: { 'Content-Type': 'image/jpeg', ...authHeaders }, body: REAL_JPEG },
+    );
+    assert.equal(unrequestedSlot.status, 400);
+    assert.equal(((await unrequestedSlot.json()) as { error: string }).error, 'slot_not_requested');
+
+    // Geçersiz slot adı → 400.
+    const invalidSlot = await fetch(`${baseUrl}/api/intake/submissions/${submissionId}/photos/yan-taraf`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/jpeg', ...authHeaders },
+      body: REAL_JPEG,
+    });
+    assert.equal(invalidSlot.status, 400);
+    assert.equal(((await invalidSlot.json()) as { error: string }).error, 'invalid_slot');
+
+    // Kimlik doğrulama olmadan yükleme → 401.
+    const noAuthUpload = await fetch(`${baseUrl}/api/intake/submissions/${submissionId}/photos/nutrition`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/jpeg' },
+      body: REAL_JPEG,
+    });
+    assert.equal(noAuthUpload.status, 401);
   });
 }
 
