@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { loadCatalog } from './catalog/catalog.js';
+import { initIntakeDb } from './intake/db.js';
 import { ManualBetaPriceProvider } from './price/providers/manualBetaPriceProvider.js';
 import { PriceProviderService } from './price/priceProviderService.js';
 import { createPriceRouter } from './routes/priceRoutes.js';
@@ -19,6 +20,18 @@ const PORT = Number(process.env.PORT ?? 3001);
 
 const catalogPath = resolve(fileURLToPath(new URL('.', import.meta.url)), '../data/off-tr/products.jsonl');
 loadCatalog(catalogPath);
+
+// Intake (gönüllü ürün toplama) modülü node:sqlite gerektirir — bu isteğe
+// bağlı bir alt sistemdir, başarısız olursa ANA backend (price/search/basket)
+// ayakta kalmaya devam eder; yalnızca /api/intake/* 503 döner (bkz.
+// createIntakeRouter/createIntakeUnavailableRouter, routes.ts).
+const intakeDbPath = resolve(fileURLToPath(new URL('.', import.meta.url)), '../data/intake/intake.db');
+try {
+  initIntakeDb(intakeDbPath);
+  console.log('[intake] veritabanı hazır.');
+} catch (err) {
+  console.error(`[intake] devre dışı: ${(err as Error).message}`);
+}
 
 app.use(cors());
 app.use(express.json());

@@ -40,3 +40,7 @@ apps/mobile/.env
 
 # OFF Türkiye içe aktarma çıktısı (ODbL; repoya eklenmez)
 apps/backend/data/off-tr/
+
+# Intake (gönüllü ürün toplama) — fotoğraflar, SQLite veritabanı, gönüllü
+# anahtar listesi. Kişisel/hassas veri içerebilir, repoya asla girmez.
+apps/backend/data/intake/
