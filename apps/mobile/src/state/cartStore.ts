@@ -106,10 +106,25 @@ export function subscribeCart(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
+/**
+ * P1-6: barkodsuz ürünler (fotoğraf/isim aramasından gelen, bkz.
+ * product-result.tsx'in cartInput'u) productId olmadan 'product' tipiyle
+ * gelebilir. productId her zaman `product:${productId}` biçiminde
+ * kullanılırsa, tüm barkodsuz ürünler AYNI `product:undefined` anahtarına
+ * düşer ve sepette birbirinin yerine geçer (biri eklenince diğeri "sepette"
+ * görünür, miktarı paylaşır). Barkod yoksa productGroupKey + label ile
+ * ayırt edilir — barkodsuz durumda zaten kesin bir ürün kimliği yoktur,
+ * bu en iyi ayırt edicidir.
+ */
 export function getCartItemKey(
-  item: Pick<CartItem, 'type' | 'productId' | 'productGroupKey'>,
+  item: Pick<CartItem, 'type' | 'productId' | 'productGroupKey' | 'label'>,
 ): string {
-  return item.type === 'product' ? `product:${item.productId}` : `product_group:${item.productGroupKey}`;
+  if (item.type !== 'product') {
+    return `product_group:${item.productGroupKey}`;
+  }
+
+  const productId = item.productId?.trim();
+  return productId ? `product:${productId}` : `product_unresolved:${item.productGroupKey}:${item.label}`;
 }
 
 function getDefaultQuantity(productGroupKey: string): BasketItemQuantity {

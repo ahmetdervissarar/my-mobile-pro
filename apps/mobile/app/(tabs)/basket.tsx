@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { evaluateBasket, type BasketEvaluateResponse } from '../../src/api/basketClient';
@@ -52,6 +52,21 @@ export default function BasketScreen() {
     void removeFromCart(key).then((ok) => {
       if (!ok) setCartActionErrorVisible(true);
     });
+  };
+
+  const handleClearCart = () => {
+    Alert.alert('Sepet temizlensin mi?', 'Sepetteki tüm ürünler kaldırılacak.', [
+      { text: 'Vazgeç', style: 'cancel' },
+      {
+        text: 'Temizle',
+        style: 'destructive',
+        onPress: () => {
+          void clearCart().then((ok) => {
+            if (!ok) setCartActionErrorVisible(true);
+          });
+        },
+      },
+    ]);
   };
 
   useEffect(() => {
@@ -135,7 +150,7 @@ export default function BasketScreen() {
         <PriceTab marketEvaluations={evaluation?.marketEvaluations ?? null} />
       )}
 
-      <PrimaryButton label="Sepeti temizle" variant="ghost" onPress={clearCart} />
+      <PrimaryButton label="Sepeti temizle" variant="ghost" onPress={handleClearCart} />
 
       <Toast
         message="Sepete kaydedilemedi, tekrar deneyin"
