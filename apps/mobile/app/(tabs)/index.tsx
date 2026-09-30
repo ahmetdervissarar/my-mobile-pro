@@ -103,8 +103,8 @@ export default function HomeScreen() {
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
         <GridTile
-          title="Fotoğrafla tanı"
-          subtitle="Barkod okunamıyorsa"
+          title="Fotoğrafla ara"
+          subtitle="Barkod okunamıyorsa (beta)"
           onPress={() => router.push('/photo-search')}
         />
         <GridTile title="İsimle ara" subtitle="Ürün adını yaz" onPress={() => router.push('/search')} />
