@@ -5,7 +5,9 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { loadCatalog } from './catalog/catalog.js';
+import { getIntakeDbPath } from './intake/config.js';
 import { initIntakeDb } from './intake/db.js';
+import { createIntakeRouter, createIntakeUnavailableRouter } from './intake/routes.js';
 import { ManualBetaPriceProvider } from './price/providers/manualBetaPriceProvider.js';
 import { PriceProviderService } from './price/priceProviderService.js';
 import { createPriceRouter } from './routes/priceRoutes.js';
@@ -23,14 +25,15 @@ loadCatalog(catalogPath);
 
 // Intake (gönüllü ürün toplama) modülü node:sqlite gerektirir — bu isteğe
 // bağlı bir alt sistemdir, başarısız olursa ANA backend (price/search/basket)
-// ayakta kalmaya devam eder; yalnızca /api/intake/* 503 döner (bkz.
-// createIntakeRouter/createIntakeUnavailableRouter, routes.ts).
-const intakeDbPath = resolve(fileURLToPath(new URL('.', import.meta.url)), '../data/intake/intake.db');
+// ayakta kalmaya devam eder; yalnızca /api/intake/* 503 döner.
+let intakeRouter;
 try {
-  initIntakeDb(intakeDbPath);
+  initIntakeDb(getIntakeDbPath());
   console.log('[intake] veritabanı hazır.');
+  intakeRouter = createIntakeRouter();
 } catch (err) {
   console.error(`[intake] devre dışı: ${(err as Error).message}`);
+  intakeRouter = createIntakeUnavailableRouter((err as Error).message);
 }
 
 app.use(cors());
@@ -56,6 +59,7 @@ app.use('/api/price', createPriceRouter(priceService));
 app.use('/api/search', createSearchRouter());
 app.use('/api/basket', createBasketRouter());
 app.use('/api/beta', createBetaRouter());
+app.use('/api/intake', intakeRouter);
 
 app.listen(PORT, () => {
   console.log(`RafSkoru backend running on http://localhost:${PORT}`);
