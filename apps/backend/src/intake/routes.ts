@@ -19,6 +19,8 @@ import {
   isKnownCategory,
   isKnownCity,
   isKnownMarketChain,
+  isValidLocalMarketName,
+  LOCAL_MARKET_CHAIN_KEY,
 } from './constants.js';
 import { buildCsv } from './csv.js';
 import {
@@ -111,6 +113,7 @@ export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Rou
     const volunteerCode = req.intakeVolunteerCode!;
     const barcode = typeof req.body?.barcode === 'string' ? req.body.barcode.trim() : '';
     const marketChain = typeof req.body?.marketChain === 'string' ? req.body.marketChain.trim() : '';
+    const marketChainOtherRaw = typeof req.body?.marketChainOther === 'string' ? req.body.marketChainOther.trim() : '';
     const city = typeof req.body?.city === 'string' ? req.body.city.trim() : '';
     const category = typeof req.body?.category === 'string' ? req.body.category.trim() : '';
     const clientCreatedAt =
@@ -120,6 +123,22 @@ export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Rou
       res.status(400).json({ ok: false, error: 'invalid_metadata' });
       return;
     }
+
+    // "yerel" seçilmişse serbest ad ZORUNLU ve kurallara uymalı; başka HİÇBİR
+    // kodla birlikte kaydedilmez — bu yüzden diğer zincirlerde alan doluysa da
+    // reddedilir (bkz. görev onayı, madde: "başka hiçbir kodla birlikte
+    // kaydedilmesin").
+    if (marketChain === LOCAL_MARKET_CHAIN_KEY) {
+      if (!isValidLocalMarketName(marketChainOtherRaw)) {
+        res.status(400).json({ ok: false, error: 'invalid_local_market_name' });
+        return;
+      }
+    } else if (marketChainOtherRaw) {
+      res.status(400).json({ ok: false, error: 'invalid_metadata' });
+      return;
+    }
+
+    const marketChainOther = marketChain === LOCAL_MARKET_CHAIN_KEY ? marketChainOtherRaw : null;
 
     const lookupResult = evaluateBarcodeLookup(barcode);
 
@@ -148,6 +167,7 @@ export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Rou
         barcode,
         volunteerCode,
         marketChain,
+        marketChainOther,
         city,
         category,
         status: lookupResult.status,
@@ -251,6 +271,7 @@ export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Rou
       submission.barcode,
       submission.volunteerCode,
       submission.marketChain,
+      submission.marketChainOther ?? '',
       submission.city,
       submission.category,
       submission.status,
@@ -264,6 +285,7 @@ export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Rou
         'barcode',
         'volunteer_code',
         'market_chain',
+        'market_chain_other',
         'city',
         'category',
         'status',

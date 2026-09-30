@@ -73,6 +73,7 @@ function makeCatalogRecord(overrides: Partial<OffImportRecord>): OffImportRecord
 const ALREADY_COMPLETE_GTIN = '8690504000037';
 const MISSING_INGREDIENTS_ONLY_GTIN = '8690504000044';
 const NEW_GTIN = '8690504000013';
+const LOCAL_MARKET_GTIN = '8690504000051';
 // Submissions bloğunda bir kez doldurulur, admin bloğu foto önizlemeyi
 // GERÇEK bir submissionId ile test edebilsin diye modül seviyesinde tutulur.
 let frontPhotoSubmissionId = '';
@@ -218,6 +219,64 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
     assert.equal(invalidMeta.status, 400);
     assert.equal(((await invalidMeta.json()) as { error: string }).error, 'invalid_metadata');
 
+    // Geçersiz kategori (listede olmayan) → 400.
+    const invalidCategory = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ ...validSubmissionBody, category: 'olmayan-kategori' }),
+    });
+    assert.equal(invalidCategory.status, 400);
+    assert.equal(((await invalidCategory.json()) as { error: string }).error, 'invalid_metadata');
+
+    // Kategori boş bırakılırsa (zorunlu) → 400.
+    const missingCategory = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ ...validSubmissionBody, category: '' }),
+    });
+    assert.equal(missingCategory.status, 400);
+
+    // "yerel" seçilip serbest ad BOŞ bırakılırsa → 400 invalid_local_market_name.
+    const localMissingName = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ ...validSubmissionBody, marketChain: 'yerel' }),
+    });
+    assert.equal(localMissingName.status, 400);
+    assert.equal(((await localMissingName.json()) as { error: string }).error, 'invalid_local_market_name');
+
+    // "yerel" + kurallara uymayan serbest ad (izin verilmeyen karakter) → 400.
+    const localInvalidChars = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ ...validSubmissionBody, marketChain: 'yerel', marketChainOther: 'Market <b>X</b>' }),
+    });
+    assert.equal(localInvalidChars.status, 400);
+    assert.equal(((await localInvalidChars.json()) as { error: string }).error, 'invalid_local_market_name');
+
+    // "yerel" DEĞİLKEN serbest ad gönderilirse → 400 (başka hiçbir kodla
+    // birlikte kaydedilmesin, bkz. görev onayı).
+    const nonLocalWithFreeText = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ ...validSubmissionBody, marketChainOther: 'Bu kaydedilmemeli' }),
+    });
+    assert.equal(nonLocalWithFreeText.status, 400);
+    assert.equal(((await nonLocalWithFreeText.json()) as { error: string }).error, 'invalid_metadata');
+
+    // "yerel" + geçerli serbest ad → 201, marketChainOther doğru kaydedilir.
+    const localValid = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({
+        ...validSubmissionBody,
+        barcode: LOCAL_MARKET_GTIN,
+        marketChain: 'yerel',
+        marketChainOther: 'Ayşe Manav',
+      }),
+    });
+    assert.equal(localValid.status, 201);
+
     // Zaten tam olan bir katalog ürünü için gönderim → 409 already_complete.
     const alreadyComplete = await fetch(`${baseUrl}/api/intake/submissions`, {
       method: 'POST',
@@ -344,9 +403,28 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
 
     const stats = await fetch(`${baseUrl}/api/intake/admin/stats`, { headers: adminHeaders });
     assert.equal(stats.status, 200);
-    const statsBody = (await stats.json()) as { stats: { totalSubmissions: number; dailyTrend: unknown[] } };
+    const statsBody = (await stats.json()) as {
+      stats: {
+        totalSubmissions: number;
+        dailyTrend: unknown[];
+        categoryBreakdown: { category: string; total: number; pending: number }[];
+        localMarketBreakdown: { key: string; count: number }[];
+      };
+    };
     assert.ok(statsBody.stats.totalSubmissions >= 1);
     assert.equal(statsBody.stats.dailyTrend.length, 14);
+
+    // Kategori kırılımı: en az bu testte oluşturulan 'atistirmalik' kaydını içermeli.
+    const atistirmalikBreakdown = statsBody.stats.categoryBreakdown.find((row) => row.category === 'atistirmalik');
+    assert.ok(atistirmalikBreakdown, "categoryBreakdown 'atistirmalik'i içermeli");
+    assert.ok(atistirmalikBreakdown!.total >= 1);
+    assert.ok(atistirmalikBreakdown!.pending >= 1, 'foto yüklenmeyen kayıtlar kalan sayılmalı');
+
+    // Yerel market kırılımı: yazılan ad (kod değil) listelenmeli.
+    assert.deepEqual(
+      statsBody.stats.localMarketBreakdown.find((row) => row.key === 'Ayşe Manav'),
+      { key: 'Ayşe Manav', count: 1 },
+    );
 
     // /admin/pending: bu testten önce PUT edilmemiş en az bir eksik-slotlu
     // kayıt (MISSING_INGREDIENTS_ONLY_GTIN submission'ı) bekleyen kalmalı.
@@ -372,8 +450,9 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
     assert.equal(csvResponse.status, 200);
     assert.match(csvResponse.headers.get('content-type') ?? '', /text\/csv/);
     const csvText = await csvResponse.text();
-    assert.match(csvText, /barcode,volunteer_code/);
+    assert.match(csvText, /barcode,volunteer_code,market_chain,market_chain_other/);
     assert.match(csvText, new RegExp(NEW_GTIN));
+    assert.match(csvText, /Ayşe Manav/, "yerel market kaydının serbest adı CSV'de görünmeli");
   });
 
   delete process.env.INTAKE_ADMIN_KEY;

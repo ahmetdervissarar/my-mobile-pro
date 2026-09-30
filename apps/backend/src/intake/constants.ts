@@ -14,30 +14,39 @@ export interface IntakeOption {
   label: string;
 }
 
+/** Serbest metinle yerel market adı girilen özel kod (bkz. LOCAL_MARKET_NAME_PATTERN). */
+export const LOCAL_MARKET_CHAIN_KEY = 'yerel';
+
 export const INTAKE_MARKET_CHAINS: IntakeOption[] = [
-  { key: 'migros', label: 'Migros' },
   { key: 'a101', label: 'A101' },
   { key: 'bim', label: 'BİM' },
-  { key: 'sok', label: 'ŞOK' },
+  { key: 'sok', label: 'Şok' },
+  { key: 'migros', label: 'Migros' },
   { key: 'carrefoursa', label: 'CarrefourSA' },
+  { key: 'tarim_kredi', label: 'Tarım Kredi Kooperatif' },
   { key: 'hakmar', label: 'Hakmar' },
-  { key: 'diger', label: 'Diğer' },
+  { key: 'onur', label: 'Onur Market' },
+  { key: 'ozhan', label: 'Özhan Market' },
+  { key: 'groseri', label: 'Groseri' },
+  { key: 'sec', label: 'Seç Market' },
+  { key: LOCAL_MARKET_CHAIN_KEY, label: 'Yerel market (adını yaz)' },
 ];
 
 export const INTAKE_CATEGORIES: IntakeOption[] = [
-  { key: 'sut_urunleri', label: 'Süt ürünleri' },
-  { key: 'et_urunleri', label: 'Et ve şarküteri' },
-  { key: 'firin_ekmek', label: 'Fırın ve ekmek' },
-  { key: 'meyve_sebze', label: 'Meyve ve sebze' },
+  { key: 'sut_urunleri', label: 'Süt ve süt ürünleri' },
+  { key: 'kahvaltilik', label: 'Kahvaltılık' },
   { key: 'atistirmalik', label: 'Atıştırmalık' },
   { key: 'icecek', label: 'İçecek' },
-  { key: 'kahvaltilik', label: 'Kahvaltılık' },
-  { key: 'temel_gida', label: 'Temel gıda (bakliyat, un, şeker)' },
-  { key: 'dondurulmus', label: 'Dondurulmuş ürün' },
-  { key: 'konserve', label: 'Konserve ve hazır yemek' },
-  { key: 'bebek_urunleri', label: 'Bebek ürünleri' },
-  { key: 'kisisel_bakim', label: 'Kişisel bakım' },
-  { key: 'temizlik', label: 'Temizlik' },
+  { key: 'sicak_icecek', label: 'Çay ve kahve' },
+  { key: 'bakliyat_tahil', label: 'Bakliyat ve tahıl' },
+  { key: 'makarna_eriste', label: 'Makarna ve erişte' },
+  { key: 'unlu_mamul', label: 'Ekmek ve unlu mamul' },
+  { key: 'konserve_hazir', label: 'Konserve ve hazır yemek' },
+  { key: 'yag_sos', label: 'Yağ ve sos' },
+  { key: 'sekerli', label: 'Şekerli ürünler' },
+  { key: 'dondurulmus', label: 'Dondurulmuş ve dondurma' },
+  { key: 'bebek', label: 'Bebek ürünleri' },
+  { key: 'et_sarkuteri', label: 'Et ve şarküteri (ambalajlı)' },
   { key: 'diger', label: 'Diğer' },
 ];
 
@@ -79,4 +88,13 @@ export function isKnownCategory(key: string): boolean {
 
 export function isKnownCity(key: string): boolean {
   return cityKeys.has(key);
+}
+
+/** Yalnız harf (TR dahil), rakam, boşluk, nokta, tire — baştaki/sondaki boşluk zaten trim edilmiş olmalı. */
+const LOCAL_MARKET_NAME_PATTERN = /^[\p{L}0-9 .-]+$/u;
+export const LOCAL_MARKET_NAME_MAX_LENGTH = 60;
+
+/** "yerel" market zinciri seçildiğinde zorunlu olan serbest metnin kuralı (bkz. görev onayı). */
+export function isValidLocalMarketName(name: string): boolean {
+  return name.length > 0 && name.length <= LOCAL_MARKET_NAME_MAX_LENGTH && LOCAL_MARKET_NAME_PATTERN.test(name);
 }

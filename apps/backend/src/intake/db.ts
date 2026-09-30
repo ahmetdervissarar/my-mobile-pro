@@ -21,6 +21,8 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
+import { LOCAL_MARKET_CHAIN_KEY } from './constants.js';
+
 export const INTAKE_MIN_NODE_VERSION = '22.5.0';
 
 export class IntakeUnsupportedNodeError extends Error {}
@@ -64,6 +66,8 @@ export interface IntakeSubmissionRow {
   barcode: string;
   volunteerCode: string;
   marketChain: string;
+  /** Yalnız marketChain === LOCAL_MARKET_CHAIN_KEY ('yerel') iken dolu — başka hiçbir kodla birlikte kaydedilmez. */
+  marketChainOther: string | null;
   city: string;
   category: string;
   status: 'new' | 'missing_fields';
@@ -77,6 +81,7 @@ export interface CreateSubmissionInput {
   barcode: string;
   volunteerCode: string;
   marketChain: string;
+  marketChainOther?: string | null;
   city: string;
   category: string;
   status: 'new' | 'missing_fields';
@@ -89,13 +94,22 @@ export interface AdminCountRow {
   count: number;
 }
 
+export interface CategoryBreakdownRow {
+  category: string;
+  total: number;
+  /** requestedSlots'un bir kısmı hâlâ receivedSlots'ta olmayan kayıt sayısı. */
+  pending: number;
+}
+
 export interface AdminStats {
   totalSubmissions: number;
   todaySubmissions: number;
   byVolunteer: AdminCountRow[];
   byCity: AdminCountRow[];
   byMarketChain: AdminCountRow[];
-  byCategory: AdminCountRow[];
+  categoryBreakdown: CategoryBreakdownRow[];
+  /** market_chain='yerel' kayıtlarında yazılan serbest ad başına sayım (bkz. görev onayı). */
+  localMarketBreakdown: AdminCountRow[];
   /** Son 14 gün, en eskiden en yeniye. Kayıt olmayan günler 0 count ile dolu gelir. */
   dailyTrend: { date: string; count: number }[];
 }
@@ -114,6 +128,7 @@ function rowToSubmission(row: Record<string, unknown>): IntakeSubmissionRow {
     barcode: row.barcode as string,
     volunteerCode: row.volunteer_code as string,
     marketChain: row.market_chain as string,
+    marketChainOther: (row.market_chain_other as string | null) ?? null,
     city: row.city as string,
     category: row.category as string,
     status: row.status as IntakeSubmissionRow['status'],
@@ -151,6 +166,7 @@ export function initIntakeDb(path: string): void {
       barcode TEXT NOT NULL UNIQUE,
       volunteer_code TEXT NOT NULL,
       market_chain TEXT NOT NULL,
+      market_chain_other TEXT,
       city TEXT NOT NULL,
       category TEXT NOT NULL,
       status TEXT NOT NULL,
@@ -162,6 +178,16 @@ export function initIntakeDb(path: string): void {
     CREATE INDEX IF NOT EXISTS idx_submissions_volunteer ON submissions(volunteer_code);
     CREATE INDEX IF NOT EXISTS idx_submissions_created_at ON submissions(created_at);
   `);
+
+  // Hafif şema göçü: market_chain_other sonradan eklendi (bkz. görev onayı,
+  // "yerel" market serbest metni). CREATE TABLE IF NOT EXISTS, tablo zaten
+  // varsa yeni sütunu eklemez — bu yüzden PRAGMA table_info ile kontrol edip
+  // gerekirse ALTER TABLE ile eklenir. Yeni kurulan bir veritabanında bu
+  // dal hiç çalışmaz (sütun CREATE TABLE ile zaten gelir — bkz. altta).
+  const columns = instance.prepare('PRAGMA table_info(submissions)').all() as { name: string }[];
+  if (!columns.some((column) => column.name === 'market_chain_other')) {
+    instance.exec('ALTER TABLE submissions ADD COLUMN market_chain_other TEXT');
+  }
 
   db = instance;
 }
@@ -195,14 +221,15 @@ export function createSubmission(input: CreateSubmissionInput): IntakeSubmission
     database
       .prepare(
         `INSERT INTO submissions
-           (id, barcode, volunteer_code, market_chain, city, category, status, requested_slots, received_slots, created_at, client_created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, ?)`,
+           (id, barcode, volunteer_code, market_chain, market_chain_other, city, category, status, requested_slots, received_slots, created_at, client_created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, ?)`,
       )
       .run(
         id,
         input.barcode,
         input.volunteerCode,
         input.marketChain,
+        input.marketChainOther ?? null,
         input.city,
         input.category,
         input.status,
@@ -273,10 +300,45 @@ export function getTotalSubmissionCount(): number {
   return (requireDb().prepare('SELECT COUNT(*) as c FROM submissions').get() as { c: number }).c;
 }
 
-function countGroupedBy(column: 'volunteer_code' | 'city' | 'market_chain' | 'category'): AdminCountRow[] {
+function countGroupedBy(column: 'volunteer_code' | 'city' | 'market_chain'): AdminCountRow[] {
   const rows = requireDb()
     .prepare(`SELECT ${column} as key, COUNT(*) as count FROM submissions GROUP BY ${column} ORDER BY count DESC`)
     .all() as { key: string; count: number }[];
+  return rows.map((row) => ({ key: row.key, count: row.count }));
+}
+
+/** Her kategori için toplam kayıt + eksik-slotlu ("kalan") kayıt sayısı (bkz. görev onayı). */
+export function getCategoryBreakdown(): CategoryBreakdownRow[] {
+  const rows = requireDb().prepare('SELECT category, requested_slots, received_slots FROM submissions').all() as {
+    category: string;
+    requested_slots: string;
+    received_slots: string;
+  }[];
+
+  const byCategory = new Map<string, CategoryBreakdownRow>();
+  for (const row of rows) {
+    const entry = byCategory.get(row.category) ?? { category: row.category, total: 0, pending: 0 };
+    entry.total += 1;
+
+    const requestedSlots = JSON.parse(row.requested_slots) as string[];
+    const receivedSlots = JSON.parse(row.received_slots) as string[];
+    if (requestedSlots.some((slot) => !receivedSlots.includes(slot))) entry.pending += 1;
+
+    byCategory.set(row.category, entry);
+  }
+
+  return [...byCategory.values()].sort((a, b) => b.total - a.total);
+}
+
+/** market_chain='yerel' kayıtlarında yazılan serbest ad başına sayım — panelde "yerel" tek satıra sıkışmasın diye. */
+export function getLocalMarketBreakdown(): AdminCountRow[] {
+  const rows = requireDb()
+    .prepare(
+      `SELECT market_chain_other as key, COUNT(*) as count FROM submissions
+       WHERE market_chain = ? AND market_chain_other IS NOT NULL
+       GROUP BY market_chain_other ORDER BY count DESC`,
+    )
+    .all(LOCAL_MARKET_CHAIN_KEY) as { key: string; count: number }[];
   return rows.map((row) => ({ key: row.key, count: row.count }));
 }
 
@@ -312,7 +374,8 @@ export function getAdminStats(): AdminStats {
     byVolunteer: countGroupedBy('volunteer_code'),
     byCity: countGroupedBy('city'),
     byMarketChain: countGroupedBy('market_chain'),
-    byCategory: countGroupedBy('category'),
+    categoryBreakdown: getCategoryBreakdown(),
+    localMarketBreakdown: getLocalMarketBreakdown(),
     dailyTrend,
   };
 }

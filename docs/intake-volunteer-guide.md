@@ -24,6 +24,10 @@ Telefonun bunu hatırlar — bir daha girmen gerekmez.
 Hangi markette ve hangi şehirde olduğunu seç. Bu seçim, market/şehir
 değiştirene kadar sabit kalır — her üründe tekrar sormaz.
 
+**Market zinciri listede yoksa** "Yerel market" seçeneğini seç ve açılan
+kutuya marketin adını yaz (ör. "Ayşe Manav"). Şube adı veya adres
+yazmana gerek yok — yalnızca market adı ve şehir yeterli.
+
 ## 3. Barkodu oku
 
 - Tarayıcın destekliyorsa "Kamerayla okut"a bas, barkodu kameraya göster.
@@ -50,8 +54,9 @@ besin tablosu — bulanık olursa kullanılamaz).
 **⚠️ Fotoğraflarda insan olmamalı.** Yalnızca ürünü, içindekiler
 bölümünü ve besin tablosunu çek — çevredeki insanları kadraja alma.
 
-Kategoriyi seç (ör. "Süt ürünleri"), tüm fotoğraflar tamam olunca
-"Gönder"e bas.
+Kategoriyi ürünün bulunduğu **reyona göre** seç (ör. süt reyonundaki bir
+ürün → "Süt ve süt ürünleri"). Hangisini seçeceğinden emin değilsen
+"Diğer"i işaretle. Tüm fotoğraflar tamam olunca "Gönder"e bas.
 
 ## 6. Bağlantı yoksa ne olur?
 

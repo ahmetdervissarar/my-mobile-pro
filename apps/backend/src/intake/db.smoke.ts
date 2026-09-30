@@ -14,6 +14,8 @@ import {
   DuplicateBarcodeError,
   findSubmissionByBarcode,
   getAdminStats,
+  getCategoryBreakdown,
+  getLocalMarketBreakdown,
   getPendingSubmissions,
   getVolunteerProgress,
   isVersionAtLeast,
@@ -103,6 +105,36 @@ const baseInput = {
   );
   assert.equal(stats.dailyTrend.length, 14, 'günlük seyir tam 14 gün olmalı');
   assert.equal(stats.dailyTrend[13].count, 2, 'bugünün satırı (sondaki) 2 kayıt göstermeli');
+}
+
+// ── "yerel" market + kategori/market kırılımı ────────────────────────────
+{
+  createSubmission({
+    barcode: '8691004000043',
+    volunteerCode: 'MRS-02',
+    marketChain: 'yerel',
+    marketChainOther: 'Ayşe Manav',
+    city: 'ankara',
+    category: 'atistirmalik',
+    status: 'new',
+    requestedSlots: ['front'],
+    clientCreatedAt: new Date().toISOString(),
+  });
+
+  const yerelSubmission = findSubmissionByBarcode('8691004000043')!;
+  assert.equal(yerelSubmission.marketChain, 'yerel');
+  assert.equal(yerelSubmission.marketChainOther, 'Ayşe Manav', 'serbest ad geri okunabilmeli');
+
+  const nonLocalSubmission = findSubmissionByBarcode(baseInput.barcode)!;
+  assert.equal(nonLocalSubmission.marketChainOther, null, 'yerel olmayan kayıtlarda serbest ad hep null olmalı');
+
+  const categoryBreakdown = getCategoryBreakdown();
+  const atistirmalikRow = categoryBreakdown.find((row) => row.category === 'atistirmalik')!;
+  assert.equal(atistirmalikRow.total, 2, 'MRS-02nin iki kaydı da atistirmalik kategorisinde');
+  assert.equal(atistirmalikRow.pending, 2, 'ikisi de eksik slotlu (hiç foto yüklenmedi)');
+
+  const localMarketBreakdown = getLocalMarketBreakdown();
+  assert.deepEqual(localMarketBreakdown, [{ key: 'Ayşe Manav', count: 1 }]);
 }
 
 console.log('INTAKE_DB_SMOKE_OK');

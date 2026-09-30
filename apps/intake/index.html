@@ -31,9 +31,17 @@
       <p class="hint">Market zinciri ve şehir, bu oturum boyunca sabit kalır.</p>
       <label for="sessionChain">Market zinciri</label>
       <select id="sessionChain"></select>
+
+      <div id="localMarketNameWrap" hidden>
+        <label for="localMarketName">Market adı</label>
+        <input id="localMarketName" type="text" maxlength="60" placeholder="ör. Ayşe Manav" autocomplete="off" />
+        <p class="hint">Yalnız harf, rakam, boşluk, nokta ve tire — en fazla 60 karakter.</p>
+      </div>
+
       <label for="sessionCity">Şehir</label>
       <select id="sessionCity"></select>
       <button id="sessionSubmit" class="primary">Toplamaya başla</button>
+      <p id="sessionError" class="error" hidden></p>
     </section>
 
     <!-- 3) Ana ekran: barkod -->

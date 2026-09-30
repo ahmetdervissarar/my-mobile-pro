@@ -15,6 +15,14 @@
   const STORAGE_KEY = 'intake_key';
   const SESSION_CHAIN = 'intake_chain';
   const SESSION_CITY = 'intake_city';
+  const SESSION_MARKET_OTHER = 'intake_market_other';
+  const LOCAL_MARKET_CHAIN_KEY = 'yerel';
+  // Yalnız anlık istemci geri bildirimi için — SUNUCUNUN kendi doğrulaması
+  // (constants.ts, isValidLocalMarketName) tek doğruluk kaynağıdır; bu
+  // istemci o TS modülünü import edemediği için kural burada aynı biçimde
+  // (bilerek) tekrarlanır (bkz. dosya başı GTIN yorumu — aynı gerekçe).
+  const LOCAL_MARKET_NAME_MAX_LENGTH = 60;
+  const LOCAL_MARKET_NAME_PATTERN = /^[\p{L}0-9 .-]+$/u;
 
   const HEADER_CODE = 'x-intake-volunteer-code';
   const HEADER_KEY = 'x-intake-volunteer-key';
@@ -52,17 +60,31 @@
 
   // ── Oturum (market + şehir, sessionStorage'da — sekme kapanınca biter) ───
   function getSession() {
-    return { chain: sessionStorage.getItem(SESSION_CHAIN) || '', city: sessionStorage.getItem(SESSION_CITY) || '' };
+    return {
+      chain: sessionStorage.getItem(SESSION_CHAIN) || '',
+      marketChainOther: sessionStorage.getItem(SESSION_MARKET_OTHER) || '',
+      city: sessionStorage.getItem(SESSION_CITY) || '',
+    };
   }
 
-  function saveSession(chain, city) {
+  function saveSession(chain, city, marketChainOther) {
     sessionStorage.setItem(SESSION_CHAIN, chain);
     sessionStorage.setItem(SESSION_CITY, city);
+    if (chain === LOCAL_MARKET_CHAIN_KEY) {
+      sessionStorage.setItem(SESSION_MARKET_OTHER, marketChainOther || '');
+    } else {
+      sessionStorage.removeItem(SESSION_MARKET_OTHER);
+    }
   }
 
   function clearSession() {
     sessionStorage.removeItem(SESSION_CHAIN);
     sessionStorage.removeItem(SESSION_CITY);
+    sessionStorage.removeItem(SESSION_MARKET_OTHER);
+  }
+
+  function isValidLocalMarketName(name) {
+    return name.length > 0 && name.length <= LOCAL_MARKET_NAME_MAX_LENGTH && LOCAL_MARKET_NAME_PATTERN.test(name);
   }
 
   // ── API ────────────────────────────────────────────────────────────────
@@ -74,8 +96,8 @@
   }
 
   // ── IndexedDB kuyruğu ─────────────────────────────────────────────────
-  // Her iş (job): { id (auto), barcode, marketChain, city, category,
-  //   clientCreatedAt, requestedSlots: string[], photos: {slot: Blob},
+  // Her iş (job): { id (auto), barcode, marketChain, marketChainOther, city,
+  //   category, clientCreatedAt, requestedSlots: string[], photos: {slot: Blob},
   //   submissionId: string|null, uploadedSlots: string[], lastError: string|null }
   const DB_NAME = 'rafskoru-intake-queue';
   const STORE_NAME = 'jobs';
@@ -167,6 +189,7 @@
               body: JSON.stringify({
                 barcode: job.barcode,
                 marketChain: job.marketChain,
+                marketChainOther: job.marketChainOther || undefined,
                 city: job.city,
                 category: job.category,
                 clientCreatedAt: job.clientCreatedAt,
@@ -382,13 +405,34 @@
     const meta = await loadMeta();
     fillSelect(el('sessionChain'), meta.marketChains);
     fillSelect(el('sessionCity'), meta.cities);
+    el('localMarketNameWrap').hidden = el('sessionChain').value !== LOCAL_MARKET_CHAIN_KEY;
+    el('localMarketName').value = '';
+    el('sessionError').hidden = true;
   }
 
   function bindSessionScreen() {
+    el('sessionChain').addEventListener('change', () => {
+      el('localMarketNameWrap').hidden = el('sessionChain').value !== LOCAL_MARKET_CHAIN_KEY;
+    });
+
     el('sessionSubmit').addEventListener('click', () => {
       const chain = el('sessionChain').value;
       const city = el('sessionCity').value;
-      saveSession(chain, city);
+      const errorEl = el('sessionError');
+      errorEl.hidden = true;
+
+      let marketChainOther = '';
+      if (chain === LOCAL_MARKET_CHAIN_KEY) {
+        marketChainOther = el('localMarketName').value.trim();
+        if (!isValidLocalMarketName(marketChainOther)) {
+          errorEl.textContent =
+            'Market adı gerekli — yalnız harf, rakam, boşluk, nokta ve tire, en fazla 60 karakter.';
+          errorEl.hidden = false;
+          return;
+        }
+      }
+
+      saveSession(chain, city, marketChainOther);
       renderSessionInfo();
       showScreen('scan');
     });
@@ -403,7 +447,8 @@
   function renderSessionInfo() {
     const session = getSession();
     const { code } = getSavedCredentials();
-    el('sessionInfoText').textContent = `${code} · ${session.chain} · ${session.city}`;
+    const marketLabel = session.chain === LOCAL_MARKET_CHAIN_KEY ? session.marketChainOther : session.chain;
+    el('sessionInfoText').textContent = `${code} · ${marketLabel} · ${session.city}`;
   }
 
   // ── Ekran: Barkod tarama/arama ────────────────────────────────────────
@@ -577,6 +622,7 @@
     const job = {
       barcode: currentLookup.barcode,
       marketChain: session.chain,
+      marketChainOther: session.chain === LOCAL_MARKET_CHAIN_KEY ? session.marketChainOther : '',
       city: session.city,
       category,
       clientCreatedAt: new Date().toISOString(),
