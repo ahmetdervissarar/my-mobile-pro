@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -17,17 +17,8 @@ import { EmptyState } from '../../src/ui/EmptyState';
 import { NovaBadge } from '../../src/ui/NovaBadge';
 import { NutriScoreBadge } from '../../src/ui/NutriScoreBadge';
 import { ProductRow } from '../../src/ui/ProductRow';
-import { SegmentedControl } from '../../src/ui/SegmentedControl';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
 import { Toast } from '../../src/ui/Toast';
-
-type SortKey = 'score' | 'price' | 'unitPrice';
-
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'score', label: 'En yüksek puan' },
-  { key: 'price', label: 'En düşük fiyat' },
-  { key: 'unitPrice', label: 'Litre/kg fiyatı' },
-];
 
 function getSuggestionKey(suggestion: SearchSuggestion): string {
   return suggestion.type === 'product'
@@ -69,7 +60,6 @@ export default function SearchScreen() {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [searchErrorMessage, setSearchErrorMessage] = useState<string | null>(null);
-  const [sortKey, setSortKey] = useState<SortKey>('score');
   const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(emptyUserSensitivityProfile);
   const [cartActionErrorVisible, setCartActionErrorVisible] = useState(false);
   const cartItems = useCart();
@@ -119,11 +109,6 @@ export default function SearchScreen() {
       clearTimeout(timeout);
     };
   }, [query]);
-
-  // Sıralama seçenekleri bilinçli olarak korunur (bkz. görev raporu):
-  // /api/search/suggest puan veya fiyat alanı döndürmüyor, bu yüzden
-  // sıralama şu an sabit kalır (tahmini bir değerle doldurulmaz).
-  const sortedSuggestions = useMemo(() => suggestions, [suggestions]);
 
   const openProduct = (suggestion: SearchSuggestion) => {
     if (suggestion.type === 'product') {
@@ -179,15 +164,11 @@ export default function SearchScreen() {
           }}
         />
 
-        {suggestions.length > 0 ? (
-          <SegmentedControl options={SORT_OPTIONS} value={sortKey} onChange={setSortKey} />
-        ) : null}
-
         {isSuggesting ? <Text style={{ fontSize: 12.5, color: colors.muted }}>Öneriler aranıyor...</Text> : null}
 
         {!isSuggesting && searchErrorMessage ? (
           <EmptyState title="Bağlantı kurulamadı, tekrar deneyin" />
-        ) : !isSuggesting && query.trim().length >= 2 && sortedSuggestions.length === 0 ? (
+        ) : !isSuggesting && query.trim().length >= 2 && suggestions.length === 0 ? (
           <EmptyState
             title="Sonuç bulunamadı"
             message="Farklı bir ürün adıyla tekrar deneyin veya bu ürünü kayıtlı olmayan ürün olarak ekleyin."
@@ -206,7 +187,7 @@ export default function SearchScreen() {
         ) : null}
 
         <View style={{ gap: spacing.sm }}>
-          {sortedSuggestions.map((suggestion) => {
+          {suggestions.map((suggestion) => {
             const key = getSuggestionKey(suggestion);
             const isAdded = cartItems.some((item) => item.key === getCartItemKey(suggestionToCartInput(suggestion)));
             const allergenEvaluation = getSuggestionAllergenEvaluation(suggestion, userProfile);
@@ -257,7 +238,7 @@ export default function SearchScreen() {
           })}
         </View>
 
-        {sortedSuggestions.length > 0 ? (
+        {suggestions.length > 0 ? (
           <Text style={{ fontSize: 11.5, color: colors.muted }}>
             Puan ve fiyat verisi arama sonuçlarında henüz yok; bu alanlar "Veri yok" olarak gösterilir.
           </Text>
