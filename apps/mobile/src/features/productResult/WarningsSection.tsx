@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import type { RiskLevel, RiskWarning } from '../../riskEngine/riskEngine';
+import { getWarningColorKind, type RiskWarning } from '../../riskEngine/riskEngine';
 import { EmptyState } from '../../ui/EmptyState';
 import { radii, spacing, useTheme } from '../../ui/theme';
 import { riskLevelLabel } from './helpers';
@@ -10,37 +10,42 @@ export interface WarningsSectionProps {
   warnings: RiskWarning[];
 }
 
-function getRiskLevelColor(level: RiskLevel, colors: ReturnType<typeof useTheme>['colors']): string {
-  if (level === 'high') return colors.danger;
-  if (level === 'medium') return colors.warn;
-  if (level === 'low') return colors.leaf;
-  return colors.muted;
-}
+/**
+ * D5: renk `level`'dan değil `getWarningColorKind`'den gelir — kırmızı
+ * yalnız gerçek profil-alerjen çakışmasına (profile_conflict) ayrılır.
+ * `level` metni (riskLevelLabel) hâlâ ham şiddeti gösterir; MISSING_ALLERGEN_INFO
+ * "Yüksek" yazmaya devam eder ama sarı gösterilir (fail-closed ilkesi).
+ */
+function getRiskCardColors(
+  warning: RiskWarning,
+  colors: ReturnType<typeof useTheme>['colors'],
+): { fg: string; bg: string } {
+  const kind = getWarningColorKind(warning.code);
 
-function getRiskCardBg(level: RiskLevel, colors: ReturnType<typeof useTheme>['colors']): string {
-  if (level === 'high') return colors.dangerBg;
-  if (level === 'medium') return colors.warnBg;
-  if (level === 'low') return colors.soft;
-  return colors.infoBg;
+  if (kind === 'profile_conflict') return { fg: colors.danger, bg: colors.dangerBg };
+  if (kind === 'missing_allergen_data') return { fg: colors.caution, bg: colors.cautionBg };
+
+  if (warning.level === 'low') return { fg: colors.leaf, bg: colors.soft };
+  if (warning.level === 'medium') return { fg: colors.warn, bg: colors.warnBg };
+  return { fg: colors.muted, bg: colors.infoBg };
 }
 
 function WarningCard({ warning }: { warning: RiskWarning }) {
   const { colors } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
+  const { fg, bg } = getRiskCardColors(warning, colors);
 
   return (
     <View
       style={{
         borderRadius: radii.md,
-        backgroundColor: getRiskCardBg(warning.level, colors),
+        backgroundColor: bg,
         padding: spacing.md,
         gap: 4,
       }}
     >
       <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>{warning.title}</Text>
-      <Text style={{ fontSize: 12, fontWeight: '600', color: getRiskLevelColor(warning.level, colors) }}>
-        {riskLevelLabel[warning.level]}
-      </Text>
+      <Text style={{ fontSize: 12, fontWeight: '600', color: fg }}>{riskLevelLabel[warning.level]}</Text>
 
       <Pressable
         onPress={() => setIsExpanded((current) => !current)}
