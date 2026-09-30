@@ -379,6 +379,29 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
   delete process.env.INTAKE_ADMIN_KEY;
 }
 
+// ── Oran sınırlama GERÇEK HTTP üzerinden (createRateLimiter'ın kendisi
+// rateLimit.smoke.ts'te izole test edildi — burada yalnızca routes.ts'e
+// DOĞRU BAĞLANDIĞI kanıtlanır: /auth/verify dakikada 10 istekle sınırlı).
+{
+  const app = express();
+  app.use(express.json());
+  app.use('/api/intake', createIntakeRouter({ photosDir: testPhotosDir }));
+
+  await withServer(app, async (baseUrl) => {
+    let lastStatus = 0;
+    for (let i = 0; i < 11; i += 1) {
+      const response = await fetch(`${baseUrl}/api/intake/auth/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: 'MRS-01', key: 'yanlis' }),
+      });
+      lastStatus = response.status;
+      if (i < 10) assert.equal(response.status, 401, `${i + 1}. istek limit altında 401 dönmeli`);
+    }
+    assert.equal(lastStatus, 429, '11. istek dakikalık limiti (10) aşmalı');
+  });
+}
+
 // ── /api/intake devre dışıyken her istek 503 dönmeli ─────────────────────
 {
   const app = express();
