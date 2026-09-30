@@ -27,6 +27,9 @@ export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChan
 
   const allergenSummary = summarizeBasketAllergenStatus(basketProfile.perItem, userProfile);
   const hasConflict = allergenSummary.conflictCount > 0;
+  // D2: profil boşken beyan edilmiş alerjen varsa da (gerçek bir profil
+  // çakışması olmasa dahi) hüküm kelimesi bastırılır ve bant üste alınır.
+  const suppressVerdict = allergenSummary.suppressVerdict;
 
   const allergenBand = (
     <View
@@ -69,7 +72,7 @@ export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChan
 
   const scoreBlock = (
     <View style={{ alignItems: 'center', gap: spacing.sm }}>
-      <ScoreRing score={basketProfile.basketRafSkoru} caption="Sepet RafSkoru" allergenPriority={hasConflict} />
+      <ScoreRing score={basketProfile.basketRafSkoru} caption="Sepet RafSkoru" allergenPriority={suppressVerdict} />
       {hasConflict ? (
         <Text style={{ fontSize: 12, fontWeight: '600', color: colors.muted, textAlign: 'center' }}>
           {allergenSummary.conflictCount} ürün profilinizle çakışıyor; puan bu ürünler için anlamlı değil
@@ -83,11 +86,11 @@ export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChan
 
   return (
     <View style={{ gap: spacing.lg }}>
-      {hasConflict ? allergenBand : null}
+      {suppressVerdict ? allergenBand : null}
 
       {scoreBlock}
 
-      {hasConflict ? null : allergenBand}
+      {suppressVerdict ? null : allergenBand}
 
       <View style={{ gap: spacing.sm }}>
         {basketProfile.perItem.map((item, index) => {
