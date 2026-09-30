@@ -1,14 +1,17 @@
 ﻿import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   clearUserSensitivityProfile,
   loadUserSensitivityProfile,
 } from '../../src/userProfile/userProfileStorage';
+import { PrimaryButton } from '../../src/ui/PrimaryButton';
+import { radii, spacing, useTheme } from '../../src/ui/theme';
 
 export default function ProfileScreen() {
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [summary, setSummary] = useState({
     allergens: 0,
@@ -64,151 +67,105 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.contentContainer, { paddingTop: Math.max(insets.top, styles.contentContainer.paddingTop) }]}
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      contentContainerStyle={{
+        padding: spacing.xl,
+        paddingTop: Math.max(insets.top, spacing.xl),
+        gap: spacing.lg,
+        paddingBottom: spacing.xxxl,
+      }}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.card}>
-        <Text style={styles.title}>Profilim</Text>
+      <Text style={{ fontSize: 24, fontWeight: '800', color: colors.ink }}>Profilim</Text>
 
-        <Text style={styles.description}>
-          RafSkoru uyarılarını kişisel hassasiyetlerinize göre özelleştirin.
-        </Text>
+      <Text style={{ fontSize: 14, color: colors.muted, lineHeight: 20 }}>
+        RafSkoru uyarılarını kişisel hassasiyetlerinize göre özelleştirin.
+      </Text>
 
+      <View style={{ gap: spacing.sm }}>
         <Pressable
-          style={styles.menuCard}
           onPress={() => router.push('/profile-allergens')}
+          style={{
+            borderWidth: 1,
+            borderColor: colors.line,
+            borderRadius: radii.md,
+            backgroundColor: colors.surface,
+            paddingVertical: spacing.md,
+            paddingHorizontal: spacing.md,
+            gap: 4,
+          }}
         >
-          <Text style={styles.menuTitle}>Alerjen Profilim</Text>
-          <Text style={styles.menuDescription}>
+          <Text style={{ fontSize: 17, fontWeight: '700', color: colors.ink }}>Alerjen Profilim</Text>
+          <Text style={{ fontSize: 13, color: colors.muted, lineHeight: 18 }}>
             Yumurta, süt, gluten, soya, fıstık ve diğer alerjenleri seçin.
           </Text>
-          <Text style={styles.menuSummary}>{summary.allergens} seçim</Text>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: colors.ink, marginTop: 2 }}>
+            {summary.allergens} seçim
+          </Text>
         </Pressable>
 
         <Pressable
-          style={styles.menuCard}
           onPress={() => router.push('/profile-chronic')}
+          style={{
+            borderWidth: 1,
+            borderColor: colors.line,
+            borderRadius: radii.md,
+            backgroundColor: colors.surface,
+            paddingVertical: spacing.md,
+            paddingHorizontal: spacing.md,
+            gap: 4,
+          }}
         >
-          <Text style={styles.menuTitle}>Kronik Rahatsızlık / Hassasiyet Profilim</Text>
-          <Text style={styles.menuDescription}>
+          <Text style={{ fontSize: 17, fontWeight: '700', color: colors.ink }}>
+            Kronik Rahatsızlık / Hassasiyet Profilim
+          </Text>
+          <Text style={{ fontSize: 13, color: colors.muted, lineHeight: 18 }}>
             Kan şekeri, sodyum, kolesterol ve benzeri hassasiyetleri yönetin.
           </Text>
-          <Text style={styles.menuSummary}>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: colors.ink, marginTop: 2 }}>
             {summary.chronicSensitivities} seçim
           </Text>
         </Pressable>
 
         <Pressable
-          style={styles.menuCard}
           onPress={() => router.push('/profile-health-preferences')}
+          style={{
+            borderWidth: 1,
+            borderColor: colors.line,
+            borderRadius: radii.md,
+            backgroundColor: colors.surface,
+            paddingVertical: spacing.md,
+            paddingHorizontal: spacing.md,
+            gap: 4,
+          }}
         >
-          <Text style={styles.menuTitle}>Sağlık Tercihlerim</Text>
-          <Text style={styles.menuDescription}>
+          <Text style={{ fontSize: 17, fontWeight: '700', color: colors.ink }}>Sağlık Tercihlerim</Text>
+          <Text style={{ fontSize: 13, color: colors.muted, lineHeight: 18 }}>
             Daha az şeker, daha az tuz, temiz içerik ve benzeri tercihleri belirleyin.
           </Text>
-          <Text style={styles.menuSummary}>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: colors.ink, marginTop: 2 }}>
             {summary.healthPreferences} seçim
           </Text>
         </Pressable>
       </View>
 
-      <View style={styles.actions}>
-        <Pressable style={styles.dangerButton} onPress={handleClearProfile}>
-          <Text style={styles.dangerButtonText}>Seçimleri temizle</Text>
+      <View style={{ gap: spacing.sm }}>
+        <Pressable
+          onPress={handleClearProfile}
+          style={{
+            borderWidth: 1,
+            borderColor: colors.danger,
+            paddingVertical: spacing.md,
+            borderRadius: radii.sm,
+            alignItems: 'center',
+            backgroundColor: colors.surface,
+          }}
+        >
+          <Text style={{ color: colors.danger, fontSize: 16, fontWeight: '700' }}>Seçimleri temizle</Text>
         </Pressable>
 
-        <Pressable style={styles.secondaryButton} onPress={() => router.push('/')}>
-          <Text style={styles.secondaryButtonText}>Ana sayfaya dön</Text>
-        </Pressable>
+        <PrimaryButton label="Ana sayfaya dön" variant="secondary" onPress={() => router.push('/')} />
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  contentContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 48,
-    paddingBottom: 32,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    gap: 14,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  description: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
-  },
-  menuCard: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    backgroundColor: '#fff',
-    gap: 6,
-  },
-  menuTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  menuDescription: {
-    fontSize: 13,
-    color: '#6B7280',
-    lineHeight: 18,
-  },
-  menuSummary: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#111827',
-    marginTop: 2,
-  },
-  actions: {
-    width: '100%',
-    marginTop: 20,
-    gap: 12,
-  },
-  dangerButton: {
-    borderWidth: 1,
-    borderColor: '#DC2626',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  dangerButtonText: {
-    color: '#DC2626',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  secondaryButton: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  secondaryButtonText: {
-    color: '#111827',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
