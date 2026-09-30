@@ -61,6 +61,11 @@ app.use('/api/basket', createBasketRouter());
 app.use('/api/beta', createBetaRouter());
 app.use('/api/intake', intakeRouter);
 
+// Gönüllü ürün toplama sayfası (apps/intake/) — sade HTML+vanilla JS,
+// backend tarafından statik olarak sunulur (bkz. görev planı, YERLEŞİM).
+const intakeWebDir = resolve(fileURLToPath(new URL('.', import.meta.url)), '../../intake');
+app.use('/intake', express.static(intakeWebDir));
+
 app.listen(PORT, () => {
   console.log(`RafSkoru backend running on http://localhost:${PORT}`);
 });

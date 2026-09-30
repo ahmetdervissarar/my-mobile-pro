@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>RafSkoru — Ürün Toplama</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>RafSkoru — Ürün Toplama</h1>
+    <div id="progressBadge" class="progress-badge" hidden></div>
+  </header>
+
+  <main id="app">
+    <!-- 1) Kod girişi -->
+    <section id="screen-login" class="screen">
+      <h2>Giriş</h2>
+      <p class="hint">Gönüllü kodun ve erişim anahtarınla giriş yap. İsim, e-posta veya şifre istenmez.</p>
+      <label for="loginCode">Gönüllü kodu</label>
+      <input id="loginCode" type="text" autocomplete="off" placeholder="ör. MRS-01" />
+      <label for="loginKey">Erişim anahtarı</label>
+      <input id="loginKey" type="password" autocomplete="off" />
+      <button id="loginSubmit" class="primary">Giriş yap</button>
+      <p id="loginError" class="error" hidden></p>
+    </section>
+
+    <!-- 2) Oturum: market + şehir -->
+    <section id="screen-session" class="screen" hidden>
+      <h2>Oturum</h2>
+      <p class="hint">Market zinciri ve şehir, bu oturum boyunca sabit kalır.</p>
+      <label for="sessionChain">Market zinciri</label>
+      <select id="sessionChain"></select>
+      <label for="sessionCity">Şehir</label>
+      <select id="sessionCity"></select>
+      <button id="sessionSubmit" class="primary">Toplamaya başla</button>
+    </section>
+
+    <!-- 3) Ana ekran: barkod -->
+    <section id="screen-scan" class="screen" hidden>
+      <div class="session-info">
+        <span id="sessionInfoText"></span>
+        <button id="changeSessionBtn" class="link">değiştir</button>
+      </div>
+
+      <h2>Barkod</h2>
+      <div id="cameraWrap" class="camera-wrap" hidden>
+        <video id="scannerVideo" playsinline muted></video>
+        <button id="stopScanBtn" class="secondary">Kamerayı kapat</button>
+      </div>
+      <button id="startScanBtn" class="primary" hidden>Kamerayla okut</button>
+      <p class="hint" id="noScannerHint" hidden>Bu tarayıcıda otomatik barkod okuma yok — elle gir.</p>
+
+      <label for="manualBarcode">Barkod (elle)</label>
+      <div class="row">
+        <input id="manualBarcode" type="text" inputmode="numeric" autocomplete="off" placeholder="8690504000013" />
+        <button id="manualLookupBtn" class="primary">Ara</button>
+      </div>
+      <p id="scanError" class="error" hidden></p>
+
+      <div id="pendingIndicator" class="pending-indicator" hidden></div>
+    </section>
+
+    <!-- 4) Sonuç + fotoğraf toplama -->
+    <section id="screen-result" class="screen" hidden>
+      <button id="backToScanBtn" class="link">‹ Yeni barkod</button>
+      <div id="resultStatus" class="result-status"></div>
+
+      <div id="captureForm" hidden>
+        <label for="categorySelect">Kategori</label>
+        <select id="categorySelect"></select>
+
+        <div id="slotsWrap" class="slots-wrap"></div>
+
+        <p class="reminder">⚠️ Fotoğraflarda insan olmamalı — yalnızca ürün, içindekiler ve besin tablosu.</p>
+
+        <button id="submitProductBtn" class="primary" disabled>Gönder</button>
+        <p id="submitError" class="error" hidden></p>
+        <p id="submitSuccess" class="success" hidden></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
