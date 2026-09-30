@@ -273,9 +273,15 @@ export function useCart(): CartItem[] {
   return useSyncExternalStore(subscribeCart, getCartSnapshot, getCartSnapshot);
 }
 
+/**
+ * D-count (device test 30 Eylül): ürün adedi döndürür (sepet satır sayısı),
+ * MİKTAR toplamı değil. Rozet, anasayfa altyazısı ve sepet ekranındaki
+ * "Ürün sayısı" (basketProfile.itemCount, backend basketScoring.ts) hepsi
+ * aynı semantiği — tek bir kaynağı — paylaşmalı.
+ */
 export function useCartItemCount(): number {
   const cartItems = useCart();
-  return cartItems.reduce((sum, item) => sum + item.quantity.amount, 0);
+  return cartItems.length;
 }
 
 export function isInCart(key: string): boolean {
