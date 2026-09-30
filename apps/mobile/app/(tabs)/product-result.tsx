@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getFallbackProductSummary } from '../../src/services/productService';
 import type { ProductSearchInput } from '../../src/services/productService';
-import { getUserLocationForPricing } from '../../src/services/locationService';
 import { evaluateProductRisks } from '../../src/riskEngine/riskEngine';
 import type { ProductRiskResult } from '../../src/riskEngine/riskEngine';
 import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
@@ -221,37 +220,11 @@ export default function ProductResultScreen() {
         if (isMounted) setIsPriceLoading(false);
       });
 
-    const locationStartedAt = Date.now();
-
-    getUserLocationForPricing()
-      .catch(() => null)
-      .then((location) => {
-        if (shouldLogTiming)
-          console.info(`[mobile-price-resolve] location ${Date.now() - locationStartedAt}ms found=${Boolean(location)}`);
-
-        if (!isMounted || !location) {
-          return undefined;
-        }
-
-        const refinedBackendStartedAt = Date.now();
-
-        return priceClient
-          .resolve({ barcode: normalizedInput.barcode, productName: normalizedInput.productName, location })
-          .then((response) => {
-            if (shouldLogTiming)
-              console.info(
-                `[mobile-price-resolve] refined backend ${Date.now() - refinedBackendStartedAt}ms total=${Date.now() - resolveStartedAt}ms`,
-              );
-
-            applyPriceResolution(2, response);
-          });
-      })
-      .catch((err: unknown) => {
-        if (shouldLogTiming)
-          console.info(
-            `[mobile-price-resolve] refined error ${Date.now() - resolveStartedAt}ms message=${(err as Error)?.message ?? 'unknown'}`,
-          );
-      });
+    // P1-7: konum artık ürün ekranı açılışında OTOMATİK istenmiyor — mağaza/
+    // mesafe özelliği ertelendi (bkz. ADR-006; backend seedStores şu an boş,
+    // bu yüzden konum zaten mesafe hesaplamasında kullanılamıyordu). İzin,
+    // yalnızca kullanıcı ileride eklenecek bir "yakın mağaza" eylemini
+    // açıkça tetiklediğinde getUserLocationForPricing() üzerinden istenecek.
 
     return () => {
       isMounted = false;
