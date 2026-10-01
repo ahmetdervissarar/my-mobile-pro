@@ -1,6 +1,17 @@
 import type { CatalogAllergenData, CatalogNova, CatalogNutriScore, CatalogProduct } from '../catalog/catalog.js';
 import { getCatalog } from '../catalog/catalog.js';
 import { PRODUCT_GROUP_REGISTRY } from '../price/productGroups/registry.js';
+import { productFactsFromCatalog } from '../price/productFacts/catalogAdapter.js';
+import {
+  productFactsToContentScoreInput,
+  productFactsToHealthScoreInput,
+  productFactsToSustainabilityInput,
+} from '../price/productFacts/adapters.js';
+import { calculateContentScore } from '../price/contentScore/index.js';
+import { calculateHealthScore } from '../price/healthScore/index.js';
+import { calculateSustainabilityScore } from '../price/sustainability/index.js';
+import { calculateRafScore } from '../price/rafScore/index.js';
+import type { RafScoreResult } from '../price/rafScore/index.js';
 
 export type SearchSuggestion = ProductGroupSearchSuggestion | ProductSearchSuggestion;
 
@@ -30,6 +41,53 @@ export interface ProductSearchSuggestion {
   allergenData?: CatalogAllergenData;
   completeness?: CatalogProduct['completeness'];
   provenance?: CatalogProduct['provenance'];
+  /**
+   * Cihaz testi 1 Ekim, madde 4: ürün sayfasıyla AYNI hesaplayıcı zincirinden
+   * (calculateHealthScore/calculateContentScore/calculateSustainabilityScore
+   * + calculateRafScore, aynı renormalize kuralı — bkz. KARAR) türetilir.
+   * Liste ucu fiyat çözümlemesi yapmaz, bu yüzden priceScore her zaman null
+   * verilir (ürün sayfasında fiyat bulunamadığında da aynı yol izlenir).
+   */
+  rafScore?: RafScoreResult;
+}
+
+let cachedCatalogLoadedAt: string | null = null;
+const rafScoreCacheByProductId = new Map<string, RafScoreResult>();
+
+/**
+ * Bellekte, katalog yüklendiği sürece tek seferlik hesaplanır (bkz. görev
+ * koşulu: "gerekirse katalog yüklemesinde bir kez hesaplanıp bellekte
+ * tutulsun"). Girdiler (sağlık/içerik/sürdürülebilirlik) yalnızca katalog
+ * verisine bağlıdır, çalışma anında değişmez — bu yüzden güvenle
+ * önbelleklenebilir. Katalog yeniden yüklenirse (loadedAt değişirse) önbellek
+ * temizlenir.
+ */
+function getRafScoreForProduct(product: CatalogProduct): RafScoreResult | undefined {
+  const catalog = getCatalog();
+  if (cachedCatalogLoadedAt !== catalog.loadedAt) {
+    rafScoreCacheByProductId.clear();
+    cachedCatalogLoadedAt = catalog.loadedAt;
+  }
+
+  const cached = rafScoreCacheByProductId.get(product.productId);
+  if (cached) return cached;
+
+  const facts = productFactsFromCatalog(product.productId);
+  if (!facts) return undefined;
+
+  const healthScore = calculateHealthScore(productFactsToHealthScoreInput(facts));
+  const contentScore = calculateContentScore(productFactsToContentScoreInput(facts));
+  const sustainabilityScore = calculateSustainabilityScore(productFactsToSustainabilityInput(facts));
+
+  const rafScore = calculateRafScore({
+    priceScore: null,
+    healthScore: healthScore.score,
+    contentScore: contentScore.score,
+    sustainabilityScore: sustainabilityScore.score,
+  });
+
+  rafScoreCacheByProductId.set(product.productId, rafScore);
+  return rafScore;
 }
 
 export interface SearchSuggestResponse {
@@ -143,13 +201,33 @@ function catalogProductToSuggestion(product: CatalogProduct): ProductSearchSugge
     allergenData: product.allergenData,
     completeness: product.completeness,
     provenance: product.provenance,
+    rafScore: getRafScoreForProduct(product),
   };
 }
 
+const GENERIC_GROUP_NAME_BY_KEY: Map<string, string> = new Map(
+  PRODUCT_GROUP_REGISTRY.map((entry) => [entry.canonicalProductGroupKey, entry.displayName.tr]),
+);
+
 /**
- * Sıralama: (1) en üstteki grup önerisiyle aynı ürün grubu önce, (2) veri
- * tamlığı (complete > usable_for_risk > diğerleri), (3) Nutri-Score (A→E;
- * notu olmayan en sonda), (4) ad. Ürün grubu ürün adından ÇIKARILMAZ —
+ * D4 (device test 30 Eylül): "Süt" ve "%3.1 Yağlı Süt" gibi iki FARKLI GTIN,
+ * aynı marka+boyutta, kullanıcının ayırt edemediği isimlerle listeleniyordu.
+ * Mükerrer GTIN değil — silinmez/tekilleştirilmez (veri kaybı riski). Bunun
+ * yerine adı, kendi ürün grubunun jenerik Türkçe adıyla (ör. "Süt") birebir
+ * aynı olan kayıt, aynı gruptaki diğer (daha açıklayıcı isimli) kayıtların
+ * ARKASINA sıralanır — listeden ÇIKARILMAZ.
+ */
+function hasGenericGroupName(product: CatalogProduct): boolean {
+  const genericName = GENERIC_GROUP_NAME_BY_KEY.get(product.productGroupKey);
+  if (!genericName) return false;
+  return foldSearchText(product.name ?? '') === foldSearchText(genericName);
+}
+
+/**
+ * Sıralama: (1) en üstteki grup önerisiyle aynı ürün grubu önce, (2) adı
+ * yalnızca ürün grubunun jenerik adıyla aynı olan kayıtlar sona (D4), (3)
+ * veri tamlığı (complete > usable_for_risk > diğerleri), (4) Nutri-Score
+ * (A→E; notu olmayan en sonda), (5) ad. Ürün grubu ürün adından ÇIKARILMAZ —
  * yalnız katalogda zaten hesaplanmış productGroupKey kullanılır.
  */
 function compareCatalogProducts(a: CatalogProduct, b: CatalogProduct, topGroupKey: string | null): number {
@@ -158,6 +236,10 @@ function compareCatalogProducts(a: CatalogProduct, b: CatalogProduct, topGroupKe
     const bInTopGroup = b.productGroupKey === topGroupKey ? 0 : 1;
     if (aInTopGroup !== bInTopGroup) return aInTopGroup - bInTopGroup;
   }
+
+  const aGeneric = hasGenericGroupName(a) ? 1 : 0;
+  const bGeneric = hasGenericGroupName(b) ? 1 : 0;
+  if (aGeneric !== bGeneric) return aGeneric - bGeneric;
 
   const aCompleteness = COMPLETENESS_RANK[a.completeness];
   const bCompleteness = COMPLETENESS_RANK[b.completeness];

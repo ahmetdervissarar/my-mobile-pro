@@ -4,9 +4,10 @@ import { useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { submitBetaFeedback } from '../src/api/betaFeedbackClient';
-import { PrimaryButton } from '../src/ui/PrimaryButton';
-import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../src/ui/theme';
+import { submitBetaFeedback } from '../../src/api/betaFeedbackClient';
+import { FixedHeaderBar } from '../../src/ui/FixedHeaderBar';
+import { PrimaryButton } from '../../src/ui/PrimaryButton';
+import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
 
 type SlotKey = 'front' | 'ingredients' | 'nutrition';
 
@@ -89,6 +90,7 @@ export default function ProductContributionScreen() {
   const [offConsent, setOffConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitErrorVisible, setSubmitErrorVisible] = useState(false);
 
   const filledCount = SLOTS.filter((slot) => photos[slot.key] !== null).length;
 
@@ -115,13 +117,21 @@ export default function ProductContributionScreen() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    await submitBetaFeedback({
+    setSubmitErrorVisible(false);
+    const ok = await submitBetaFeedback({
       feedbackType: 'product_contribution',
       barcode: params.barcode,
       productName: params.productName,
     });
     setIsSubmitting(false);
-    setSubmitted(true);
+    // P0-2: ağ isteği başarısızsa "alındı" DENMEZ — submitBetaFeedback'in
+    // dönüşü (response.ok / bağlantı hatası) kontrol edilmeden önce burada
+    // sessizce yutuluyordu.
+    if (ok) {
+      setSubmitted(true);
+    } else {
+      setSubmitErrorVisible(true);
+    }
   };
 
   if (activeSlot) {
@@ -152,15 +162,16 @@ export default function ProductContributionScreen() {
   }
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{
-        padding: spacing.xl,
-        paddingTop: Math.max(insets.top, spacing.xl),
-        gap: spacing.lg,
-        paddingBottom: spacing.xxxl,
-      }}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <FixedHeaderBar title={params.productName?.trim() || 'Ürün katkısı'} />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          padding: spacing.xl,
+          gap: spacing.lg,
+          paddingBottom: spacing.xxxl,
+        }}
+      >
       <Text style={{ fontSize: 24, fontWeight: '800', color: colors.ink }}>Kayıtlı olmayan ürünü ekle</Text>
       <Text style={{ fontSize: 13, color: colors.muted, lineHeight: 19 }}>
         Bu ürün için henüz veri yok. Aşağıdaki fotoğrafları eklersen ekip ürünü daha sonra doğrulayıp
@@ -236,15 +247,23 @@ export default function ProductContributionScreen() {
           Katkı isteğin alındı. Teşekkürler!
         </Text>
       ) : (
-        <PrimaryButton
-          label="Gönder"
-          disabled={filledCount === 0 || isSubmitting}
-          loading={isSubmitting}
-          onPress={() => void handleSubmit()}
-        />
+        <>
+          {submitErrorVisible ? (
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.danger }}>
+              Gönderilemedi, bağlantını kontrol edip tekrar dene.
+            </Text>
+          ) : null}
+          <PrimaryButton
+            label="Gönder"
+            disabled={filledCount === 0 || isSubmitting}
+            loading={isSubmitting}
+            onPress={() => void handleSubmit()}
+          />
+        </>
       )}
 
       <PrimaryButton label="Geri dön" variant="ghost" onPress={() => router.back()} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }

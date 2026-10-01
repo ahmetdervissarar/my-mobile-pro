@@ -130,6 +130,12 @@ function mapApiResponseToInfoLike(
     ingredientsText: data.product.ingredients_text ?? null,
     allergens: Array.isArray(data.product.allergens_tags) ? parseTagList(data.product.allergens_tags) : null,
     traceAllergens: Array.isArray(data.product.traces_tags) ? parseTagList(data.product.traces_tags) : null,
+    // Önek atılmamış ham OFF etiketleri — yalnız classifyAllergenTags için
+    // (bkz. openFoodFactsAdapter.ts). parseTagList'in ürettiği kozmetik liste
+    // ("milk") sınıflandırma tablosundaki tam eşleşme anahtarlarıyla ("en:milk")
+    // uyuşmaz; bu yüzden ayrı, ham hâliyle taşınır.
+    rawAllergenTags: Array.isArray(data.product.allergens_tags) ? data.product.allergens_tags : null,
+    rawTraceAllergenTags: Array.isArray(data.product.traces_tags) ? data.product.traces_tags : null,
     nutriScore: data.product.nutriscore_grade ?? null,
     novaGroup: data.product.nova_group ?? null,
     additives: Array.isArray(data.product.additives_tags) ? parseTagList(data.product.additives_tags) : null,

@@ -1,0 +1,38 @@
+import { View } from 'react-native';
+
+import { IndicatorBox } from '../../ui/IndicatorBox';
+import { spacing } from '../../ui/theme';
+import { getNovaIndicator, getNutriScoreIndicator, getRafScoreIndicator } from './indicatorTrio';
+
+export interface IndicatorRowProps {
+  rafScore: number | null;
+  nutriScoreGrade: 'A' | 'B' | 'C' | 'D' | 'E' | null;
+  novaGroup: 1 | 2 | 3 | 4 | null;
+  /** Profille çakışan alerjen varsa true — RafSkoru kutusunda hüküm kelimesi bastırılır. */
+  allergenPriority: boolean;
+  /** Fiyatsız değerlendirme (onaylı KARAR) — RafSkoru kutusunda "Fiyatsız değerlendirme" gösterilir. */
+  isPriceless?: boolean;
+  /** Madde 6b: fiyatsız değerlendirmede RafSkoru kutusuna dokununca boyut dökümünü gösterir. */
+  onRafScorePress?: () => void;
+}
+
+/** Üç küçük gösterge: RafSkoru · Nutri-Score · İşlenmişlik (NOVA), yan yana. */
+export function IndicatorRow({
+  rafScore,
+  nutriScoreGrade,
+  novaGroup,
+  allergenPriority,
+  isPriceless = false,
+  onRafScorePress,
+}: IndicatorRowProps) {
+  return (
+    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+      <IndicatorBox
+        {...getRafScoreIndicator(rafScore, allergenPriority, isPriceless)}
+        onPress={isPriceless ? onRafScorePress : undefined}
+      />
+      <IndicatorBox {...getNutriScoreIndicator(nutriScoreGrade)} />
+      <IndicatorBox {...getNovaIndicator(novaGroup)} />
+    </View>
+  );
+}

@@ -7,6 +7,8 @@ import { join } from 'node:path';
 import { loadCatalog } from '../../catalog/catalog.js';
 import type { OffImportRecord } from '../../tools/offTurkey/normalize.js';
 import { productFactsFromCatalog } from './catalogAdapter.js';
+import { productFactsToContentScoreInput } from './adapters.js';
+import { calculateContentScore } from '../contentScore/index.js';
 
 const BASE_PROVENANCE: OffImportRecord['provenance'] = {
   source: 'off',
@@ -56,6 +58,28 @@ assert.equal(facts!.catalogAllergenData?.dataStatus, 'present');
 // isComplete=false (usable_for_risk) olsa da facts dönmeli — canlı-OFF isComplete
 // kapısı katalog kaynaklı verilere UYGULANMAZ (tryFetchProductFacts'te ayrıca doğrulanır).
 assert.equal(facts!.isComplete, false);
+// Görev bulgusu madde 6: katalog gerçek katkı maddesi listesi taşımıyor —
+// additives alanı "katkısız" (boş dizi) DEĞİL, "veri yok" (undefined)
+// dönmeli; aksi halde contentScoreCalculator bunu en yüksek puanla
+// (ADDITIVE_RISK_POINTS.none) yanlış yorumlar.
+assert.equal(facts!.additives, undefined, 'additives veri yoksa undefined dönmeli, [] DEĞİL (bkz. madde 6 bulgusu)');
+
+// Genel kural (görev koşulu 2): veri yokluğu "iyi değer" ile AYNI puanı
+// ÜRETMEMELİ. Katalog kaynaklı facts ile türetilen content score girdisinde
+// additiveRiskLevel null (veri yok) olmalı — gerçekten katkısız olduğu
+// BİLİNEN (additiveRiskLevel: 'none') bir üründen DAHA DÜŞÜK puan almalı,
+// aksi halde "veri yok" ile "katkısız" karıştırılıyor demektir.
+const catalogContentInput = productFactsToContentScoreInput(facts!);
+assert.equal(catalogContentInput.additiveRiskLevel, null, 'katalogdan gelen additiveRiskLevel veri yoksa null olmalı');
+
+const catalogContentScore = calculateContentScore(catalogContentInput);
+const confirmedNoAdditivesScore = calculateContentScore({ ...catalogContentInput, additiveRiskLevel: 'none' });
+
+assert.notEqual(catalogContentScore.score, confirmedNoAdditivesScore.score);
+assert.ok(
+  (confirmedNoAdditivesScore.score ?? 0) > (catalogContentScore.score ?? 0),
+  'gerçekten katkısız olduğu BİLİNEN ürün, katkı verisi hiç olmayan üründen daha yüksek puan almalı',
+);
 
 // 2) Katalogda olmayan bir GTIN — null döner (çağıran canlı OFF'a düşer).
 const missing = productFactsFromCatalog('0000000000000');

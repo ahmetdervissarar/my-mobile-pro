@@ -2,7 +2,6 @@ import { Text, View } from 'react-native';
 
 import { formatPriceForDisplay } from '../../price/priceClient';
 import type { AlternativeRecommendation, DataConfidenceLevel } from '../../price/types';
-import { EmptyState } from '../../ui/EmptyState';
 import { radii, spacing, useTheme } from '../../ui/theme';
 import { getDataConfidenceLabel } from './helpers';
 
@@ -11,7 +10,7 @@ export interface AlternativesSectionProps {
   shouldShowUnavailableNotice: boolean;
 }
 
-/** "Daha yüksek puanlı seçenekler" — yalnızca profille çakışmayan, aynı ürün grubundaki aday. */
+/** "Alternatifler" — yalnızca profille çakışmayan, aynı ürün grubundaki aday. */
 export function AlternativesSection({
   topRecommendation,
   shouldShowUnavailableNotice,
@@ -24,10 +23,9 @@ export function AlternativesSection({
     }
 
     return (
-      <EmptyState
-        title="Alternatif önerisi yok"
-        message="Bu ürün grubunda güvenle karşılaştırılabilen daha iyi bir alternatif bulunamadı. Yanlış yönlendirmemek için alternatif önerisi gösterilmiyor."
-      />
+      <Text style={{ fontSize: 13, color: colors.muted }}>
+        Bu ürün grubunda güvenle karşılaştırılabilen bir alternatif bulunamadı.
+      </Text>
     );
   }
 

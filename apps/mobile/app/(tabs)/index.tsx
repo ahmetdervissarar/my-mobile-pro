@@ -25,14 +25,15 @@ function GridTile({
       accessibilityLabel={title}
       style={{
         flex: 1,
-        minHeight: 118,
+        minHeight: 96,
         minWidth: '45%',
         borderRadius: radii.xl,
         borderWidth: 1,
         borderColor: colors.line,
         backgroundColor: colors.surface,
         padding: spacing.lg,
-        justifyContent: 'space-between',
+        gap: spacing.md,
+        justifyContent: 'flex-start',
       }}
     >
       <View
@@ -103,8 +104,8 @@ export default function HomeScreen() {
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
         <GridTile
-          title="Fotoğrafla tanı"
-          subtitle="Barkod okunamıyorsa"
+          title="Fotoğrafla ara"
+          subtitle="Barkod okunamıyorsa (beta)"
           onPress={() => router.push('/photo-search')}
         />
         <GridTile title="İsimle ara" subtitle="Ürün adını yaz" onPress={() => router.push('/search')} />
@@ -121,7 +122,10 @@ export default function HomeScreen() {
       </View>
 
       {recentlyViewed.length > 0 ? (
-        <View style={{ gap: spacing.md }}>
+        // D3 (device test 30 Eylül): açık marginTop — yalnızca üst ScrollView'in
+        // contentContainerStyle gap'ine güvenmek, bu başlığın üstteki karo
+        // ızgarasının üstüne binmesine yol açabiliyordu.
+        <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.ink }}>Son baktıkların</Text>
           <View style={{ gap: spacing.sm }}>
             {recentlyViewed.slice(0, 6).map((entry) => (

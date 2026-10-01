@@ -2,6 +2,7 @@
 import { ActivityIndicator, Alert, Button, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PhotoSearchScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -9,6 +10,12 @@ export default function PhotoSearchScreen() {
   const [isTakingPhoto, setIsTakingPhoto] = useState(false);
   const [isPhotoTaken, setIsPhotoTaken] = useState(false);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const centerContainerStyle = [
+    styles.centerContainer,
+    { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
+  ];
+  const containerStyle = [styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }];
 
   useEffect(() => {
     if (!permission) {
@@ -52,7 +59,7 @@ export default function PhotoSearchScreen() {
 
   if (!permission) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={centerContainerStyle}>
         <ActivityIndicator size="large" color="#111827" />
         <Text style={styles.infoText}>Kamera izni kontrol ediliyor...</Text>
       </View>
@@ -61,7 +68,7 @@ export default function PhotoSearchScreen() {
 
   if (!permission.granted) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={centerContainerStyle}>
         <Text style={styles.title}>Fotoğrafla Ara</Text>
         <Text style={styles.infoText}>Kamera izni gerekli.</Text>
         <Button title="Kamera izni ver" onPress={requestPermission} />
@@ -70,7 +77,7 @@ export default function PhotoSearchScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={containerStyle}>
       <Text style={styles.title}>Fotoğrafla Ara</Text>
       <CameraView ref={cameraRef} style={styles.camera} facing="back" />
 

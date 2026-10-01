@@ -4,29 +4,25 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchSearchSuggestions, type SearchSuggestion } from '../../src/api/productSuggestionClient';
-import {
-  evaluateCatalogAllergenDataForProfile,
-  getAllergenDisplayLevel,
-  type AllergenDisplayInfo,
-  type AllergenProfileEvaluation,
-} from '../../src/riskEngine/catalogAllergenChip';
+import { SearchResultRow } from '../../src/features/search/SearchResultRow';
+import { getSearchCardMetaLine } from '../../src/features/search/searchCardPresentation';
+import { getDuplicateBarcodeSuffixes } from '../../src/features/search/suggestionDisambiguation';
+import { getAllergenBannerDataFromCatalog, type AllergenBannerData } from '../../src/features/productResult/helpers';
 import { addToCart, getCartItemKey, removeFromCart, suggestionToCartInput, useCart } from '../../src/state/cartStore';
 import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import { EmptyState } from '../../src/ui/EmptyState';
-import { NovaBadge } from '../../src/ui/NovaBadge';
-import { NutriScoreBadge } from '../../src/ui/NutriScoreBadge';
-import { ProductRow } from '../../src/ui/ProductRow';
-import { SegmentedControl } from '../../src/ui/SegmentedControl';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
+import { Toast } from '../../src/ui/Toast';
 
-type SortKey = 'score' | 'price' | 'unitPrice';
-
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'score', label: 'En yüksek puan' },
-  { key: 'price', label: 'En düşük fiyat' },
-  { key: 'unitPrice', label: 'Litre/kg fiyatı' },
-];
+const EMPTY_ALLERGEN_BANNER_DATA: AllergenBannerData = {
+  status: 'unknown_or_unverified',
+  declaredList: [],
+  traceList: [],
+  criticalMatches: [],
+  displayInfo: null,
+  perKey: [],
+};
 
 function getSuggestionKey(suggestion: SearchSuggestion): string {
   return suggestion.type === 'product'
@@ -34,27 +30,20 @@ function getSuggestionKey(suggestion: SearchSuggestion): string {
     : `product_group:${suggestion.productGroupKey}`;
 }
 
-function getSuggestionAllergenEvaluation(
+/** Arama/sepetle AYNI birleştirme çekirdeğini kullanır — yeni bir karar üretmez (bkz. onaylı plan, madde 8). */
+function getSuggestionAllergenBannerData(
   suggestion: SearchSuggestion,
   userProfile: UserSensitivityProfile,
-): AllergenProfileEvaluation {
-  if (suggestion.type !== 'product') {
-    return { status: 'unknown_or_unverified', perKey: [], hasUnrecognizedTags: false, recognizedUnmodeledLabels: [], note: null };
+): AllergenBannerData {
+  if (suggestion.type !== 'product' || !suggestion.allergenData) {
+    return EMPTY_ALLERGEN_BANNER_DATA;
   }
 
-  return evaluateCatalogAllergenDataForProfile(suggestion.allergenData, userProfile);
-}
-
-function getSuggestionMeta(suggestion: SearchSuggestion): string | null {
-  if (suggestion.type !== 'product') {
-    return 'Ürün grubu';
-  }
-
-  return (
-    [suggestion.brand, suggestion.packageSize ? `${suggestion.packageSize.amount} ${suggestion.packageSize.unit}` : undefined]
-      .filter(Boolean)
-      .join(' · ') || null
-  );
+  return getAllergenBannerDataFromCatalog({
+    catalogAllergenData: suggestion.allergenData,
+    userProfile,
+    riskWarnings: [],
+  });
 }
 
 export default function SearchScreen() {
@@ -68,9 +57,10 @@ export default function SearchScreen() {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [searchErrorMessage, setSearchErrorMessage] = useState<string | null>(null);
-  const [sortKey, setSortKey] = useState<SortKey>('score');
   const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(emptyUserSensitivityProfile);
+  const [cartActionErrorVisible, setCartActionErrorVisible] = useState(false);
   const cartItems = useCart();
+  const duplicateBarcodeSuffixes = useMemo(() => getDuplicateBarcodeSuffixes(suggestions), [suggestions]);
 
   useEffect(() => {
     void loadUserSensitivityProfile()
@@ -118,11 +108,6 @@ export default function SearchScreen() {
     };
   }, [query]);
 
-  // Sıralama seçenekleri bilinçli olarak korunur (bkz. görev raporu):
-  // /api/search/suggest puan veya fiyat alanı döndürmüyor, bu yüzden
-  // sıralama şu an sabit kalır (tahmini bir değerle doldurulmaz).
-  const sortedSuggestions = useMemo(() => suggestions, [suggestions]);
-
   const openProduct = (suggestion: SearchSuggestion) => {
     if (suggestion.type === 'product') {
       router.push({ pathname: '/product-result', params: { barcode: suggestion.productId } });
@@ -135,13 +120,15 @@ export default function SearchScreen() {
     });
   };
 
-  const handleToggleCart = (suggestion: SearchSuggestion) => {
+  const handleToggleCart = async (suggestion: SearchSuggestion) => {
     const cartInput = suggestionToCartInput(suggestion);
-    if (cartItems.some((item) => item.key === getCartItemKey(cartInput))) {
-      removeFromCart(getCartItemKey(cartInput));
-      return;
+    const ok = cartItems.some((item) => item.key === getCartItemKey(cartInput))
+      ? await removeFromCart(getCartItemKey(cartInput))
+      : await addToCart(cartInput);
+
+    if (!ok) {
+      setCartActionErrorVisible(true);
     }
-    addToCart(cartInput);
   };
 
   return (
@@ -149,7 +136,11 @@ export default function SearchScreen() {
       <ScrollView
         contentContainerStyle={{
           padding: spacing.xl,
-          paddingTop: Math.max(insets.top, spacing.xl),
+          // Madde 8 (cihaz testi 1 Ekim): başlık durum çubuğunun altında kalıyordu.
+          // Kod, çalışan diğer ekranlarla (ana sayfa, sepet) birebir aynı safe-area
+          // deseni kullanıyor; cihazda görsel doğrulama yapılamadığından kesin kök
+          // neden bulunamadı. Savunmacı önlem: bu ekrana özel ek üst boşluk.
+          paddingTop: Math.max(insets.top, spacing.xl) + spacing.md,
           gap: spacing.lg,
           paddingBottom: spacing.xxxl,
         }}
@@ -175,15 +166,11 @@ export default function SearchScreen() {
           }}
         />
 
-        {suggestions.length > 0 ? (
-          <SegmentedControl options={SORT_OPTIONS} value={sortKey} onChange={setSortKey} />
-        ) : null}
-
         {isSuggesting ? <Text style={{ fontSize: 12.5, color: colors.muted }}>Öneriler aranıyor...</Text> : null}
 
         {!isSuggesting && searchErrorMessage ? (
           <EmptyState title="Bağlantı kurulamadı, tekrar deneyin" />
-        ) : !isSuggesting && query.trim().length >= 2 && sortedSuggestions.length === 0 ? (
+        ) : !isSuggesting && query.trim().length >= 2 && suggestions.length === 0 ? (
           <EmptyState
             title="Sonuç bulunamadı"
             message="Farklı bir ürün adıyla tekrar deneyin veya bu ürünü kayıtlı olmayan ürün olarak ekleyin."
@@ -202,38 +189,36 @@ export default function SearchScreen() {
         ) : null}
 
         <View style={{ gap: spacing.sm }}>
-          {sortedSuggestions.map((suggestion) => {
+          {suggestions.map((suggestion) => {
             const key = getSuggestionKey(suggestion);
             const isAdded = cartItems.some((item) => item.key === getCartItemKey(suggestionToCartInput(suggestion)));
-            const allergenEvaluation = getSuggestionAllergenEvaluation(suggestion, userProfile);
-            const allergenDisplayInfo: AllergenDisplayInfo | null = getAllergenDisplayLevel(allergenEvaluation.perKey);
+            const allergenBannerData = getSuggestionAllergenBannerData(suggestion, userProfile);
+            const metaLine =
+              suggestion.type === 'product'
+                ? getSearchCardMetaLine({
+                    brand: suggestion.brand,
+                    packageSize: suggestion.packageSize,
+                  })
+                : 'Ürün grubu';
+            const duplicateBarcodeSuffix =
+              suggestion.type === 'product' ? duplicateBarcodeSuffixes.get(suggestion.productId) : undefined;
 
             return (
-              <ProductRow
+              <SearchResultRow
                 key={key}
                 imageUrl={suggestion.type === 'product' ? suggestion.imageUrl : undefined}
                 name={suggestion.label}
-                meta={getSuggestionMeta(suggestion)}
-                score={null}
-                allergenStatus={allergenEvaluation.status}
-                allergenDisplayInfo={allergenDisplayInfo}
-                allergenNote={allergenEvaluation.note}
-                extraBadges={
-                  suggestion.type === 'product' ? (
-                    <>
-                      <NutriScoreBadge
-                        grade={suggestion.nutriScore?.grade ?? null}
-                        source={suggestion.nutriScore?.source}
-                        status={suggestion.nutriScore?.status}
-                      />
-                      <NovaBadge group={suggestion.nova?.group ?? null} />
-                    </>
-                  ) : undefined
-                }
+                metaLine={metaLine}
+                duplicateBarcodeSuffix={duplicateBarcodeSuffix}
+                allergenData={allergenBannerData}
+                rafScore={suggestion.type === 'product' ? suggestion.rafScore : undefined}
+                nutriScoreGrade={suggestion.type === 'product' ? suggestion.nutriScore?.grade ?? null : null}
+                novaGroup={suggestion.type === 'product' ? suggestion.nova?.group ?? null : null}
+                showNutriNova={suggestion.type === 'product'}
                 onPress={() => openProduct(suggestion)}
                 trailing={
                   <Pressable
-                    onPress={() => handleToggleCart(suggestion)}
+                    onPress={() => void handleToggleCart(suggestion)}
                     accessibilityRole="button"
                     accessibilityLabel={isAdded ? 'Sepetten çıkar' : 'Sepete ekle'}
                     style={{
@@ -253,9 +238,9 @@ export default function SearchScreen() {
           })}
         </View>
 
-        {sortedSuggestions.length > 0 ? (
+        {suggestions.length > 0 ? (
           <Text style={{ fontSize: 11.5, color: colors.muted }}>
-            Puan ve fiyat verisi arama sonuçlarında henüz yok; bu alanlar "Veri yok" olarak gösterilir.
+            Ayrıntılı alerjen bilgisi ve puanın boyut dökümü ürün sayfasında; aramada fiyat henüz yok.
           </Text>
         ) : null}
       </ScrollView>
@@ -285,6 +270,12 @@ export default function SearchScreen() {
           <Text style={{ fontSize: 15, fontWeight: '800', color: '#1B1B1B' }}>Sepete git</Text>
         </Pressable>
       ) : null}
+
+      <Toast
+        message="Sepete kaydedilemedi, tekrar deneyin"
+        visible={cartActionErrorVisible}
+        onHide={() => setCartActionErrorVisible(false)}
+      />
     </View>
   );
 }

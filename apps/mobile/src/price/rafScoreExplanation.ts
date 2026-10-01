@@ -1,16 +1,37 @@
-import type { PriceResolveResponse, RafScoreReason } from './types';
+import type { PriceResolveResponse, RafScoreReason, RafScoreResult } from './types';
 
 function getRafScoreComponentLabel(key: string): string {
   if (key === 'price') return 'Fiyat';
   if (key === 'health') return 'Sağlık';
-  if (key === 'content') return 'İçerik/alerjen';
+  if (key === 'content') return 'İçerik ve alerjen';
   if (key === 'sustainability') return 'Sürdürülebilirlik';
   return key;
 }
 
-function formatRafScoreComponentWeight(weight: number): string {
-  const percent = weight <= 1 ? weight * 100 : weight;
-  return `%${Math.round(percent)}`;
+/**
+ * Cihaz testi 1 Ekim, madde 6b: puan şeffaflığı. getRafScoreExplanationItems
+ * (aşağıda) en fazla 5 madde gösterir ve reasonItems çoğu zaman bu 5 yeri
+ * doldurduğundan boyut dökümü (componentItems) HİÇ görünmeyebilir — bu
+ * kullanıcıya çelişkili geliyordu (ör. "İçindekiler: Veri yok" yazarken
+ * RafSkoru 77 görünmesi). Bu fonksiyon AYRI ve HER ZAMAN tam: 4 boyutun
+ * hepsini tek, kısaltılmaz bir satırda listeler (ör. "Sağlık 20 · İçerik ve
+ * alerjen 83 · Sürdürülebilirlik 45 · Fiyat: veri yok").
+ */
+const BREAKDOWN_KEY_ORDER = ['health', 'content', 'sustainability', 'price'];
+
+export function getRafScoreComponentBreakdownText(rafScore: RafScoreResult | null | undefined): string | null {
+  if (!rafScore) return null;
+
+  const byKey = new Map(rafScore.components.map((component) => [component.key, component]));
+
+  return BREAKDOWN_KEY_ORDER.map((key) => {
+    const component = byKey.get(key as (typeof rafScore.components)[number]['key']);
+    const label = getRafScoreComponentLabel(key);
+    if (component?.isAvailable && typeof component.score === 'number') {
+      return `${label} ${Math.round(component.score)}`;
+    }
+    return `${label}: veri yok`;
+  }).join(' · ');
 }
 
 function getReasonParamText(
@@ -80,11 +101,11 @@ function formatKnownReason(reason: RafScoreReason): string | null {
   }
 
   if (reason.code.endsWith('_low_score')) {
-    return `${label ?? 'Bir skor bileşeni'} düşük puan aldı ve genel RafSkoru aşağı çekti.`;
+    return `${label ?? 'Bu bölüm'} açısından ürün zayıf durumda; genel puanı aşağı çekiyor.`;
   }
 
   if (reason.code.endsWith('_high_score')) {
-    return `${label ?? 'Bir skor bileşeni'} yüksek puan aldı ve genel RafSkoru destekledi.`;
+    return `${label ?? 'Bu bölüm'} açısından ürün iyi durumda; genel puanı destekliyor.`;
   }
 
   if (reason.code === 'raf_score_unavailable') {
@@ -146,7 +167,7 @@ export function getRafScoreExplanationItems(priceResult: PriceResolveResponse['r
       typeof component.score === 'number' ? `${Math.round(component.score)}/100` : 'veri eksik';
     const availabilityText = component.isAvailable ? '' : ' (kısmi/veri yok)';
 
-    return `${getRafScoreComponentLabel(component.key)}: ${scoreText}, genel skordaki ağırlık ${formatRafScoreComponentWeight(component.weight)}${availabilityText}.`;
+    return `${getRafScoreComponentLabel(component.key)} puanı: ${scoreText}${availabilityText}.`;
   });
 
   if (reasonItems.length > 0) {

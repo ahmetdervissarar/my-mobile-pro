@@ -21,6 +21,8 @@ export interface ProductRowProps {
   name: string;
   meta?: string | null;
   score?: number | null;
+  /** Fiyatsız değerlendirme (onaylı KARAR) — "Puan (fiyatsız): N" gösterilir. */
+  isScorePriceless?: boolean;
   allergenStatus?: AllergenBannerStatus | null;
   /** Profil doluyken paylaşılan çekirdekten gelen, alerjen adını içeren seviye gösterimi. */
   allergenDisplayInfo?: AllergenDisplayInfo | null;
@@ -39,6 +41,7 @@ export function ProductRow({
   name,
   meta,
   score,
+  isScorePriceless = false,
   allergenStatus,
   allergenDisplayInfo,
   priceText,
@@ -107,7 +110,9 @@ export function ProductRow({
         ) : null}
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' }}>
-          {score !== undefined ? <ScorePill score={score} allergenPriority={isAllergenConflict} /> : null}
+          {score !== undefined ? (
+            <ScorePill score={score} allergenPriority={isAllergenConflict} isPriceless={isScorePriceless} />
+          ) : null}
           {allergenStatus ? <AllergenChip status={allergenStatus} displayInfo={allergenDisplayInfo} /> : null}
         </View>
 

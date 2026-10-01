@@ -67,7 +67,13 @@ export function productFactsFromCatalog(gtin: string): ProductFacts | null {
     novaGroup: (product.nova.group as ProductFactsNovaGroup | null) ?? null,
     trafficLight: null,
     ingredientsText: product.allergenData.ingredientsEvidence.text,
-    additives: [],
+    // Katalog gerçek katkı maddesi listesi taşımıyor (OFF-TR import'u bu
+    // alanı doldurmuyor) — bos dizi "katkısız" DEMEK degil, "veri yok"
+    // demektir. additives: [] sabiti icerikScore'un bunu yanlislikla
+    // en yuksek puanla (ADDITIVE_RISK_POINTS.none) degerlendirmesine
+    // yol aciyordu (bkz. gorev bulgusu, madde 6). Alan hic doldurulmazsa
+    // getAdditiveRiskLevel/getAdditiveRiskPoints bunu dogru sekilde
+    // "unavailable" sayar.
     allergens: product.allergenData.declared,
     traceAllergens: product.allergenData.traces,
     allergenInfo,

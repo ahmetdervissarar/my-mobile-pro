@@ -83,8 +83,45 @@ export interface BasketAllergenSummary {
   conflictCount: number;
   /** unknown_or_unverified olan (hiç alerjen verisi olmayan) ürün sayısı. */
   noDataCount: number;
+  /** Profil BOŞKEN sepette beyan edilmiş (declared) alerjeni olan ürün sayısı (bkz. D2). */
+  declaredWithoutProfileCount: number;
   headline: string;
   tone: 'danger' | 'warning' | 'neutral';
+  /** P2 invariant: true ise ScoreRing'de hüküm kelimesi (ör. "İyi") bastırılmalı. */
+  suppressVerdict: boolean;
+}
+
+/**
+ * D2 (device test 30 Eylül): profil BOŞ olsa bile sepette beyan edilmiş
+ * (declared) alerjeni olan bir ürün varsa hüküm kelimesi ("İyi" vb.) artık
+ * öne çıkmaz — bu, kullanıcının kendi alerjisi olup olmadığını henüz
+ * söylemediği ama ürünün gerçekten bir alerjen beyanı taşıdığı, tek başına
+ * bir puanın yeterli olmayacağı bir durumdur.
+ */
+function summarizeEmptyProfile(perItem: BasketEvaluateResponse['basketProfile']['perItem']): BasketAllergenSummary {
+  const declaredWithoutProfileCount = perItem.filter(
+    (item) => (item.allergenData?.declared.length ?? 0) > 0,
+  ).length;
+
+  if (declaredWithoutProfileCount > 0) {
+    return {
+      conflictCount: 0,
+      noDataCount: 0,
+      declaredWithoutProfileCount,
+      headline: `${declaredWithoutProfileCount} üründe beyan edilmiş alerjen var — profil ekleyerek kişiselleştir`,
+      tone: 'warning',
+      suppressVerdict: true,
+    };
+  }
+
+  return {
+    conflictCount: 0,
+    noDataCount: 0,
+    declaredWithoutProfileCount: 0,
+    headline: 'Alerjen profili tanımlı değil — Profilim üzerinden ekleyebilirsiniz.',
+    tone: 'neutral',
+    suppressVerdict: false,
+  };
 }
 
 /**
@@ -101,12 +138,7 @@ export function summarizeBasketAllergenStatus(
   userProfile: UserSensitivityProfile,
 ): BasketAllergenSummary {
   if (userProfile.allergens.length === 0) {
-    return {
-      conflictCount: 0,
-      noDataCount: 0,
-      headline: 'Alerjen profili tanımlı değil — Profilim üzerinden ekleyebilirsiniz.',
-      tone: 'neutral',
-    };
+    return summarizeEmptyProfile(perItem);
   }
 
   let conflictCount = 0;
@@ -125,8 +157,10 @@ export function summarizeBasketAllergenStatus(
     return {
       conflictCount,
       noDataCount,
+      declaredWithoutProfileCount: 0,
       headline: `${conflictCount} üründe profilinizle çakışan alerjen var`,
       tone: 'danger',
+      suppressVerdict: true,
     };
   }
 
@@ -134,15 +168,19 @@ export function summarizeBasketAllergenStatus(
     return {
       conflictCount,
       noDataCount,
+      declaredWithoutProfileCount: 0,
       headline: `${noDataCount} üründe alerjen verisi yok — etiketi kontrol edin`,
       tone: 'warning',
+      suppressVerdict: false,
     };
   }
 
   return {
     conflictCount,
     noDataCount,
+    declaredWithoutProfileCount: 0,
     headline: 'Mevcut verilerde profil alerjeniniz belirtilmemiş — bu bir garanti değildir',
     tone: 'neutral',
+    suppressVerdict: false,
   };
 }

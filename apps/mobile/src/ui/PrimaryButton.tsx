@@ -5,6 +5,7 @@
 
 import { ActivityIndicator, Pressable, Text } from 'react-native';
 
+import { getPrimaryButtonDisabledState } from './primaryButtonDisabledState';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from './theme';
 
 export type PrimaryButtonVariant = 'primary' | 'secondary' | 'citrus' | 'ghost';
@@ -35,31 +36,33 @@ export function PrimaryButton({
     ghost: { backgroundColor: 'transparent', borderWidth: 0, textColor: colors.pine2 },
   }[variant];
 
-  const isDisabled = Boolean(disabled || loading);
+  const { isPressDisabled, showMutedStyle } = getPrimaryButtonDisabledState(disabled, loading);
+  const backgroundColor = showMutedStyle ? colors.soft : variantStyle.backgroundColor;
+  const textColor = showMutedStyle ? colors.muted : variantStyle.textColor;
 
   return (
     <Pressable
       onPress={onPress}
-      disabled={isDisabled}
+      disabled={isPressDisabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled: isDisabled, busy: Boolean(loading) }}
+      accessibilityState={{ disabled: isPressDisabled, busy: Boolean(loading) }}
       style={{
         minHeight: MIN_TOUCH_TARGET,
         borderRadius: radii.lg,
         borderWidth: variantStyle.borderWidth,
         borderColor: colors.line,
-        backgroundColor: variantStyle.backgroundColor,
+        backgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: spacing.xl,
-        opacity: isDisabled ? 0.6 : 1,
+        opacity: isPressDisabled ? 0.6 : 1,
       }}
     >
       {loading ? (
-        <ActivityIndicator color={variantStyle.textColor} />
+        <ActivityIndicator color={textColor} />
       ) : (
-        <Text style={{ fontSize: 16, fontWeight: '800', color: variantStyle.textColor }}>{label}</Text>
+        <Text style={{ fontSize: 16, fontWeight: '800', color: textColor }}>{label}</Text>
       )}
     </Pressable>
   );
