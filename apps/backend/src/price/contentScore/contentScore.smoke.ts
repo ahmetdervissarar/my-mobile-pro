@@ -81,4 +81,24 @@ assert.equal(unavailableScore.status, 'unavailable');
 assert.equal(unavailableScore.score, null);
 assert.equal(unavailableScore.confidence, 'low');
 
+// Görev bulgusu madde 6 (genel kural): katkı maddesi verisi YOK olması,
+// katkı maddesi OLMADIĞI BİLİNEN ('none') durumuyla AYNI puanı üretmemeli —
+// veri yokluğu asla en iyi değerle karıştırılmamalı.
+const additiveDataBase = {
+  productName: 'Additive Data Gap Smoke Product',
+  ingredientsText: 'Yeterince uzun ve anlaşılır bir içindekiler metni örneği.',
+  allergenDataStatus: 'unknown' as const,
+  hasPalmOil: false,
+  isUltraProcessedHint: false,
+};
+
+const noAdditiveDataScore = calculateContentScore(additiveDataBase);
+const confirmedNoneAdditiveScore = calculateContentScore({ ...additiveDataBase, additiveRiskLevel: 'none' });
+
+assert.notEqual(noAdditiveDataScore.score, confirmedNoneAdditiveScore.score);
+assert.ok(
+  (confirmedNoneAdditiveScore.score ?? 0) > (noAdditiveDataScore.score ?? 0),
+  'katkı maddesi verisi olmadığı (additiveRiskLevel/additives belirtilmediği) durum, katkısız OLDUĞU BİLİNEN durumdan düşük puan almalı',
+);
+
 console.log('CONTENT_SCORE_SMOKE_OK');
