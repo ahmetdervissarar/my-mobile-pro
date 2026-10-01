@@ -19,7 +19,7 @@ import {
   getAllergenDisplayLevel,
   sortAllergenTieBreak,
 } from '../../riskEngine/catalogAllergenChip';
-import type { AllergenDisplayInfo } from '../../riskEngine/catalogAllergenChip';
+import type { AllergenDisplayInfo, AllergenProfileKeyResult } from '../../riskEngine/catalogAllergenChip';
 import type { ProductResult, TrafficLightNutrition } from '../../types/product';
 import type { RiskLevel, RiskWarning } from '../../riskEngine/riskEngine';
 import { CRITICAL_ALLERGEN_CODES } from '../../riskEngine/criticalAllergenCodes';
@@ -200,6 +200,14 @@ export interface AllergenBannerData {
   traceList: string[];
   criticalMatches: AllergenBannerCriticalMatch[];
   displayInfo: AllergenDisplayInfo | null;
+  /**
+   * Katmanlı sadeleştirme: AllergenDetailSheet'in profil-başına satırları
+   * için — yalnız getAllergenBannerDataFromCatalog'da (katalog verisi varsa)
+   * doludur; live-OFF/beta yolunda (getAllergenBannerData) her zaman boş
+   * dizidir (o yolda perKey ayrıntısı hiç hesaplanmaz, yeni bir karar
+   * ÜRETİLMEZ).
+   */
+  perKey: AllergenProfileKeyResult[];
 }
 
 /**
@@ -223,17 +231,31 @@ export function getAllergenBannerData(input: {
     const traceList = (allergenInfo.traceAllergens ?? []).map((tag) => formatAllergenTagList([tag]));
 
     if (declaredList.length > 0) {
-      return { status: 'declared_contains', declaredList, traceList, criticalMatches, displayInfo: null };
+      return { status: 'declared_contains', declaredList, traceList, criticalMatches, displayInfo: null, perKey: [] };
     }
 
     if (traceList.length > 0) {
-      return { status: 'trace_may_contain', declaredList, traceList, criticalMatches, displayInfo: null };
+      return { status: 'trace_may_contain', declaredList, traceList, criticalMatches, displayInfo: null, perKey: [] };
     }
 
-    return { status: 'not_listed_in_available_data', declaredList, traceList, criticalMatches, displayInfo: null };
+    return {
+      status: 'not_listed_in_available_data',
+      declaredList,
+      traceList,
+      criticalMatches,
+      displayInfo: null,
+      perKey: [],
+    };
   }
 
-  return { status: 'unknown_or_unverified', declaredList: [], traceList: [], criticalMatches, displayInfo: null };
+  return {
+    status: 'unknown_or_unverified',
+    declaredList: [],
+    traceList: [],
+    criticalMatches,
+    displayInfo: null,
+    perKey: [],
+  };
 }
 
 /**
@@ -261,7 +283,7 @@ export function getAllergenBannerDataFromCatalog(input: {
     // Profil boş — genel ürün bilgisi: TÜM beyan/iz edilen alerjenler gösterilir (profille filtrelenmez).
     const declaredList = input.catalogAllergenData.declared.map((key) => ALLERGEN_KEY_LABELS[key] ?? key);
     const traceList = input.catalogAllergenData.traces.map((key) => ALLERGEN_KEY_LABELS[key] ?? key);
-    return { status: evaluation.status, declaredList, traceList, criticalMatches, displayInfo };
+    return { status: evaluation.status, declaredList, traceList, criticalMatches, displayInfo, perKey: [] };
   }
 
   // sortAllergenTieBreak + displayLabelForKey kullanılır — aksi halde bu
@@ -272,7 +294,7 @@ export function getAllergenBannerDataFromCatalog(input: {
   const traceList = sortAllergenTieBreak(evaluation.perKey.filter((keyResult) => keyResult.status === 'trace_may_contain'))
     .map((keyResult) => displayLabelForKey(keyResult.key, keyResult.basis));
 
-  return { status: evaluation.status, declaredList, traceList, criticalMatches, displayInfo };
+  return { status: evaluation.status, declaredList, traceList, criticalMatches, displayInfo, perKey: evaluation.perKey };
 }
 
 export function getPriceSourceLabel(source: PriceResolveResponse['result']['source']): string {

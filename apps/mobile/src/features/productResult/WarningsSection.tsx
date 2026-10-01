@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { getWarningColorKind, type RiskWarning } from '../../riskEngine/riskEngine';
-import { EmptyState } from '../../ui/EmptyState';
 import { radii, spacing, useTheme } from '../../ui/theme';
 import { riskLevelLabel } from './helpers';
 
@@ -64,15 +63,15 @@ function WarningCard({ warning }: { warning: RiskWarning }) {
   );
 }
 
-/** "Dikkat edilecekler" — kritik profil-alerjen eşleşmeleri hariç tüm riskEngine uyarıları. */
+/**
+ * "Dikkat edilecekler" bölümünün uyarı listesi — kritik profil-alerjen
+ * eşleşmeleri hariç tüm riskEngine uyarıları. Boşsa HİÇBİR ŞEY döndürmez
+ * (katmanlı sadeleştirme: boş durum artık CollapsibleSection başlığındaki
+ * "Yok" özetiyle anlatılır, ayrı bir boş-metin kartı üretilmez).
+ */
 export function WarningsSection({ warnings }: WarningsSectionProps) {
   if (warnings.length === 0) {
-    return (
-      <EmptyState
-        title="Dikkat edilecekler"
-        message="Bu ürün için ek bir dikkat uyarısı üretilmedi. Bu, ürünün risksiz olduğu anlamına gelmez; etiket bilgisi esastır."
-      />
-    );
+    return null;
   }
 
   return (

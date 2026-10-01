@@ -8,7 +8,7 @@ import {
   getHealthScoreGradeText,
   getHealthScoreStatusText,
 } from '../../price/healthScoreDisplay';
-import { radii, spacing, useTheme } from '../../ui/theme';
+import { spacing, useTheme } from '../../ui/theme';
 import { getSustainabilityCategoryLabel, getSustainabilityConfidenceLabel } from './helpers';
 
 export interface MoreDetailsSectionProps {
@@ -69,18 +69,7 @@ export function MoreDetailsSection({
     setOpenSection((current) => (current === key ? null : key));
 
   return (
-    <View
-      style={{
-        borderRadius: radii.md,
-        borderWidth: 1,
-        borderColor: colors.line,
-        backgroundColor: colors.surface,
-        padding: spacing.md,
-        gap: spacing.sm,
-      }}
-    >
-      <Text style={{ fontSize: 13, fontWeight: '700', color: colors.muted }}>Daha fazla ayrıntı</Text>
-
+    <View style={{ gap: spacing.sm }}>
       <AccordionRow title="Sağlık Skoru" isOpen={openSection === 'health'} onToggle={() => toggle('health')}>
         <Text style={{ fontSize: 13, color: colors.ink }}>{getHealthScoreDisplayValue(healthScore)}</Text>
         <Text style={{ fontSize: 12, color: colors.muted }}>{getHealthScoreStatusText(healthScore)}</Text>

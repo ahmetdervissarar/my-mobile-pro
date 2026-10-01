@@ -3,14 +3,9 @@ import type { PriceResolveResponse, RafScoreReason } from './types';
 function getRafScoreComponentLabel(key: string): string {
   if (key === 'price') return 'Fiyat';
   if (key === 'health') return 'Sağlık';
-  if (key === 'content') return 'İçerik/alerjen';
+  if (key === 'content') return 'İçerik ve alerjen';
   if (key === 'sustainability') return 'Sürdürülebilirlik';
   return key;
-}
-
-function formatRafScoreComponentWeight(weight: number): string {
-  const percent = weight <= 1 ? weight * 100 : weight;
-  return `%${Math.round(percent)}`;
 }
 
 function getReasonParamText(
@@ -80,11 +75,11 @@ function formatKnownReason(reason: RafScoreReason): string | null {
   }
 
   if (reason.code.endsWith('_low_score')) {
-    return `${label ?? 'Bir skor bileşeni'} düşük puan aldı ve genel RafSkoru aşağı çekti.`;
+    return `${label ?? 'Bu bölüm'} açısından ürün zayıf durumda; genel puanı aşağı çekiyor.`;
   }
 
   if (reason.code.endsWith('_high_score')) {
-    return `${label ?? 'Bir skor bileşeni'} yüksek puan aldı ve genel RafSkoru destekledi.`;
+    return `${label ?? 'Bu bölüm'} açısından ürün iyi durumda; genel puanı destekliyor.`;
   }
 
   if (reason.code === 'raf_score_unavailable') {
@@ -146,7 +141,7 @@ export function getRafScoreExplanationItems(priceResult: PriceResolveResponse['r
       typeof component.score === 'number' ? `${Math.round(component.score)}/100` : 'veri eksik';
     const availabilityText = component.isAvailable ? '' : ' (kısmi/veri yok)';
 
-    return `${getRafScoreComponentLabel(component.key)}: ${scoreText}, genel skordaki ağırlık ${formatRafScoreComponentWeight(component.weight)}${availabilityText}.`;
+    return `${getRafScoreComponentLabel(component.key)} puanı: ${scoreText}${availabilityText}.`;
   });
 
   if (reasonItems.length > 0) {
