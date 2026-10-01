@@ -1,6 +1,7 @@
+import { useNavigation, usePreventRemove } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -17,7 +18,9 @@ import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../src/ui/theme';
 export default function ProfileChronicScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const [selected, setSelected] = useState<ChronicSensitivityKey[]>([]);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     void loadUserSensitivityProfile().then((profile) => {
@@ -25,25 +28,36 @@ export default function ProfileChronicScreen() {
     });
   }, []);
 
-  const handleToggle = async (key: ChronicSensitivityKey) => {
-    const next = selected.includes(key)
-      ? selected.filter((k) => k !== key)
-      : [...selected, key];
+  // Madde 5 (cihaz testi 1 Ekim): artık her dokunuşta otomatik kaydedilmez —
+  // yalnız "Kaydet" ile. Kaydedilmemiş değişiklikle çıkılırsa uyarı çıkar.
+  usePreventRemove(isDirty, ({ data }) => {
+    Alert.alert('Değişiklikler kaydedilmedi', 'Kaydetmeden çıkmak istiyor musunuz?', [
+      { text: 'Vazgeç', style: 'cancel' },
+      { text: 'Kaydetmeden çık', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
+    ]);
+  });
 
+  const handleToggle = (key: ChronicSensitivityKey) => {
+    const next = selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key];
     setSelected(next);
+    setIsDirty(true);
+  };
 
+  const handleSave = async () => {
     const profile = await loadUserSensitivityProfile();
-    await saveUserSensitivityProfile({ ...profile, chronicSensitivities: next });
+    await saveUserSensitivityProfile({ ...profile, chronicSensitivities: selected });
+    setIsDirty(false);
   };
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
+      style={{ flex: 1 }}
       contentContainerStyle={{
         padding: spacing.xl,
         paddingTop: Math.max(insets.top, spacing.xl),
         gap: spacing.lg,
-        paddingBottom: spacing.xxxl,
+        paddingBottom: spacing.xxxl + MIN_TOUCH_TARGET,
       }}
       showsVerticalScrollIndicator={false}
     >
@@ -90,7 +104,20 @@ export default function ProfileChronicScreen() {
         })}
       </View>
 
-      <PrimaryButton label="Profile dön" variant="secondary" onPress={() => router.push('/profile')} />
+      <PrimaryButton label="Profile dön" variant="secondary" onPress={() => router.back()} />
     </ScrollView>
+
+      <View
+        style={{
+          padding: spacing.xl,
+          paddingBottom: Math.max(insets.bottom, spacing.md),
+          borderTopWidth: 1,
+          borderTopColor: colors.line,
+          backgroundColor: colors.bg,
+        }}
+      >
+        <PrimaryButton label="Kaydet" onPress={() => void handleSave()} disabled={!isDirty} />
+      </View>
+    </View>
   );
 }
