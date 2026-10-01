@@ -117,12 +117,8 @@ export function SearchResultRow({
             </Text>
           </View>
 
-          {showNutriNova ? (
-            <>
-              <NutriScoreBadge grade={nutriScoreGrade} compact />
-              <NovaBadge group={novaGroup} compact />
-            </>
-          ) : null}
+          {showNutriNova && nutriScoreGrade ? <NutriScoreBadge grade={nutriScoreGrade} compact /> : null}
+          {showNutriNova && novaGroup ? <NovaBadge group={novaGroup} compact /> : null}
         </View>
       </View>
 
