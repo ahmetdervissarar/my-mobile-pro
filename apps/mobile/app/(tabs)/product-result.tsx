@@ -44,6 +44,7 @@ import { IndicatorRow } from '../../src/features/productResult/IndicatorRow';
 import { NutritionSection } from '../../src/features/productResult/NutritionSection';
 import { PriceSection } from '../../src/features/productResult/PriceSection';
 import { ProductHero } from '../../src/features/productResult/ProductHero';
+import { ProductResultBackButton } from '../../src/features/productResult/ProductResultBackButton';
 import {
   getAlternativesSummary,
   getAttentionSummary,
@@ -473,6 +474,7 @@ export default function ProductResultScreen() {
         style={{ flex: 1, backgroundColor: colors.bg }}
         contentContainerStyle={{ padding: spacing.xl, paddingTop: Math.max(insets.top, spacing.xl), gap: spacing.lg }}
       >
+        <ProductResultBackButton />
         <ProductHero
           name={displayProductName}
           barcode={displayBarcode}
@@ -511,6 +513,8 @@ export default function ProductResultScreen() {
           paddingBottom: spacing.xl,
         }}
       >
+        <ProductResultBackButton />
+
         {/* 1. Ürün kimliği önce — kullanıcı önce hangi üründe olduğunu görsün. */}
         <ProductHero
           name={displayProductName}
