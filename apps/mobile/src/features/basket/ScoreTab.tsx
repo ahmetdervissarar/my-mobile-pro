@@ -5,10 +5,10 @@ import type { BasketProfile } from '../../api/basketClient';
 import type { CartItem } from '../../state/cartStore';
 import type { UserSensitivityProfile } from '../../userProfile/userProfileTypes';
 import { EmptyState } from '../../ui/EmptyState';
-import { ScoreRing } from '../../ui/ScoreRing';
-import { radii, spacing, useTheme } from '../../ui/theme';
+import { getScorePillLabel } from '../../ui/scoreVerdict';
+import { spacing, useTheme } from '../../ui/theme';
 import { BasketItemRow } from './BasketItemRow';
-import { formatCoverage, summarizeBasketAllergenStatus } from './helpers';
+import { summarizeBasketAllergenStatus } from './helpers';
 
 export interface ScoreTabProps {
   basketProfile: BasketProfile | null;
@@ -26,71 +26,22 @@ export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChan
   }
 
   const allergenSummary = summarizeBasketAllergenStatus(basketProfile.perItem, userProfile);
-  const hasConflict = allergenSummary.conflictCount > 0;
   // D2: profil boşken beyan edilmiş alerjen varsa da (gerçek bir profil
-  // çakışması olmasa dahi) hüküm kelimesi bastırılır ve bant üste alınır.
+  // çakışması olmasa dahi) hüküm kelimesi bastırılır.
   const suppressVerdict = allergenSummary.suppressVerdict;
-
-  const allergenBand = (
-    <View
-      style={{
-        borderRadius: radii.md,
-        backgroundColor:
-          allergenSummary.tone === 'danger'
-            ? colors.dangerBg
-            : allergenSummary.tone === 'warning'
-              ? colors.warnBg
-              : colors.soft,
-        padding: spacing.md,
-        gap: 4,
-      }}
-    >
-      <Text
-        style={{
-          fontSize: 14,
-          fontWeight: '700',
-          color:
-            allergenSummary.tone === 'danger'
-              ? colors.danger
-              : allergenSummary.tone === 'warning'
-                ? colors.warn
-                : colors.ink,
-        }}
-      >
-        {allergenSummary.headline}
-      </Text>
-      {hasConflict && allergenSummary.noDataCount > 0 ? (
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.warn }}>
-          {allergenSummary.noDataCount} üründe alerjen verisi yok — etiketi kontrol edin
-        </Text>
-      ) : null}
-      <Text style={{ fontSize: 12, color: colors.muted, lineHeight: 17 }}>
-        Bu sayı yalnızca mevcut ürün verisinden (beyan, iz ve içindekiler eşleşmesi) hesaplanır.
-      </Text>
-    </View>
-  );
-
-  const scoreBlock = (
-    <View style={{ alignItems: 'center', gap: spacing.sm }}>
-      <ScoreRing score={basketProfile.basketRafSkoru} caption="Sepet RafSkoru" allergenPriority={suppressVerdict} />
-      {hasConflict ? (
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.muted, textAlign: 'center' }}>
-          {allergenSummary.conflictCount} ürün profilinizle çakışıyor; puan bu ürünler için anlamlı değil
-        </Text>
-      ) : null}
-      <Text style={{ fontSize: 13, color: colors.muted }}>
-        Kapsam: {formatCoverage(basketProfile.coverage)} · Ürün sayısı: {basketProfile.itemCount}
-      </Text>
-    </View>
-  );
+  const headlineColor =
+    allergenSummary.tone === 'danger' ? colors.danger : allergenSummary.tone === 'warning' ? colors.warn : colors.ink;
 
   return (
     <View style={{ gap: spacing.lg }}>
-      {suppressVerdict ? allergenBand : null}
-
-      {scoreBlock}
-
-      {suppressVerdict ? null : allergenBand}
+      {/* Özet (katmanlı sadeleştirme, onaylı plan): en üstte tek satır
+          durum, altında puan sönük ve küçük. Açıklama metni yok. */}
+      <View style={{ gap: 2 }}>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: headlineColor }}>{allergenSummary.headline}</Text>
+        <Text style={{ fontSize: 12.5, color: colors.muted }}>
+          {getScorePillLabel({ score: basketProfile.basketRafSkoru, allergenPriority: suppressVerdict })}
+        </Text>
+      </View>
 
       <View style={{ gap: spacing.sm }}>
         {basketProfile.perItem.map((item, index) => {
