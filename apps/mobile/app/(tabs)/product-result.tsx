@@ -552,7 +552,7 @@ export default function ProductResultScreen() {
 
           <CollapsibleSection
             title="Dikkat edilecekler"
-            summary={getAttentionSummary(nonCriticalWarnings.length, rafScorePositiveItems.length, displayAdditives.length)}
+            summary={getAttentionSummary(nonCriticalWarnings.length)}
           >
             <AttentionSection
               warnings={nonCriticalWarnings}

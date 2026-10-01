@@ -16,12 +16,11 @@ assert.equal(getIngredientsSummary('süt, şeker'), null);
 assert.equal(getNutritionSummary(false), 'Veri yok');
 assert.equal(getNutritionSummary(true), null);
 
-assert.equal(getAttentionSummary(0, 0), 'Yok');
-assert.equal(getAttentionSummary(2, 0), '2 uyarı');
-assert.equal(getAttentionSummary(0, 3), 'Olumlu');
-assert.equal(getAttentionSummary(1, 1), '1 uyarı');
-assert.equal(getAttentionSummary(0, 0, 2), 'Katkı maddesi');
-assert.equal(getAttentionSummary(0, 0, 0), 'Yok');
+// Madde 7 (cihaz testi 1 Ekim): özet yalnız uyarı sayısı veya "Yok" — olumlu
+// yön/katkı maddesi sayısı başlık özetini ETKİLEMEZ (anlamsız "Olumlu" kaldırıldı).
+assert.equal(getAttentionSummary(0), 'Yok');
+assert.equal(getAttentionSummary(2), '2 uyarı');
+assert.equal(getAttentionSummary(1), '1 uyarı');
 
 assert.equal(getDataSourceSummary('Orta', false), 'Orta');
 assert.equal(getDataSourceSummary('Orta', true), 'Eksik');

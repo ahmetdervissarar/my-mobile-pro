@@ -15,12 +15,15 @@ export function getNutritionSummary(hasAnyKnownTrafficLightLevel: boolean): stri
   return hasAnyKnownTrafficLightLevel ? null : 'Veri yok';
 }
 
-/** D2/D5 uyumlu: "Dikkat edilecekler" uyarılar + olumlu yönleri + katkı maddelerini birlikte taşır. */
-export function getAttentionSummary(warningCount: number, positiveCount: number, additiveCount = 0): string {
-  if (warningCount === 0 && positiveCount === 0 && additiveCount === 0) return 'Yok';
-  if (warningCount > 0) return `${warningCount} uyarı`;
-  if (positiveCount > 0) return 'Olumlu';
-  return 'Katkı maddesi';
+/**
+ * Cihaz testi 1 Ekim, madde 7: özet "Olumlu" yazıyordu — anlamsızdı
+ * ("Dikkat edilecekler" başlığı altında olumlu bir şey vurgulamak kafa
+ * karıştırıcı). Artık yalnız uyarı sayısını (veya uyarı yoksa "Yok")
+ * gösterir; bölümün İÇİNDE olumlu yönler/katkı maddeleri yine listelenir,
+ * yalnız başlık özeti sadeleşti.
+ */
+export function getAttentionSummary(warningCount: number): string {
+  return warningCount > 0 ? `${warningCount} uyarı` : 'Yok';
 }
 
 export function getDataSourceSummary(
