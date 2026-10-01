@@ -399,7 +399,7 @@ export function sortAllergenTieBreak(results: AllergenProfileKeyResult[]): Aller
   return [...results].sort((a, b) => (ALLERGEN_TIE_BREAK_RANK[a.key] ?? 0) - (ALLERGEN_TIE_BREAK_RANK[b.key] ?? 0));
 }
 
-function dedupePreserveOrder(labels: string[]): string[] {
+export function dedupePreserveOrder(labels: string[]): string[] {
   return [...new Set(labels)];
 }
 

@@ -10,8 +10,9 @@
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { displayLabelForKey, type AllergenProfileKeyBasis } from '../../riskEngine/catalogAllergenChip';
+import type { AllergenProfileKeyBasis } from '../../riskEngine/catalogAllergenChip';
 import { radii, spacing, useTheme } from '../../ui/theme';
+import { getDetailRowLabel } from './allergenDetailRow';
 import type { AllergenBannerData } from './helpers';
 
 export interface AllergenDetailSheetProps {
@@ -81,24 +82,29 @@ export function AllergenDetailSheet({ visible, onClose, data, sourceText, observ
           {data.perKey.length > 0 ? (
             <View style={{ gap: spacing.sm }}>
               <Text style={{ fontSize: 12, fontWeight: '700', color: colors.muted }}>PROFİLİNİZDEKİ ALERJENLER</Text>
-              {data.perKey.map((keyResult) => (
-                <View
-                  key={keyResult.key}
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingVertical: spacing.xs,
-                  }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.ink }}>
-                    {displayLabelForKey(keyResult.key, keyResult.basis)}
-                  </Text>
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: basisTone(keyResult.basis, colors) }}>
-                    {BASIS_LABEL[keyResult.basis]}
-                  </Text>
-                </View>
-              ))}
+              {data.perKey.map((keyResult) => {
+                const { label, note } = getDetailRowLabel(keyResult.key, keyResult.basis);
+
+                return (
+                  <View
+                    key={keyResult.key}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      paddingVertical: spacing.xs,
+                    }}
+                  >
+                    <View>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.ink }}>{label}</Text>
+                      {note ? <Text style={{ fontSize: 11.5, color: colors.muted }}>{note}</Text> : null}
+                    </View>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: basisTone(keyResult.basis, colors) }}>
+                      {BASIS_LABEL[keyResult.basis]}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           ) : (
             <View style={{ gap: spacing.xs }}>

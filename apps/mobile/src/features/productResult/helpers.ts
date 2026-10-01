@@ -14,6 +14,7 @@ import type {
   ProductFacts,
 } from '../../price/types';
 import {
+  dedupePreserveOrder,
   displayLabelForKey,
   evaluateCatalogAllergenDataForProfile,
   getAllergenDisplayLevel,
@@ -289,10 +290,17 @@ export function getAllergenBannerDataFromCatalog(input: {
   // sortAllergenTieBreak + displayLabelForKey kullanılır — aksi halde bu
   // listeler userProfile.allergens dizisinin SIRASINA bağlı kalır ve lactose
   // "Laktoz" olarak (mirror edildiği "Süt" yerine) görünür (bkz. cihaz bulgusu).
-  const declaredList = sortAllergenTieBreak(evaluation.perKey.filter((keyResult) => keyResult.status === 'declared_contains'))
-    .map((keyResult) => displayLabelForKey(keyResult.key, keyResult.basis));
-  const traceList = sortAllergenTieBreak(evaluation.perKey.filter((keyResult) => keyResult.status === 'trace_may_contain'))
-    .map((keyResult) => displayLabelForKey(keyResult.key, keyResult.basis));
+  // dedupePreserveOrder: süt + laktoz ikisi de "Süt" etiketine mirror
+  // edildiğinde (TGK kuralı) aynı TR etiket iki kez listelenmesin (bkz.
+  // cihaz testi 1 Ekim, madde 1).
+  const declaredList = dedupePreserveOrder(
+    sortAllergenTieBreak(evaluation.perKey.filter((keyResult) => keyResult.status === 'declared_contains'))
+      .map((keyResult) => displayLabelForKey(keyResult.key, keyResult.basis)),
+  );
+  const traceList = dedupePreserveOrder(
+    sortAllergenTieBreak(evaluation.perKey.filter((keyResult) => keyResult.status === 'trace_may_contain'))
+      .map((keyResult) => displayLabelForKey(keyResult.key, keyResult.basis)),
+  );
 
   return { status: evaluation.status, declaredList, traceList, criticalMatches, displayInfo, perKey: evaluation.perKey };
 }

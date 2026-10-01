@@ -130,6 +130,16 @@ function lactosePerKey(evaluation: ReturnType<typeof evaluateCatalogAllergenData
   // Her ikisi de basis='declared' ve label='Süt'e mirror olduğundan dedupe
   // sonrası tek "Süt" kalır — çift "Süt, Süt" YAZILMAZ.
   assert.equal(displayInfo!.text, 'Süt içerir (beyan)');
+
+  // Ürün sayfası banner'ının (getAllergenBannerDataFromCatalog) declaredList'i
+  // de AYNI dedupe'u uygular — "Süt, Süt" YAZILMAZ (bkz. cihaz testi 1 Ekim,
+  // madde 1).
+  const bannerData = getAllergenBannerDataFromCatalog({
+    catalogAllergenData: bothDeclared,
+    userProfile: profile(['lactose', 'milk']),
+    riskWarnings: [],
+  });
+  assert.deepEqual(bannerData.declaredList, ['Süt']);
 }
 
 // 8) no_data seviyesinde süt+laktoz birlikte: sıra süt önce, tek ":" değil
