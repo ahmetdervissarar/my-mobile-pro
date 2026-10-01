@@ -44,7 +44,7 @@ import { IndicatorRow } from '../../src/features/productResult/IndicatorRow';
 import { NutritionSection } from '../../src/features/productResult/NutritionSection';
 import { PriceSection } from '../../src/features/productResult/PriceSection';
 import { ProductHero } from '../../src/features/productResult/ProductHero';
-import { ProductResultBackButton } from '../../src/features/productResult/ProductResultBackButton';
+import { FixedHeaderBar } from '../../src/ui/FixedHeaderBar';
 import {
   getAlternativesSummary,
   getAttentionSummary,
@@ -470,29 +470,31 @@ export default function ProductResultScreen() {
 
   if (isUnknownProduct) {
     return (
-      <ScrollView
-        style={{ flex: 1, backgroundColor: colors.bg }}
-        contentContainerStyle={{ padding: spacing.xl, paddingTop: Math.max(insets.top, spacing.xl), gap: spacing.lg }}
-      >
-        <ProductResultBackButton />
-        <ProductHero
-          name={displayProductName}
-          barcode={displayBarcode}
-          imageUrl={displayImageUrl}
-          isPhotoSearch={searchType === 'photo'}
-        />
-        <UnknownProductNotice
-          initialQuery={normalizedInput.productName ?? ''}
-          isSubmittingBetaFeedback={isSubmittingBetaFeedback}
-          onContributeProduct={() => void handleBetaFeedbackPress('product_contribution')}
-        />
-        <FooterSection
-          submittedFeedbackType={submittedFeedbackType}
-          isSubmittingBetaFeedback={isSubmittingBetaFeedback}
-          betaFeedbackError={betaFeedbackError}
-          onBetaFeedbackPress={(type) => void handleBetaFeedbackPress(type)}
-        />
-      </ScrollView>
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <FixedHeaderBar title={displayProductName} />
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}
+        >
+          <ProductHero
+            name={displayProductName}
+            barcode={displayBarcode}
+            imageUrl={displayImageUrl}
+            isPhotoSearch={searchType === 'photo'}
+          />
+          <UnknownProductNotice
+            initialQuery={normalizedInput.productName ?? ''}
+            isSubmittingBetaFeedback={isSubmittingBetaFeedback}
+            onContributeProduct={() => void handleBetaFeedbackPress('product_contribution')}
+          />
+          <FooterSection
+            submittedFeedbackType={submittedFeedbackType}
+            isSubmittingBetaFeedback={isSubmittingBetaFeedback}
+            betaFeedbackError={betaFeedbackError}
+            onBetaFeedbackPress={(type) => void handleBetaFeedbackPress(type)}
+          />
+        </ScrollView>
+      </View>
     );
   }
 
@@ -505,16 +507,15 @@ export default function ProductResultScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <FixedHeaderBar title={displayProductName} />
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{
           padding: spacing.xl,
-          paddingTop: Math.max(insets.top, spacing.xl),
           gap: spacing.lg,
           paddingBottom: spacing.xl,
         }}
       >
-        <ProductResultBackButton />
-
         {/* 1. Ürün kimliği önce — kullanıcı önce hangi üründe olduğunu görsün. */}
         <ProductHero
           name={displayProductName}

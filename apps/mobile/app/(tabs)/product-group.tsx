@@ -1,7 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchProductsByGroup, type ProductSearchSuggestion } from '../../src/api/productSuggestionClient';
 import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel } from '../../src/riskEngine/catalogAllergenChip';
@@ -11,6 +10,7 @@ import { EmptyState } from '../../src/ui/EmptyState';
 import { NovaBadge } from '../../src/ui/NovaBadge';
 import { NutriScoreBadge } from '../../src/ui/NutriScoreBadge';
 import { ProductRow } from '../../src/ui/ProductRow';
+import { FixedHeaderBar } from '../../src/ui/FixedHeaderBar';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
 
 function getSingleParam(value: string | string[] | undefined): string {
@@ -24,7 +24,6 @@ function getSingleParam(value: string | string[] | undefined): string {
 export default function ProductGroupScreen() {
   const router = useRouter();
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     productGroupKey?: string;
     label?: string;
@@ -75,14 +74,16 @@ export default function ProductGroupScreen() {
   }, [productGroupKey]);
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{
-        paddingHorizontal: spacing.xl,
-        paddingTop: Math.max(insets.top, spacing.xxxl),
-        paddingBottom: spacing.xxxl,
-      }}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <FixedHeaderBar title={label} />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: spacing.xl,
+          paddingTop: spacing.xl,
+          paddingBottom: spacing.xxxl,
+        }}
+      >
       <Text
         style={{
           color: colors.muted,
@@ -199,6 +200,7 @@ export default function ProductGroupScreen() {
           Aramaya dön
         </Text>
       </Pressable>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
