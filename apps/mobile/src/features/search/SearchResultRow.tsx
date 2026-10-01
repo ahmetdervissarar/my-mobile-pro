@@ -22,6 +22,8 @@ export interface SearchResultRowProps {
   imageUrl?: string | null;
   name: string;
   metaLine: string | null;
+  /** Aynı marka+boyutta birden fazla kayıt varsa ayırt edici barkod son eki (ör. "… 2021"). Ayrı, daralmayan metin — kesilmez. */
+  duplicateBarcodeSuffix?: string;
   allergenData: AllergenBannerData;
   nutriScoreGrade?: 'A' | 'B' | 'C' | 'D' | 'E' | null;
   novaGroup?: 1 | 2 | 3 | 4 | null;
@@ -36,6 +38,7 @@ export function SearchResultRow({
   imageUrl,
   name,
   metaLine,
+  duplicateBarcodeSuffix,
   allergenData,
   nutriScoreGrade = null,
   novaGroup = null,
@@ -96,10 +99,19 @@ export function SearchResultRow({
           {name}
         </Text>
 
-        {metaLine ? (
-          <Text style={{ fontSize: 12.5, color: colors.muted }} numberOfLines={1}>
-            {metaLine}
-          </Text>
+        {metaLine || duplicateBarcodeSuffix ? (
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+            {metaLine ? (
+              <Text style={{ flexShrink: 1, fontSize: 12.5, color: colors.muted }} numberOfLines={1}>
+                {metaLine}
+              </Text>
+            ) : null}
+            {duplicateBarcodeSuffix ? (
+              <Text style={{ flexShrink: 0, fontSize: 12.5, color: colors.muted }} numberOfLines={1}>
+                {metaLine ? ` · ${duplicateBarcodeSuffix}` : duplicateBarcodeSuffix}
+              </Text>
+            ) : null}
+          </View>
         ) : null}
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>

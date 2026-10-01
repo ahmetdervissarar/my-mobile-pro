@@ -9,6 +9,11 @@
  * alerjen rozeti, yoksa puan rozeti ("Puan: Veri yok" — arama ucu puan
  * da döndürmez). Yeni bir karar üretmez — yalnız zaten hesaplanmış
  * AllergenStatusLine/skor metnini seçer.
+ *
+ * Mükerrer barkod son eki (aynı marka+boyut) bu satıra KATILMAZ — ayrı,
+ * daralmayan bir metin olarak render edilir (bkz. SearchResultRow), aksi
+ * halde numberOfLines={1} satır sonundaki son eki keser (bkz. cihaz testi
+ * 1 Ekim madde 4).
  */
 import { getScorePillLabel } from '../../ui/scoreVerdict';
 import type { AllergenStatusLine } from '../productResult/allergenStatusLine';
@@ -16,12 +21,10 @@ import type { AllergenStatusLine } from '../productResult/allergenStatusLine';
 export function getSearchCardMetaLine(input: {
   brand?: string;
   packageSize?: { amount: number; unit: string };
-  duplicateBarcodeSuffix?: string;
 }): string | null {
   const parts = [
     input.brand,
     input.packageSize ? `${input.packageSize.amount} ${input.packageSize.unit}` : undefined,
-    input.duplicateBarcodeSuffix,
   ].filter(Boolean);
 
   return parts.length > 0 ? parts.join(' · ') : null;

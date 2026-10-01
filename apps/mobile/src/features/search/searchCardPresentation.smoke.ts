@@ -9,10 +9,6 @@ assert.equal(
   'Dost · 1000 ml',
 );
 assert.equal(getSearchCardMetaLine({}), null, 'hiçbir alan yoksa satır tamamen boş (null) olmalı — "Fiyat: Veri yok" YAZILMAMALI');
-assert.equal(
-  getSearchCardMetaLine({ brand: 'Dost', packageSize: { amount: 1000, unit: 'ml' }, duplicateBarcodeSuffix: '… 2021' }),
-  'Dost · 1000 ml · … 2021',
-);
 assert.ok(
   !getSearchCardMetaLine({ brand: 'Dost' })!.toLocaleLowerCase('tr-TR').includes('fiyat'),
   'satırda "Fiyat" kelimesi hiç geçmemeli',

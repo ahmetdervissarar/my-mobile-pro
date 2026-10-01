@@ -194,9 +194,10 @@ export default function SearchScreen() {
                 ? getSearchCardMetaLine({
                     brand: suggestion.brand,
                     packageSize: suggestion.packageSize,
-                    duplicateBarcodeSuffix: duplicateBarcodeSuffixes.get(suggestion.productId),
                   })
                 : 'Ürün grubu';
+            const duplicateBarcodeSuffix =
+              suggestion.type === 'product' ? duplicateBarcodeSuffixes.get(suggestion.productId) : undefined;
 
             return (
               <SearchResultRow
@@ -204,6 +205,7 @@ export default function SearchScreen() {
                 imageUrl={suggestion.type === 'product' ? suggestion.imageUrl : undefined}
                 name={suggestion.label}
                 metaLine={metaLine}
+                duplicateBarcodeSuffix={duplicateBarcodeSuffix}
                 allergenData={allergenBannerData}
                 nutriScoreGrade={suggestion.type === 'product' ? suggestion.nutriScore?.grade ?? null : null}
                 novaGroup={suggestion.type === 'product' ? suggestion.nova?.group ?? null : null}
