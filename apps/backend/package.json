@@ -38,7 +38,7 @@
     "smoke:beta-feedback": "tsx src/beta/feedback.smoke.ts",
     "smoke:beta-feedback-route": "tsx src/routes/betaRoutesFeedback.smoke.ts",
     "smoke:beta-query-events-route": "tsx src/routes/priceRoutesBetaTelemetry.smoke.ts",
-    "smoke:search-suggestions": "tsx src/search/suggestions.smoke.ts && tsx src/routes/searchRoutes.smoke.ts",
+    "smoke:search-suggestions": "tsx src/search/suggestions.smoke.ts && tsx src/routes/searchRoutes.smoke.ts && tsx src/search/suggestionRafScoreParity.smoke.ts",
     "smoke:basket-scoring": "tsx src/basket/basketScoring.smoke.ts",
     "smoke:basket-evaluation": "tsx src/basket/basketEvaluation.smoke.ts && tsx src/routes/basketRoutes.smoke.ts",
     "smoke:basket-coverage-guard": "tsx src/basket/basketCoverageGuard.smoke.ts",

@@ -1,6 +1,17 @@
 import type { CatalogAllergenData, CatalogNova, CatalogNutriScore, CatalogProduct } from '../catalog/catalog.js';
 import { getCatalog } from '../catalog/catalog.js';
 import { PRODUCT_GROUP_REGISTRY } from '../price/productGroups/registry.js';
+import { productFactsFromCatalog } from '../price/productFacts/catalogAdapter.js';
+import {
+  productFactsToContentScoreInput,
+  productFactsToHealthScoreInput,
+  productFactsToSustainabilityInput,
+} from '../price/productFacts/adapters.js';
+import { calculateContentScore } from '../price/contentScore/index.js';
+import { calculateHealthScore } from '../price/healthScore/index.js';
+import { calculateSustainabilityScore } from '../price/sustainability/index.js';
+import { calculateRafScore } from '../price/rafScore/index.js';
+import type { RafScoreResult } from '../price/rafScore/index.js';
 
 export type SearchSuggestion = ProductGroupSearchSuggestion | ProductSearchSuggestion;
 
@@ -30,6 +41,53 @@ export interface ProductSearchSuggestion {
   allergenData?: CatalogAllergenData;
   completeness?: CatalogProduct['completeness'];
   provenance?: CatalogProduct['provenance'];
+  /**
+   * Cihaz testi 1 Ekim, madde 4: ürün sayfasıyla AYNI hesaplayıcı zincirinden
+   * (calculateHealthScore/calculateContentScore/calculateSustainabilityScore
+   * + calculateRafScore, aynı renormalize kuralı — bkz. KARAR) türetilir.
+   * Liste ucu fiyat çözümlemesi yapmaz, bu yüzden priceScore her zaman null
+   * verilir (ürün sayfasında fiyat bulunamadığında da aynı yol izlenir).
+   */
+  rafScore?: RafScoreResult;
+}
+
+let cachedCatalogLoadedAt: string | null = null;
+const rafScoreCacheByProductId = new Map<string, RafScoreResult>();
+
+/**
+ * Bellekte, katalog yüklendiği sürece tek seferlik hesaplanır (bkz. görev
+ * koşulu: "gerekirse katalog yüklemesinde bir kez hesaplanıp bellekte
+ * tutulsun"). Girdiler (sağlık/içerik/sürdürülebilirlik) yalnızca katalog
+ * verisine bağlıdır, çalışma anında değişmez — bu yüzden güvenle
+ * önbelleklenebilir. Katalog yeniden yüklenirse (loadedAt değişirse) önbellek
+ * temizlenir.
+ */
+function getRafScoreForProduct(product: CatalogProduct): RafScoreResult | undefined {
+  const catalog = getCatalog();
+  if (cachedCatalogLoadedAt !== catalog.loadedAt) {
+    rafScoreCacheByProductId.clear();
+    cachedCatalogLoadedAt = catalog.loadedAt;
+  }
+
+  const cached = rafScoreCacheByProductId.get(product.productId);
+  if (cached) return cached;
+
+  const facts = productFactsFromCatalog(product.productId);
+  if (!facts) return undefined;
+
+  const healthScore = calculateHealthScore(productFactsToHealthScoreInput(facts));
+  const contentScore = calculateContentScore(productFactsToContentScoreInput(facts));
+  const sustainabilityScore = calculateSustainabilityScore(productFactsToSustainabilityInput(facts));
+
+  const rafScore = calculateRafScore({
+    priceScore: null,
+    healthScore: healthScore.score,
+    contentScore: contentScore.score,
+    sustainabilityScore: sustainabilityScore.score,
+  });
+
+  rafScoreCacheByProductId.set(product.productId, rafScore);
+  return rafScore;
 }
 
 export interface SearchSuggestResponse {
@@ -143,6 +201,7 @@ function catalogProductToSuggestion(product: CatalogProduct): ProductSearchSugge
     allergenData: product.allergenData,
     completeness: product.completeness,
     provenance: product.provenance,
+    rafScore: getRafScoreForProduct(product),
   };
 }
 

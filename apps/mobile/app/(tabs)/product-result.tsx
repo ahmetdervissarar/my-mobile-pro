@@ -18,6 +18,7 @@ import type {
   PriceResolveResponse,
 } from '../../src/price/types';
 import { getRafScoreExplanationItems, getRafScorePositiveItems } from '../../src/price/rafScoreExplanation';
+import { isRafScorePriceless as isPriceless } from '../../src/price/rafScorePriceless';
 import { recordRecentlyViewed } from '../../src/state/recentlyViewedStore';
 import { CollapsibleSection } from '../../src/ui/CollapsibleSection';
 import { spacing, useTheme } from '../../src/ui/theme';
@@ -444,12 +445,9 @@ export default function ProductResultScreen() {
     : null;
   const hasPrice = Boolean(priceResult?.price ?? null);
   // Fiyatsız değerlendirme (onaylı KARAR): fiyat bileşeni eksik ama puan
-  // yine de hesaplandıysa (bkz. backend renormalizasyonu).
-  const isRafScorePriceless = Boolean(
-    rafScore &&
-      rafScore.score !== null &&
-      rafScore.components.find((component) => component.key === 'price')?.isAvailable === false,
-  );
+  // yine de hesaplandıysa (bkz. backend renormalizasyonu). Arama/kategori
+  // listeleriyle AYNI paylaşılan kuralı kullanır (bkz. madde 4).
+  const isRafScorePriceless = isPriceless(rafScore);
   const observedAtLabel = backendProductFacts?.observedAt
     ? formatObservedAtRelativeLabel(backendProductFacts.observedAt)
     : null;

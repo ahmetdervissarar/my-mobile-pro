@@ -13,6 +13,7 @@ import { Image, Pressable, Text, View } from 'react-native';
 
 import { getAllergenStatusLine } from '../productResult/allergenStatusLine';
 import type { AllergenBannerData } from '../productResult/helpers';
+import type { RafScoreResult } from '../../price/types';
 import { NovaBadge } from '../../ui/NovaBadge';
 import { NutriScoreBadge } from '../../ui/NutriScoreBadge';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../ui/theme';
@@ -25,6 +26,8 @@ export interface SearchResultRowProps {
   /** Aynı marka+boyutta birden fazla kayıt varsa ayırt edici barkod son eki (ör. "… 2021"). Ayrı, daralmayan metin — kesilmez. */
   duplicateBarcodeSuffix?: string;
   allergenData: AllergenBannerData;
+  /** Ürün sayfasıyla AYNI hesaplayıcıdan gelen liste puanı (bkz. madde 4). Yoksa "Puan: Veri yok". */
+  rafScore?: RafScoreResult;
   nutriScoreGrade?: 'A' | 'B' | 'C' | 'D' | 'E' | null;
   novaGroup?: 1 | 2 | 3 | 4 | null;
   /** false ise (ör. ürün grubu önerisi) Nutri-Score/NOVA simgeleri hiç gösterilmez. */
@@ -40,6 +43,7 @@ export function SearchResultRow({
   metaLine,
   duplicateBarcodeSuffix,
   allergenData,
+  rafScore,
   nutriScoreGrade = null,
   novaGroup = null,
   showNutriNova,
@@ -49,7 +53,7 @@ export function SearchResultRow({
 }: SearchResultRowProps) {
   const { colors } = useTheme();
   const allergenLine = getAllergenStatusLine(allergenData);
-  const badge = getSearchCardBadge(allergenLine);
+  const badge = getSearchCardBadge(allergenLine, rafScore);
   const isConflict = allergenLine.tone === 'danger';
 
   const badgeToneStyle = isConflict

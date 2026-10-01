@@ -211,6 +211,7 @@ export default function SearchScreen() {
                 metaLine={metaLine}
                 duplicateBarcodeSuffix={duplicateBarcodeSuffix}
                 allergenData={allergenBannerData}
+                rafScore={suggestion.type === 'product' ? suggestion.rafScore : undefined}
                 nutriScoreGrade={suggestion.type === 'product' ? suggestion.nutriScore?.grade ?? null : null}
                 novaGroup={suggestion.type === 'product' ? suggestion.nova?.group ?? null : null}
                 showNutriNova={suggestion.type === 'product'}
@@ -239,7 +240,7 @@ export default function SearchScreen() {
 
         {suggestions.length > 0 ? (
           <Text style={{ fontSize: 11.5, color: colors.muted }}>
-            Ayrıntılı alerjen ve puan bilgisi ürün sayfasında; aramada fiyat ve puan henüz yok.
+            Ayrıntılı alerjen bilgisi ve puanın boyut dökümü ürün sayfasında; aramada fiyat henüz yok.
           </Text>
         ) : null}
       </ScrollView>

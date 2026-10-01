@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { fetchProductsByGroup, type ProductSearchSuggestion } from '../../src/api/productSuggestionClient';
+import { isRafScorePriceless } from '../../src/price/rafScorePriceless';
 import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel } from '../../src/riskEngine/catalogAllergenChip';
 import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
@@ -127,7 +128,8 @@ export default function ProductGroupScreen() {
                 meta={[product.brand, product.packageSize ? `${product.packageSize.amount} ${product.packageSize.unit}` : undefined]
                   .filter(Boolean)
                   .join(' · ') || null}
-                score={null}
+                score={product.rafScore?.score ?? null}
+                isScorePriceless={isRafScorePriceless(product.rafScore)}
                 allergenStatus={evaluation.status}
                 allergenDisplayInfo={allergenDisplayInfo}
                 allergenNote={evaluation.note}
