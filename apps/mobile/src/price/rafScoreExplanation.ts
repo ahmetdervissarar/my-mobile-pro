@@ -1,4 +1,4 @@
-import type { PriceResolveResponse, RafScoreReason } from './types';
+import type { PriceResolveResponse, RafScoreReason, RafScoreResult } from './types';
 
 function getRafScoreComponentLabel(key: string): string {
   if (key === 'price') return 'Fiyat';
@@ -6,6 +6,32 @@ function getRafScoreComponentLabel(key: string): string {
   if (key === 'content') return 'İçerik ve alerjen';
   if (key === 'sustainability') return 'Sürdürülebilirlik';
   return key;
+}
+
+/**
+ * Cihaz testi 1 Ekim, madde 6b: puan şeffaflığı. getRafScoreExplanationItems
+ * (aşağıda) en fazla 5 madde gösterir ve reasonItems çoğu zaman bu 5 yeri
+ * doldurduğundan boyut dökümü (componentItems) HİÇ görünmeyebilir — bu
+ * kullanıcıya çelişkili geliyordu (ör. "İçindekiler: Veri yok" yazarken
+ * RafSkoru 77 görünmesi). Bu fonksiyon AYRI ve HER ZAMAN tam: 4 boyutun
+ * hepsini tek, kısaltılmaz bir satırda listeler (ör. "Sağlık 20 · İçerik ve
+ * alerjen 83 · Sürdürülebilirlik 45 · Fiyat: veri yok").
+ */
+const BREAKDOWN_KEY_ORDER = ['health', 'content', 'sustainability', 'price'];
+
+export function getRafScoreComponentBreakdownText(rafScore: RafScoreResult | null | undefined): string | null {
+  if (!rafScore) return null;
+
+  const byKey = new Map(rafScore.components.map((component) => [component.key, component]));
+
+  return BREAKDOWN_KEY_ORDER.map((key) => {
+    const component = byKey.get(key as (typeof rafScore.components)[number]['key']);
+    const label = getRafScoreComponentLabel(key);
+    if (component?.isAvailable && typeof component.score === 'number') {
+      return `${label} ${Math.round(component.score)}`;
+    }
+    return `${label}: veri yok`;
+  }).join(' · ');
 }
 
 function getReasonParamText(

@@ -1,6 +1,7 @@
 import { Text, View } from 'react-native';
 
-import type { HealthScoreResult, ProductFacts, SustainabilityResult } from '../../price/types';
+import type { HealthScoreResult, ProductFacts, RafScoreResult, SustainabilityResult } from '../../price/types';
+import { getRafScoreComponentBreakdownText } from '../../price/rafScoreExplanation';
 import { spacing, useTheme } from '../../ui/theme';
 import { formatProductFactsMissingFields, getProductFactsConfidenceLabel } from './helpers';
 import { MoreDetailsSection } from './MoreDetailsSection';
@@ -8,6 +9,7 @@ import { MoreDetailsSection } from './MoreDetailsSection';
 export interface DataSourceSectionProps {
   productFacts: ProductFacts | null;
   explanationItems: string[];
+  rafScore: RafScoreResult | null;
   healthScore: HealthScoreResult | null;
   sustainability: SustainabilityResult | null;
   productName: string;
@@ -24,6 +26,7 @@ export interface DataSourceSectionProps {
 export function DataSourceSection({
   productFacts,
   explanationItems,
+  rafScore,
   healthScore,
   sustainability,
   productName,
@@ -32,6 +35,7 @@ export function DataSourceSection({
 }: DataSourceSectionProps) {
   const { colors } = useTheme();
   const missingText = formatProductFactsMissingFields(productFacts);
+  const componentBreakdownText = getRafScoreComponentBreakdownText(rafScore);
   const reason =
     productFacts?.verificationReason?.trim() ||
     (productFacts?.verificationNeeded || missingText
@@ -54,9 +58,14 @@ export function DataSourceSection({
         </View>
       ) : null}
 
-      {explanationItems.length > 0 ? (
+      {componentBreakdownText || explanationItems.length > 0 ? (
         <View style={{ gap: 4 }}>
           <Text style={{ fontSize: 12, fontWeight: '700', color: colors.muted }}>PUAN NASIL HESAPLANDI</Text>
+          {componentBreakdownText ? (
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.ink, lineHeight: 18 }}>
+              {componentBreakdownText}
+            </Text>
+          ) : null}
           {explanationItems.map((item) => (
             <Text key={item} style={{ fontSize: 13, color: colors.muted, lineHeight: 18 }}>
               • {item}

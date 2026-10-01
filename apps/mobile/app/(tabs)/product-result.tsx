@@ -1,7 +1,7 @@
 import { submitBetaFeedback, type BetaFeedbackType } from '../../src/api/betaFeedbackClient';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getFallbackProductSummary } from '../../src/services/productService';
@@ -17,7 +17,7 @@ import type {
   AlternativeRecommendation,
   PriceResolveResponse,
 } from '../../src/price/types';
-import { getRafScoreExplanationItems, getRafScorePositiveItems } from '../../src/price/rafScoreExplanation';
+import { getRafScoreComponentBreakdownText, getRafScoreExplanationItems, getRafScorePositiveItems } from '../../src/price/rafScoreExplanation';
 import { isRafScorePriceless as isPriceless } from '../../src/price/rafScorePriceless';
 import { recordRecentlyViewed } from '../../src/state/recentlyViewedStore';
 import { CollapsibleSection } from '../../src/ui/CollapsibleSection';
@@ -532,6 +532,12 @@ export default function ProductResultScreen() {
           novaGroup={novaGroup}
           allergenPriority={isAllergenConflict}
           isPriceless={isRafScorePriceless}
+          onRafScorePress={() => {
+            const breakdownText = getRafScoreComponentBreakdownText(rafScore);
+            if (breakdownText) {
+              Alert.alert('Fiyatsız değerlendirme', breakdownText);
+            }
+          }}
         />
 
         {/* 4. Katlanmış bölümler — hepsi kapalı başlar. */}
@@ -567,6 +573,7 @@ export default function ProductResultScreen() {
             <DataSourceSection
               productFacts={backendProductFacts}
               explanationItems={rafScoreExplanationItems}
+              rafScore={rafScore}
               healthScore={healthScore}
               sustainability={sustainability}
               productName={displayProductName}
