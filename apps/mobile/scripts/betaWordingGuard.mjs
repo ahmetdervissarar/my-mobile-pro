@@ -60,7 +60,7 @@ function assertNotIncludes(fileName, content, forbiddenText) {
 
 const productResult =
   readMobileFile('app/(tabs)/product-result.tsx') + readMobileDirRecursive('src/features/productResult');
-const basketResult = readMobileFile('app/basket-result.tsx');
+const basketResult = readMobileFile('app/(tabs)/basket-result.tsx');
 const priceClient = readMobileFile('src/price/priceClient.ts');
 const rafScoreExplanation = readMobileFile('src/price/rafScoreExplanation.ts');
 
@@ -119,6 +119,19 @@ assertAnyIncludes('priceClient.ts', priceClient, ['Beta', 'beta']);
 const betaFeedbackClient = readMobileFile('src/api/betaFeedbackClient.ts');
 assertIncludes('betaFeedbackClient.ts', betaFeedbackClient, 'product_contribution');
 assertIncludes('betaFeedbackClient.ts', betaFeedbackClient, 'Ürün katkısı');
+
+// D1 (device test 30 Eylül) + katmanlı sadeleştirme: "egg, gluten_wheat, milk"
+// gibi ham kanonik alerjen anahtarları kullanıcıya asla ham haliyle
+// gösterilmemeli. Alerjen ayrıntısı artık TEK yerde (AllergenDetailSheet,
+// AllergenStatusRow) — ikisi de yalnız ZATEN TR etiketlenmiş AllergenBannerData
+// (declaredList/traceList/perKey, bkz. productResult/helpers.ts) kullanır;
+// backendProductFacts.allergens gibi ham bir alana DOĞRUDAN erişmemeli.
+for (const file of ['AllergenDetailSheet.tsx', 'AllergenStatusRow.tsx']) {
+  const content = readMobileFile(`src/features/productResult/${file}`);
+  assertNotIncludes(file, content, 'backendProductFacts');
+  assertNotIncludes(file, content, '.declared.join(');
+}
+assertNotIncludes('product-result.tsx', productResult, 'displayAllergens');
 
 for (const [fileName, content] of [
   ['product-result.tsx', productResult],

@@ -48,20 +48,14 @@ export function PriceSection({
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   if (isPriceLoading && !priceResult) {
-    return (
-      <View style={{ borderRadius: radii.md, backgroundColor: colors.soft, padding: spacing.md }}>
-        <Text style={{ fontSize: 13, color: colors.muted }}>Fiyatlar sorgulanıyor...</Text>
-      </View>
-    );
+    return <Text style={{ fontSize: 13, color: colors.muted }}>Fiyatlar sorgulanıyor...</Text>;
   }
 
   if (!priceResult) {
     return (
-      <View style={{ borderRadius: radii.md, backgroundColor: colors.soft, padding: spacing.md }}>
-        <Text style={{ fontSize: 13, color: colors.muted }}>
-          {fallbackPriceText || 'Fiyat bilgisi henüz hazır değil.'}
-        </Text>
-      </View>
+      <Text style={{ fontSize: 13, color: colors.muted }}>
+        {fallbackPriceText || 'Fiyat bilgisi henüz hazır değil.'}
+      </Text>
     );
   }
 
@@ -77,16 +71,7 @@ export function PriceSection({
   const hasPrice = priceResult.price !== null;
 
   return (
-    <View
-      style={{
-        borderRadius: radii.lg,
-        borderWidth: 1,
-        borderColor: colors.line,
-        backgroundColor: colors.surface,
-        padding: spacing.lg,
-        gap: spacing.sm,
-      }}
-    >
+    <View style={{ gap: spacing.sm }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={{ fontSize: 12, fontWeight: '700', color: colors.muted }}>EN İYİ FİYAT</Text>
         <View

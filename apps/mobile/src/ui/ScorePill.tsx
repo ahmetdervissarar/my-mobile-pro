@@ -16,14 +16,16 @@ export interface ScorePillProps {
   allergenPriority?: boolean;
   /** Grup tahmini puan — hüküm kelimesi bastırılır, yalnız "Tahmini: N" gösterilir. */
   isEstimate?: boolean;
+  /** Fiyatsız değerlendirme (onaylı KARAR) — "Puan (fiyatsız): N" gösterilir, bant rengi korunur. */
+  isPriceless?: boolean;
 }
 
-export function ScorePill({ score, allergenPriority = false, isEstimate = false }: ScorePillProps) {
+export function ScorePill({ score, allergenPriority = false, isEstimate = false, isPriceless = false }: ScorePillProps) {
   const { colors } = useTheme();
   const suppressVerdict = allergenPriority || isEstimate;
   const band = suppressVerdict ? null : getScoreBand(score);
   const color = suppressVerdict ? colors.muted : band ? colors[band.colorToken] : colors.muted;
-  const label = getScorePillLabel({ score, allergenPriority, isEstimate });
+  const label = getScorePillLabel({ score, allergenPriority, isEstimate, isPriceless });
 
   return (
     <View

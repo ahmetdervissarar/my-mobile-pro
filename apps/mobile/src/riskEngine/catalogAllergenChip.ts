@@ -362,6 +362,31 @@ export function displayLabelForKey(key: AllergenKey, basis: AllergenProfileKeyBa
 }
 
 /**
+ * D1 (device test 30 Eylül): backendProductFacts.allergens (declared) ham
+ * kanonik anahtarlardır (ör. "egg", "gluten_wheat", "milk", "tree_nuts",
+ * "peanut") — profil ekranındaki AYNI TR etiketlerle gösterilmeli, kullanıcıya
+ * HİÇBİR zaman ham haliyle görünmemeli. Modellenmemiş zorunlu alerjenler
+ * (kereviz, hardal, sülfitler, lupin) hem bare hem OFF 'en:' etiket biçimiyle
+ * eşlenir. Tanınmayan bir değer OLDUĞU GİBİ bırakılır — veri gizlenmez.
+ */
+const RAW_ALLERGEN_KEY_DISPLAY_LABELS: Record<string, string> = {
+  ...ALLERGEN_KEY_LABELS,
+  ...RECOGNIZED_UNMODELED_ALLERGEN_LABELS,
+  celery: RECOGNIZED_UNMODELED_ALLERGEN_LABELS['en:celery'],
+  mustard: RECOGNIZED_UNMODELED_ALLERGEN_LABELS['en:mustard'],
+  sulphites: RECOGNIZED_UNMODELED_ALLERGEN_LABELS['en:sulphur-dioxide-and-sulphites'],
+  lupin: RECOGNIZED_UNMODELED_ALLERGEN_LABELS['en:lupin'],
+};
+
+export function getAllergenKeyDisplayLabel(rawKey: string): string {
+  return RAW_ALLERGEN_KEY_DISPLAY_LABELS[rawKey] ?? rawKey;
+}
+
+export function mapAllergenKeysToDisplayLabels(rawKeys: string[]): string[] {
+  return rawKeys.map(getAllergenKeyDisplayLabel);
+}
+
+/**
  * Eşit seviyede sıralama: alerji (süt vb.) intoleranstan (laktoz) ÖNCE
  * gösterilir. Dışa açıktır — perKey'den TÜRETİLEN her liste (getAllergenDisplayLevel
  * dahil, productResult/helpers.ts'in declaredList/traceList'i dahil) BUNU
@@ -374,7 +399,7 @@ export function sortAllergenTieBreak(results: AllergenProfileKeyResult[]): Aller
   return [...results].sort((a, b) => (ALLERGEN_TIE_BREAK_RANK[a.key] ?? 0) - (ALLERGEN_TIE_BREAK_RANK[b.key] ?? 0));
 }
 
-function dedupePreserveOrder(labels: string[]): string[] {
+export function dedupePreserveOrder(labels: string[]): string[] {
   return [...new Set(labels)];
 }
 

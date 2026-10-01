@@ -1,6 +1,5 @@
 import { Text, View } from 'react-native';
 
-import { EmptyState } from '../../ui/EmptyState';
 import { radii, spacing, useTheme } from '../../ui/theme';
 
 export interface PositivesSectionProps {
@@ -8,20 +7,16 @@ export interface PositivesSectionProps {
 }
 
 /**
- * "Olumlu yönler" — yalnızca backend'in severity='positive' işaretlediği
- * rafScore gerekçelerini gösterir (bkz. rafScoreExplanation.ts). Skor
- * mantığı üretmez; hiçbir alan tahminle doldurulmaz.
+ * "Dikkat edilecekler" bölümünün olumlu yönler listesi — yalnızca backend'in
+ * severity='positive' işaretlediği rafScore gerekçelerini gösterir (bkz.
+ * rafScoreExplanation.ts). Skor mantığı üretmez. Boşsa HİÇBİR ŞEY döndürmez
+ * (bkz. WarningsSection'daki aynı gerekçe).
  */
 export function PositivesSection({ items }: PositivesSectionProps) {
   const { colors } = useTheme();
 
   if (items.length === 0) {
-    return (
-      <EmptyState
-        title="Olumlu yönler"
-        message="Bu ürün için öne çıkan bir olumlu gerekçe bulunamadı."
-      />
-    );
+    return null;
   }
 
   return (

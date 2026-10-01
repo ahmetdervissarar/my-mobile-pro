@@ -4,9 +4,10 @@ import { useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { submitBetaFeedback } from '../src/api/betaFeedbackClient';
-import { PrimaryButton } from '../src/ui/PrimaryButton';
-import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../src/ui/theme';
+import { submitBetaFeedback } from '../../src/api/betaFeedbackClient';
+import { FixedHeaderBar } from '../../src/ui/FixedHeaderBar';
+import { PrimaryButton } from '../../src/ui/PrimaryButton';
+import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
 
 type SlotKey = 'front' | 'ingredients' | 'nutrition';
 
@@ -161,15 +162,16 @@ export default function ProductContributionScreen() {
   }
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      contentContainerStyle={{
-        padding: spacing.xl,
-        paddingTop: Math.max(insets.top, spacing.xl),
-        gap: spacing.lg,
-        paddingBottom: spacing.xxxl,
-      }}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <FixedHeaderBar title={params.productName?.trim() || 'Ürün katkısı'} />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          padding: spacing.xl,
+          gap: spacing.lg,
+          paddingBottom: spacing.xxxl,
+        }}
+      >
       <Text style={{ fontSize: 24, fontWeight: '800', color: colors.ink }}>Kayıtlı olmayan ürünü ekle</Text>
       <Text style={{ fontSize: 13, color: colors.muted, lineHeight: 19 }}>
         Bu ürün için henüz veri yok. Aşağıdaki fotoğrafları eklersen ekip ürünü daha sonra doğrulayıp
@@ -261,6 +263,7 @@ export default function ProductContributionScreen() {
       )}
 
       <PrimaryButton label="Geri dön" variant="ghost" onPress={() => router.back()} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }

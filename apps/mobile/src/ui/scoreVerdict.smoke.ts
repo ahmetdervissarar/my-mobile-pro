@@ -45,4 +45,17 @@ assert.ok(!bothLabel.toLocaleLowerCase('tr-TR').includes('tahmini'));
 assert.ok(VERDICT_WORDS.some((w) => getScorePillLabel({ score: 90 }).includes(w)));
 assert.ok(VERDICT_WORDS.some((w) => getScoreRingBandText(90, false).includes(w)));
 
+// 5) Fiyatsız değerlendirme (onaylı KARAR): hüküm kelimesi değil, "Puan
+// (fiyatsız): N" gösterilir.
+const pricelessLabel = getScorePillLabel({ score: 72, isPriceless: true });
+assert.equal(pricelessLabel, 'Puan (fiyatsız): 72');
+for (const word of VERDICT_WORDS) {
+  assert.ok(!pricelessLabel.includes(word), `fiyatsız etiket hüküm kelimesi içeriyor: "${word}"`);
+}
+
+// 6) Alerjen önceliği fiyatsızlıktan ÖNCELİKLİDİR (P2 invariant korunur).
+const pricelessWithAllergen = getScorePillLabel({ score: 72, isPriceless: true, allergenPriority: true });
+assert.ok(pricelessWithAllergen.includes('Alerjen uyarısı öncelikli'));
+assert.ok(!pricelessWithAllergen.toLocaleLowerCase('tr-TR').includes('fiyatsız'));
+
 console.log(`SCORE_VERDICT_WORDING_SMOKE_OK (${SCORES.length} puan × 3 senaryo)`);

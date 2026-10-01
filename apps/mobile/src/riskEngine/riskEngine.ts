@@ -69,6 +69,31 @@ export interface ProductRiskInput {
   userProfile?: UserSensitivityProfile;
 }
 
+/**
+ * D5 (device test 30 Eylül): uyarı rengi artık `level`'dan değil, uyarının
+ * TÜRÜNDEN gelir — kırmızı yalnız profil çakışmasına ayrılır:
+ * - profile_conflict: kullanıcının PROFİLİNDEKİ bir alerjenle gerçek eşleşme
+ *   (PROFILE_*_ALLERGEN_MATCH) → kırmızı.
+ * - missing_allergen_data: alerjen verisi YOK (fail-closed ilkesi gereği
+ *   `level` hâlâ "high" kalır, ama bu bir profil çakışması değildir) → sarı.
+ * - general: geri kalan tüm uyarılar (NOVA, Nutri-Score, katkı maddesi,
+ *   ürün grubu ihtiyat kuralları, sağlık tercihi notları vb.) → turuncu/nötr,
+ *   mevcut `level` (medium/low/unknown) rengiyle.
+ */
+export type WarningColorKind = "profile_conflict" | "missing_allergen_data" | "general";
+
+const MISSING_ALLERGEN_DATA_CODES = new Set(["MISSING_ALLERGEN_INFO", "PROFILE_ALLERGEN_INFO_MISSING"]);
+
+export function getWarningColorKind(code: string): WarningColorKind {
+  if (code.startsWith("PROFILE_") && code.endsWith("_ALLERGEN_MATCH")) {
+    return "profile_conflict";
+  }
+  if (MISSING_ALLERGEN_DATA_CODES.has(code)) {
+    return "missing_allergen_data";
+  }
+  return "general";
+}
+
 // ─── Sabitler ─────────────────────────────────────────────────────────────────
 
 /** Risk seviyelerinin sayısal ağırlıkları — genel seviye hesaplamada kullanılır */
@@ -434,12 +459,16 @@ export function evaluateProductRisks(product: ProductRiskInput): ProductRiskResu
   }
 
   // ── Kural 4: NOVA grubu 4 ise ─────────────────────────────────────────────
+  // D5 (device test 30 Eylül): bu genel/profilden bağımsız uyarı "high"
+  // (kırmızı) idi; kırmızı yalnız profil çakışmasına ayrılmalı. Metin
+  // düzeyi "medium" olarak KALIR (severity değişmedi), yalnızca renk
+  // eşlemesi warning'in TÜRÜNE göre ayrıca hesaplanır (bkz. getWarningColorKind).
   if (product.novaGroup === 4) {
     warnings.push({
       code: "NOVA_GROUP_4",
       title: "Ultra işlenmiş ürün",
       message: "Ultra işlenmiş ürün olabilir.",
-      level: "high",
+      level: "medium",
     });
   }
 

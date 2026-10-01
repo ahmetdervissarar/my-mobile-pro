@@ -6,6 +6,7 @@ import type {
   CatalogNutriScore,
   CatalogProvenance,
 } from './catalogTypes';
+import type { RafScoreResult } from '../price/types';
 
 export type SearchSuggestion = ProductGroupSearchSuggestion | ProductSearchSuggestion;
 
@@ -35,6 +36,14 @@ export interface ProductSearchSuggestion {
   allergenData?: CatalogAllergenData;
   completeness?: CatalogCompleteness;
   provenance?: CatalogProvenance;
+  /**
+   * Cihaz testi 1 Ekim, madde 4: ürün sayfasıyla AYNI hesaplayıcı zincirinden
+   * (calculateHealthScore/calculateContentScore/calculateSustainabilityScore
+   * + calculateRafScore) türetilir — liste ucu fiyat çözümlemediği için
+   * priceScore her zaman null, bu yüzden status genelde 'partial'/
+   * 'unavailable' olur (bkz. KARAR: fiyatsız değerlendirme).
+   */
+  rafScore?: RafScoreResult;
 }
 
 export interface SearchSuggestResponse {

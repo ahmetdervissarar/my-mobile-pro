@@ -3,9 +3,6 @@ import { Pressable, Text, View } from 'react-native';
 import type { BasketProfileItem } from '../../api/basketClient';
 import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel } from '../../riskEngine/catalogAllergenChip';
 import type { UserSensitivityProfile } from '../../userProfile/userProfileTypes';
-import { AllergenChip } from '../../ui/AllergenChip';
-import { NovaBadge } from '../../ui/NovaBadge';
-import { NutriScoreBadge } from '../../ui/NutriScoreBadge';
 import { ScorePill } from '../../ui/ScorePill';
 import { Stepper } from '../../ui/Stepper';
 import { radii, spacing, useTheme } from '../../ui/theme';
@@ -21,16 +18,17 @@ export interface BasketItemRowProps {
 }
 
 /**
- * Sepet ürün satırı. productId katalogda bulunursa Nutri-Score/NOVA/alerjen
- * gerçek veriyle gösterilir; bulunamazsa (veya öğe bir ürün grubuysa)
- * "veri yok" kalır — asla tahmin edilmez.
+ * Sepet ürün satırı (katmanlı sadeleştirme, onaylı plan): ad, tek rozet
+ * (ScorePill — profille çakışma varsa zaten "Alerjen uyarısı öncelikli"
+ * gösterir, bkz. P2 invariant), miktar kontrolü, Kaldır. Açıklama metni
+ * yok — ayrıntı ürün sayfasında (AllergenDetailSheet). Alerjen KARAR
+ * mantığına dokunulmadı; yalnız hangi bilginin kartta göründüğü değişti.
  */
 export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityChange, onRemove, onPress }: BasketItemRowProps) {
   const { colors } = useTheme();
   const evaluation = evaluateCatalogAllergenDataForProfile(item.allergenData, userProfile);
   const displayInfo = getAllergenDisplayLevel(evaluation.perKey);
   const isGroupEstimate = item.scoreSource === 'group_estimate';
-  const allergenNote = evaluation.note;
   const isAllergenConflict = displayInfo?.isConflict ?? false;
 
   return (
@@ -50,28 +48,8 @@ export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityCha
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm }}>
         <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: colors.ink }}>{item.label}</Text>
-        <View style={{ alignItems: 'flex-end', gap: 2 }}>
-          <ScorePill score={item.score} allergenPriority={isAllergenConflict} isEstimate={isGroupEstimate} />
-        </View>
+        <ScorePill score={item.score} allergenPriority={isAllergenConflict} isEstimate={isGroupEstimate} />
       </View>
-
-      {isAllergenConflict ? (
-        <Text style={{ fontSize: 11.5, fontWeight: '700', color: colors.danger }}>Profilinizle çakışıyor</Text>
-      ) : null}
-
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-        <NutriScoreBadge grade={item.nutriScore?.grade ?? null} source={item.nutriScore?.source} status={item.nutriScore?.status} />
-        <NovaBadge group={item.nova?.group ?? null} />
-        <AllergenChip status={evaluation.status} displayInfo={displayInfo} />
-      </View>
-
-      {displayInfo && displayInfo.otherLabels.length > 0 ? (
-        <Text style={{ fontSize: 11, color: colors.muted }}>Ayrıca: {displayInfo.otherLabels.join(', ')}</Text>
-      ) : null}
-
-      {allergenNote ? (
-        <Text style={{ fontSize: 11, color: colors.muted }}>{allergenNote}</Text>
-      ) : null}
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Stepper

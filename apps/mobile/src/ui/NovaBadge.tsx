@@ -23,11 +23,31 @@ const NOVA_LABELS: Record<1 | 2 | 3 | 4, string> = {
 
 export interface NovaBadgeProps {
   group: 1 | 2 | 3 | 4 | null;
+  /** true ise yalnız küçük harf simgesi gösterilir, metin etiketi YOK (ör. arama kartı satır 3). Erişilebilirlik etiketi hep tam metindir. */
+  compact?: boolean;
 }
 
-export function NovaBadge({ group }: NovaBadgeProps) {
+export function NovaBadge({ group, compact = false }: NovaBadgeProps) {
   const { colors } = useTheme();
   const color = group ? NOVA_COLORS[group] : colors.muted;
+
+  if (compact) {
+    return (
+      <View
+        accessibilityLabel={group ? `NOVA grubu ${group}: ${NOVA_LABELS[group]}` : 'NOVA grubu: veri yok'}
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 6,
+          backgroundColor: color,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>{group ?? '–'}</Text>
+      </View>
+    );
+  }
 
   return (
     <View

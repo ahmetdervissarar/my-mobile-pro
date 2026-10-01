@@ -1,7 +1,7 @@
 import { submitBetaFeedback, type BetaFeedbackType } from '../../src/api/betaFeedbackClient';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getFallbackProductSummary } from '../../src/services/productService';
@@ -17,34 +17,45 @@ import type {
   AlternativeRecommendation,
   PriceResolveResponse,
 } from '../../src/price/types';
-import { getRafScoreExplanationItems, getRafScorePositiveItems } from '../../src/price/rafScoreExplanation';
+import { getRafScoreComponentBreakdownText, getRafScoreExplanationItems, getRafScorePositiveItems } from '../../src/price/rafScoreExplanation';
+import { isRafScorePriceless as isPriceless } from '../../src/price/rafScorePriceless';
 import { recordRecentlyViewed } from '../../src/state/recentlyViewedStore';
+import { CollapsibleSection } from '../../src/ui/CollapsibleSection';
 import { spacing, useTheme } from '../../src/ui/theme';
 
-import { AllergenSection } from '../../src/features/productResult/AllergenSection';
-import { AllergensDetailSection } from '../../src/features/productResult/AllergensDetailSection';
+import { AllergenDetailSheet } from '../../src/features/productResult/AllergenDetailSheet';
+import { AllergenStatusRow } from '../../src/features/productResult/AllergenStatusRow';
 import { AlternativesSection } from '../../src/features/productResult/AlternativesSection';
-import { DataQualityNotice } from '../../src/features/productResult/DataQualityNotice';
+import { AttentionSection } from '../../src/features/productResult/AttentionSection';
+import { DataSourceSection } from '../../src/features/productResult/DataSourceSection';
 import { FooterSection } from '../../src/features/productResult/FooterSection';
 import {
   CRITICAL_ALLERGEN_CODES,
+  formatObservedAtRelativeLabel,
   formatProductFactsMissingFields,
   getAllergenBannerData,
   getAllergenBannerDataFromCatalog,
   getInitialResult,
+  getProductFactsConfidenceLabel,
   getTransitionSafeProductGroupKey,
   isExplicitlyAlternativesIneligible,
   productFactsToRiskTrafficLight,
 } from '../../src/features/productResult/helpers';
-import { MoreDetailsSection } from '../../src/features/productResult/MoreDetailsSection';
-import { NutriNovaSection } from '../../src/features/productResult/NutriNovaSection';
-import { PositivesSection } from '../../src/features/productResult/PositivesSection';
+import { IndicatorRow } from '../../src/features/productResult/IndicatorRow';
+import { NutritionSection } from '../../src/features/productResult/NutritionSection';
 import { PriceSection } from '../../src/features/productResult/PriceSection';
 import { ProductHero } from '../../src/features/productResult/ProductHero';
-import { ScoreSection } from '../../src/features/productResult/ScoreSection';
+import { FixedHeaderBar } from '../../src/ui/FixedHeaderBar';
+import {
+  getAlternativesSummary,
+  getAttentionSummary,
+  getDataSourceSummary,
+  getIngredientsSummary,
+  getNutritionSummary,
+  getPriceSummary,
+} from '../../src/features/productResult/sectionSummaries';
 import { StickyAddBar } from '../../src/features/productResult/StickyAddBar';
 import { UnknownProductNotice } from '../../src/features/productResult/UnknownProductNotice';
-import { WarningsSection } from '../../src/features/productResult/WarningsSection';
 
 const priceClient = new PriceClient();
 
@@ -91,6 +102,7 @@ export default function ProductResultScreen() {
   const [submittedFeedbackType, setSubmittedFeedbackType] = useState<BetaFeedbackType | null>(null);
   const [isSubmittingBetaFeedback, setIsSubmittingBetaFeedback] = useState(false);
   const [betaFeedbackError, setBetaFeedbackError] = useState<string | null>(null);
+  const [isAllergenSheetVisible, setIsAllergenSheetVisible] = useState(false);
 
   useEffect(() => {
     void loadUserSensitivityProfile()
@@ -360,7 +372,6 @@ export default function ProductResultScreen() {
 
   const rafScoreExplanationItems = priceResult ? getRafScoreExplanationItems(priceResult) : [];
   const rafScorePositiveItems = priceResult ? getRafScorePositiveItems(priceResult) : [];
-  const displayAllergens = backendProductFacts ? backendProductFacts.allergens ?? [] : result.allergens;
   const displayAdditives = backendProductFacts ? backendProductFacts.additives ?? [] : result.additives;
   const displayIngredients = backendProductFacts?.ingredientsText ?? result.ingredients;
   const productFactsSourceText = backendProductFacts
@@ -418,6 +429,29 @@ export default function ProductResultScreen() {
         }
       : null;
 
+  // Katmanlı sadeleştirme: katlanır bölümlerin içeriği ve başlıktaki özetleri.
+  const trafficLight = backendProductFacts
+    ? productFactsToRiskTrafficLight(backendProductFacts)
+    : result.trafficLight ?? null;
+  const hasAnyKnownTrafficLightLevel = Boolean(
+    trafficLight &&
+      (trafficLight.fat.level !== 'unknown' ||
+        trafficLight.saturatedFat.level !== 'unknown' ||
+        trafficLight.sugars.level !== 'unknown' ||
+        trafficLight.salt.level !== 'unknown'),
+  );
+  const dataSourceConfidenceLabel = backendProductFacts?.confidence
+    ? getProductFactsConfidenceLabel(backendProductFacts.confidence)
+    : null;
+  const hasPrice = Boolean(priceResult?.price ?? null);
+  // Fiyatsız değerlendirme (onaylı KARAR): fiyat bileşeni eksik ama puan
+  // yine de hesaplandıysa (bkz. backend renormalizasyonu). Arama/kategori
+  // listeleriyle AYNI paylaşılan kuralı kullanır (bkz. madde 4).
+  const isRafScorePriceless = isPriceless(rafScore);
+  const observedAtLabel = backendProductFacts?.observedAt
+    ? formatObservedAtRelativeLabel(backendProductFacts.observedAt)
+    : null;
+
   useEffect(() => {
     if (isPriceLoading || isUnknownProduct || !priceResult) return;
 
@@ -434,43 +468,53 @@ export default function ProductResultScreen() {
 
   if (isUnknownProduct) {
     return (
-      <ScrollView
-        style={{ flex: 1, backgroundColor: colors.bg }}
-        contentContainerStyle={{ padding: spacing.xl, paddingTop: Math.max(insets.top, spacing.xl), gap: spacing.lg }}
-      >
-        <ProductHero
-          name={displayProductName}
-          barcode={displayBarcode}
-          imageUrl={displayImageUrl}
-          isPhotoSearch={searchType === 'photo'}
-        />
-        <UnknownProductNotice
-          initialQuery={normalizedInput.productName ?? ''}
-          isSubmittingBetaFeedback={isSubmittingBetaFeedback}
-          onContributeProduct={() => void handleBetaFeedbackPress('product_contribution')}
-        />
-        <FooterSection
-          submittedFeedbackType={submittedFeedbackType}
-          isSubmittingBetaFeedback={isSubmittingBetaFeedback}
-          betaFeedbackError={betaFeedbackError}
-          onBetaFeedbackPress={(type) => void handleBetaFeedbackPress(type)}
-        />
-      </ScrollView>
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <FixedHeaderBar title={displayProductName} />
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: spacing.xl, gap: spacing.lg }}
+        >
+          <ProductHero
+            name={displayProductName}
+            barcode={displayBarcode}
+            imageUrl={displayImageUrl}
+            isPhotoSearch={searchType === 'photo'}
+          />
+          <UnknownProductNotice
+            initialQuery={normalizedInput.productName ?? ''}
+            isSubmittingBetaFeedback={isSubmittingBetaFeedback}
+            onContributeProduct={() => void handleBetaFeedbackPress('product_contribution')}
+          />
+          <FooterSection
+            submittedFeedbackType={submittedFeedbackType}
+            isSubmittingBetaFeedback={isSubmittingBetaFeedback}
+            betaFeedbackError={betaFeedbackError}
+            onBetaFeedbackPress={(type) => void handleBetaFeedbackPress(type)}
+          />
+        </ScrollView>
+      </View>
     );
   }
 
+  const nutriScoreGrade =
+    backendProductFacts?.nutriScoreGrade ?? (result.nutriScore as 'A' | 'B' | 'C' | 'D' | 'E' | null) ?? null;
+  const novaGroup = backendProductFacts?.novaGroup ?? (result.novaGroup as 1 | 2 | 3 | 4 | null) ?? null;
+  const dataSourceSourceText = productFactsMissingText
+    ? `${productFactsSourceText ?? ''} · Eksik alanlar: ${productFactsMissingText}`
+    : productFactsSourceText;
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <FixedHeaderBar title={displayProductName} />
       <ScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{
           padding: spacing.xl,
-          paddingTop: Math.max(insets.top, spacing.xl),
-          gap: spacing.xl,
+          gap: spacing.lg,
           paddingBottom: spacing.xl,
         }}
       >
-        <AllergenSection data={allergenBannerData} />
-
+        {/* 1. Ürün kimliği önce — kullanıcı önce hangi üründe olduğunu görsün. */}
         <ProductHero
           name={displayProductName}
           barcode={displayBarcode}
@@ -478,50 +522,86 @@ export default function ProductResultScreen() {
           isPhotoSearch={searchType === 'photo'}
         />
 
-        <DataQualityNotice productFacts={backendProductFacts} />
+        {/* 2. Alerjen durumu — tek satır, her zaman görünür, dokununca ayrıntı paneli açılır. */}
+        <AllergenStatusRow data={allergenBannerData} onPress={() => setIsAllergenSheetVisible(true)} />
 
-        <ScoreSection
-          rafScore={rafScore}
-          explanationItems={rafScoreExplanationItems}
+        {/* 3. Üç küçük gösterge. */}
+        <IndicatorRow
+          rafScore={rafScore?.score ?? null}
+          nutriScoreGrade={nutriScoreGrade}
+          novaGroup={novaGroup}
           allergenPriority={isAllergenConflict}
+          isPriceless={isRafScorePriceless}
+          onRafScorePress={() => {
+            const breakdownText = getRafScoreComponentBreakdownText(rafScore);
+            if (breakdownText) {
+              Alert.alert('Fiyatsız değerlendirme', breakdownText);
+            }
+          }}
         />
 
-        <NutriNovaSection
-          nutriScoreGrade={backendProductFacts?.nutriScoreGrade ?? (result.nutriScore as 'A' | 'B' | 'C' | 'D' | 'E' | null) ?? null}
-          novaGroup={backendProductFacts?.novaGroup ?? (result.novaGroup as 1 | 2 | 3 | 4 | null) ?? null}
-        />
+        {/* 4. Katlanmış bölümler — hepsi kapalı başlar. */}
+        <View style={{ gap: spacing.sm }}>
+          <CollapsibleSection title="İçindekiler" summary={getIngredientsSummary(displayIngredients)}>
+            <Text style={{ fontSize: 13, color: colors.ink, lineHeight: 18 }}>
+              {displayIngredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
+            </Text>
+          </CollapsibleSection>
 
-        <WarningsSection warnings={nonCriticalWarnings} />
+          <CollapsibleSection
+            title="Besin değerleri"
+            summary={getNutritionSummary(hasAnyKnownTrafficLightLevel)}
+          >
+            <NutritionSection trafficLight={trafficLight} />
+          </CollapsibleSection>
 
-        <PositivesSection items={rafScorePositiveItems} />
+          <CollapsibleSection
+            title="Dikkat edilecekler"
+            summary={getAttentionSummary(nonCriticalWarnings.length)}
+          >
+            <AttentionSection
+              warnings={nonCriticalWarnings}
+              positiveItems={rafScorePositiveItems}
+              additives={displayAdditives}
+            />
+          </CollapsibleSection>
 
-        <AllergensDetailSection
-          allergens={displayAllergens}
-          additives={displayAdditives}
-          ingredients={displayIngredients}
-          sourceText={productFactsMissingText ? `${productFactsSourceText ?? ''} · Eksik alanlar: ${productFactsMissingText}` : productFactsSourceText}
-        />
+          <CollapsibleSection
+            title="Veri kaynağı ve güven"
+            summary={getDataSourceSummary(dataSourceConfidenceLabel, Boolean(productFactsMissingText))}
+          >
+            <DataSourceSection
+              productFacts={backendProductFacts}
+              explanationItems={rafScoreExplanationItems}
+              rafScore={rafScore}
+              healthScore={healthScore}
+              sustainability={sustainability}
+              productName={displayProductName}
+              barcode={displayBarcode}
+              searchSourceLabel={sourceLabelMap[result.searchSource] ?? result.searchSource}
+            />
+          </CollapsibleSection>
 
-        <PriceSection
-          isPriceLoading={isPriceLoading}
-          priceResult={priceResult}
-          priceDisclaimer={priceDisclaimer}
-          priceError={priceError}
-          fallbackPriceText={result.priceText}
-        />
+          <CollapsibleSection title="Fiyat" summary={getPriceSummary(hasPrice, isPriceLoading)}>
+            <PriceSection
+              isPriceLoading={isPriceLoading}
+              priceResult={priceResult}
+              priceDisclaimer={priceDisclaimer}
+              priceError={priceError}
+              fallbackPriceText={result.priceText}
+            />
+          </CollapsibleSection>
 
-        <AlternativesSection
-          topRecommendation={topAlternativeRecommendation}
-          shouldShowUnavailableNotice={shouldShowAlternativeUnavailableNotice}
-        />
-
-        <MoreDetailsSection
-          healthScore={healthScore}
-          sustainability={sustainability}
-          productName={displayProductName}
-          barcode={displayBarcode}
-          searchSourceLabel={sourceLabelMap[result.searchSource] ?? result.searchSource}
-        />
+          <CollapsibleSection
+            title="Alternatifler"
+            summary={getAlternativesSummary(Boolean(topAlternativeRecommendation))}
+          >
+            <AlternativesSection
+              topRecommendation={topAlternativeRecommendation}
+              shouldShowUnavailableNotice={shouldShowAlternativeUnavailableNotice}
+            />
+          </CollapsibleSection>
+        </View>
 
         <FooterSection
           submittedFeedbackType={submittedFeedbackType}
@@ -532,6 +612,14 @@ export default function ProductResultScreen() {
       </ScrollView>
 
       <StickyAddBar cartInput={cartInput} />
+
+      <AllergenDetailSheet
+        visible={isAllergenSheetVisible}
+        onClose={() => setIsAllergenSheetVisible(false)}
+        data={allergenBannerData}
+        sourceText={dataSourceSourceText}
+        observedAtLabel={observedAtLabel}
+      />
     </View>
   );
 }

@@ -46,7 +46,9 @@ const rafScore = calculateRafScore({
 });
 
 assert.notEqual(rafScore.status, 'ready');
-assert.equal(rafScore.score, null);
+// Fiyatsiz degerlendirme (onayli KARAR): fiyat + icerik mevcutsa (saglik
+// eksik olsa da) puan renormalize edilerek hesaplanir, null kalmaz.
+assert.equal(typeof rafScore.score, 'number');
 
 const resultWithIncompleteFacts: PriceResult = {
   productName: 'Closed Beta Missing Facts Product',

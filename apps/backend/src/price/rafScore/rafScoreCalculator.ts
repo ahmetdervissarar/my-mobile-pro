@@ -105,19 +105,27 @@ export function calculateRafScore(
   const availableCount = availableComponents.length;
   const status = getStatus(availableCount);
 
+  // Fiyatsiz degerlendirme (onayli KARAR): fiyat tek basina eksik olsa
+  // bile saglik/icerik boyutlarindan puan uretilir. Ancak saglik VE icerik
+  // ikisi birden eksikse (yalniz fiyat ve/veya surdurulebilirlik varsa)
+  // puan hesaplanmaz — bu durumda "Veri yetersiz" kalir.
+  const hasMinimumCoverage = availableComponents.some(
+    (component) => component.key === 'health' || component.key === 'content',
+  );
+
   const weightedScoreTotal = availableComponents.reduce(
     (total, component) => total + component.score * component.weight,
     0,
   );
 
-  const weightTotal = components.reduce(
+  const availableWeightTotal = availableComponents.reduce(
     (total, component) => total + component.weight,
     0,
   );
 
   const score =
-    status === 'ready' && weightTotal > 0
-      ? clampScore(weightedScoreTotal / weightTotal)
+    hasMinimumCoverage && availableWeightTotal > 0
+      ? clampScore(weightedScoreTotal / availableWeightTotal)
       : null;
 
   return {

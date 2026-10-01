@@ -95,7 +95,9 @@ const rafScoreWithoutPrice = calculateRafScore({
   sustainabilityScore: 61,
 });
 assert.equal(rafScoreWithoutPrice.status, 'partial');
-assert.equal(rafScoreWithoutPrice.score, null);
+// Fiyatsiz degerlendirme (onayli KARAR): saglik+icerik+surdurulebilirlik
+// mevcutsa puan renormalize edilerek hesaplanir, null kalmaz.
+assert.equal(typeof rafScoreWithoutPrice.score, 'number');
 assert.equal(
   rafScoreWithoutPrice.components.find((component) => component.key === 'price')?.isAvailable,
   false,

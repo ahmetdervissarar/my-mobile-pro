@@ -89,14 +89,35 @@ const dostSutData = {
   assert.ok(!summary.headline.includes('tespit edilmedi'));
 }
 
-// 5) Profil boş (hiç alerjen seçilmemiş) → nötr, sayaç yok, çakışma iddiası yok.
+// 5) D2 (device test 30 Eylül): profil boş AMA sepette beyan edilmiş alerjen
+// var → hüküm kelimesi bastırılmalı (suppressVerdict=true), "N üründe beyan
+// edilmiş alerjen var" başlığı, "profilinizle çakışıyor" İDDİASI YOK (henüz
+// hiçbir profil yok, çakışma iddia edilemez — conflictCount=0 kalır).
 {
   const summary = summarizeBasketAllergenStatus(
-    [makeItem({ allergenData: { ...dostSutData, declared: ['milk'] } })],
+    [
+      makeItem({ allergenData: { ...dostSutData, declared: ['milk'] } }),
+      makeItem({ allergenData: { ...dostSutData, declared: [] } }),
+    ],
+    profileFor([]),
+  );
+  assert.equal(summary.conflictCount, 0, 'profil boşken çakışma iddia edilemez');
+  assert.equal(summary.declaredWithoutProfileCount, 1);
+  assert.equal(summary.headline, '1 üründe beyan edilmiş alerjen var — profil ekleyerek kişiselleştir');
+  assert.equal(summary.tone, 'warning');
+  assert.equal(summary.suppressVerdict, true, 'beyan edilmiş alerjen varken hüküm kelimesi bastırılmalı');
+}
+
+// 6) Profil boş VE sepette hiç beyan edilmiş alerjen yok → nötr, hüküm kelimesi bastırılmaz.
+{
+  const summary = summarizeBasketAllergenStatus(
+    [makeItem({ allergenData: { ...dostSutData, declared: [] } })],
     profileFor([]),
   );
   assert.equal(summary.conflictCount, 0);
+  assert.equal(summary.declaredWithoutProfileCount, 0);
   assert.equal(summary.tone, 'neutral');
+  assert.equal(summary.suppressVerdict, false);
 }
 
-console.log('BASKET_ALLERGEN_SUMMARY_SMOKE_OK (5 senaryo)');
+console.log('BASKET_ALLERGEN_SUMMARY_SMOKE_OK (6 senaryo)');
