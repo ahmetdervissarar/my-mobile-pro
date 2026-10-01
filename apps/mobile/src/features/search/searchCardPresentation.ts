@@ -3,11 +3,12 @@
  * src/features/search/searchCardPresentation.ts
  *
  * Katmanlı sadeleştirme (onaylı plan): arama kartı en fazla 3 satır.
- * Satır 2: marka · miktar · fiyat (arama ucu fiyat DÖNDÜRMEZ — bu yüzden
- * her zaman "Fiyat: Veri yok"; tahmin ÜRETİLMEZ). Satır 3: profil
- * çakışması varsa alerjen rozeti, yoksa puan rozeti ("Puan: Veri yok" —
- * arama ucu puan da döndürmez). Yeni bir karar üretmez — yalnız zaten
- * hesaplanmış AllergenStatusLine/skor metnini seçer.
+ * Satır 2: marka · miktar (arama ucu fiyat DÖNDÜRMEZ — bu yüzden fiyat
+ * segmenti hiç yazılmaz; "Fiyat: Veri yok" her kartta tekrar etmesin,
+ * bkz. cihaz testi 1 Ekim madde 3). Satır 3: profil çakışması varsa
+ * alerjen rozeti, yoksa puan rozeti ("Puan: Veri yok" — arama ucu puan
+ * da döndürmez). Yeni bir karar üretmez — yalnız zaten hesaplanmış
+ * AllergenStatusLine/skor metnini seçer.
  */
 import { getScorePillLabel } from '../../ui/scoreVerdict';
 import type { AllergenStatusLine } from '../productResult/allergenStatusLine';
@@ -16,15 +17,14 @@ export function getSearchCardMetaLine(input: {
   brand?: string;
   packageSize?: { amount: number; unit: string };
   duplicateBarcodeSuffix?: string;
-}): string {
-  return [
+}): string | null {
+  const parts = [
     input.brand,
     input.packageSize ? `${input.packageSize.amount} ${input.packageSize.unit}` : undefined,
-    'Fiyat: Veri yok',
     input.duplicateBarcodeSuffix,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 export interface SearchCardBadge {
