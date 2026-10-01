@@ -136,7 +136,11 @@ export default function SearchScreen() {
       <ScrollView
         contentContainerStyle={{
           padding: spacing.xl,
-          paddingTop: Math.max(insets.top, spacing.xl),
+          // Madde 8 (cihaz testi 1 Ekim): başlık durum çubuğunun altında kalıyordu.
+          // Kod, çalışan diğer ekranlarla (ana sayfa, sepet) birebir aynı safe-area
+          // deseni kullanıyor; cihazda görsel doğrulama yapılamadığından kesin kök
+          // neden bulunamadı. Savunmacı önlem: bu ekrana özel ek üst boşluk.
+          paddingTop: Math.max(insets.top, spacing.xl) + spacing.md,
           gap: spacing.lg,
           paddingBottom: spacing.xxxl,
         }}
