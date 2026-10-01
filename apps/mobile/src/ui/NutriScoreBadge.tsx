@@ -24,9 +24,11 @@ export interface NutriScoreBadgeProps {
   source?: 'rafskoru_computed' | 'off' | null;
   /** 'not_applicable' ise OFF bu ürün için Nutri-Score'un uygulanamaz olduğunu belirtmiştir. */
   status?: 'computed' | 'off' | 'insufficient_data' | 'not_applicable' | null;
+  /** true ise yalnız küçük harf simgesi gösterilir, metin etiketi YOK (ör. arama kartı satır 3). Erişilebilirlik etiketi hep tam metindir. */
+  compact?: boolean;
 }
 
-export function NutriScoreBadge({ grade, source, status }: NutriScoreBadgeProps) {
+export function NutriScoreBadge({ grade, source, status, compact = false }: NutriScoreBadgeProps) {
   const { colors } = useTheme();
 
   const baseLabel =
@@ -34,6 +36,24 @@ export function NutriScoreBadge({ grade, source, status }: NutriScoreBadgeProps)
   const qualifier =
     source === 'off' && grade ? ' (Open Food Facts verisi)' : source === 'rafskoru_computed' && grade ? ' (hesaplanmış)' : '';
   const label = `${baseLabel}${qualifier}`;
+
+  if (compact) {
+    return (
+      <View
+        accessibilityLabel={label}
+        style={{
+          width: 22,
+          height: 24,
+          borderRadius: 6,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: grade ? GRADE_COLORS[grade] : colors.soft,
+        }}
+      >
+        <Text style={{ fontSize: 13, fontWeight: '800', color: grade ? '#fff' : colors.muted }}>{grade ?? '—'}</Text>
+      </View>
+    );
+  }
 
   return (
     <View

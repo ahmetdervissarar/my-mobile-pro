@@ -4,22 +4,25 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchSearchSuggestions, type SearchSuggestion } from '../../src/api/productSuggestionClient';
+import { SearchResultRow } from '../../src/features/search/SearchResultRow';
+import { getSearchCardMetaLine } from '../../src/features/search/searchCardPresentation';
 import { getDuplicateBarcodeSuffixes } from '../../src/features/search/suggestionDisambiguation';
-import {
-  evaluateCatalogAllergenDataForProfile,
-  getAllergenDisplayLevel,
-  type AllergenDisplayInfo,
-  type AllergenProfileEvaluation,
-} from '../../src/riskEngine/catalogAllergenChip';
+import { getAllergenBannerDataFromCatalog, type AllergenBannerData } from '../../src/features/productResult/helpers';
 import { addToCart, getCartItemKey, removeFromCart, suggestionToCartInput, useCart } from '../../src/state/cartStore';
 import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import { EmptyState } from '../../src/ui/EmptyState';
-import { NovaBadge } from '../../src/ui/NovaBadge';
-import { NutriScoreBadge } from '../../src/ui/NutriScoreBadge';
-import { ProductRow } from '../../src/ui/ProductRow';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
 import { Toast } from '../../src/ui/Toast';
+
+const EMPTY_ALLERGEN_BANNER_DATA: AllergenBannerData = {
+  status: 'unknown_or_unverified',
+  declaredList: [],
+  traceList: [],
+  criticalMatches: [],
+  displayInfo: null,
+  perKey: [],
+};
 
 function getSuggestionKey(suggestion: SearchSuggestion): string {
   return suggestion.type === 'product'
@@ -27,31 +30,20 @@ function getSuggestionKey(suggestion: SearchSuggestion): string {
     : `product_group:${suggestion.productGroupKey}`;
 }
 
-function getSuggestionAllergenEvaluation(
+/** Arama/sepetle AYNI birleştirme çekirdeğini kullanır — yeni bir karar üretmez (bkz. onaylı plan, madde 8). */
+function getSuggestionAllergenBannerData(
   suggestion: SearchSuggestion,
   userProfile: UserSensitivityProfile,
-): AllergenProfileEvaluation {
-  if (suggestion.type !== 'product') {
-    return { status: 'unknown_or_unverified', perKey: [], hasUnrecognizedTags: false, recognizedUnmodeledLabels: [], note: null };
+): AllergenBannerData {
+  if (suggestion.type !== 'product' || !suggestion.allergenData) {
+    return EMPTY_ALLERGEN_BANNER_DATA;
   }
 
-  return evaluateCatalogAllergenDataForProfile(suggestion.allergenData, userProfile);
-}
-
-function getSuggestionMeta(suggestion: SearchSuggestion, duplicateBarcodeSuffix?: string): string | null {
-  if (suggestion.type !== 'product') {
-    return 'Ürün grubu';
-  }
-
-  return (
-    [
-      suggestion.brand,
-      suggestion.packageSize ? `${suggestion.packageSize.amount} ${suggestion.packageSize.unit}` : undefined,
-      duplicateBarcodeSuffix,
-    ]
-      .filter(Boolean)
-      .join(' · ') || null
-  );
+  return getAllergenBannerDataFromCatalog({
+    catalogAllergenData: suggestion.allergenData,
+    userProfile,
+    riskWarnings: [],
+  });
 }
 
 export default function SearchScreen() {
@@ -196,34 +188,26 @@ export default function SearchScreen() {
           {suggestions.map((suggestion) => {
             const key = getSuggestionKey(suggestion);
             const isAdded = cartItems.some((item) => item.key === getCartItemKey(suggestionToCartInput(suggestion)));
-            const allergenEvaluation = getSuggestionAllergenEvaluation(suggestion, userProfile);
-            const allergenDisplayInfo: AllergenDisplayInfo | null = getAllergenDisplayLevel(allergenEvaluation.perKey);
+            const allergenBannerData = getSuggestionAllergenBannerData(suggestion, userProfile);
+            const metaLine =
+              suggestion.type === 'product'
+                ? getSearchCardMetaLine({
+                    brand: suggestion.brand,
+                    packageSize: suggestion.packageSize,
+                    duplicateBarcodeSuffix: duplicateBarcodeSuffixes.get(suggestion.productId),
+                  })
+                : 'Ürün grubu';
 
             return (
-              <ProductRow
+              <SearchResultRow
                 key={key}
                 imageUrl={suggestion.type === 'product' ? suggestion.imageUrl : undefined}
                 name={suggestion.label}
-                meta={getSuggestionMeta(
-                  suggestion,
-                  suggestion.type === 'product' ? duplicateBarcodeSuffixes.get(suggestion.productId) : undefined,
-                )}
-                score={null}
-                allergenStatus={allergenEvaluation.status}
-                allergenDisplayInfo={allergenDisplayInfo}
-                allergenNote={allergenEvaluation.note}
-                extraBadges={
-                  suggestion.type === 'product' ? (
-                    <>
-                      <NutriScoreBadge
-                        grade={suggestion.nutriScore?.grade ?? null}
-                        source={suggestion.nutriScore?.source}
-                        status={suggestion.nutriScore?.status}
-                      />
-                      <NovaBadge group={suggestion.nova?.group ?? null} />
-                    </>
-                  ) : undefined
-                }
+                metaLine={metaLine}
+                allergenData={allergenBannerData}
+                nutriScoreGrade={suggestion.type === 'product' ? suggestion.nutriScore?.grade ?? null : null}
+                novaGroup={suggestion.type === 'product' ? suggestion.nova?.group ?? null : null}
+                showNutriNova={suggestion.type === 'product'}
                 onPress={() => openProduct(suggestion)}
                 trailing={
                   <Pressable
@@ -249,7 +233,7 @@ export default function SearchScreen() {
 
         {suggestions.length > 0 ? (
           <Text style={{ fontSize: 11.5, color: colors.muted }}>
-            Puan ve fiyat verisi arama sonuçlarında henüz yok; bu alanlar "Veri yok" olarak gösterilir.
+            Ayrıntılı alerjen ve puan bilgisi ürün sayfasında; aramada fiyat ve puan henüz yok.
           </Text>
         ) : null}
       </ScrollView>
