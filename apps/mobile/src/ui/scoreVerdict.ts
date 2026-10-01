@@ -17,14 +17,28 @@ export interface ScorePillTextInput {
   allergenPriority?: boolean;
   /** Grup tahmini puan — hüküm kelimesi ASLA gösterilmez, yalnız "Puan (tahmini): N". */
   isEstimate?: boolean;
+  /**
+   * Fiyatsız değerlendirme (onaylı KARAR): fiyat bileşeni eksik olduğu
+   * için kalan boyutlardan renormalize edilerek hesaplanmış puan.
+   * allergenPriority/isEstimate önceliklidir.
+   */
+  isPriceless?: boolean;
 }
 
-export function getScorePillLabel({ score, allergenPriority = false, isEstimate = false }: ScorePillTextInput): string {
+export function getScorePillLabel({
+  score,
+  allergenPriority = false,
+  isEstimate = false,
+  isPriceless = false,
+}: ScorePillTextInput): string {
   if (allergenPriority) {
     return 'Puan: Alerjen uyarısı öncelikli';
   }
   if (isEstimate) {
     return `Puan (tahmini): ${score === null ? '—' : Math.round(score)}`;
+  }
+  if (isPriceless && score !== null) {
+    return `Puan (fiyatsız): ${Math.round(score)}`;
   }
   const band = getScoreBand(score);
   return score === null ? 'Puan: Veri yok' : `Puan: ${Math.round(score)} · ${band?.label ?? ''}`;

@@ -442,6 +442,13 @@ export default function ProductResultScreen() {
     ? getProductFactsConfidenceLabel(backendProductFacts.confidence)
     : null;
   const hasPrice = Boolean(priceResult?.price ?? null);
+  // Fiyatsız değerlendirme (onaylı KARAR): fiyat bileşeni eksik ama puan
+  // yine de hesaplandıysa (bkz. backend renormalizasyonu).
+  const isRafScorePriceless = Boolean(
+    rafScore &&
+      rafScore.score !== null &&
+      rafScore.components.find((component) => component.key === 'price')?.isAvailable === false,
+  );
   const observedAtLabel = backendProductFacts?.observedAt
     ? formatObservedAtRelativeLabel(backendProductFacts.observedAt)
     : null;
@@ -521,6 +528,7 @@ export default function ProductResultScreen() {
           nutriScoreGrade={nutriScoreGrade}
           novaGroup={novaGroup}
           allergenPriority={isAllergenConflict}
+          isPriceless={isRafScorePriceless}
         />
 
         {/* 4. Katlanmış bölümler — hepsi kapalı başlar. */}

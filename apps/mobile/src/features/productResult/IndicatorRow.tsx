@@ -10,13 +10,15 @@ export interface IndicatorRowProps {
   novaGroup: 1 | 2 | 3 | 4 | null;
   /** Profille çakışan alerjen varsa true — RafSkoru kutusunda hüküm kelimesi bastırılır. */
   allergenPriority: boolean;
+  /** Fiyatsız değerlendirme (onaylı KARAR) — RafSkoru kutusunda "Fiyatsız değerlendirme" gösterilir. */
+  isPriceless?: boolean;
 }
 
 /** Üç küçük gösterge: RafSkoru · Nutri-Score · İşlenmişlik (NOVA), yan yana. */
-export function IndicatorRow({ rafScore, nutriScoreGrade, novaGroup, allergenPriority }: IndicatorRowProps) {
+export function IndicatorRow({ rafScore, nutriScoreGrade, novaGroup, allergenPriority, isPriceless = false }: IndicatorRowProps) {
   return (
     <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-      <IndicatorBox {...getRafScoreIndicator(rafScore, allergenPriority)} />
+      <IndicatorBox {...getRafScoreIndicator(rafScore, allergenPriority, isPriceless)} />
       <IndicatorBox {...getNutriScoreIndicator(nutriScoreGrade)} />
       <IndicatorBox {...getNovaIndicator(novaGroup)} />
     </View>

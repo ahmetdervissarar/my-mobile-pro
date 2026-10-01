@@ -31,6 +31,17 @@ assert.deepEqual(getRafScoreIndicator(82, false), {
 });
 assert.equal(getRafScoreIndicator(10, false).colorToken, 'danger');
 
+// ── RafSkoru: fiyatsız değerlendirme (onaylı KARAR) → bant rengi korunur,
+// statusText "Fiyatsız değerlendirme" olur ──────────────────────────────────
+assert.deepEqual(getRafScoreIndicator(72, false, true), {
+  label: 'RafSkoru',
+  value: '72',
+  colorToken: 'pine2',
+  statusText: 'Fiyatsız değerlendirme',
+});
+// Alerjen çakışması fiyatsızlıktan ÖNCELİKLİDİR.
+assert.equal(getRafScoreIndicator(72, true, true).statusText, 'Alerjen uyarısı öncelikli');
+
 // ── Nutri-Score: grade yok → "—" + "Veri yetersiz" ─────────────────────────
 assert.deepEqual(getNutriScoreIndicator(null), {
   label: 'Nutri-Score',

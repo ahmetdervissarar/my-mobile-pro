@@ -19,7 +19,16 @@ export interface IndicatorConfig {
   statusText: string;
 }
 
-export function getRafScoreIndicator(score: number | null, allergenPriority: boolean): IndicatorConfig {
+/**
+ * isPriceless: fiyatsız değerlendirme (onaylı KARAR) — fiyat bileşeni eksik
+ * olduğu için kalan boyutlardan renormalize edilmiş puan. Bant rengi
+ * korunur, yalnız statusText "Fiyatsız değerlendirme" olur.
+ */
+export function getRafScoreIndicator(
+  score: number | null,
+  allergenPriority: boolean,
+  isPriceless = false,
+): IndicatorConfig {
   if (allergenPriority) {
     return { label: 'RafSkoru', value: '—', colorToken: 'muted', statusText: 'Alerjen uyarısı öncelikli' };
   }
@@ -32,7 +41,7 @@ export function getRafScoreIndicator(score: number | null, allergenPriority: boo
     label: 'RafSkoru',
     value: String(Math.round(score)),
     colorToken: band?.colorToken ?? 'muted',
-    statusText: band?.label ?? 'Veri yetersiz',
+    statusText: isPriceless ? 'Fiyatsız değerlendirme' : band?.label ?? 'Veri yetersiz',
   };
 }
 
