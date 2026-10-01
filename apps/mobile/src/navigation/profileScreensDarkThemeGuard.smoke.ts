@@ -24,9 +24,9 @@ function readMobileFile(relativePath: string): string {
 
 const screens = [
   'app/(tabs)/profile.tsx',
-  'app/profile-allergens.tsx',
-  'app/profile-chronic.tsx',
-  'app/profile-health-preferences.tsx',
+  'app/(tabs)/profile-allergens.tsx',
+  'app/(tabs)/profile-chronic.tsx',
+  'app/(tabs)/profile-health-preferences.tsx',
 ];
 
 // '#fff' HARİÇ tutulur: profile-allergens.tsx'te seçili bir dairenin İÇİNDEKİ

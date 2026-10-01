@@ -4,9 +4,9 @@ import { useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { submitBetaFeedback } from '../src/api/betaFeedbackClient';
-import { PrimaryButton } from '../src/ui/PrimaryButton';
-import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../src/ui/theme';
+import { submitBetaFeedback } from '../../src/api/betaFeedbackClient';
+import { PrimaryButton } from '../../src/ui/PrimaryButton';
+import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
 
 type SlotKey = 'front' | 'ingredients' | 'nutrition';
 

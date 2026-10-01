@@ -5,26 +5,26 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  HealthPreferenceKey,
-  healthPreferenceOptions,
-} from '../src/userProfile/userProfileTypes';
+  ChronicSensitivityKey,
+  chronicSensitivityOptions,
+} from '../../src/userProfile/userProfileTypes';
 import {
   loadUserSensitivityProfile,
   saveUserSensitivityProfile,
-} from '../src/userProfile/userProfileStorage';
-import { PrimaryButton } from '../src/ui/PrimaryButton';
-import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../src/ui/theme';
+} from '../../src/userProfile/userProfileStorage';
+import { PrimaryButton } from '../../src/ui/PrimaryButton';
+import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
 
-export default function ProfileHealthPreferencesScreen() {
+export default function ProfileChronicScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const [selected, setSelected] = useState<HealthPreferenceKey[]>([]);
+  const [selected, setSelected] = useState<ChronicSensitivityKey[]>([]);
   const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     void loadUserSensitivityProfile().then((profile) => {
-      setSelected(profile.healthPreferences);
+      setSelected(profile.chronicSensitivities);
     });
   }, []);
 
@@ -37,7 +37,7 @@ export default function ProfileHealthPreferencesScreen() {
     ]);
   });
 
-  const handleToggle = (key: HealthPreferenceKey) => {
+  const handleToggle = (key: ChronicSensitivityKey) => {
     const next = selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key];
     setSelected(next);
     setIsDirty(true);
@@ -45,7 +45,7 @@ export default function ProfileHealthPreferencesScreen() {
 
   const handleSave = async () => {
     const profile = await loadUserSensitivityProfile();
-    await saveUserSensitivityProfile({ ...profile, healthPreferences: selected });
+    await saveUserSensitivityProfile({ ...profile, chronicSensitivities: selected });
     setIsDirty(false);
   };
 
@@ -61,16 +61,18 @@ export default function ProfileHealthPreferencesScreen() {
       }}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={{ fontSize: 24, fontWeight: '800', color: colors.ink }}>Sağlık Tercihlerim</Text>
+      <Text style={{ fontSize: 24, fontWeight: '800', color: colors.ink }}>
+        Kronik Rahatsızlık / Hassasiyet Profilim
+      </Text>
 
       <Text style={{ fontSize: 14, color: colors.muted, lineHeight: 20 }}>
-        Bu ekranda kullanıcının ürün seçerken öncelik verdiği sağlık tercihleri seçilecektir.
+        Bu ekranda kullanıcının dikkat etmesi gereken sağlık hassasiyetleri seçilecektir.
       </Text>
 
       <View style={{ gap: spacing.sm }}>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>Tercih grupları</Text>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>Hassasiyet grupları</Text>
 
-        {healthPreferenceOptions.map((option) => {
+        {chronicSensitivityOptions.map((option) => {
           const isSelected = selected.includes(option.key);
 
           return (

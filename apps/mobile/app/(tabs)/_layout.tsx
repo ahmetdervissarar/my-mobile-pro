@@ -131,6 +131,17 @@ export default function TabsLayout() {
           title: 'Ürün',
         }}
       />
+      {/* Madde 2 (cihaz testi 1 Ekim): aşağıdaki 8 ekran de aynı href:null
+          deseniyle Tabs navigatörüne taşındı — alt sekme çubuğu artık bu
+          ekranlarda da görünür kalır. */}
+      <Tabs.Screen name="barcode-scan" options={{ href: null, title: 'Barkod okut' }} />
+      <Tabs.Screen name="photo-search" options={{ href: null, title: 'Fotoğrafla ara' }} />
+      <Tabs.Screen name="basket-result" options={{ href: null, title: 'Sepet sonucu' }} />
+      <Tabs.Screen name="product-contribution" options={{ href: null, title: 'Ürün katkısı' }} />
+      <Tabs.Screen name="product-group" options={{ href: null, title: 'Ürün grubu' }} />
+      <Tabs.Screen name="profile-allergens" options={{ href: null, title: 'Alerjen profilim' }} />
+      <Tabs.Screen name="profile-chronic" options={{ href: null, title: 'Kronik hassasiyet' }} />
+      <Tabs.Screen name="profile-health-preferences" options={{ href: null, title: 'Sağlık tercihleri' }} />
     </Tabs>
   );
 }

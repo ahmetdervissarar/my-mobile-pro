@@ -3,15 +3,15 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { fetchProductsByGroup, type ProductSearchSuggestion } from '../src/api/productSuggestionClient';
-import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel } from '../src/riskEngine/catalogAllergenChip';
-import { loadUserSensitivityProfile } from '../src/userProfile/userProfileStorage';
-import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../src/userProfile/userProfileTypes';
-import { EmptyState } from '../src/ui/EmptyState';
-import { NovaBadge } from '../src/ui/NovaBadge';
-import { NutriScoreBadge } from '../src/ui/NutriScoreBadge';
-import { ProductRow } from '../src/ui/ProductRow';
-import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../src/ui/theme';
+import { fetchProductsByGroup, type ProductSearchSuggestion } from '../../src/api/productSuggestionClient';
+import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel } from '../../src/riskEngine/catalogAllergenChip';
+import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
+import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
+import { EmptyState } from '../../src/ui/EmptyState';
+import { NovaBadge } from '../../src/ui/NovaBadge';
+import { NutriScoreBadge } from '../../src/ui/NutriScoreBadge';
+import { ProductRow } from '../../src/ui/ProductRow';
+import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
 
 function getSingleParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) {

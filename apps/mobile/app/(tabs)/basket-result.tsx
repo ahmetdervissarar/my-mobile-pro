@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { BasketEvaluateResponse, BasketMarketEvaluation } from '../src/api/basketClient';
+import type { BasketEvaluateResponse, BasketMarketEvaluation } from '../../src/api/basketClient';
 
 function getSingleParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) {

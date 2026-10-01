@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AllergenKey, allergenOptions } from '../src/userProfile/userProfileTypes';
+import { AllergenKey, allergenOptions } from '../../src/userProfile/userProfileTypes';
 import {
   loadUserSensitivityProfile,
   saveUserSensitivityProfile,
-} from '../src/userProfile/userProfileStorage';
-import { PrimaryButton } from '../src/ui/PrimaryButton';
-import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../src/ui/theme';
+} from '../../src/userProfile/userProfileStorage';
+import { PrimaryButton } from '../../src/ui/PrimaryButton';
+import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
 
 export default function ProfileAllergensScreen() {
   const { colors } = useTheme();
