@@ -21,7 +21,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-import { LOCAL_MARKET_CHAIN_KEY } from './constants.js';
+import { INTAKE_CATEGORIES, LOCAL_MARKET_CHAIN_KEY } from './constants.js';
 
 export const INTAKE_MIN_NODE_VERSION = '22.5.0';
 
@@ -97,14 +97,26 @@ export interface AdminCountRow {
 export interface CategoryBreakdownRow {
   category: string;
   total: number;
-  /** requestedSlots'un bir kısmı hâlâ receivedSlots'ta olmayan kayıt sayısı. */
+  /** Son 7 gün içinde oluşturulan kayıt sayısı — "hangi kategori durdu" sorusu için (bkz. yönetici paneli onayı). */
+  recent7d: number;
+  /** requestedSlots'un bir kısmı hâlâ receivedSlots'ta olmayan kayıt sayısı. Ayrı bir sütundur, SIRALAMA ÖLÇÜTÜ DEĞİLDİR. */
   pending: number;
+}
+
+export interface VolunteerBreakdownRow {
+  code: string;
+  total: number;
+  today: number;
+  /** ISO zaman damgası — hiç kaydı yoksa null (teoride olmaz, byVolunteer zaten yalnız kaydı olanları listeler). */
+  lastSubmissionAt: string | null;
 }
 
 export interface AdminStats {
   totalSubmissions: number;
   todaySubmissions: number;
   byVolunteer: AdminCountRow[];
+  /** Gönüllü başına toplam/bugün/son kayıt zamanı — yönetici panelindeki gönüllü tablosu için. */
+  volunteerBreakdown: VolunteerBreakdownRow[];
   byCity: AdminCountRow[];
   byMarketChain: AdminCountRow[];
   categoryBreakdown: CategoryBreakdownRow[];
@@ -307,18 +319,41 @@ function countGroupedBy(column: 'volunteer_code' | 'city' | 'market_chain'): Adm
   return rows.map((row) => ({ key: row.key, count: row.count }));
 }
 
-/** Her kategori için toplam kayıt + eksik-slotlu ("kalan") kayıt sayısı (bkz. görev onayı). */
+function sevenDaysAgoIso(): string {
+  const date = new Date();
+  date.setDate(date.getDate() - 7);
+  return date.toISOString();
+}
+
+/**
+ * Her kategori için toplam kayıt + son 7 gündeki kayıt + eksik-slotlu
+ * ("kalan") kayıt sayısı. Sayısal bir hedef/kota TANIMLANMAZ (bkz.
+ * yönetici paneli onayı) — bunun yerine son 7 günde EN AZ ilerleyen
+ * kategori üstte görünsün diye recent7d artan sırada sıralanır; toplamı
+ * sıfır (hiç toplanmamış) kategoriler bu sırada zaten en üstte kalır.
+ * INTAKE_CATEGORIES'teki TÜM kategoriler listelenir — hiç kaydı olmayan
+ * bir kategori de (total=0) görünür olmalı, "durmuş" olduğu en net onda
+ * anlaşılır. pending AYRI bir sütundur, sıralama ölçütü DEĞİLDİR.
+ */
 export function getCategoryBreakdown(): CategoryBreakdownRow[] {
-  const rows = requireDb().prepare('SELECT category, requested_slots, received_slots FROM submissions').all() as {
+  const rows = requireDb()
+    .prepare('SELECT category, requested_slots, received_slots, created_at FROM submissions')
+    .all() as {
     category: string;
     requested_slots: string;
     received_slots: string;
+    created_at: string;
   }[];
 
-  const byCategory = new Map<string, CategoryBreakdownRow>();
+  const sevenDaysAgo = sevenDaysAgoIso();
+  const byCategory = new Map<string, CategoryBreakdownRow>(
+    INTAKE_CATEGORIES.map((option) => [option.key, { category: option.key, total: 0, recent7d: 0, pending: 0 }]),
+  );
+
   for (const row of rows) {
-    const entry = byCategory.get(row.category) ?? { category: row.category, total: 0, pending: 0 };
+    const entry = byCategory.get(row.category) ?? { category: row.category, total: 0, recent7d: 0, pending: 0 };
     entry.total += 1;
+    if (row.created_at >= sevenDaysAgo) entry.recent7d += 1;
 
     const requestedSlots = JSON.parse(row.requested_slots) as string[];
     const receivedSlots = JSON.parse(row.received_slots) as string[];
@@ -327,7 +362,34 @@ export function getCategoryBreakdown(): CategoryBreakdownRow[] {
     byCategory.set(row.category, entry);
   }
 
-  return [...byCategory.values()].sort((a, b) => b.total - a.total);
+  return [...byCategory.values()].sort(
+    (a, b) => a.recent7d - b.recent7d || a.total - b.total || a.category.localeCompare(b.category, 'tr-TR'),
+  );
+}
+
+/** Gönüllü başına toplam/bugün/son kayıt zamanı — yönetici panelindeki gönüllü tablosu için. */
+export function getVolunteerBreakdown(): VolunteerBreakdownRow[] {
+  const rows = requireDb()
+    .prepare(
+      `SELECT volunteer_code as code, COUNT(*) as total,
+              SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) as today,
+              MAX(created_at) as lastSubmissionAt
+       FROM submissions GROUP BY volunteer_code ORDER BY lastSubmissionAt DESC`,
+    )
+    .all(todayStartIso()) as { code: string; total: number; today: number; lastSubmissionAt: string | null }[];
+
+  return rows.map((row) => ({
+    code: row.code,
+    total: row.total,
+    today: row.today,
+    lastSubmissionAt: row.lastSubmissionAt,
+  }));
+}
+
+/** Son N kayıt (en yeniden en eskiye) — yönetici panelindeki "son kayıtlar" listesi için. */
+export function getRecentSubmissions(limit: number): IntakeSubmissionRow[] {
+  const rows = requireDb().prepare('SELECT * FROM submissions ORDER BY created_at DESC LIMIT ?').all(limit);
+  return (rows as Record<string, unknown>[]).map(rowToSubmission);
 }
 
 /** market_chain='yerel' kayıtlarında yazılan serbest ad başına sayım — panelde "yerel" tek satıra sıkışmasın diye. */
@@ -372,6 +434,7 @@ export function getAdminStats(): AdminStats {
     totalSubmissions,
     todaySubmissions,
     byVolunteer: countGroupedBy('volunteer_code'),
+    volunteerBreakdown: getVolunteerBreakdown(),
     byCity: countGroupedBy('city'),
     byMarketChain: countGroupedBy('market_chain'),
     categoryBreakdown: getCategoryBreakdown(),

@@ -407,17 +407,26 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
       stats: {
         totalSubmissions: number;
         dailyTrend: unknown[];
-        categoryBreakdown: { category: string; total: number; pending: number }[];
+        volunteerBreakdown: { code: string; total: number; today: number; lastSubmissionAt: string | null }[];
+        categoryBreakdown: { category: string; total: number; recent7d: number; pending: number }[];
         localMarketBreakdown: { key: string; count: number }[];
       };
     };
     assert.ok(statsBody.stats.totalSubmissions >= 1);
     assert.equal(statsBody.stats.dailyTrend.length, 14);
 
+    // Gönüllü kırılımı: bu testte yazan MRS-01 en az bir kayıtla görünmeli,
+    // son kayıt zamanı dolu olmalı (hiç kaydı olmayan bir kod asla listelenmez).
+    const mrsBreakdown = statsBody.stats.volunteerBreakdown.find((row) => row.code === 'MRS-01');
+    assert.ok(mrsBreakdown, "volunteerBreakdown 'MRS-01'i içermeli");
+    assert.ok(mrsBreakdown!.total >= 1);
+    assert.ok(mrsBreakdown!.lastSubmissionAt, 'son kayıt zamanı dolu olmalı');
+
     // Kategori kırılımı: en az bu testte oluşturulan 'atistirmalik' kaydını içermeli.
     const atistirmalikBreakdown = statsBody.stats.categoryBreakdown.find((row) => row.category === 'atistirmalik');
     assert.ok(atistirmalikBreakdown, "categoryBreakdown 'atistirmalik'i içermeli");
     assert.ok(atistirmalikBreakdown!.total >= 1);
+    assert.ok(atistirmalikBreakdown!.recent7d >= 1, 'az önce oluşturulan kayıt son 7 gün içinde sayılmalı');
     assert.ok(atistirmalikBreakdown!.pending >= 1, 'foto yüklenmeyen kayıtlar kalan sayılmalı');
 
     // Yerel market kırılımı: yazılan ad (kod değil) listelenmeli.
@@ -453,6 +462,40 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
     assert.match(csvText, /barcode,volunteer_code,market_chain,market_chain_other/);
     assert.match(csvText, new RegExp(NEW_GTIN));
     assert.match(csvText, /Ayşe Manav/, "yerel market kaydının serbest adı CSV'de görünmeli");
+
+    // /admin/recent: anahtarsız ve yanlış anahtarla red (yönetici paneli onayı, TESTLER).
+    const recentNoAuth = await fetch(`${baseUrl}/api/intake/admin/recent`);
+    assert.equal(recentNoAuth.status, 401);
+
+    const recentWrongKey = await fetch(`${baseUrl}/api/intake/admin/recent`, {
+      headers: { [ADMIN_KEY_HEADER]: 'yanlis' },
+    });
+    assert.equal(recentWrongKey.status, 401);
+
+    // /admin/recent: doğru anahtarla — fotoğraf yüklenen gerçek bir submission
+    // doğru şekle (ürün adı, dosya adı çözümü) sahip dönmeli.
+    const recent = await fetch(`${baseUrl}/api/intake/admin/recent?limit=50`, { headers: adminHeaders });
+    assert.equal(recent.status, 200);
+    const recentBody = (await recent.json()) as {
+      submissions: {
+        id: string;
+        barcode: string;
+        productName: string | null;
+        volunteerCode: string;
+        photos: { slot: string; filename: string | null }[];
+      }[];
+    };
+    const frontSubmission = recentBody.submissions.find((s) => s.id === frontPhotoSubmissionId);
+    assert.ok(frontSubmission, "/admin/recent fotoğraf yüklenen submission'ı içermeli");
+    assert.equal(frontSubmission!.volunteerCode, 'MRS-01');
+    const frontPhoto = frontSubmission!.photos.find((p) => p.slot === 'front');
+    assert.ok(frontPhoto, "receivedSlots'taki 'front' photos dizisinde olmalı");
+    assert.equal(frontPhoto!.filename, `${frontPhotoSubmissionId}-front.jpg`, 'uzantı diskten (jpg) doğru çözülmeli');
+
+    // Fotoğraf önizlemesi: anahtarsız erişim reddi (yönetici paneli onayı,
+    // KURALLAR: "Fotoğraf önizlemesi yalnız yönetici anahtarıyla erişilebilsin").
+    const photoNoAuth = await fetch(`${baseUrl}/api/intake/admin/photos/${frontPhotoSubmissionId}-front.jpg`);
+    assert.equal(photoNoAuth.status, 401);
   });
 
   delete process.env.INTAKE_ADMIN_KEY;

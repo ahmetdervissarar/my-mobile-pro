@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>RafSkoru — Yönetici Paneli</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>RafSkoru — Yönetici Paneli</h1>
+    <div class="topbar-actions">
+      <button id="refreshBtn" class="secondary" hidden>Yenile</button>
+      <button id="logoutBtn" class="secondary" hidden>Çıkış</button>
+    </div>
+  </header>
+
+  <main id="app">
+    <!-- 1) Giriş -->
+    <section id="screen-login" class="screen">
+      <h2>Yönetici girişi</h2>
+      <p class="hint">Yönetici anahtarı yalnız bu cihazda saklanır; sunucuya tekrar gönderilmez, log'a yazılmaz.</p>
+      <label for="loginKey">Yönetici anahtarı</label>
+      <input id="loginKey" type="password" autocomplete="off" />
+      <button id="loginSubmit" class="primary">Giriş yap</button>
+      <p id="loginError" class="error" hidden></p>
+    </section>
+
+    <!-- 2) Panel -->
+    <section id="screen-panel" class="screen" hidden>
+      <div class="totals-row" id="totalsRow"></div>
+
+      <button id="exportBtn" class="primary">CSV indir</button>
+      <p id="exportError" class="error" hidden></p>
+
+      <h2>Gönüllü kırılımı</h2>
+      <div class="table-scroll">
+        <table id="volunteerTable">
+          <thead>
+            <tr><th>Kod</th><th>Toplam</th><th>Bugün</th><th>Son kayıt</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <h2>Kategori kırılımı</h2>
+      <p class="hint">Son 7 günde en az ilerleyen kategori üstte — hiç hedef tanımlanmaz, yalnız durma noktası görünür.</p>
+      <div class="table-scroll">
+        <table id="categoryTable">
+          <thead>
+            <tr><th>Kategori</th><th>Toplam</th><th>Son 7 gün</th><th>Eksik</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <h2>Market kırılımı</h2>
+      <div class="table-scroll">
+        <table id="marketTable">
+          <thead>
+            <tr><th>Market</th><th>Sayı</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <h2>Şehir kırılımı</h2>
+      <div class="table-scroll">
+        <table id="cityTable">
+          <thead>
+            <tr><th>Şehir</th><th>Sayı</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <h2>Son kayıtlar</h2>
+      <p class="hint">Bir satıra dokunarak fotoğrafları önizleyebilirsiniz.</p>
+      <div class="table-scroll">
+        <table id="recentTable">
+          <thead>
+            <tr>
+              <th>Barkod</th><th>Ürün</th><th>Gönüllü</th><th>Market</th><th>Şehir</th><th>Zaman</th><th>Foto</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Fotoğraf önizleme -->
+  <div id="photoModal" class="modal" hidden>
+    <div class="modal-content">
+      <button id="photoModalClose" class="secondary">Kapat</button>
+      <div id="photoModalBody"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'node:fs';
 
 import express, { Router } from 'express';
 
+import { getCatalog } from '../catalog/catalog.js';
 import { requireAdminAuth, requireVolunteerAuth } from './auth.js';
 import { getIntakePhotosDir, getIntakeVolunteersFilePath } from './config.js';
 import {
@@ -29,6 +30,7 @@ import {
   getAdminStats,
   getAllSubmissionsForExport,
   getPendingSubmissions,
+  getRecentSubmissions,
   getSubmissionById,
   getTotalSubmissionCount,
   getVolunteerProgress,
@@ -244,6 +246,48 @@ export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Rou
 
   router.get('/admin/pending', requireAdminAuth, (_req, res) => {
     res.json({ ok: true, submissions: getPendingSubmissions() });
+  });
+
+  /**
+   * Yönetici paneli "son kayıtlar" listesi. Fotoğraf dosya adları
+   * diskten çözülür (uzantı, yüklenen görüntü türüne göre değişir —
+   * veritabanında saklanmaz, bkz. photoStorage.ts). Katalogda varsa ürün
+   * adı eklenir (yeni bir karar üretmez — yalnız mevcut katalog lookup'ı).
+   * Fotoğrafların KENDİSİ bu uç noktada DÖNMEZ — yalnız dosya adı; gerçek
+   * görüntü hâlâ /admin/photos/:filename üzerinden (aynı admin anahtarıyla)
+   * ayrıca çekilir.
+   */
+  router.get('/admin/recent', requireAdminAuth, (req, res) => {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+    const catalog = getCatalog();
+
+    const submissions = getRecentSubmissions(limit).map((submission) => {
+      const photos = submission.receivedSlots.map((slot) => {
+        const jpgPath = `${photosDir}/${submission.id}-${slot}.jpg`;
+        const pngPath = `${photosDir}/${submission.id}-${slot}.png`;
+        const filename = existsSync(jpgPath)
+          ? `${submission.id}-${slot}.jpg`
+          : existsSync(pngPath)
+            ? `${submission.id}-${slot}.png`
+            : null;
+        return { slot, filename };
+      });
+
+      return {
+        id: submission.id,
+        barcode: submission.barcode,
+        productName: catalog.byId.get(submission.barcode)?.name ?? null,
+        volunteerCode: submission.volunteerCode,
+        marketChain: submission.marketChain,
+        marketChainOther: submission.marketChainOther,
+        city: submission.city,
+        category: submission.category,
+        createdAt: submission.createdAt,
+        photos,
+      };
+    });
+
+    res.json({ ok: true, submissions });
   });
 
   // Dosya adı yalnızca submissionId+slot'tan türetilmiş olabilir (bkz.
