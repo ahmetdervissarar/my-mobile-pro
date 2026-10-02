@@ -14,9 +14,9 @@ her şey telefonunun tarayıcısında çalışıyor.
 İsim, e-posta ya da şifre girmene gerek yok — yalnızca kodun ve anahtarın
 yeterli.
 
-**iPhone kullanıyorsan:** Sayfayı Safari yerine **Chrome**'da aç.
-Barkodu otomatik okuyabilmesi için bu gerekli — Safari'de bu özellik
-çalışmaz, barkodu her seferinde elle yazman gerekir.
+**iPhone kullanıyorsan:** Barkod otomatik okuma şu an iPhone'da
+çalışmıyor (hangi tarayıcıyı kullanırsan kullan) — barkodu elle
+yazman gerekir. Bu sınırlama ekibimiz tarafından çalışılıyor.
 
 ## Market kuralları
 
@@ -99,9 +99,8 @@ bugün topladığın ürün sayısı ve tüm ekibin toplamı.
 - **Giriş yapamıyorum:** Kod/anahtarını koordinatörle doğrula — yanlış
   yazılmış olabilir.
 - **Kamera açılmıyor / barkod hep okunamıyor:** Tarayıcı izin isterse
-  "İzin ver"e bas. iPhone kullanıyorsan Chrome'da olduğundan emin ol
-  (yukarıdaki not). Yine de olmazsa "Barkodu elle gir" bağlantısından
-  numarayı elle yaz.
+  "İzin ver"e bas. iPhone'da otomatik okuma şu an hiç çalışmıyor
+  (yukarıdaki not) — "Barkodu elle gir" bağlantısından numarayı elle yaz.
 - **Bir ürünü yanlışlıkla gönderdim:** Koordinatörüne haber ver, sistemde
   düzeltilebilir.
 - **Başka bir sorun:** Koordinatörünle iletişime geç.
