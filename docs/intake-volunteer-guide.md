@@ -14,6 +14,18 @@ her şey telefonunun tarayıcısında çalışıyor.
 İsim, e-posta ya da şifre girmene gerek yok — yalnızca kodun ve anahtarın
 yeterli.
 
+## Market kuralları
+
+- Her markette **en fazla 15 dakika**, **en fazla 15-20 ürün** topla —
+  daha fazlası hem sana hem markete yük olur.
+- Girişte market görevlisine kısaca ne yaptığını anlat, izin iste.
+  İzin verilmezse ısrar etme, başka bir markete geç.
+- Rafı boşaltma, ürünleri yerinden oynatma, geçiş yolunu kapatma —
+  müşterilere ve çalışanlara engel olmadan toplamaya çalış.
+- Koordinatörün sana verdiği kategoriden topla.
+- **"Zaten toplandı" veya "verisi tam"** mesajını görürsen fotoğraf
+  çekmeden sıradaki ürüne geç — en çok zamanı sana bu kazandırır.
+
 ## 1. Giriş
 
 Sayfayı aç, gönüllü kodunu ve erişim anahtarını gir, "Giriş yap"a bas.
@@ -79,5 +91,14 @@ bugün topladığın ürün sayısı ve tüm ekibin toplamı.
 - **Bir ürünü yanlışlıkla gönderdim:** Koordinatörüne haber ver, sistemde
   düzeltilebilir.
 - **Başka bir sorun:** Koordinatörünle iletişime geç.
+
+## Katılım ve onay
+
+- Çektiğin fotoğraflar RafSkoru projesinde ürün/beslenme verisini
+  tamamlamak için kullanılır.
+- Katılımın tamamen gönüllüdür — istediğin zaman, sebep göstermeden
+  bırakabilirsin.
+- Kişisel veri toplanmaz: isim, e-posta, konum veya cihaz bilgisi
+  istenmez; sistemde yalnızca gönüllü kodun kayıtlıdır.
 
 Katkın için teşekkürler!
