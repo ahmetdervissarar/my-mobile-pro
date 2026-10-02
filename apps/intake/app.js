@@ -298,13 +298,53 @@
   // fotoğraf çeker, barkod o görüntü üzerinde okunur (bkz. görev onayı:
   // "kamera akışından değil, çekilmiş görüntüden"). Fotoğraf hiçbir zaman
   // sunucuya yüklenmez, yalnız bu okuma için istemcide kullanılır.
+  // Yalnız EAN-13/EAN-8 ile sınırlanır (görev onayı, madde 3) — yanlış
+  // okuma riskini azaltır; .wasm boyutunu etkilemez (tüm formatlar zaten
+  // derlenmiş haldedir, bu yalnız çalışma zamanı bir filtredir).
+  const BARCODE_FORMATS = ['ean_13', 'ean_8'];
+
   function hasBarcodeDetectorSupport() {
     return 'BarcodeDetector' in window;
   }
 
+  // ── iOS dahil native desteği olmayan tarayıcılar için vendor edilmiş
+  // yedek (bkz. apps/intake/vendor/README.md) — CDN'e GİTMEZ, yalnız
+  // tembel yüklenir (native destek varsa hiç indirilmez) ve bir kez
+  // yüklenir (tekrar tekrar <script> eklenmez).
+  let barcodePolyfillReadyPromise = null;
+
+  function loadBarcodeDetectorPolyfill() {
+    if (barcodePolyfillReadyPromise) return barcodePolyfillReadyPromise;
+
+    barcodePolyfillReadyPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'vendor/barcode-detector.polyfill.js';
+      script.onload = () => {
+        try {
+          // .wasm'ın varsayılan jsDelivr CDN yolu yerine yerel vendor
+          // kopyasından okunmasını sağlar — bu olmadan devam etmek CDN'e
+          // istek göndermek demektir, bu yüzden başarısızsa reddedilir.
+          window.BarcodeDetectionAPI.setZXingModuleOverrides({
+            locateFile: (fileName) => `vendor/${fileName}`,
+          });
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
+      };
+      script.onerror = () => reject(new Error('barcode_polyfill_script_failed'));
+      document.head.appendChild(script);
+    }).then(
+      () => true,
+      () => false,
+    );
+
+    return barcodePolyfillReadyPromise;
+  }
+
   async function detectBarcodeFromFile(file) {
     const bitmap = await createImageBitmap(file);
-    const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+    const detector = new window.BarcodeDetector({ formats: BARCODE_FORMATS });
     const barcodes = await detector.detect(bitmap);
     return barcodes.length > 0 ? barcodes[0].rawValue : null;
   }
@@ -452,6 +492,7 @@
     pendingBarcode = null;
     el('confirmStep').hidden = true;
     el('scanError').hidden = true;
+    el('barcodeReaderLoading').hidden = true;
     el('manualBarcode').value = '';
 
     const supported = hasBarcodeDetectorSupport();
@@ -497,13 +538,32 @@
     }
   }
 
+  // Native destek varsa anında hazır; yoksa vendor edilmiş yedeği tembel
+  // yükler ("Barkod okuyucu hazırlanıyor…" gösterirken) — yalnız YEDEK DE
+  // YÜKLENEMEZSE "bu tarayıcıda otomatik okunmuyor" mesajına ve doğrudan
+  // açık elle girişe düşer (bkz. görev onayı, madde 5).
+  async function initBarcodeCaptureUI() {
+    if (hasBarcodeDetectorSupport()) {
+      el('captureStep').hidden = false;
+      return;
+    }
+
+    el('captureStep').hidden = true;
+    el('barcodeReaderLoading').hidden = false;
+
+    const ready = await loadBarcodeDetectorPolyfill();
+
+    el('barcodeReaderLoading').hidden = true;
+    if (ready) {
+      el('captureStep').hidden = false;
+    } else {
+      el('noScannerHint').hidden = false;
+      openManualEntry();
+    }
+  }
+
   function bindScanScreen() {
-    const supported = hasBarcodeDetectorSupport();
-    el('captureStep').hidden = !supported;
-    el('noScannerHint').hidden = supported;
-    // iOS Safari (ve diğer desteksiz tarayıcılar): iki deneme beklenmez,
-    // elle giriş doğrudan açık gelir (bkz. görev onayı, madde 1).
-    if (!supported) openManualEntry();
+    void initBarcodeCaptureUI();
 
     el('startScanBtn').addEventListener('click', () => {
       el('barcodePhotoInput').click();
