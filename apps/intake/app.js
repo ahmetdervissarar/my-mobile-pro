@@ -293,41 +293,25 @@
     });
   }
 
-  // ── Barkod okuma (BarcodeDetector varsa) ────────────────────────────────
-  let scanStream = null;
-  let scanRafId = null;
-
-  async function startBarcodeScan(onDetected) {
-    const video = el('scannerVideo');
-    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    video.srcObject = scanStream;
-    await video.play();
-
-    const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
-
-    const tick = async () => {
-      if (!scanStream) return;
-      try {
-        const barcodes = await detector.detect(video);
-        if (barcodes.length > 0) {
-          onDetected(barcodes[0].rawValue);
-          return;
-        }
-      } catch {
-        // Kare işlenemedi — bir sonraki karede tekrar denenir.
-      }
-      scanRafId = requestAnimationFrame(tick);
-    };
-    scanRafId = requestAnimationFrame(tick);
+  // ── Barkod okuma (tek fotoğraftan, BarcodeDetector varsa) ────────────────
+  // Canlı kamera akışı KULLANILMAZ — native kamera uygulaması tek bir
+  // fotoğraf çeker, barkod o görüntü üzerinde okunur (bkz. görev onayı:
+  // "kamera akışından değil, çekilmiş görüntüden"). Fotoğraf hiçbir zaman
+  // sunucuya yüklenmez, yalnız bu okuma için istemcide kullanılır.
+  function hasBarcodeDetectorSupport() {
+    return 'BarcodeDetector' in window;
   }
 
-  function stopBarcodeScan() {
-    if (scanRafId) cancelAnimationFrame(scanRafId);
-    scanRafId = null;
-    if (scanStream) {
-      for (const track of scanStream.getTracks()) track.stop();
-      scanStream = null;
-    }
+  async function detectBarcodeFromFile(file) {
+    const bitmap = await createImageBitmap(file);
+    const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+    const barcodes = await detector.detect(bitmap);
+    return barcodes.length > 0 ? barcodes[0].rawValue : null;
+  }
+
+  // Gözle karşılaştırma için 4'erli grupla gösterir (ör. "8690 5650 1755 5").
+  function formatBarcodeForDisplay(value) {
+    return String(value).replace(/(\d{4})(?=\d)/g, '$1 ');
   }
 
   // ── Meta (market/şehir/kategori listeleri) ──────────────────────────────
@@ -451,35 +435,97 @@
     el('sessionInfoText').textContent = `${code} · ${marketLabel} · ${session.city}`;
   }
 
-  // ── Ekran: Barkod tarama/arama ────────────────────────────────────────
-  function bindScanScreen() {
-    const hasBarcodeDetector = 'BarcodeDetector' in window;
-    el('startScanBtn').hidden = !hasBarcodeDetector;
-    el('noScannerHint').hidden = hasBarcodeDetector;
+  // ── Ekran: Barkod çekme/onay/arama ──────────────────────────────────────
+  let barcodeDecodeFailures = 0;
+  let pendingBarcode = null;
 
-    el('startScanBtn').addEventListener('click', async () => {
-      el('cameraWrap').hidden = false;
-      el('startScanBtn').hidden = true;
-      try {
-        await startBarcodeScan((barcode) => {
-          stopBarcodeScan();
-          el('cameraWrap').hidden = true;
-          el('startScanBtn').hidden = false;
-          void lookupBarcode(barcode);
-        });
-      } catch {
-        el('scanError').textContent = 'Kamera açılamadı — elle giriş kullanabilirsiniz.';
-        el('scanError').hidden = false;
-        el('cameraWrap').hidden = true;
-        el('startScanBtn').hidden = false;
+  function openManualEntry() {
+    el('manualEntryWrap').hidden = false;
+    el('manualEntryLinkBtn').hidden = true;
+  }
+
+  // Elle giriş açıkken bile yeniden çekme adımına dönülebilsin diye
+  // captureStep'i her zaman desteğe göre ayarlar; manuel alanın durumuna
+  // dokunmaz (zaten açıksa açık kalır).
+  function resetScanState() {
+    barcodeDecodeFailures = 0;
+    pendingBarcode = null;
+    el('confirmStep').hidden = true;
+    el('scanError').hidden = true;
+    el('manualBarcode').value = '';
+
+    const supported = hasBarcodeDetectorSupport();
+    el('captureStep').hidden = !supported;
+    if (supported) {
+      el('manualEntryWrap').hidden = true;
+      el('manualEntryLinkBtn').hidden = true;
+    }
+  }
+
+  // Lookup başarısız olup ekrandan ayrılmadığımızda kullanıcı eylemsiz
+  // kalmasın — yeniden çekme adımı geri gösterilir (elle giriş zaten
+  // açıksa açık kalır, kapatılmaz).
+  function restoreScanActionableUI() {
+    el('confirmStep').hidden = true;
+    el('captureStep').hidden = !hasBarcodeDetectorSupport();
+  }
+
+  async function handleBarcodePhoto() {
+    const input = el('barcodePhotoInput');
+    const file = input.files[0];
+    input.value = '';
+    if (!file) return;
+
+    const errorEl = el('scanError');
+    errorEl.hidden = true;
+
+    try {
+      const rawValue = await detectBarcodeFromFile(file);
+      if (!rawValue) throw new Error('not_detected');
+
+      pendingBarcode = rawValue;
+      el('confirmBarcodeDisplay').textContent = formatBarcodeForDisplay(rawValue);
+      el('captureStep').hidden = true;
+      el('confirmStep').hidden = false;
+    } catch {
+      barcodeDecodeFailures += 1;
+      errorEl.textContent = 'Barkod okunamadı — yakından, düz ve iyi ışıkta tekrar çek.';
+      errorEl.hidden = false;
+      if (barcodeDecodeFailures >= 2) {
+        el('manualEntryLinkBtn').hidden = false;
       }
+    }
+  }
+
+  function bindScanScreen() {
+    const supported = hasBarcodeDetectorSupport();
+    el('captureStep').hidden = !supported;
+    el('noScannerHint').hidden = supported;
+    // iOS Safari (ve diğer desteksiz tarayıcılar): iki deneme beklenmez,
+    // elle giriş doğrudan açık gelir (bkz. görev onayı, madde 1).
+    if (!supported) openManualEntry();
+
+    el('startScanBtn').addEventListener('click', () => {
+      el('barcodePhotoInput').click();
     });
 
-    el('stopScanBtn').addEventListener('click', () => {
-      stopBarcodeScan();
-      el('cameraWrap').hidden = true;
-      el('startScanBtn').hidden = false;
+    el('barcodePhotoInput').addEventListener('change', () => void handleBarcodePhoto());
+
+    el('confirmYesBtn').addEventListener('click', () => {
+      if (!pendingBarcode) return;
+      const barcode = pendingBarcode;
+      pendingBarcode = null;
+      el('confirmStep').hidden = true;
+      void lookupBarcode(barcode);
     });
+
+    el('confirmRetryBtn').addEventListener('click', () => {
+      pendingBarcode = null;
+      el('confirmStep').hidden = true;
+      el('captureStep').hidden = !hasBarcodeDetectorSupport();
+    });
+
+    el('manualEntryLinkBtn').addEventListener('click', () => openManualEntry());
 
     el('manualLookupBtn').addEventListener('click', () => {
       const barcode = el('manualBarcode').value.trim();
@@ -488,7 +534,7 @@
 
     el('backToScanBtn').addEventListener('click', () => {
       showScreen('scan');
-      el('manualBarcode').value = '';
+      resetScanState();
     });
   }
 
@@ -506,6 +552,7 @@
         errorEl.textContent =
           body.error === 'invalid_gtin' ? 'Geçersiz barkod (sağlama toplamı tutmuyor).' : 'Barkod aranamadı.';
         errorEl.hidden = false;
+        restoreScanActionableUI();
         return;
       }
 
@@ -515,6 +562,7 @@
     } catch {
       errorEl.textContent = 'Bağlantı kurulamadı, tekrar deneyin.';
       errorEl.hidden = false;
+      restoreScanActionableUI();
     }
   }
 
@@ -642,7 +690,7 @@
 
     setTimeout(() => {
       showScreen('scan');
-      el('manualBarcode').value = '';
+      resetScanState();
     }, 1200);
   }
 

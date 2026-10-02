@@ -52,19 +52,35 @@
       </div>
 
       <h2>Barkod</h2>
-      <div id="cameraWrap" class="camera-wrap" hidden>
-        <video id="scannerVideo" playsinline muted></video>
-        <button id="stopScanBtn" class="secondary">Kamerayı kapat</button>
-      </div>
-      <button id="startScanBtn" class="primary" hidden>Kamerayla okut</button>
-      <p class="hint" id="noScannerHint" hidden>Bu tarayıcıda otomatik barkod okuma yok — elle gir.</p>
 
-      <label for="manualBarcode">Barkod (elle)</label>
-      <div class="row">
-        <input id="manualBarcode" type="text" inputmode="numeric" autocomplete="off" placeholder="8690504000013" />
-        <button id="manualLookupBtn" class="primary">Ara</button>
+      <div id="captureStep">
+        <button id="startScanBtn" class="primary">Barkodu çek</button>
+        <p class="hint">Barkod fotoğrafı yüklenmez, yalnız numarayı okumak için kullanılır.</p>
+        <input id="barcodePhotoInput" type="file" accept="image/*" capture="environment" hidden />
       </div>
+
+      <p class="hint" id="noScannerHint" hidden>
+        Bu tarayıcıda barkod otomatik okunmuyor. Chrome ile açarsan otomatik okur; istersen barkodu elle yaz.
+      </p>
+
       <p id="scanError" class="error" hidden></p>
+
+      <div id="confirmStep" hidden>
+        <p class="hint">Okunan barkod:</p>
+        <p id="confirmBarcodeDisplay" class="barcode-display"></p>
+        <p class="hint">Doğru mu?</p>
+        <button id="confirmYesBtn" class="primary">Evet</button>
+        <button id="confirmRetryBtn" class="secondary">Tekrar çek</button>
+      </div>
+
+      <div id="manualEntryWrap" hidden>
+        <label for="manualBarcode">Barkod (elle)</label>
+        <div class="row">
+          <input id="manualBarcode" type="text" inputmode="numeric" autocomplete="off" placeholder="8690504000013" />
+          <button id="manualLookupBtn" class="primary">Ara</button>
+        </div>
+      </div>
+      <button id="manualEntryLinkBtn" class="link" hidden>Barkodu elle gir</button>
 
       <div id="pendingIndicator" class="pending-indicator" hidden></div>
     </section>

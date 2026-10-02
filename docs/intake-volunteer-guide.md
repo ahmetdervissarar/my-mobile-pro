@@ -14,6 +14,10 @@ her şey telefonunun tarayıcısında çalışıyor.
 İsim, e-posta ya da şifre girmene gerek yok — yalnızca kodun ve anahtarın
 yeterli.
 
+**iPhone kullanıyorsan:** Sayfayı Safari yerine **Chrome**'da aç.
+Barkodu otomatik okuyabilmesi için bu gerekli — Safari'de bu özellik
+çalışmaz, barkodu her seferinde elle yazman gerekir.
+
 ## Market kuralları
 
 - Her markette **en fazla 15 dakika**, **en fazla 15-20 ürün** topla —
@@ -42,9 +46,18 @@ yazmana gerek yok — yalnızca market adı ve şehir yeterli.
 
 ## 3. Barkodu oku
 
-- Tarayıcın destekliyorsa "Kamerayla okut"a bas, barkodu kameraya göster.
-- Desteklemiyorsa (veya kamera açılmazsa) barkod numarasını elle yazıp
-  "Ara"ya bas.
+- "Barkodu çek"e bas, telefonunun kamerası açılır — barkodu net ve düz
+  bir açıdan çek. **Bu fotoğraf sunucuya yüklenmez**, yalnızca numarayı
+  okumak için kullanılır.
+- Okunan numara ekranda büyük puntoyla gösterilir (ör. `8690 5650 1755 5`)
+  — paketteki numarayla gözle karşılaştır, doğruysa "Evet"e bas. Yanlışsa
+  "Tekrar çek"e bas.
+- **Okunamadıysa:** "Barkod okunamadı" mesajını görürsün — yakından, düz
+  ve iyi ışıkta tekrar çek. İkinci denemede de okunmazsa "Barkodu elle
+  gir" bağlantısı çıkar; oradan numarayı yazıp "Ara"ya basabilirsin.
+- **iPhone/Safari'de** (veya barkodu otomatik okumayan herhangi bir
+  tarayıcıda) "Barkodu çek" düğmesi yerine doğrudan elle giriş alanı
+  açık gelir.
 
 ## 4. Ekrandaki mesaja göre devam et
 
@@ -85,9 +98,10 @@ bugün topladığın ürün sayısı ve tüm ekibin toplamı.
 
 - **Giriş yapamıyorum:** Kod/anahtarını koordinatörle doğrula — yanlış
   yazılmış olabilir.
-- **Kamera açılmıyor:** Tarayıcı izin isterse "İzin ver"e bas. Yine
-  açılmazsa barkodu/fotoğrafı elle/native kamera uygulamasıyla
-  gönderemezsin ama sayfa yine de elle barkod girişine izin verir.
+- **Kamera açılmıyor / barkod hep okunamıyor:** Tarayıcı izin isterse
+  "İzin ver"e bas. iPhone kullanıyorsan Chrome'da olduğundan emin ol
+  (yukarıdaki not). Yine de olmazsa "Barkodu elle gir" bağlantısından
+  numarayı elle yaz.
 - **Bir ürünü yanlışlıkla gönderdim:** Koordinatörüne haber ver, sistemde
   düzeltilebilir.
 - **Başka bir sorun:** Koordinatörünle iletişime geç.

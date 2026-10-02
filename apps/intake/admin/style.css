@@ -44,6 +44,17 @@ main { max-width: 960px; margin: 0 auto; padding: 16px; }
 .screen h2 { margin-top: 28px; margin-bottom: 8px; font-size: 16px; }
 .screen h2:first-of-type { margin-top: 0; }
 
+/* Giriş ekranı veri panelinden ayrı, dar/ortalanmış bir kart olarak görünür. */
+#screen-login {
+  max-width: 360px;
+  margin: 48px auto 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+}
+#screen-login h2 { font-size: 18px; }
+
 label { display: block; margin: 12px 0 4px; font-size: 13px; font-weight: 700; color: var(--muted); }
 
 input, select {
@@ -125,6 +136,10 @@ tbody tr[data-clickable]:active { background: var(--surface-alt); }
   justify-content: center;
   z-index: 20;
 }
+
+/* .modal{display:flex} [hidden]'in display:none UA kuralını ezer — açıkça geri verilir
+   (yoksa modal, hiç fotoğraf açılmadan giriş ekranının üstünde görünür kalır). */
+.modal[hidden] { display: none; }
 
 .modal-content {
   background: var(--surface);
