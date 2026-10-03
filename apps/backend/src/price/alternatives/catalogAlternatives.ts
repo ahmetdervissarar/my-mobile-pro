@@ -63,6 +63,16 @@ function toAlternativeProduct(
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
 
+/**
+ * Görev onayı, madde 3: aynı markanın aynı ürününün farklı kaydı (ör. iki
+ * ayrı GTIN'e aynı ürün — barkod yeniden basımı, ambalaj güncellemesi)
+ * öneri olarak çıkmaz. Marka+ad+miktar eşleşmesi yeterli kabul edilir.
+ */
+function dedupeKey(product: Pick<CatalogAlternativeProduct, 'brand' | 'name' | 'quantityText'>): string {
+  const normalize = (value: string | null) => (value ?? '').trim().toLocaleLowerCase('tr-TR');
+  return `${normalize(product.brand)}|${normalize(product.name)}|${normalize(product.quantityText)}`;
+}
+
 export function getCatalogAlternatives(input: {
   barcode: string;
   limit?: number;
@@ -94,10 +104,14 @@ export function getCatalogAlternatives(input: {
   const currentScore = currentProduct.rafScore.score;
   const limit = Math.min(Math.max(input.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
 
+  const seenDedupeKeys = new Set<string>([dedupeKey(currentProduct)]);
   const candidates: CatalogAlternativeProduct[] = [];
   for (const product of catalog.products) {
     if (product.productId === current.productId) continue;
     if (product.productGroupKey !== groupKey) continue;
+
+    const key = dedupeKey(product);
+    if (seenDedupeKeys.has(key)) continue;
 
     const scored = getCatalogRafScore(product);
     if (!scored || scored.rafScore.score === null) continue;
@@ -106,6 +120,7 @@ export function getCatalogAlternatives(input: {
     // güveni). Mevcut ürünün puanı yoksa (nadiren) bu eleme uygulanmaz.
     if (currentScore !== null && scored.rafScore.score < currentScore) continue;
 
+    seenDedupeKeys.add(key);
     candidates.push(toAlternativeProduct(product, scored));
   }
 

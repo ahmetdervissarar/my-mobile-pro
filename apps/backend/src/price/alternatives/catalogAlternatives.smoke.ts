@@ -47,6 +47,7 @@ const MILK_HIGH_GTIN = '8690000000048'; // en:milks, yüksek puanlı (nutriScore
 const MILK_SAME_GTIN = '8690000000055'; // en:milks, mevcut üründen DÜŞÜK puanlı — elenmeli
 const CHEESE_GTIN = '8690000000062'; // farklı grup (en:cheeses) — ASLA aday olmamalı
 const UNCLASSIFIED_GTIN = '8690000000079'; // hiç OFF kategorisi yok — bölüm hiç çıkmamalı
+const MILK_DUPLICATE_GTIN = '8690000000109'; // İyi Süt ile AYNI marka+ad+miktar, farklı GTIN — elenmeli
 
 const records = [
   makeRecord({ gtin: MILK_LOW_GTIN, name: 'Düz Süt', brand: 'A', categories: ['en:milks'] }),
@@ -68,6 +69,15 @@ const records = [
   }),
   makeRecord({ gtin: CHEESE_GTIN, name: 'Peynir', brand: 'D', categories: ['en:cheeses'] }),
   makeRecord({ gtin: UNCLASSIFIED_GTIN, name: 'Sınıfsız Ürün', brand: 'E', categories: [] }),
+  makeRecord({
+    gtin: MILK_DUPLICATE_GTIN,
+    name: 'İYİ SÜT', // büyük/küçük harf farkıyla bile AYNI dedup anahtarı
+    brand: 'B',
+    quantity: '1 L',
+    categories: ['en:milks'],
+    nutriscoreGrade: 'b',
+    novaGroup: 1,
+  }),
 ];
 
 const fixtureDir = mkdtempSync(join(tmpdir(), 'rafskoru-catalog-alternatives-smoke-'));
@@ -105,6 +115,17 @@ for (let i = 1; i < result.candidates.length; i++) {
     'adaylar puana göre azalan sıralı olmalı',
   );
 }
+
+// 3b) Görev onayı madde 3: aynı marka+ad+miktar (büyük/küçük harf farkı
+// önemsiz) farklı bir GTIN altında ikinci kez listelenmez.
+assert.ok(
+  result.candidates.some((c) => c.productId === MILK_HIGH_GTIN),
+  'orijinal "İyi Süt" kaydı listede olmalı',
+);
+assert.ok(
+  !result.candidates.some((c) => c.productId === MILK_DUPLICATE_GTIN),
+  'aynı marka+ad+miktarın mükerrer GTIN kaydı ikinci kez listelenmemeli',
+);
 
 // 4) Grup bilinmeyen (unclassified) üründe bölüm hiç çıkmaz (boş aday listesi).
 const unclassifiedResult = getCatalogAlternatives({ barcode: UNCLASSIFIED_GTIN });
