@@ -9,6 +9,7 @@ import { getSearchCardMetaLine } from '../../src/features/search/searchCardPrese
 import { getDuplicateBarcodeSuffixes } from '../../src/features/search/suggestionDisambiguation';
 import { getAllergenBannerDataFromCatalog, type AllergenBannerData } from '../../src/features/productResult/helpers';
 import { addToCart, getCartItemKey, removeFromCart, suggestionToCartInput, useCart } from '../../src/state/cartStore';
+import { getProductDisplayName } from '../../src/ui/productDisplayName';
 import {
   loadUserSensitivityProfile,
   subscribeToUserSensitivityProfileChanges,
@@ -208,21 +209,32 @@ export default function SearchScreen() {
             const key = getSuggestionKey(suggestion);
             const isAdded = cartItems.some((item) => item.key === getCartItemKey(suggestionToCartInput(suggestion)));
             const allergenBannerData = getSuggestionAllergenBannerData(suggestion, userProfile);
-            const metaLine =
+            const displayName =
               suggestion.type === 'product'
+                ? getProductDisplayName({
+                    label: suggestion.label,
+                    productId: suggestion.productId,
+                    packageSize: suggestion.packageSize,
+                  })
+                : { title: suggestion.label, unknownNameBarcode: null };
+            const metaLine = displayName.unknownNameBarcode
+              ? displayName.unknownNameBarcode
+              : suggestion.type === 'product'
                 ? getSearchCardMetaLine({
                     brand: suggestion.brand,
                     packageSize: suggestion.packageSize,
                   })
                 : 'Ürün grubu';
             const duplicateBarcodeSuffix =
-              suggestion.type === 'product' ? duplicateBarcodeSuffixes.get(suggestion.productId) : undefined;
+              suggestion.type === 'product' && !displayName.unknownNameBarcode
+                ? duplicateBarcodeSuffixes.get(suggestion.productId)
+                : undefined;
 
             return (
               <SearchResultRow
                 key={key}
                 imageUrl={suggestion.type === 'product' ? suggestion.imageUrl : undefined}
-                name={suggestion.label}
+                name={displayName.title}
                 metaLine={metaLine}
                 duplicateBarcodeSuffix={duplicateBarcodeSuffix}
                 allergenData={allergenBannerData}
