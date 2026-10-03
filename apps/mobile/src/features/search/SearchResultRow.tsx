@@ -99,7 +99,7 @@ export function SearchResultRow({
         </View>
       )}
 
-      <View style={{ flex: 1, gap: 3 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
         <Text style={{ fontSize: 15, fontWeight: '700', color: colors.ink }} numberOfLines={2}>
           {name}
         </Text>
@@ -119,10 +119,11 @@ export function SearchResultRow({
           </View>
         ) : null}
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs }}>
           <View
             style={{
               alignSelf: 'flex-start',
+              maxWidth: '100%',
               borderRadius: radii.sm,
               paddingVertical: 3,
               paddingHorizontal: spacing.sm,
