@@ -8,8 +8,12 @@
  */
 import assert from 'node:assert/strict';
 
-import { getRafScoreComponentBreakdownText } from './rafScoreExplanation';
-import type { RafScoreResult } from './types';
+import {
+  getRafScoreComponentBreakdownText,
+  getRafScoreExplanationItems,
+  getRafScorePositiveItems,
+} from './rafScoreExplanation';
+import type { PriceResolveResponse, RafScoreReason, RafScoreResult } from './types';
 
 function buildRafScore(overrides: Partial<RafScoreResult> = {}): RafScoreResult {
   return {
@@ -48,5 +52,63 @@ const sparse = getRafScoreComponentBreakdownText(
   }),
 );
 assert.equal(sparse, 'Sağlık: veri yok · İçerik ve alerjen: veri yok · Sürdürülebilirlik 50 · Fiyat: veri yok');
+
+// Cihaz testi: backend'in reason.params.label alanı ham/iç bir etiket
+// ("Icerik/Alerjen") olsa bile, componentKey varsa HER ZAMAN bu dosyanın
+// insan-okur haritalamasına (getRafScoreComponentLabel) düşülür — ham
+// jargon kullanıcıya hiç gösterilmez.
+function buildReason(overrides: Partial<RafScoreReason>): RafScoreReason {
+  return {
+    code: 'content_high_score',
+    category: 'content',
+    severity: 'positive',
+    params: { componentKey: 'content', label: 'Icerik/Alerjen', score: 85 },
+    ...overrides,
+  };
+}
+
+function buildPriceResult(reasons: RafScoreReason[]): PriceResolveResponse['result'] {
+  return {
+    productName: 'Test Ürünü',
+    marketName: 'Test Market',
+    price: null,
+    currency: 'TRY',
+    source: null,
+    status: 'unavailable',
+    updatedAt: '2026-06-19T09:00:00.000Z',
+    confidence: 0.5,
+    rafScore: { ...buildRafScore(), reasons },
+  };
+}
+
+{
+  const positiveItems = getRafScorePositiveItems(buildPriceResult([buildReason({})]));
+  assert.equal(positiveItems.length, 1);
+  assert.ok(
+    positiveItems[0].includes('İçerik ve alerjen'),
+    `insan-okur etiket kullanılmalı: "${positiveItems[0]}"`,
+  );
+  assert.ok(!positiveItems[0].includes('Icerik/Alerjen'), 'ham jargon hiç görünmemeli');
+  assert.ok(!positiveItems[0].includes('İçerik/Alerjen'), 'ham jargon (slash biçimi) hiç görünmemeli');
+}
+
+// P2 invariant: profille çakışan alerjen varken "İçerik ve alerjen açısından
+// ürün iyi durumda" gibi çelişkili bir cümle HİÇ gösterilmez.
+{
+  const priceResult = buildPriceResult([buildReason({})]);
+  const suppressed = getRafScorePositiveItems(priceResult, { hasAllergenConflict: true });
+  assert.deepEqual(suppressed, [], 'çakışma varken content kategorisindeki olumlu cümle gösterilmemeli');
+
+  const notSuppressed = getRafScorePositiveItems(priceResult, { hasAllergenConflict: false });
+  assert.equal(notSuppressed.length, 1, 'çakışma yoksa olumlu cümle normal şekilde gösterilmeli');
+}
+
+{
+  const explanationItems = getRafScoreExplanationItems(buildPriceResult([buildReason({})]));
+  assert.ok(
+    explanationItems.every((item) => !item.includes('Icerik/Alerjen') && !item.includes('İçerik/Alerjen')),
+    'genel açıklama listesinde de ham jargon hiç görünmemeli',
+  );
+}
 
 console.log('RAF_SCORE_EXPLANATION_SMOKE_OK');

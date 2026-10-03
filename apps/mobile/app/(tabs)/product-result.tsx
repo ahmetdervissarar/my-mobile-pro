@@ -336,7 +336,6 @@ export default function ProductResultScreen() {
   }
 
   const rafScoreExplanationItems = priceResult ? getRafScoreExplanationItems(priceResult) : [];
-  const rafScorePositiveItems = priceResult ? getRafScorePositiveItems(priceResult) : [];
   const displayAdditives = backendProductFacts ? backendProductFacts.additives ?? [] : result.additives;
   const displayIngredients = backendProductFacts?.ingredientsText ?? result.ingredients;
   const productFactsSourceText = backendProductFacts
@@ -378,6 +377,13 @@ export default function ProductResultScreen() {
   // P2 invariant: skor bandı, profille çakışan alerjenin ÜSTÜNDE bir hüküm kelimesi göstermez.
   const isAllergenConflict =
     allergenBannerData.criticalMatches.length > 0 || (allergenBannerData.displayInfo?.isConflict ?? false);
+
+  // Cihaz testi: çakışma varken "İçerik ve alerjen açısından ürün iyi
+  // durumda" gibi çelişkili bir olumlu-yön cümlesi "Dikkat edilecekler"de
+  // HİÇ gösterilmez.
+  const rafScorePositiveItems = priceResult
+    ? getRafScorePositiveItems(priceResult, { hasAllergenConflict: isAllergenConflict })
+    : [];
 
   // Alternatifler: profil eleme BURADA yapılır (profil cihazdan çıkmaz) —
   // backend yalnız aynı grup içindeki, mevcut üründen düşük puanlı olmayan
