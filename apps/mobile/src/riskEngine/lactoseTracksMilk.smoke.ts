@@ -150,7 +150,7 @@ function lactosePerKey(evaluation: ReturnType<typeof evaluateCatalogAllergenData
   const displayInfo = getAllergenDisplayLevel(evaluation.perKey);
   assert.ok(displayInfo);
   assert.equal(displayInfo!.level, 'no_data');
-  assert.equal(displayInfo!.text, 'Alerjen verisi yok (süt, laktoz) — etiketi kontrol edin');
+  assert.equal(displayInfo!.text, 'Veri yok (süt, laktoz) — etiketi kontrol edin');
   assert.equal((displayInfo!.text.match(/:/g) ?? []).length, 0, 'no_data rozet metninde ":" olmamalı');
 }
 
