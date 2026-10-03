@@ -14,6 +14,7 @@ import { Image, Pressable, Text, View } from 'react-native';
 import { getAllergenStatusLine } from '../productResult/allergenStatusLine';
 import type { AllergenBannerData } from '../productResult/helpers';
 import type { RafScoreResult } from '../../price/types';
+import { AllergenChip } from '../../ui/AllergenChip';
 import { NovaBadge } from '../../ui/NovaBadge';
 import { NutriScoreBadge } from '../../ui/NutriScoreBadge';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../ui/theme';
@@ -132,6 +133,14 @@ export function SearchResultRow({
               {badge.text}
             </Text>
           </View>
+
+          {/* Cihaz testi (feat/catalog-alternatives): çakışma rozeti zaten
+              yukarıda ("Profilinle çakışıyor") alerjeni gösteriyor — çakışma
+              YOKSA (beyan/belirtilmemiş/veri yok) ayrı bir AllergenChip
+              eklenir; hiçbir kart rozetsiz kalmaz (fail-open'a karşı). */}
+          {!badge.isAllergenBadge ? (
+            <AllergenChip status={allergenData.status} displayInfo={allergenData.displayInfo} />
+          ) : null}
 
           {showNutriNova && nutriScoreGrade ? <NutriScoreBadge grade={nutriScoreGrade} compact /> : null}
           {showNutriNova && novaGroup ? <NovaBadge group={novaGroup} compact /> : null}

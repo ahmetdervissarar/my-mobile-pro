@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import type { BasketProfileItem } from '../../api/basketClient';
 import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel } from '../../riskEngine/catalogAllergenChip';
 import type { UserSensitivityProfile } from '../../userProfile/userProfileTypes';
+import { AllergenChip } from '../../ui/AllergenChip';
 import { ScorePill } from '../../ui/ScorePill';
 import { Stepper } from '../../ui/Stepper';
 import { radii, spacing, useTheme } from '../../ui/theme';
@@ -50,6 +51,14 @@ export function BasketItemRow({ item, quantityAmount, userProfile, onQuantityCha
         <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: colors.ink }}>{item.label}</Text>
         <ScorePill score={item.score} allergenPriority={isAllergenConflict} isEstimate={isGroupEstimate} />
       </View>
+
+      {/* Cihaz testi (feat/catalog-alternatives): çakışma zaten kırmızı
+          kenar + ScorePill'in "Alerjen uyarısı öncelikli" ile görünür —
+          çakışma YOKSA (beyan/belirtilmemiş/veri yok) de rozetsiz satır
+          kalmasın diye ayrı bir AllergenChip eklendi (fail-open'a karşı). */}
+      {!isAllergenConflict ? (
+        <AllergenChip status={evaluation.status} displayInfo={displayInfo} />
+      ) : null}
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Stepper
