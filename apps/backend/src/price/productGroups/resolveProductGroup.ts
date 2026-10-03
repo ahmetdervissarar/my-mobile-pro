@@ -40,8 +40,25 @@ function emptyResolution(): ProductGroupResolution {
   };
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Görev (ad-tabanlı eşleştirmeyi devreye alma): düz .includes() alt dize
+ * eşleşmesi kullanılıyordu — ör. "cola" anahtar kelimesi "çikolata"
+ * (normalize edilince "cikolata") içinde SUBSTRING olarak geçtiği için
+ * gerçek veride onlarca çikolata/puding ürünü yanlışlıkla "cola" grubuna
+ * düşüyordu (bkz. görev ölçümü). Kelime sınırı (\b) ile eşleştirme bu
+ * sınıftaki hataları kapatır — marka adlarına takılmama gereksinimiyle
+ * AYNI kök sorun.
+ */
 function hasAnyToken(normalizedName: string, tokens: string[]): boolean {
-  return tokens.some((token) => normalizedName.includes(normalizeText(token)));
+  return tokens.some((token) => {
+    const normalizedToken = normalizeText(token);
+    if (!normalizedToken) return false;
+    return new RegExp(`\\b${escapeRegExp(normalizedToken)}\\b`, 'u').test(normalizedName);
+  });
 }
 
 function hasExcludedToken(normalizedName: string, entry: ProductGroupCatalogEntry): boolean {

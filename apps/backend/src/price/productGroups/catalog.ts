@@ -69,7 +69,16 @@ export const PRODUCT_GROUP_CATALOG: ProductGroupCatalogEntry[] = [
     key: 'rice',
     coarseGroup: 'staple_grain',
     include: ['pirinc', 'pirinç', 'osmancik', 'osmancık', 'baldo', 'rice'],
-    exclude: ['bulgur', 'makarna', 'pasta', 'noodle', 'sehriye', 'şehriye', 'un', 'flour'],
+    // patlak/patlaklı/patlağı (puffed): gerçek veride "pirinç patlağı/
+    // patlaklı" adındaki ürünlerin 14/160'ı pirinç DEĞİL, patlamış mısır/
+    // pirinç ATIŞTIRMALIK'ı (bkz. görev ölçümü) — kelime sınırı eşleşmesi
+    // Türkçe çekim ekleriyle (patlak+lı/+ğı) örtüşmediği için her çekimi
+    // ayrı listelemek gerekiyor (bu dosyadaki ['yogurt','yoğurt'] deseniyle
+    // AYNI gerekçe).
+    exclude: [
+      'bulgur', 'makarna', 'pasta', 'noodle', 'sehriye', 'şehriye', 'un', 'flour',
+      'patlak', 'patlaklı', 'patlağı', 'patlamis', 'patlamış',
+    ],
     offHints: ['en:rices', 'en:grains'],
     packageUnits: ['g', 'kg'],
   },
@@ -93,7 +102,11 @@ export const PRODUCT_GROUP_CATALOG: ProductGroupCatalogEntry[] = [
     key: 'cola',
     coarseGroup: 'soft_drink',
     include: ['kola', 'cola'],
-    exclude: ['maden suyu', 'soda', 'ayran', 'kefir'],
+    // haribo: "Happy Cola" gibi kola AROMALI JÖLE ŞEKERLEME ürünleri gerçek
+    // veride 'cola' kelimesini TAM KELİME olarak içeriyor ama içecek değil
+    // (bkz. görev ölçümü) — Haribo kesin bir şekerleme markası, kola
+    // içeceği satmaz.
+    exclude: ['maden suyu', 'soda', 'ayran', 'kefir', 'haribo'],
     offHints: ['en:colas', 'en:sodas'],
     packageUnits: ['ml', 'l'],
   },

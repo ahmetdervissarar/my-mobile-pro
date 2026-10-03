@@ -13,7 +13,8 @@ import { computeCompletenessAndMissingFields } from '../tools/offTurkey/normaliz
 import type { AllergenKey, OffImportRecord } from '../tools/offTurkey/normalize.js';
 import { classifyAllergenTags } from '../tools/offTurkey/offAllergenMap.js';
 import { categoryFromOffTags, hasNonNutritiveSweetenerTag } from './nutriScoreCategory.js';
-import { mapOffCategoriesToProductGroupKey } from './productGroupMap.js';
+import { mapOffCategoriesToProductGroupKey, UNCLASSIFIED_PRODUCT_GROUP_KEY } from './productGroupMap.js';
+import { resolveProductGroup } from '../price/productGroups/resolveProductGroup.js';
 
 export type CatalogPackageUnit = 'ml' | 'g' | 'unit';
 
@@ -77,6 +78,16 @@ export interface CatalogProduct {
   quantityText: string | null;
   packageSize?: CatalogPackageSize;
   productGroupKey: string;
+  /**
+   * Görev (unclassified %78,3 ölçümü): productGroupKey ÖNCE OFF
+   * categories_tags'ten (bkz. productGroupMap.ts) atanır — eşleşmezse
+   * ürün adından (resolveProductGroup.ts) ikincil olarak atanır. Bu alan
+   * hangisinin olduğunu işaretler; ad-tabanlı sonuç OFF'u asla EZMEZ,
+   * yalnız OFF unclassified bıraktığında devreye girer. Mobile tiplerine
+   * (ProductSearchSuggestion vb.) sızdırılmaz — şimdilik backend-içi
+   * raporlama/ölçüm amaçlı.
+   */
+  productGroupSource: 'off' | 'name';
   imageUrl: string | null;
   nutriScore: CatalogNutriScore;
   nova: CatalogNova;
@@ -281,6 +292,66 @@ export function buildAllergenData(record: OffImportRecord): CatalogAllergenData 
   };
 }
 
+/**
+ * Markayı adın içinden TAM KELİME eşleşmesiyle çıkarır — ad-tabanlı grup
+ * eşleştirmesi marka adına (ör. "Ülker", "Eti", "Banvit") TAKILMASIN diye
+ * (bkz. görev — marka adı bir grup anahtar kelimesiyle hiçbir zaman
+ * eşleşmeyecek olsa da, bu yapısal bir güvence: eşleştirme SADECE marka
+ * çıkarılmış ad metnine bakar).
+ */
+function stripBrandFromName(name: string | null, brand: string | null): string {
+  const trimmedName = name?.trim() ?? '';
+  const trimmedBrand = brand?.trim();
+
+  if (!trimmedBrand) return trimmedName;
+
+  const escapedBrand = trimmedBrand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const brandPattern = new RegExp(`\\b${escapedBrand}\\b`, 'giu');
+
+  return trimmedName.replace(brandPattern, ' ').trim();
+}
+
+/**
+ * Önce OFF categories_tags (mapOffCategoriesToProductGroupKey) — eşleşmezse
+ * (unclassified) ürün adından (resolveProductGroup, ad-tabanlı kural seti)
+ * ikincil bir eşleştirme denenir. Ad-tabanlı sonuç OFF eşleşmesini ASLA
+ * ezmez — yalnız OFF hiçbir şey bulamadığında çalışır. offCategories
+ * BİLEREK geçirilmez: resolveProductGroup'un kendi (daha az küratörlü)
+ * off_assisted yolu, productGroupMap.ts'in bilinçli "emin olmadığın etiketi
+ * ekleme" kararını arka kapıdan ezmesin.
+ */
+/**
+ * price/productGroups/registry.ts'te riskLevel:'restricted',
+ * alternativeEligibility:'disabled' olarak işaretli gruplar (bebek maması
+ * ailesi — "Restricted in beta unless human-curated allowlist is
+ * introduced"). productGroupMap.ts bu grupları OFF etiketinden BİLEREK
+ * atamıyor (bkz. yukarıdaki yorum); resolveProductGroup'un KENDİ keyword
+ * listesinde (price/productGroups/catalog.ts) "bebek maması" gibi isim
+ * kuralları olduğundan, ad-tabanlı yol bu politikayı arka kapıdan
+ * delmesin diye burada da AÇIKÇA elenir.
+ */
+const RESTRICTED_PRODUCT_GROUP_KEYS = new Set(['baby_formula', 'baby_cereal', 'baby_food']);
+
+function resolveCatalogProductGroup(record: OffImportRecord): {
+  productGroupKey: string;
+  productGroupSource: 'off' | 'name';
+} {
+  const offGroupKey = mapOffCategoriesToProductGroupKey(record.categories);
+
+  if (offGroupKey !== UNCLASSIFIED_PRODUCT_GROUP_KEY) {
+    return { productGroupKey: offGroupKey, productGroupSource: 'off' };
+  }
+
+  const nameWithoutBrand = stripBrandFromName(record.name, record.brand);
+  const nameResolution = resolveProductGroup({ productName: nameWithoutBrand, barcode: record.gtin });
+
+  if (nameResolution.productGroupKey && !RESTRICTED_PRODUCT_GROUP_KEYS.has(nameResolution.productGroupKey)) {
+    return { productGroupKey: nameResolution.productGroupKey, productGroupSource: 'name' };
+  }
+
+  return { productGroupKey: UNCLASSIFIED_PRODUCT_GROUP_KEY, productGroupSource: 'off' };
+}
+
 export function buildCatalogProduct(record: OffImportRecord): CatalogProduct {
   const packageSize = parsePackageSize(record.quantity);
   const nutriScore = buildNutriScore(record);
@@ -305,13 +376,16 @@ export function buildCatalogProduct(record: OffImportRecord): CatalogProduct {
     nutrition100g: record.nutrition100g,
   });
 
+  const { productGroupKey, productGroupSource } = resolveCatalogProductGroup(record);
+
   return {
     productId: record.gtin,
     name: record.name,
     brand: record.brand,
     quantityText: record.quantity,
     ...(packageSize ? { packageSize } : {}),
-    productGroupKey: mapOffCategoriesToProductGroupKey(record.categories),
+    productGroupKey,
+    productGroupSource,
     imageUrl: record.imageUrl,
     nutriScore,
     nova: buildNova(record),
