@@ -1,5 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -58,6 +58,7 @@ export default function SearchScreen() {
   const initialQuery = Array.isArray(initialQueryParam) ? initialQueryParam[0] ?? '' : initialQueryParam ?? '';
 
   const [query, setQuery] = useState(initialQuery);
+  const searchInputRef = useRef<TextInput>(null);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [searchErrorMessage, setSearchErrorMessage] = useState<string | null>(null);
@@ -164,23 +165,60 @@ export default function SearchScreen() {
       >
         <Text style={{ fontSize: 28, fontWeight: '800', color: colors.ink }}>Ürün Ara</Text>
 
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Ürün adı yazın"
-          placeholderTextColor={colors.muted}
-          accessibilityLabel="Ürün adı ara"
-          style={{
-            minHeight: MIN_TOUCH_TARGET,
-            borderWidth: 2,
-            borderColor: colors.pine2,
-            borderRadius: radii.lg,
-            paddingHorizontal: spacing.lg,
-            fontSize: 16,
-            color: colors.ink,
-            backgroundColor: colors.surface,
-          }}
-        />
+        <View style={{ position: 'relative', justifyContent: 'center' }}>
+          <TextInput
+            ref={searchInputRef}
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Ürün adı yazın"
+            placeholderTextColor={colors.muted}
+            accessibilityLabel="Ürün adı ara"
+            style={{
+              minHeight: MIN_TOUCH_TARGET,
+              borderWidth: 2,
+              borderColor: colors.pine2,
+              borderRadius: radii.lg,
+              paddingHorizontal: spacing.lg,
+              paddingRight: MIN_TOUCH_TARGET + spacing.sm,
+              fontSize: 16,
+              color: colors.ink,
+              backgroundColor: colors.surface,
+            }}
+          />
+
+          {query.length > 0 ? (
+            <Pressable
+              onPress={() => {
+                setQuery('');
+                searchInputRef.current?.focus();
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Aramayı temizle"
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: MIN_TOUCH_TARGET,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  backgroundColor: colors.soft,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.muted }}>✕</Text>
+              </View>
+            </Pressable>
+          ) : null}
+        </View>
 
         {isSuggesting ? <Text style={{ fontSize: 12.5, color: colors.muted }}>Öneriler aranıyor...</Text> : null}
 
