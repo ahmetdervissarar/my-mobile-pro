@@ -110,6 +110,33 @@ function candidate(overrides: Partial<AlternativeCandidate>): AlternativeCandida
   assert.equal(result.sections[0].title, 'Daha yüksek puanlı seçenekler');
 }
 
+// 3b) Görev onayı madde 2 (minimum fark): +1..+4 puanlık fark "daha yüksek
+// puanlı" sayılmaz — anlamsız kabul edilir, hiç gösterilmez.
+{
+  const barelyBetter = candidate({ productId: 'barely-better', rafScore: rafScore(54) });
+  const result = buildAlternativeSections({
+    currentHasConflict: false,
+    currentScore: 50,
+    currentScoreCoverageKey: 'content',
+    candidates: [barelyBetter],
+    userProfile: EMPTY_PROFILE,
+  });
+  assert.deepEqual(result.sections, [], '+4 puanlık fark anlamsız kabul edilmeli, hiç gösterilmemeli');
+}
+
+// 3c) +5 tam eşiği karşılıyor -> gösterilmeli (sınır dahil).
+{
+  const exactlyFivePointsBetter = candidate({ productId: 'exactly-five', rafScore: rafScore(55) });
+  const result = buildAlternativeSections({
+    currentHasConflict: false,
+    currentScore: 50,
+    currentScoreCoverageKey: 'content',
+    candidates: [exactlyFivePointsBetter],
+    userProfile: EMPTY_PROFILE,
+  });
+  assert.equal(result.sections[0]?.title, 'Daha yüksek puanlı seçenekler', 'tam +5 eşiği geçerli olmalı');
+}
+
 // 4) Aynı senaryo ama aday FARKLI bileşen kümesinden puanlanmış -> nötr başlık.
 {
   const betterDifferentCoverage = candidate({

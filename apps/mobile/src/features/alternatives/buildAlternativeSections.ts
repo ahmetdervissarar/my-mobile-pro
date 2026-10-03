@@ -50,6 +50,12 @@ export interface AlternativeSectionsResult {
 const MAX_PROFILE_FIT = 3;
 const MAX_HIGHER_SCORED = 3;
 const MAX_DATA_MISSING = 2;
+/**
+ * Görev onayı, madde 2 (minimum fark): 1-2 puanlık farklar anlamsız — yalnız
+ * mevcut üründen en az bu kadar yüksek puanlı aday "Daha yüksek puanlı
+ * seçenekler" (veya kapsam farklıysa nötr başlık) bölümüne girer.
+ */
+const MIN_SCORE_DIFFERENCE_FOR_HIGHER_SCORED = 5;
 
 export function buildAlternativeSections(input: {
   /** Mevcut ürün, kullanıcının profiliyle çakışıyor mu (bkz. product-result.tsx, isAllergenConflict). */
@@ -84,7 +90,11 @@ export function buildAlternativeSections(input: {
 
     if (input.currentHasConflict) {
       profileFit.push(candidate);
-    } else if (input.currentScore !== null && score !== null && score > input.currentScore) {
+    } else if (
+      input.currentScore !== null &&
+      score !== null &&
+      score >= input.currentScore + MIN_SCORE_DIFFERENCE_FOR_HIGHER_SCORED
+    ) {
       higherScored.push(candidate);
     }
   }
