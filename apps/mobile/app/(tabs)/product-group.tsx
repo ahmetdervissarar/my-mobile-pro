@@ -1,11 +1,14 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { fetchProductsByGroup, type ProductSearchSuggestion } from '../../src/api/productSuggestionClient';
 import { isRafScorePriceless } from '../../src/price/rafScorePriceless';
 import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel } from '../../src/riskEngine/catalogAllergenChip';
-import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
+import {
+  loadUserSensitivityProfile,
+  subscribeToUserSensitivityProfileChanges,
+} from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import { EmptyState } from '../../src/ui/EmptyState';
 import { NovaBadge } from '../../src/ui/NovaBadge';
@@ -38,11 +41,23 @@ export default function ProductGroupScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(emptyUserSensitivityProfile);
 
-  useEffect(() => {
-    void loadUserSensitivityProfile()
-      .then(setUserProfile)
-      .catch(() => setUserProfile(emptyUserSensitivityProfile));
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      void loadUserSensitivityProfile()
+        .then((profile) => {
+          if (isActive) setUserProfile(profile);
+        })
+        .catch(() => {
+          if (isActive) setUserProfile(emptyUserSensitivityProfile);
+        });
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
+  useEffect(() => subscribeToUserSensitivityProfileChanges(setUserProfile), []);
 
   useEffect(() => {
     if (!productGroupKey) {

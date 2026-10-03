@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,7 +9,10 @@ import { getSearchCardMetaLine } from '../../src/features/search/searchCardPrese
 import { getDuplicateBarcodeSuffixes } from '../../src/features/search/suggestionDisambiguation';
 import { getAllergenBannerDataFromCatalog, type AllergenBannerData } from '../../src/features/productResult/helpers';
 import { addToCart, getCartItemKey, removeFromCart, suggestionToCartInput, useCart } from '../../src/state/cartStore';
-import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
+import {
+  loadUserSensitivityProfile,
+  subscribeToUserSensitivityProfileChanges,
+} from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import { EmptyState } from '../../src/ui/EmptyState';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
@@ -62,11 +65,23 @@ export default function SearchScreen() {
   const cartItems = useCart();
   const duplicateBarcodeSuffixes = useMemo(() => getDuplicateBarcodeSuffixes(suggestions), [suggestions]);
 
-  useEffect(() => {
-    void loadUserSensitivityProfile()
-      .then(setUserProfile)
-      .catch(() => setUserProfile(emptyUserSensitivityProfile));
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      void loadUserSensitivityProfile()
+        .then((profile) => {
+          if (isActive) setUserProfile(profile);
+        })
+        .catch(() => {
+          if (isActive) setUserProfile(emptyUserSensitivityProfile);
+        });
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
+  useEffect(() => subscribeToUserSensitivityProfileChanges(setUserProfile), []);
 
   useEffect(() => {
     const trimmedQuery = query.trim();

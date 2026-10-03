@@ -1,6 +1,6 @@
 import { submitBetaFeedback, type BetaFeedbackType } from '../../src/api/betaFeedbackClient';
-import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,7 +8,10 @@ import { getFallbackProductSummary } from '../../src/services/productService';
 import type { ProductSearchInput } from '../../src/services/productService';
 import { evaluateProductRisks } from '../../src/riskEngine/riskEngine';
 import type { ProductRiskResult } from '../../src/riskEngine/riskEngine';
-import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
+import {
+  loadUserSensitivityProfile,
+  subscribeToUserSensitivityProfileChanges,
+} from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import type { UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import { PriceClient } from '../../src/price/priceClient';
@@ -103,11 +106,27 @@ export default function ProductResultScreen() {
   const [betaFeedbackError, setBetaFeedbackError] = useState<string | null>(null);
   const [isAllergenSheetVisible, setIsAllergenSheetVisible] = useState(false);
 
-  useEffect(() => {
-    void loadUserSensitivityProfile()
-      .then(setUserProfile)
-      .catch(() => setUserProfile(emptyUserSensitivityProfile));
-  }, []);
+  // Cihaz testi: profil A ile ürün açılıp sonra B'ye değiştirilip bu ürüne
+  // dönüldüğünde uyarı B'ye göre olmalı — mount'ta BİR KEZ okumak yetmez.
+  // useFocusEffect ekrana her dönüşte yeniden okur; abonelik de ekran
+  // odaktayken (ör. arka planda profil değişirse) senkron günceller.
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      void loadUserSensitivityProfile()
+        .then((profile) => {
+          if (isActive) setUserProfile(profile);
+        })
+        .catch(() => {
+          if (isActive) setUserProfile(emptyUserSensitivityProfile);
+        });
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
+  useEffect(() => subscribeToUserSensitivityProfileChanges(setUserProfile), []);
 
   const backendProductFacts = priceResolution?.result.productFacts ?? null;
 
