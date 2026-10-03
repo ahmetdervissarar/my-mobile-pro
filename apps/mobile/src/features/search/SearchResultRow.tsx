@@ -15,6 +15,7 @@ import { getAllergenStatusLine } from '../productResult/allergenStatusLine';
 import type { AllergenBannerData } from '../productResult/helpers';
 import type { RafScoreResult } from '../../price/types';
 import { AllergenChip } from '../../ui/AllergenChip';
+import { cachedImageSource } from '../../ui/cachedImageSource';
 import { NovaBadge } from '../../ui/NovaBadge';
 import { NutriScoreBadge } from '../../ui/NutriScoreBadge';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../ui/theme';
@@ -80,7 +81,7 @@ export function SearchResultRow({
     >
       {imageUrl ? (
         <Image
-          source={{ uri: imageUrl }}
+          source={cachedImageSource(imageUrl)}
           style={{ width: 52, height: 52, borderRadius: radii.md, backgroundColor: colors.soft }}
           resizeMode="contain"
         />

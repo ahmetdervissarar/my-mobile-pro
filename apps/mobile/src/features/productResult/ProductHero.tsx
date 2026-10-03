@@ -1,5 +1,6 @@
 import { Image, Text, View } from 'react-native';
 
+import { cachedImageSource } from '../../ui/cachedImageSource';
 import { radii, spacing, useTheme } from '../../ui/theme';
 
 export interface ProductHeroProps {
@@ -17,7 +18,7 @@ export function ProductHero({ name, barcode, imageUrl, isPhotoSearch }: ProductH
       <View style={{ flexDirection: 'row', gap: spacing.lg, alignItems: 'center' }}>
         {imageUrl ? (
           <Image
-            source={{ uri: imageUrl }}
+            source={cachedImageSource(imageUrl)}
             style={{ width: 84, height: 84, borderRadius: radii.lg, backgroundColor: colors.soft }}
             resizeMode="contain"
           />
