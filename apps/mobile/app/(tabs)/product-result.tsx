@@ -405,6 +405,15 @@ export default function ProductResultScreen() {
           imageUrl: displayImageUrl,
         }
       : null;
+  // Cihaz testi: belirsiz bir "desteklenmiyor" yerine NEDEN gösterilir —
+  // yükleniyor / ürün hiç tanınamadı / tanındı ama kategorisi çıkarılamadı.
+  const cartDisabledReason = cartInput
+    ? null
+    : isPriceLoading
+      ? 'Ürün bilgisi yükleniyor, lütfen bekleyin.'
+      : isUnknownProduct
+        ? 'Bu ürün tanınamadı — barkodu tekrar okutmayı deneyin.'
+        : 'Bu ürünün kategorisi belirlenemediği için sepete eklenemiyor.';
 
   // Katmanlı sadeleştirme: katlanır bölümlerin içeriği ve başlıktaki özetleri.
   const trafficLight = backendProductFacts
@@ -584,7 +593,7 @@ export default function ProductResultScreen() {
         />
       </ScrollView>
 
-      <StickyAddBar cartInput={cartInput} />
+      <StickyAddBar cartInput={cartInput} disabledReason={cartDisabledReason} />
 
       <AllergenDetailSheet
         visible={isAllergenSheetVisible}

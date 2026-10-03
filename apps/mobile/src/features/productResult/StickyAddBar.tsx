@@ -20,10 +20,12 @@ export interface StickyAddBarCartInput {
 
 export interface StickyAddBarProps {
   cartInput: StickyAddBarCartInput | null;
+  /** cartInput null iken NEDEN gösterilir — belirsiz "desteklenmiyor" yerine. */
+  disabledReason?: string | null;
 }
 
 /** Altta sabit "Sepete ekle" çubuğu. Ürün grubu çözülemiyorsa devre dışı kalır. */
-export function StickyAddBar({ cartInput }: StickyAddBarProps) {
+export function StickyAddBar({ cartInput, disabledReason }: StickyAddBarProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [toast, setToast] = useState<{ message: string; ok: boolean } | null>(null);
@@ -51,7 +53,7 @@ export function StickyAddBar({ cartInput }: StickyAddBarProps) {
     >
       {!cartInput ? (
         <Text style={{ fontSize: 12, color: colors.muted, textAlign: 'center', marginBottom: spacing.xs }}>
-          Bu ürün için sepete ekleme henüz desteklenmiyor.
+          {disabledReason ?? 'Bu ürün için sepete ekleme henüz desteklenmiyor.'}
         </Text>
       ) : null}
 
