@@ -12,11 +12,8 @@ import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileSto
 import { emptyUserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import type { UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import { PriceClient } from '../../src/price/priceClient';
-import type {
-  AlternativeCategoryKey,
-  AlternativeRecommendation,
-  PriceResolveResponse,
-} from '../../src/price/types';
+import type { CatalogAlternativesResponse, PriceResolveResponse } from '../../src/price/types';
+import { buildAlternativeSections } from '../../src/features/alternatives/buildAlternativeSections';
 import { getRafScoreComponentBreakdownText, getRafScoreExplanationItems, getRafScorePositiveItems } from '../../src/price/rafScoreExplanation';
 import { isRafScorePriceless as isPriceless } from '../../src/price/rafScorePriceless';
 import { recordRecentlyViewed } from '../../src/state/recentlyViewedStore';
@@ -38,7 +35,6 @@ import {
   getInitialResult,
   getProductFactsConfidenceLabel,
   getTransitionSafeProductGroupKey,
-  isExplicitlyAlternativesIneligible,
   productFactsToRiskTrafficLight,
 } from '../../src/features/productResult/helpers';
 import { IndicatorRow } from '../../src/features/productResult/IndicatorRow';
@@ -98,7 +94,10 @@ export default function ProductResultScreen() {
   const [priceResolution, setPriceResolution] = useState<PriceResolveResponse | null>(null);
   const [isPriceLoading, setIsPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
-  const [alternativeRecommendations, setAlternativeRecommendations] = useState<AlternativeRecommendation[]>([]);
+  const [catalogAlternatives, setCatalogAlternatives] = useState<CatalogAlternativesResponse>({
+    currentProduct: null,
+    candidates: [],
+  });
   const [submittedFeedbackType, setSubmittedFeedbackType] = useState<BetaFeedbackType | null>(null);
   const [isSubmittingBetaFeedback, setIsSubmittingBetaFeedback] = useState(false);
   const [betaFeedbackError, setBetaFeedbackError] = useState<string | null>(null);
@@ -245,43 +244,24 @@ export default function ProductResultScreen() {
 
   useEffect(() => {
     let isMounted = true;
-    const currentPriceResult = priceResolution?.result ?? null;
-    const categoryKey = currentPriceResult?.sustainability?.categoryKey;
-    const productGroupKey = currentPriceResult?.productGroupKey;
+    const barcode = priceResolution?.result.barcode;
 
-    if (
-      !currentPriceResult ||
-      isExplicitlyAlternativesIneligible(currentPriceResult) ||
-      !categoryKey ||
-      categoryKey === 'unknown' ||
-      !productGroupKey
-    ) {
-      setAlternativeRecommendations([]);
+    if (!barcode) {
+      setCatalogAlternatives({ currentProduct: null, candidates: [] });
       return () => {
         isMounted = false;
       };
     }
 
     void priceClient
-      .fetchAlternatives({
-        barcode: currentPriceResult.barcode,
-        productName: currentPriceResult.productName,
-        categoryKey: categoryKey as AlternativeCategoryKey,
-        productGroupKey,
-        price: currentPriceResult.price,
-        rafScore: currentPriceResult.rafScore?.score ?? null,
-        healthScore: currentPriceResult.healthScore?.score ?? null,
-        contentScore: currentPriceResult.contentScore?.score ?? null,
-        sustainabilityScore: currentPriceResult.sustainability?.score ?? null,
-        limit: 2,
-      })
+      .fetchCatalogAlternatives({ barcode, limit: 20 })
       .then((response) => {
         if (!isMounted) return;
-        setAlternativeRecommendations(response.recommendations);
+        setCatalogAlternatives(response);
       })
       .catch(() => {
         if (!isMounted) return;
-        setAlternativeRecommendations([]);
+        setCatalogAlternatives({ currentProduct: null, candidates: [] });
       });
 
     return () => {
@@ -301,40 +281,6 @@ export default function ProductResultScreen() {
   const displayImageUrl = isBackendBarcodeLoading
     ? null
     : priceResolution?.result.imageUrl ?? result.imageUrl ?? capturedPhotoUri ?? null;
-  const currentProductGroupKey = priceResolution?.result
-    ? getTransitionSafeProductGroupKey(priceResolution.result)
-    : null;
-
-  const visibleAlternativeRecommendations = useMemo(
-    () =>
-      alternativeRecommendations.filter((recommendation) => {
-        const candidateProductGroupKey = getTransitionSafeProductGroupKey(recommendation.candidate);
-
-        if (!currentProductGroupKey || !candidateProductGroupKey) {
-          return false;
-        }
-
-        if (candidateProductGroupKey !== currentProductGroupKey) {
-          return false;
-        }
-
-        const candidateSignals = recommendation.candidate.signals;
-        const candidateRisk = evaluateProductRisks({
-          name: recommendation.candidate.productName,
-          allergens: candidateSignals?.allergens ?? [],
-          additives: candidateSignals?.additives ?? [],
-          hasAdditives: (candidateSignals?.additives ?? []).length > 0,
-          novaGroup: candidateSignals?.novaGroup ?? null,
-          nutriScore: candidateSignals?.nutriScoreGrade ?? null,
-          userProfile,
-        });
-
-        return !candidateRisk.warnings.some((warning) => CRITICAL_ALLERGEN_CODES.includes(warning.code));
-      }),
-    [alternativeRecommendations, currentProductGroupKey, userProfile],
-  );
-
-  const topAlternativeRecommendation = visibleAlternativeRecommendations[0] ?? null;
   const priceResult = priceResolution?.result ?? null;
   const rafScore = priceResult?.rafScore ?? null;
   const healthScore = priceResult?.healthScore ?? null;
@@ -394,9 +340,6 @@ export default function ProductResultScreen() {
       priceResult?.rafScore?.status === 'unavailable' &&
       (priceResult?.price ?? null) === null) ||
     (!isPriceLoading && hasNoIdentitySignal);
-  const shouldShowAlternativeUnavailableNotice = Boolean(
-    !isPriceLoading && priceResult && !isUnknownProduct && !topAlternativeRecommendation,
-  );
 
   // Ürün yerel OFF-TR katalogundan geldiyse (catalogAllergenData dolu), banner
   // arama/sepetle AYNI birleştirme çekirdeğini kullanır (getCatalogAllergenChipStatus'u
@@ -416,6 +359,21 @@ export default function ProductResultScreen() {
   // P2 invariant: skor bandı, profille çakışan alerjenin ÜSTÜNDE bir hüküm kelimesi göstermez.
   const isAllergenConflict =
     allergenBannerData.criticalMatches.length > 0 || (allergenBannerData.displayInfo?.isConflict ?? false);
+
+  // Alternatifler: profil eleme BURADA yapılır (profil cihazdan çıkmaz) —
+  // backend yalnız aynı grup içindeki, mevcut üründen düşük puanlı olmayan
+  // ham adayları döner (bkz. price/alternatives/catalogAlternatives.ts).
+  const alternativeSections = useMemo(
+    () =>
+      buildAlternativeSections({
+        currentHasConflict: isAllergenConflict,
+        currentScore: catalogAlternatives.currentProduct?.rafScore.score ?? null,
+        currentScoreCoverageKey: catalogAlternatives.currentProduct?.scoreCoverageKey ?? '',
+        candidates: catalogAlternatives.candidates,
+        userProfile,
+      }),
+    [catalogAlternatives, isAllergenConflict, userProfile],
+  );
 
   const resolvedGroupKeyForCart = priceResult ? getTransitionSafeProductGroupKey(priceResult) : null;
   const cartInput =
@@ -592,15 +550,11 @@ export default function ProductResultScreen() {
             />
           </CollapsibleSection>
 
-          <CollapsibleSection
-            title="Alternatifler"
-            summary={getAlternativesSummary(Boolean(topAlternativeRecommendation))}
-          >
-            <AlternativesSection
-              topRecommendation={topAlternativeRecommendation}
-              shouldShowUnavailableNotice={shouldShowAlternativeUnavailableNotice}
-            />
-          </CollapsibleSection>
+          {alternativeSections.totalCount > 0 ? (
+            <CollapsibleSection title="Alternatifler" summary={getAlternativesSummary(alternativeSections.totalCount)}>
+              <AlternativesSection sections={alternativeSections.sections} userProfile={userProfile} />
+            </CollapsibleSection>
+          ) : null}
         </View>
 
         <FooterSection

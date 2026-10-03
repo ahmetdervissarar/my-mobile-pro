@@ -30,7 +30,7 @@ assert.equal(getPriceSummary(false, true), 'Yükleniyor');
 assert.equal(getPriceSummary(false, false), 'Veri yok');
 assert.equal(getPriceSummary(true, false), null);
 
-assert.equal(getAlternativesSummary(false), 'Yok');
-assert.equal(getAlternativesSummary(true), null);
+assert.equal(getAlternativesSummary(0), null);
+assert.equal(getAlternativesSummary(3), '3 seçenek');
 
 console.log('SECTION_SUMMARIES_SMOKE_OK');

@@ -1,16 +1,7 @@
 import type { CatalogAllergenData, CatalogNova, CatalogNutriScore, CatalogProduct } from '../catalog/catalog.js';
 import { getCatalog } from '../catalog/catalog.js';
 import { PRODUCT_GROUP_REGISTRY } from '../price/productGroups/registry.js';
-import { productFactsFromCatalog } from '../price/productFacts/catalogAdapter.js';
-import {
-  productFactsToContentScoreInput,
-  productFactsToHealthScoreInput,
-  productFactsToSustainabilityInput,
-} from '../price/productFacts/adapters.js';
-import { calculateContentScore } from '../price/contentScore/index.js';
-import { calculateHealthScore } from '../price/healthScore/index.js';
-import { calculateSustainabilityScore } from '../price/sustainability/index.js';
-import { calculateRafScore } from '../price/rafScore/index.js';
+import { getCatalogRafScore } from '../price/rafScore/index.js';
 import type { RafScoreResult } from '../price/rafScore/index.js';
 
 export type SearchSuggestion = ProductGroupSearchSuggestion | ProductSearchSuggestion;
@@ -51,43 +42,13 @@ export interface ProductSearchSuggestion {
   rafScore?: RafScoreResult;
 }
 
-let cachedCatalogLoadedAt: string | null = null;
-const rafScoreCacheByProductId = new Map<string, RafScoreResult>();
-
 /**
- * Bellekte, katalog yüklendiği sürece tek seferlik hesaplanır (bkz. görev
- * koşulu: "gerekirse katalog yüklemesinde bir kez hesaplanıp bellekte
- * tutulsun"). Girdiler (sağlık/içerik/sürdürülebilirlik) yalnızca katalog
- * verisine bağlıdır, çalışma anında değişmez — bu yüzden güvenle
- * önbelleklenebilir. Katalog yeniden yüklenirse (loadedAt değişirse) önbellek
- * temizlenir.
+ * Alternatif önerisi görevi onayı: tekil hesaplayıcı+önbellek artık
+ * price/rafScore/catalogRafScore.ts'te paylaşılır (bkz. o dosyadaki yorum —
+ * bu fonksiyon önceden burada özel/kopya olarak tanımlıydı).
  */
 function getRafScoreForProduct(product: CatalogProduct): RafScoreResult | undefined {
-  const catalog = getCatalog();
-  if (cachedCatalogLoadedAt !== catalog.loadedAt) {
-    rafScoreCacheByProductId.clear();
-    cachedCatalogLoadedAt = catalog.loadedAt;
-  }
-
-  const cached = rafScoreCacheByProductId.get(product.productId);
-  if (cached) return cached;
-
-  const facts = productFactsFromCatalog(product.productId);
-  if (!facts) return undefined;
-
-  const healthScore = calculateHealthScore(productFactsToHealthScoreInput(facts));
-  const contentScore = calculateContentScore(productFactsToContentScoreInput(facts));
-  const sustainabilityScore = calculateSustainabilityScore(productFactsToSustainabilityInput(facts));
-
-  const rafScore = calculateRafScore({
-    priceScore: null,
-    healthScore: healthScore.score,
-    contentScore: contentScore.score,
-    sustainabilityScore: sustainabilityScore.score,
-  });
-
-  rafScoreCacheByProductId.set(product.productId, rafScore);
-  return rafScore;
+  return getCatalogRafScore(product)?.rafScore;
 }
 
 export interface SearchSuggestResponse {
