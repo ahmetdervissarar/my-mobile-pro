@@ -2,7 +2,30 @@ import { router, Tabs } from 'expo-router';
 import { Text, View } from 'react-native';
 
 import { useCartItemCount } from '../../src/state/cartStore';
+import { clearUnsavedProfileChanges, interceptIfDirty } from '../../src/userProfile/unsavedProfileChangesGuard';
 import { MIN_TOUCH_TARGET, radii, useTheme } from '../../src/ui/theme';
+
+/**
+ * Cihaz testi (feat/catalog-alternatives), madde 3: profil alt ekranları
+ * (alerjen/kronik/sağlık tercihi) bu Tabs navigatörünün href:null gizli
+ * sekmeleri — sekme çubuğundan başka bir sekmeye dokunmak React
+ * Navigation'da ekranı KALDIRMAZ, yalnız odağı değiştirir, bu yüzden o
+ * ekranların kendi 'beforeRemove' tabanlı uyarısı hiç tetiklenmezdi. Bu
+ * yardımcı, her "gerçek" sekmenin tabPress'ini keserek aynı uyarıyı burada
+ * da gösterir; onaylanırsa hedef sekmeye NAVİGE EDER (varsayılan tabPress
+ * davranışının yaptığını elle tekrarlar).
+ */
+function createUnsavedProfileGuardListeners(onProceed: () => void) {
+  return {
+    tabPress: (event: { preventDefault: () => void }) => {
+      const intercepted = interceptIfDirty(() => {
+        clearUnsavedProfileChanges();
+        onProceed();
+      });
+      if (intercepted) event.preventDefault();
+    },
+  };
+}
 
 function TabGlyph({ glyph, focused }: { glyph: string; focused: boolean }) {
   const { colors } = useTheme();
@@ -61,6 +84,7 @@ export default function TabsLayout() {
           tabBarAccessibilityLabel: 'Ana sayfa',
           tabBarIcon: ({ focused }) => <TabGlyph glyph="⌂" focused={focused} />,
         }}
+        listeners={createUnsavedProfileGuardListeners(() => router.navigate('/'))}
       />
       <Tabs.Screen
         name="search"
@@ -69,6 +93,7 @@ export default function TabsLayout() {
           tabBarAccessibilityLabel: 'Ürün ara',
           tabBarIcon: ({ focused }) => <TabGlyph glyph="⌕" focused={focused} />,
         }}
+        listeners={createUnsavedProfileGuardListeners(() => router.navigate('/search'))}
       />
       <Tabs.Screen
         name="scan"
@@ -95,7 +120,11 @@ export default function TabsLayout() {
         listeners={{
           tabPress: (event) => {
             event.preventDefault();
-            router.push('/barcode-scan');
+            const intercepted = interceptIfDirty(() => {
+              clearUnsavedProfileChanges();
+              router.push('/barcode-scan');
+            });
+            if (!intercepted) router.push('/barcode-scan');
           },
         }}
       />
@@ -111,6 +140,7 @@ export default function TabsLayout() {
             </View>
           ),
         }}
+        listeners={createUnsavedProfileGuardListeners(() => router.navigate('/basket'))}
       />
       <Tabs.Screen
         name="profile"
@@ -119,6 +149,7 @@ export default function TabsLayout() {
           tabBarAccessibilityLabel: 'Profilim',
           tabBarIcon: ({ focused }) => <TabGlyph glyph="◍" focused={focused} />,
         }}
+        listeners={createUnsavedProfileGuardListeners(() => router.navigate('/profile'))}
       />
       <Tabs.Screen
         name="product-result"
