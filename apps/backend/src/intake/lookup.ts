@@ -12,7 +12,7 @@
 import { getCatalog } from '../catalog/catalog.js';
 import { isValidGtin } from '../tools/offTurkey/normalize.js';
 
-import { findSubmissionByBarcode } from './db.js';
+import { abandonSubmission, findSubmissionByBarcode, INTAKE_REOPEN_AFTER_MS } from './db.js';
 
 export type IntakePhotoSlot = 'front' | 'ingredients' | 'nutrition';
 
@@ -44,19 +44,39 @@ function neededSlotsFromMissingFields(missingFields: string[]): IntakePhotoSlot[
   return slots;
 }
 
-export function evaluateBarcodeLookup(barcode: string): IntakeLookupResult {
+/**
+ * volunteerCode: "aynı gönüllü tekrar denediğinde yeniden açılsın" kuralı
+ * için gerekli — hangi gönüllünün lookup yaptığını bilmeden bu karar
+ * verilemez (bkz. görev onayı, madde 4b).
+ */
+export function evaluateBarcodeLookup(barcode: string, volunteerCode: string): IntakeLookupResult {
   if (!isValidGtin(barcode)) {
     return { status: 'invalid_gtin', neededSlots: [] };
   }
 
   const existingSubmission = findSubmissionByBarcode(barcode);
   if (existingSubmission) {
-    return {
-      status: 'duplicate',
-      neededSlots: [],
-      collectedAt: existingSubmission.createdAt,
-      volunteerCode: existingSubmission.volunteerCode,
-    };
+    const isSubmissionComplete = existingSubmission.requestedSlots.every((slot) =>
+      existingSubmission.receivedSlots.includes(slot),
+    );
+    const ageMs = Date.now() - new Date(existingSubmission.createdAt).getTime();
+    const sameVolunteer = existingSubmission.volunteerCode === volunteerCode;
+    const reopenEligible = !isSubmissionComplete && (sameVolunteer || ageMs >= INTAKE_REOPEN_AFTER_MS);
+
+    if (!reopenEligible) {
+      return {
+        status: 'duplicate',
+        neededSlots: [],
+        collectedAt: existingSubmission.createdAt,
+        volunteerCode: existingSubmission.volunteerCode,
+      };
+    }
+
+    // Yarım kalan kayıt 2 saati geçmiş YA DA aynı gönüllü tekrar deniyor —
+    // barkod kilidi kalıcı olmasın (bkz. görev onayı, madde 4b). Eski kayıt
+    // SİLİNMEZ: "terk edilmiş" işaretlenir, fotoğrafları ve admin panelindeki
+    // görünürlüğü korunur; aşağıda yeni bir kayıt için yol açılır.
+    abandonSubmission(existingSubmission.id);
   }
 
   const catalogProduct = getCatalog().byId.get(barcode);

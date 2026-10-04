@@ -235,7 +235,7 @@
     const tbody = el('recentTable').querySelector('tbody');
 
     if (recentSubmissionsCache.length === 0) {
-      renderEmptyRow(tbody, 7, 'Henüz kayıt yok.');
+      renderEmptyRow(tbody, 8, 'Henüz kayıt yok.');
       return;
     }
 
@@ -246,6 +246,10 @@
             ? `Yerel — ${submission.marketChainOther || '?'}`
             : labelFor(marketChainOptions, submission.marketChain);
         const photoCount = submission.photos.filter((photo) => photo.filename).length;
+        // Barkodu yeniden açılmış, yarım kalan bir kayıt — fotoğrafları
+        // SİLİNMEDİ, yalnız bu kayıt yerine yeni bir kayıt açıldı (bkz. görev
+        // onayı, madde 4b).
+        const statusLabel = submission.abandonedAt ? 'Terk edilmiş' : '';
 
         return `<tr data-clickable data-index="${index}">
           <td>${escapeHtml(submission.barcode)}</td>
@@ -255,6 +259,7 @@
           <td>${escapeHtml(submission.city)}</td>
           <td>${formatDateTime(submission.createdAt)}</td>
           <td>${photoCount}</td>
+          <td>${escapeHtml(statusLabel)}</td>
         </tr>`;
       })
       .join('');

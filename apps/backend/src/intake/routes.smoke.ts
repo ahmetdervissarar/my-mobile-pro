@@ -74,6 +74,8 @@ const ALREADY_COMPLETE_GTIN = '8690504000037';
 const MISSING_INGREDIENTS_ONLY_GTIN = '8690504000044';
 const NEW_GTIN = '8690504000013';
 const LOCAL_MARKET_GTIN = '8690504000051';
+const DIFFERENT_VOLUNTEER_DUPLICATE_GTIN = '8690504000006';
+const SAME_VOLUNTEER_REOPEN_GTIN = '8690504000020';
 // Submissions bloğunda bir kez doldurulur, admin bloğu foto önizlemeyi
 // GERÇEK bir submissionId ile test edebilsin diye modül seviyesinde tutulur.
 let frontPhotoSubmissionId = '';
@@ -297,14 +299,45 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
     assert.deepEqual(createdBody.requestedSlots, ['front', 'ingredients', 'nutrition']);
     const submissionId = createdBody.submissionId;
 
-    // Aynı barkod tekrar gönderilirse → 409 duplicate_barcode.
-    const duplicate = await fetch(`${baseUrl}/api/intake/submissions`, {
+    // Aynı barkod BAŞKA bir gönüllü tarafından tekrar gönderilirse → 409
+    // duplicate_barcode (yarım kalan kayıt kilidi yalnız SAHİBİNE açılır,
+    // bkz. görev onayı, madde 4b).
+    const otherVolunteerHeaders2 = { [VOLUNTEER_CODE_HEADER]: 'MRS-02', [VOLUNTEER_KEY_HEADER]: 'key-2' };
+    const firstForDuplicateCheck = await fetch(`${baseUrl}/api/intake/submissions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders },
-      body: JSON.stringify(validSubmissionBody),
+      body: JSON.stringify({ ...validSubmissionBody, barcode: DIFFERENT_VOLUNTEER_DUPLICATE_GTIN }),
     });
-    assert.equal(duplicate.status, 409);
-    assert.equal(((await duplicate.json()) as { error: string }).error, 'duplicate_barcode');
+    assert.equal(firstForDuplicateCheck.status, 201);
+
+    const duplicateOtherVolunteer = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...otherVolunteerHeaders2 },
+      body: JSON.stringify({ ...validSubmissionBody, barcode: DIFFERENT_VOLUNTEER_DUPLICATE_GTIN }),
+    });
+    assert.equal(duplicateOtherVolunteer.status, 409);
+    assert.equal(((await duplicateOtherVolunteer.json()) as { error: string }).error, 'duplicate_barcode');
+
+    // Aynı barkod AYNI gönüllü tarafından tekrar gönderilirse → yarım kalan
+    // eski kayıt "terk edilmiş" işaretlenir, barkod hemen yeniden açılır →
+    // 201 (409 DEĞİL — bkz. görev onayı, madde 4b).
+    const firstForReopenCheck = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ ...validSubmissionBody, barcode: SAME_VOLUNTEER_REOPEN_GTIN }),
+    });
+    assert.equal(firstForReopenCheck.status, 201);
+
+    const reopenedBySameVolunteer = await fetch(`${baseUrl}/api/intake/submissions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ ...validSubmissionBody, barcode: SAME_VOLUNTEER_REOPEN_GTIN }),
+    });
+    assert.equal(
+      reopenedBySameVolunteer.status,
+      201,
+      'aynı gönüllü tekrar denediğinde barkod kilitli kalmamalı, yeniden açılmalı',
+    );
 
     // Gerçek bir JPEG yükleme → kabul edilir, receivedSlots güncellenir.
     const uploadFront = await fetch(`${baseUrl}/api/intake/submissions/${submissionId}/photos/front`, {

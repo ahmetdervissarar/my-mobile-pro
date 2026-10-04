@@ -13,7 +13,7 @@ import { join } from 'node:path';
 import { loadCatalog } from '../catalog/catalog.js';
 import type { OffImportRecord } from '../tools/offTurkey/normalize.js';
 
-import { createSubmission, __resetIntakeDbForTesting } from './db.js';
+import { createSubmission, markSlotReceived, __resetIntakeDbForTesting } from './db.js';
 import { evaluateBarcodeLookup } from './lookup.js';
 
 const BASE_PROVENANCE: OffImportRecord['provenance'] = {
@@ -98,14 +98,14 @@ __resetIntakeDbForTesting(':memory:');
 
 // ── Geçersiz GTIN (checksum başarısız) ────────────────────────────────────
 {
-  const result = evaluateBarcodeLookup(INVALID_GTIN);
+  const result = evaluateBarcodeLookup(INVALID_GTIN, 'MRS-01');
   assert.equal(result.status, 'invalid_gtin');
   assert.deepEqual(result.neededSlots, []);
 }
 
 // ── Katalogda var, verisi tam → foto istenmez ────────────────────────────
 {
-  const result = evaluateBarcodeLookup(COMPLETE_GTIN);
+  const result = evaluateBarcodeLookup(COMPLETE_GTIN, 'MRS-01');
   assert.equal(result.status, 'complete');
   assert.deepEqual(result.neededSlots, []);
   assert.equal(result.productName, 'Test Ürünü');
@@ -113,19 +113,19 @@ __resetIntakeDbForTesting(':memory:');
 
 // ── Katalogda var ama eksik: içindekiler + besin değerleri ───────────────
 {
-  const result = evaluateBarcodeLookup(MISSING_FIELDS_GTIN);
+  const result = evaluateBarcodeLookup(MISSING_FIELDS_GTIN, 'MRS-01');
   assert.equal(result.status, 'missing_fields');
   assert.deepEqual(result.neededSlots, ['ingredients', 'nutrition'], "'front' istenmemeli (imageUrl zaten var)");
 }
 
 // ── Katalogda hiç yok → yeni ürün, 3 fotoğraf ────────────────────────────
 {
-  const result = evaluateBarcodeLookup(NOT_IN_CATALOG_GTIN);
+  const result = evaluateBarcodeLookup(NOT_IN_CATALOG_GTIN, 'MRS-01');
   assert.equal(result.status, 'new');
   assert.deepEqual(result.neededSlots, ['front', 'ingredients', 'nutrition']);
 }
 
-// ── Bu araçla zaten toplanmış → mükerrer, tarih+gönüllü kodu döner ───────
+// ── Bu araçla zaten toplanmış (BAŞKA gönüllü, taze kayıt) → mükerrer ─────
 {
   createSubmission({
     barcode: DUPLICATE_GTIN,
@@ -138,7 +138,7 @@ __resetIntakeDbForTesting(':memory:');
     clientCreatedAt: new Date().toISOString(),
   });
 
-  const result = evaluateBarcodeLookup(DUPLICATE_GTIN);
+  const result = evaluateBarcodeLookup(DUPLICATE_GTIN, 'MRS-02');
   assert.equal(result.status, 'duplicate');
   assert.deepEqual(result.neededSlots, []);
   assert.equal(result.volunteerCode, 'MRS-01');
@@ -147,6 +147,79 @@ __resetIntakeDbForTesting(':memory:');
   // Mükerrer kontrolü katalogdan ÖNCE gelir: bu barkod katalogda olsa bile
   // (burada değil ama prensipte) yine "duplicate" dönmeli — zaten dönüyor
   // çünkü findSubmissionByBarcode katalog kontrolünden önce çağrılıyor.
+}
+
+// ── Tüm slotları gelmiş (tamamlanmış) kayıt → aynı gönüllü de olsa kilitli
+// kalır (bkz. görev onayı, madde 4b: yalnız YARIM KALAN kayıtlar yeniden açılır) ─
+const COMPLETED_SUBMISSION_GTIN = '8690504000068';
+{
+  const submission = createSubmission({
+    barcode: COMPLETED_SUBMISSION_GTIN,
+    volunteerCode: 'MRS-01',
+    marketChain: 'migros',
+    city: 'istanbul',
+    category: 'atistirmalik',
+    status: 'new',
+    requestedSlots: ['front'],
+    clientCreatedAt: new Date().toISOString(),
+  });
+  markSlotReceived(submission.id, 'front');
+
+  const resultSameVolunteer = evaluateBarcodeLookup(COMPLETED_SUBMISSION_GTIN, 'MRS-01');
+  assert.equal(resultSameVolunteer.status, 'duplicate', 'tamamlanmış kayıt aynı gönüllü için de kilitli kalmalı');
+}
+
+// ── Yarım kalan kayıt + AYNI gönüllü tekrar dener → barkod hemen yeniden
+// açılır, eski kayıt silinmez ("terk edilmiş" işaretlenir) ───────────────
+const SAME_VOLUNTEER_RETRY_GTIN = '8690504000075';
+{
+  const firstAttempt = createSubmission({
+    barcode: SAME_VOLUNTEER_RETRY_GTIN,
+    volunteerCode: 'MRS-01',
+    marketChain: 'migros',
+    city: 'istanbul',
+    category: 'atistirmalik',
+    status: 'new',
+    requestedSlots: ['front', 'ingredients', 'nutrition'],
+    clientCreatedAt: new Date().toISOString(),
+  });
+  markSlotReceived(firstAttempt.id, 'front'); // yarım kalmış — ingredients/nutrition eksik
+
+  const retryResult = evaluateBarcodeLookup(SAME_VOLUNTEER_RETRY_GTIN, 'MRS-01');
+  assert.equal(retryResult.status, 'new', "aynı gönüllü tekrar denediğinde barkod 'yeni' gibi yeniden açılmalı");
+  assert.deepEqual(retryResult.neededSlots, ['front', 'ingredients', 'nutrition']);
+
+  // Başka bir gönüllü hâlâ kilitli görür — eski kayıt "terk edilmiş" olsa da
+  // bu, SADECE aynı gönüllünün erişimini açar.
+  const otherVolunteerResult = evaluateBarcodeLookup(SAME_VOLUNTEER_RETRY_GTIN, 'MRS-02');
+  assert.equal(otherVolunteerResult.status, 'new', 'eski kayıt terk edildiği için barkod artık serbest');
+}
+
+// ── Yarım kalan kayıt + 2 SAAT geçmiş (FARKLI gönüllü) → barkod yeniden
+// açılır — gerçek saat beklemek yerine Date.now() ileri sarılır ─────────
+const STALE_GTIN = '8690504000082';
+{
+  const submission = createSubmission({
+    barcode: STALE_GTIN,
+    volunteerCode: 'MRS-01',
+    marketChain: 'migros',
+    city: 'istanbul',
+    category: 'atistirmalik',
+    status: 'new',
+    requestedSlots: ['front'],
+    clientCreatedAt: new Date().toISOString(),
+  });
+  assert.ok(submission.id);
+
+  const realNow = Date.now;
+  Date.now = () => realNow() + 2 * 60 * 60 * 1000 + 1_000;
+  try {
+    const result = evaluateBarcodeLookup(STALE_GTIN, 'MRS-02');
+    assert.equal(result.status, 'new', '2 saat geçtikten sonra FARKLI bir gönüllü de barkodu yeniden açabilmeli');
+    assert.deepEqual(result.neededSlots, ['front', 'ingredients', 'nutrition']);
+  } finally {
+    Date.now = realNow;
+  }
 }
 
 rmSync(fixtureDir, { recursive: true, force: true });

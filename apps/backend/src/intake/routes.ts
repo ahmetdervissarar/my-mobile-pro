@@ -101,7 +101,7 @@ export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Rou
       return;
     }
 
-    const result = evaluateBarcodeLookup(barcode);
+    const result = evaluateBarcodeLookup(barcode, req.intakeVolunteerCode!);
 
     if (result.status === 'invalid_gtin') {
       res.status(400).json({ ok: false, error: 'invalid_gtin' });
@@ -142,7 +142,7 @@ export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Rou
 
     const marketChainOther = marketChain === LOCAL_MARKET_CHAIN_KEY ? marketChainOtherRaw : null;
 
-    const lookupResult = evaluateBarcodeLookup(barcode);
+    const lookupResult = evaluateBarcodeLookup(barcode, volunteerCode);
 
     if (lookupResult.status === 'invalid_gtin') {
       res.status(400).json({ ok: false, error: 'invalid_gtin' });
@@ -291,6 +291,9 @@ export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Rou
         city: submission.city,
         category: submission.category,
         createdAt: submission.createdAt,
+        // Terk edilmiş (barkodu yeniden açılmış) kayıtlar listeden gizlenmez —
+        // yalnız bu alanla işaretlenir (bkz. görev onayı, madde 4b).
+        abandonedAt: submission.abandonedAt,
         photos,
       };
     });
@@ -331,6 +334,7 @@ export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Rou
       submission.receivedSlots.join('|'),
       submission.createdAt,
       submission.clientCreatedAt,
+      submission.abandonedAt ?? '',
     ]);
     const csv = buildCsv(
       [
@@ -345,6 +349,7 @@ export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Rou
         'received_slots',
         'created_at',
         'client_created_at',
+        'abandoned_at',
       ],
       rows,
     );

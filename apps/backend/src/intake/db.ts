@@ -75,6 +75,10 @@ export interface IntakeSubmissionRow {
   receivedSlots: string[];
   createdAt: string;
   clientCreatedAt: string;
+  /** Dolu ise bu kayıt "terk edilmiş" sayılır: barkod yeniden açılmıştır ama
+   * fotoğraflar SİLİNMEMİŞTİR — yalnız admin panelinde geçmiş olarak görünür
+   * (bkz. görev onayı, madde 4b: "veri kaybı olmasın"). */
+  abandonedAt: string | null;
 }
 
 export interface CreateSubmissionInput {
@@ -126,6 +130,9 @@ export interface AdminStats {
   dailyTrend: { date: string; count: number }[];
 }
 
+/** Yarım kalan bir kayıt bu süre sonunda aynı barkod için yeniden açılır (bkz. görev onayı, madde 4b). */
+export const INTAKE_REOPEN_AFTER_MS = 2 * 60 * 60 * 1000;
+
 let db: DatabaseSync | null = null;
 
 function todayStartIso(): string {
@@ -148,6 +155,7 @@ function rowToSubmission(row: Record<string, unknown>): IntakeSubmissionRow {
     receivedSlots: JSON.parse(row.received_slots as string) as string[],
     createdAt: row.created_at as string,
     clientCreatedAt: row.client_created_at as string,
+    abandonedAt: (row.abandoned_at as string | null) ?? null,
   };
 }
 
@@ -175,7 +183,7 @@ export function initIntakeDb(path: string): void {
     PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS submissions (
       id TEXT PRIMARY KEY,
-      barcode TEXT NOT NULL UNIQUE,
+      barcode TEXT NOT NULL,
       volunteer_code TEXT NOT NULL,
       market_chain TEXT NOT NULL,
       market_chain_other TEXT,
@@ -185,7 +193,8 @@ export function initIntakeDb(path: string): void {
       requested_slots TEXT NOT NULL,
       received_slots TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL,
-      client_created_at TEXT NOT NULL
+      client_created_at TEXT NOT NULL,
+      abandoned_at TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_submissions_volunteer ON submissions(volunteer_code);
     CREATE INDEX IF NOT EXISTS idx_submissions_created_at ON submissions(created_at);
@@ -200,6 +209,50 @@ export function initIntakeDb(path: string): void {
   if (!columns.some((column) => column.name === 'market_chain_other')) {
     instance.exec('ALTER TABLE submissions ADD COLUMN market_chain_other TEXT');
   }
+
+  // Şema göçü: eski tablolarda barcode sütun-seviyesi UNIQUE idi — bu, yarım
+  // kalan bir kaydı asla silmeden barkodu yeniden açmayı imkânsız kılıyordu
+  // (bkz. görev onayı, madde 4b). SQLite ALTER TABLE ile sütun kısıtlaması
+  // kaldıramaz; tablo yeniden kurulur, VERİ KAYBI OLMADAN kopyalanır, eski
+  // UNIQUE yerine "yalnız terk edilmemiş kayıtlar arasında" geçerli kısmi bir
+  // UNIQUE INDEX konur. Yeni kurulan bir veritabanında bu dal hiç çalışmaz
+  // (sütun seviyesinde UNIQUE hiç yoktur — bkz. yukarıdaki CREATE TABLE).
+  const tableDef = instance
+    .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'submissions'")
+    .get() as { sql: string } | undefined;
+  if (tableDef && /barcode\s+TEXT\s+NOT\s+NULL\s+UNIQUE/i.test(tableDef.sql)) {
+    instance.exec(`
+      CREATE TABLE submissions_migrated (
+        id TEXT PRIMARY KEY,
+        barcode TEXT NOT NULL,
+        volunteer_code TEXT NOT NULL,
+        market_chain TEXT NOT NULL,
+        market_chain_other TEXT,
+        city TEXT NOT NULL,
+        category TEXT NOT NULL,
+        status TEXT NOT NULL,
+        requested_slots TEXT NOT NULL,
+        received_slots TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL,
+        client_created_at TEXT NOT NULL,
+        abandoned_at TEXT
+      );
+      INSERT INTO submissions_migrated
+        (id, barcode, volunteer_code, market_chain, market_chain_other, city, category,
+         status, requested_slots, received_slots, created_at, client_created_at, abandoned_at)
+        SELECT id, barcode, volunteer_code, market_chain, market_chain_other, city, category,
+               status, requested_slots, received_slots, created_at, client_created_at, NULL
+        FROM submissions;
+      DROP TABLE submissions;
+      ALTER TABLE submissions_migrated RENAME TO submissions;
+      CREATE INDEX IF NOT EXISTS idx_submissions_volunteer ON submissions(volunteer_code);
+      CREATE INDEX IF NOT EXISTS idx_submissions_created_at ON submissions(created_at);
+    `);
+  }
+
+  instance.exec(
+    'CREATE UNIQUE INDEX IF NOT EXISTS idx_submissions_barcode_active ON submissions(barcode) WHERE abandoned_at IS NULL',
+  );
 
   db = instance;
 }
@@ -259,14 +312,27 @@ export function createSubmission(input: CreateSubmissionInput): IntakeSubmission
   return findSubmissionByBarcode(input.barcode)!;
 }
 
+/** Yalnız AKTİF (terk edilmemiş) kaydı bulur — barkodun şu an kilitli olup olmadığı sorusunun cevabı budur. */
 export function findSubmissionByBarcode(barcode: string): IntakeSubmissionRow | null {
-  const row = requireDb().prepare('SELECT * FROM submissions WHERE barcode = ?').get(barcode);
+  const row = requireDb().prepare('SELECT * FROM submissions WHERE barcode = ? AND abandoned_at IS NULL').get(barcode);
   return row ? rowToSubmission(row as Record<string, unknown>) : null;
 }
 
 export function getSubmissionById(id: string): IntakeSubmissionRow | null {
   const row = requireDb().prepare('SELECT * FROM submissions WHERE id = ?').get(id);
   return row ? rowToSubmission(row as Record<string, unknown>) : null;
+}
+
+/**
+ * Yarım kalan bir kaydı "terk edilmiş" işaretler — SATIR SİLİNMEZ, zaten
+ * yüklenmiş fotoğraflar diskte kalır (bkz. görev onayı, madde 4b). Bu,
+ * barkodun aynı anda yalnızca bir aktif kayıt tarafından kilitlenmesini
+ * sağlayan kısmi UNIQUE INDEX'i (idx_submissions_barcode_active) serbest
+ * bırakır — çağıran taraf (lookup.ts) ardından aynı barkod için yeni bir
+ * kayıt oluşturabilir.
+ */
+export function abandonSubmission(id: string): void {
+  requireDb().prepare('UPDATE submissions SET abandoned_at = ? WHERE id = ?').run(new Date().toISOString(), id);
 }
 
 /** Aynı slot iki kez işaretlenirse idempotent kalır (listeye tekrar eklenmez). */
@@ -283,9 +349,15 @@ export function markSlotReceived(id: string, slot: string): IntakeSubmissionRow 
   return getSubmissionById(id);
 }
 
-/** requestedSlots'un bir kısmı hâlâ receivedSlots'ta yoksa "bekleyen" sayılır. */
+/**
+ * requestedSlots'un bir kısmı hâlâ receivedSlots'ta yoksa "bekleyen" sayılır.
+ * Terk edilmiş kayıtlar HARİÇ — bunlar aynı barkod için açılan yeni bir kayıt
+ * tarafından zaten devralınmıştır, tekrar "bekleyen" olarak görünmemeli
+ * (bkz. görev onayı, madde 4b). Yine de silinmezler; /admin/recent ve CSV
+ * dışa aktarımda görünür kalırlar.
+ */
 export function getPendingSubmissions(): IntakeSubmissionRow[] {
-  const rows = requireDb().prepare('SELECT * FROM submissions ORDER BY created_at DESC').all();
+  const rows = requireDb().prepare('SELECT * FROM submissions WHERE abandoned_at IS NULL ORDER BY created_at DESC').all();
   return (rows as Record<string, unknown>[])
     .map(rowToSubmission)
     .filter((submission) => submission.requestedSlots.some((slot) => !submission.receivedSlots.includes(slot)));
