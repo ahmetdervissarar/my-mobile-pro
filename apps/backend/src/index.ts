@@ -4,7 +4,7 @@ import express from 'express';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { loadCatalog } from './catalog/catalog.js';
+import { getCatalog, loadCatalog } from './catalog/catalog.js';
 import { ManualBetaPriceProvider } from './price/providers/manualBetaPriceProvider.js';
 import { PriceProviderService } from './price/priceProviderService.js';
 import { createPriceRouter } from './routes/priceRoutes.js';
@@ -19,6 +19,24 @@ const PORT = Number(process.env.PORT ?? 3001);
 
 const catalogPath = resolve(fileURLToPath(new URL('.', import.meta.url)), '../data/off-tr/products.jsonl');
 loadCatalog(catalogPath);
+
+// Katalog boşsa (products.jsonl temiz sunucuya hiç kopyalanmadıysa veya
+// bozuksa) uygulama SESSİZCE canlı OFF yoluna düşüyordu — açılışta loadCatalog
+// zaten bir satır uyarı basıyor ama bu, günlüklerde kolayca kaybolan tek bir
+// satırdı. Burada aynı durumu AYRICA yüksek görünürlükte tekrarlıyoruz;
+// çalıştırma talimatı için bkz. README.md "Katalog verisini sunucuya taşıma"
+// (bkz. görev onayı, madde 5c).
+if (getCatalog().products.length === 0) {
+  console.warn('='.repeat(72));
+  console.warn('[catalog] UYARI: katalog BOŞ — hiçbir ürün yüklenmedi.');
+  console.warn(`[catalog] Beklenen dosya: ${catalogPath}`);
+  console.warn('[catalog] Bu dosya repoya commit edilmez (ODbL lisans yükümlülüğü —');
+  console.warn('[catalog] bkz. README.md "Katalog verisini sunucuya taşıma"); sunucuya');
+  console.warn('[catalog] ELLE kopyalanmalıdır. Kopyalanana kadar /api/price/resolve');
+  console.warn('[catalog] canlı OpenFoodFacts sorgusuna düşer ve yanıtında');
+  console.warn('[catalog] catalogStatus.empty=true döner.');
+  console.warn('='.repeat(72));
+}
 
 app.use(cors());
 app.use(express.json());
@@ -36,6 +54,10 @@ app.get('/health', (_req, res) => {
     ok: true,
     service: 'rafskoru-backend',
     timestamp: new Date().toISOString(),
+    // Katalog boş başlarsa (products.jsonl eksik) uygulama sessizce canlı
+    // OFF'a düşer — bunu /health'te açıkça görünür kılar (bkz. görev onayı,
+    // madde 5b).
+    catalogProductCount: getCatalog().products.length,
   });
 });
 
