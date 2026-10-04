@@ -240,7 +240,14 @@ function buildLiveOffAllergenData(
   };
 }
 
-function hasMeaningfulFoodFacts(facts: ProductFacts): boolean {
+/**
+ * "Gerçek bir sinyal var mı" kapısı — ikili isComplete'ten FARKLI: bir
+ * alerjen/içindekiler kaydı olan ama başka alanları (ör. nutriScore) eksik
+ * bir ürünü de GEÇİRİR. priceProviderService.ts'in canlı OFF yolu bunu
+ * isComplete yerine kullanmalı (bkz. görev onayı, madde 6) — aksi halde
+ * alerjen uyarısı üretebilecek kısmi kayıtlar sessizce atılır.
+ */
+export function hasMeaningfulFoodFacts(facts: ProductFacts): boolean {
   return (
     !!facts.ingredientsText?.trim() ||
     (facts.allergens?.length ?? 0) > 0 ||

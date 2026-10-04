@@ -10,8 +10,10 @@ import {
   cartItemToBasketItem,
   clearCart,
   removeFromCart,
+  retryCartHydration,
   setCartItemQuantity,
   useCart,
+  useCartHydrateError,
 } from '../../src/state/cartStore';
 import {
   loadUserSensitivityProfile,
@@ -35,6 +37,7 @@ export default function BasketScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const cartItems = useCart();
+  const cartHydrateError = useCartHydrateError();
   const [activeTab, setActiveTab] = useState<BasketTabKey>('score');
   const [evaluation, setEvaluation] = useState<BasketEvaluateResponse | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -120,6 +123,28 @@ export default function BasketScreen() {
   }, [cartItems]);
 
   if (cartItems.length === 0) {
+    // P7 (görev onayı): cihazdaki sepet kaydı okunamadıysa bu "sepetin boş"
+    // DEĞİL — kullanıcıya gerçek durumu göster, yanlışlıkla sepetin
+    // boşaldığını düşünmesin.
+    if (cartHydrateError) {
+      return (
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: colors.bg,
+            padding: spacing.xl,
+            paddingTop: Math.max(insets.top, spacing.xl),
+          }}
+        >
+          <EmptyState
+            title="Sepetin okunamadı"
+            message="Cihazdaki sepet verisi okunamadı. Sepetin boş olmayabilir — tekrar dene."
+            action={<PrimaryButton label="Tekrar dene" onPress={() => void retryCartHydration()} />}
+          />
+        </View>
+      );
+    }
+
     return (
       <View
         style={{
