@@ -3,6 +3,7 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 import { PriceProviderService } from '../price/priceProviderService.js';
 import type { PriceQuery } from '../price/types.js';
 import { loadSeedAlternativeCandidates, normalizeAlternativeProductShape, scoreAlternatives } from '../price/alternatives/index.js';
+import { getCatalogAlternatives } from '../price/alternatives/catalogAlternatives.js';
 import type { SustainabilityCategoryKey } from '../price/sustainability/index.js';
 import type { ManualBetaPriceEntry } from '../price/providers/manualBetaPriceProvider.js';
 import { buildAlternativesBetaQueryEvent, buildPriceResolveBetaQueryEvent, logBetaQueryEvent } from '../price/betaTelemetry/queryEvent.js';
@@ -254,6 +255,28 @@ export function createPriceRouter(
     );
 
     return res.json({ recommendations });
+  });
+
+  /**
+   * Gerçek katalogdan (11k+ ürün), aynı productGroupKey içinden alternatif
+   * önerisi — yukarıdaki /alternatives (seed-candidates.json) ile ayrı,
+   * bağımsız bir yol (bkz. görev onayı: mevcut uç noktaya dokunulmadı).
+   * Alerjen profili eleme BURADA yapılmaz — bu ham veriyi döner, mobil
+   * taraf profiline göre son filtreleme/bölümlemeyi kendisi yapar.
+   */
+  router.get('/alternatives/catalog', (req: Request, res: Response) => {
+    const barcode = typeof req.query.barcode === 'string' ? req.query.barcode.trim() : '';
+
+    if (!barcode) {
+      return res.status(400).json({ error: 'Geçerli bir barcode parametresi gereklidir.' });
+    }
+
+    const result = getCatalogAlternatives({
+      barcode,
+      limit: parseOptionalNumber(req.query.limit),
+    });
+
+    return res.json(result);
   });
 
   router.post('/manual', requireAdminKey, (req: Request, res: Response) => {

@@ -113,6 +113,13 @@ assertNotIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'ucuz');
 assertNotIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'pahalı');
 assertNotIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'çevreye zararlı');
 
+// Cihaz testi: backend'in iç bileşen etiketleri ("İçerik/Alerjen" veya
+// bozuk kodlamalı "Icerik/Alerjen") kullanıcıya HİÇ ham haliyle gösterilmez
+// — bu dosya her zaman getRafScoreComponentLabel ile insan-okur eşlemeden
+// geçirir (bkz. rafScoreExplanation.smoke.ts, componentKey tabanlı test).
+assertNotIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'İçerik/Alerjen');
+assertNotIncludes('rafScoreExplanation.ts', rafScoreExplanation, 'Icerik/Alerjen');
+
 assertIncludes('priceClient.ts', priceClient, 'internal_test');
 assertAnyIncludes('priceClient.ts', priceClient, ['Beta', 'beta']);
 

@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,7 +13,10 @@ import {
   setCartItemQuantity,
   useCart,
 } from '../../src/state/cartStore';
-import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
+import {
+  loadUserSensitivityProfile,
+  subscribeToUserSensitivityProfileChanges,
+} from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import { EmptyState } from '../../src/ui/EmptyState';
 import { PrimaryButton } from '../../src/ui/PrimaryButton';
@@ -69,11 +72,23 @@ export default function BasketScreen() {
     ]);
   };
 
-  useEffect(() => {
-    void loadUserSensitivityProfile()
-      .then(setUserProfile)
-      .catch(() => setUserProfile(emptyUserSensitivityProfile));
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      void loadUserSensitivityProfile()
+        .then((profile) => {
+          if (isActive) setUserProfile(profile);
+        })
+        .catch(() => {
+          if (isActive) setUserProfile(emptyUserSensitivityProfile);
+        });
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
+  useEffect(() => subscribeToUserSensitivityProfileChanges(setUserProfile), []);
 
   useEffect(() => {
     if (cartItems.length === 0) {

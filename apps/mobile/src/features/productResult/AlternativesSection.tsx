@@ -1,69 +1,86 @@
+import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 
-import { formatPriceForDisplay } from '../../price/priceClient';
-import type { AlternativeRecommendation, DataConfidenceLevel } from '../../price/types';
-import { radii, spacing, useTheme } from '../../ui/theme';
-import { getDataConfidenceLabel } from './helpers';
+import type { AlternativeCandidate, AlternativeSection as AlternativeSectionData } from '../alternatives/buildAlternativeSections';
+import { getAllergenBannerDataFromCatalog } from './helpers';
+import { SearchResultRow } from '../search/SearchResultRow';
+import { getSearchCardMetaLine } from '../search/searchCardPresentation';
+import { spacing, useTheme } from '../../ui/theme';
+import type { UserSensitivityProfile } from '../../userProfile/userProfileTypes';
 
 export interface AlternativesSectionProps {
-  topRecommendation: AlternativeRecommendation | null;
-  shouldShowUnavailableNotice: boolean;
+  sections: AlternativeSectionData[];
+  userProfile: UserSensitivityProfile;
 }
 
-/** "Alternatifler" — yalnızca profille çakışmayan, aynı ürün grubundaki aday. */
-export function AlternativesSection({
-  topRecommendation,
-  shouldShowUnavailableNotice,
-}: AlternativesSectionProps) {
+/**
+ * "Alternatifler" — aynı grup içindeki, profille çakışmayan adaylar.
+ * Hiç önerilecek bir şey yoksa bu bileşen DEĞİL, çağıran taraf (product-result.tsx)
+ * bütün bölümü (CollapsibleSection dahil) hiç render etmemeli (bkz. görev
+ * onayı, madde 4: boş "Alternatifler: Yok" kartı kalktı).
+ */
+export function AlternativesSection({ sections, userProfile }: AlternativesSectionProps) {
   const { colors } = useTheme();
-
-  if (!topRecommendation) {
-    if (!shouldShowUnavailableNotice) {
-      return null;
-    }
-
-    return (
-      <Text style={{ fontSize: 13, color: colors.muted }}>
-        Bu ürün grubunda güvenle karşılaştırılabilen bir alternatif bulunamadı.
-      </Text>
-    );
-  }
-
-  const confidenceLabel = getDataConfidenceLabel(
-    topRecommendation.confidenceLevel as DataConfidenceLevel,
-  );
+  const router = useRouter();
 
   return (
-    <View
-      style={{
-        borderRadius: radii.lg,
-        borderWidth: 2,
-        borderColor: colors.citrus,
-        backgroundColor: colors.surface,
-        padding: spacing.lg,
-        gap: 4,
-      }}
-    >
-      <Text style={{ fontSize: 12, fontWeight: '700', color: colors.pine2 }}>
-        {topRecommendation.reasonLabel}
-      </Text>
-      <Text style={{ fontSize: 16, fontWeight: '800', color: colors.ink }}>
-        {topRecommendation.candidate.productName}
-      </Text>
-      <Text style={{ fontSize: 13, fontWeight: '700', color: colors.ink }}>
-        {formatPriceForDisplay(topRecommendation.candidate.price, topRecommendation.candidate.currency)}
-        {' · '}
-        {topRecommendation.candidate.marketName}
-      </Text>
-
-      {topRecommendation.reasons.slice(0, 4).map((reason) => (
-        <Text key={reason} style={{ fontSize: 12.5, color: colors.muted }}>
-          • {reason}
-        </Text>
+    <View style={{ gap: spacing.md }}>
+      {sections.map((section) => (
+        <View key={section.key} style={{ gap: spacing.sm }}>
+          <Text style={{ fontSize: 12.5, fontWeight: '700', color: colors.muted }}>{section.title}</Text>
+          {section.items.map((candidate) => (
+            <AlternativeCard
+              key={candidate.productId}
+              candidate={candidate}
+              userProfile={userProfile}
+              onPress={() => router.push({ pathname: '/product-result', params: { barcode: candidate.productId } })}
+            />
+          ))}
+        </View>
       ))}
+    </View>
+  );
+}
 
-      <Text style={{ fontSize: 11.5, color: colors.muted, marginTop: 4 }}>
-        Veri güveni: {confidenceLabel}
+function AlternativeCard({
+  candidate,
+  userProfile,
+  onPress,
+}: {
+  candidate: AlternativeCandidate;
+  userProfile: UserSensitivityProfile;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+
+  // Fail-closed eleme buildAlternativeSections.ts'te zaten yapıldı — burada
+  // SearchResultRow'un AYNI çekirdeği (evaluateCatalogAllergenDataForProfile,
+  // dolaylı) tekrar çağrılır, yalnız rozet/kenar rengini türetmek için
+  // (riskWarnings:[] — kritik eşleşme zaten yukarıda elendi, burada hiç çıkmaz).
+  const allergenBannerData = getAllergenBannerDataFromCatalog({
+    catalogAllergenData: candidate.allergenData,
+    userProfile,
+    riskWarnings: [],
+  });
+
+  return (
+    <View style={{ gap: 2 }}>
+      <SearchResultRow
+        name={candidate.name ?? 'Ürün'}
+        imageUrl={candidate.imageUrl}
+        metaLine={getSearchCardMetaLine({ brand: candidate.brand ?? undefined, packageSize: candidate.packageSize ?? undefined })}
+        allergenData={allergenBannerData}
+        rafScore={candidate.rafScore}
+        nutriScoreGrade={candidate.nutriScore.grade}
+        novaGroup={candidate.nova.group}
+        showNutriNova
+        onPress={onPress}
+      />
+      {/* Sıralama güveni (görev onayı, madde 1): puanın hangi bileşenlerden
+          geldiği her zaman kartta görünür — "daha iyi" denemeyecek ölçümler
+          sessizce gizlenmesin. */}
+      <Text style={{ fontSize: 11, color: colors.muted, paddingHorizontal: spacing.sm }}>
+        Puan kapsamı: {candidate.scoreCoverageLabel}
       </Text>
     </View>
   );

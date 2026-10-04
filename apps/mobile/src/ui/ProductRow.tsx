@@ -13,6 +13,7 @@ import { Image, Pressable, Text, View } from 'react-native';
 import type { AllergenDisplayInfo } from '../riskEngine/catalogAllergenChip';
 import type { AllergenBannerStatus } from './AllergenBanner';
 import { AllergenChip } from './AllergenChip';
+import { cachedImageSource } from './cachedImageSource';
 import { ScorePill } from './ScorePill';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from './theme';
 
@@ -75,7 +76,7 @@ export function ProductRow({
     >
       {imageUrl ? (
         <Image
-          source={{ uri: imageUrl }}
+          source={cachedImageSource(imageUrl)}
           style={{ width: 52, height: 52, borderRadius: radii.md, backgroundColor: colors.soft }}
           resizeMode="contain"
         />

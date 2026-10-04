@@ -1,15 +1,19 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { fetchProductsByGroup, type ProductSearchSuggestion } from '../../src/api/productSuggestionClient';
 import { isRafScorePriceless } from '../../src/price/rafScorePriceless';
 import { evaluateCatalogAllergenDataForProfile, getAllergenDisplayLevel } from '../../src/riskEngine/catalogAllergenChip';
-import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
+import {
+  loadUserSensitivityProfile,
+  subscribeToUserSensitivityProfileChanges,
+} from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import { EmptyState } from '../../src/ui/EmptyState';
 import { NovaBadge } from '../../src/ui/NovaBadge';
 import { NutriScoreBadge } from '../../src/ui/NutriScoreBadge';
+import { getProductDisplayName } from '../../src/ui/productDisplayName';
 import { ProductRow } from '../../src/ui/ProductRow';
 import { FixedHeaderBar } from '../../src/ui/FixedHeaderBar';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
@@ -38,11 +42,23 @@ export default function ProductGroupScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserSensitivityProfile>(emptyUserSensitivityProfile);
 
-  useEffect(() => {
-    void loadUserSensitivityProfile()
-      .then(setUserProfile)
-      .catch(() => setUserProfile(emptyUserSensitivityProfile));
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      void loadUserSensitivityProfile()
+        .then((profile) => {
+          if (isActive) setUserProfile(profile);
+        })
+        .catch(() => {
+          if (isActive) setUserProfile(emptyUserSensitivityProfile);
+        });
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
+  useEffect(() => subscribeToUserSensitivityProfileChanges(setUserProfile), []);
 
   useEffect(() => {
     if (!productGroupKey) {
@@ -119,15 +135,23 @@ export default function ProductGroupScreen() {
           {products.map((product) => {
             const evaluation = evaluateCatalogAllergenDataForProfile(product.allergenData, userProfile);
             const allergenDisplayInfo = getAllergenDisplayLevel(evaluation.perKey);
+            const displayName = getProductDisplayName({
+              label: product.label,
+              productId: product.productId,
+              packageSize: product.packageSize,
+            });
+            const meta = displayName.unknownNameBarcode
+              ? displayName.unknownNameBarcode
+              : [product.brand, product.packageSize ? `${product.packageSize.amount} ${product.packageSize.unit}` : undefined]
+                  .filter(Boolean)
+                  .join(' · ') || null;
 
             return (
               <ProductRow
                 key={product.productId}
                 imageUrl={product.imageUrl}
-                name={product.label}
-                meta={[product.brand, product.packageSize ? `${product.packageSize.amount} ${product.packageSize.unit}` : undefined]
-                  .filter(Boolean)
-                  .join(' · ') || null}
+                name={displayName.title}
+                meta={meta}
                 score={product.rafScore?.score ?? null}
                 isScorePriceless={isRafScorePriceless(product.rafScore)}
                 allergenStatus={evaluation.status}

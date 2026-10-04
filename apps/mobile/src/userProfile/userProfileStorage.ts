@@ -19,6 +19,28 @@ import {
 const STORAGE_KEY = 'rafskoru:userSensitivityProfile';
 
 /**
+ * Cihaz testi (feat/catalog-alternatives): profil yalnız ekrana dönüşte
+ * (useFocusEffect) değil, ekran AÇIKKEN de güncellensin — save/clear çağıran
+ * taraf dinleyicileri senkron uyarır. Profil hâlâ cihazdan çıkmaz; bu yalnız
+ * aynı cihazdaki zaten-mount'lu ekranlar arası bildirimdir.
+ */
+type UserSensitivityProfileListener = (profile: UserSensitivityProfile) => void;
+const listeners = new Set<UserSensitivityProfileListener>();
+
+export function subscribeToUserSensitivityProfileChanges(
+  listener: UserSensitivityProfileListener,
+): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function notifyUserSensitivityProfileChanged(profile: UserSensitivityProfile): void {
+  for (const listener of listeners) listener(profile);
+}
+
+/**
  * Kaydedilmiş profili okur.
  * Kayıt yoksa ya da ayrıştırma başarısız olursa emptyUserSensitivityProfile döner.
  */
@@ -41,6 +63,7 @@ export async function saveUserSensitivityProfile(
 ): Promise<void> {
   try {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+    notifyUserSensitivityProfileChanged(profile);
   } catch {
     // Kayıt başarısız olursa sessizce geç — uygulama çalışmaya devam eder.
   }
@@ -52,6 +75,7 @@ export async function saveUserSensitivityProfile(
 export async function clearUserSensitivityProfile(): Promise<void> {
   try {
     await AsyncStorage.removeItem(STORAGE_KEY);
+    notifyUserSensitivityProfileChanged({ ...emptyUserSensitivityProfile });
   } catch {
     // Silme başarısız olursa sessizce geç.
   }

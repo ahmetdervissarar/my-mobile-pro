@@ -39,6 +39,11 @@ export function getPriceSummary(hasPrice: boolean, isLoading: boolean): string |
   return hasPrice ? null : 'Veri yok';
 }
 
-export function getAlternativesSummary(hasTopRecommendation: boolean): string | null {
-  return hasTopRecommendation ? null : 'Yok';
+/**
+ * Görev onayı (alternatif önerisi, madde 4): öneri varsa sayı ("3 seçenek"),
+ * yoksa bölüm zaten çağıran tarafta (product-result.tsx) hiç render
+ * edilmiyor — bu fonksiyon o durumda hiç çağrılmaz.
+ */
+export function getAlternativesSummary(totalCount: number): string | null {
+  return totalCount > 0 ? `${totalCount} seçenek` : null;
 }
