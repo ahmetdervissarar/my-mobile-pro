@@ -54,7 +54,27 @@ RafSkoru backend running on http://localhost:3001
 
 Sunucu varsayılan olarak `3001` portunda, tüm ağ arayüzlerinde dinler —
 aynı Wi-Fi'deki bir telefondan `http://<bilgisayarının-yerel-IP'si>:3001`
-ile erişilebilir (bkz. "Telefondan test" bölümü).
+ile erişilebilir (bkz. "Telefondan test" bölümü — bu yalnız YEREL/DEV
+testtir, bkz. altta "HTTPS").
+
+## HTTPS
+
+Intake modülü gönüllü kimlik anahtarını (`x-intake-volunteer-key` başlığı)
+ve ürün fotoğraflarını taşır — düz HTTP'de bunlar ağdaki herkese
+şifresiz görünür. Bu yüzden `.env`'de `NODE_ENV=production` iken backend
+**HTTPS zorunlu kılar**: ters vekilin (nginx/Caddy — TLS'i sonlandıran
+katman) `X-Forwarded-Proto: https` başlığını iletmediği her istek
+`403 https_required` alır.
+
+Üretime çekerken:
+1. Backend'i bir ters vekil (nginx/Caddy) ARKASINA koy; TLS sertifikasını
+   (ör. Let's Encrypt) vekil üstünde sonlandır.
+2. Vekilin backend'e giden isteklere `X-Forwarded-Proto: https` eklediğini
+   doğrula (nginx: `proxy_set_header X-Forwarded-Proto $scheme;`).
+3. `.env`'de `NODE_ENV=production` olarak ayarla.
+
+Yerel/dev ortamda (`NODE_ENV=development`, varsayılan) HTTP'ye izin
+verilir — "Telefondan test" bölümündeki adımlar bu yüzden `http://` kullanır.
 
 ## Doğrulama kapıları
 

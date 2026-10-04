@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { loadCatalog } from './catalog/catalog.js';
+import { createHttpsEnforcementMiddleware } from './httpsEnforcement.js';
 import { getIntakeDbPath } from './intake/config.js';
 import { initIntakeDb } from './intake/db.js';
 import { createIntakeRouter, createIntakeUnavailableRouter } from './intake/routes.js';
@@ -34,6 +35,17 @@ try {
 } catch (err) {
   console.error(`[intake] devre dışı: ${(err as Error).message}`);
   intakeRouter = createIntakeUnavailableRouter((err as Error).message);
+}
+
+// Üretimde HTTPS zorunlu — Intake modülü gönüllü anahtarını ve ürün
+// fotoğraflarını taşır, düz HTTP'de bunlar şifresiz dolaşır (bkz. görev
+// onayı, madde 4c). Yerel/dev ortamda (NODE_ENV !== 'production') HTTP
+// kalabilir. 'trust proxy' olmadan X-Forwarded-Proto rastgele istemcilerce
+// taklit edilebilir — ters vekil (nginx/Caddy) arkasında çalışıldığı kabul
+// edilir.
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+  app.use(createHttpsEnforcementMiddleware());
 }
 
 app.use(cors());
