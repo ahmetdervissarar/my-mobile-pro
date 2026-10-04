@@ -24,4 +24,29 @@ import { buildCsv } from './csv.js';
   assert.equal(csv, 'barcode\r\n8690504000013\r\n');
 }
 
+// ── Formül enjeksiyonu: =,+,-,@ ile başlayan alanlar kaçırılır (bkz. görev
+// onayı, madde 4d) — tek tırnak eklenir, Excel/Sheets'te METİN olarak kalır.
+{
+  const csv = buildCsv(
+    ['market_chain_other'],
+    [['=HYPERLINK("http://evil.example")'], ['+1+1'], ['-1-1'], ['@SUM(A1:A9)'], ['Normal Market Adı']],
+  );
+  assert.equal(
+    csv,
+    'market_chain_other\r\n' +
+      `"'=HYPERLINK(""http://evil.example"")"\r\n` +
+      "'+1+1\r\n" +
+      "'-1-1\r\n" +
+      "'@SUM(A1:A9)\r\n" +
+      'Normal Market Adı\r\n',
+  );
+}
+
+// ── Formül önekiyle BAŞLAYIP virgül de içeren bir alan hem kaçırılır hem
+// tırnaklanır (iki koruma birbirini bozmamalı) ───────────────────────────
+{
+  const csv = buildCsv(['name'], [['=cmd, çalıştır']]);
+  assert.equal(csv, 'name\r\n"\'=cmd, çalıştır"\r\n');
+}
+
 console.log('INTAKE_CSV_SMOKE_OK');
