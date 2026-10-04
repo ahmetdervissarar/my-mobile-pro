@@ -379,6 +379,22 @@ function attachSustainabilityScore(
   });
 }
 
+/**
+ * inferBetaHealthInput/inferBetaContentInput ve BetaReferencePriceProvider
+ * gerçek veri değil — ürün ADINDAN anahtar kelime eşleşmesiyle UYDURULMUŞ
+ * skor/fiyat üretir ("kola" → D notu, "makarna" → B notu gibi). Bu
+ * "fallback" değil, yalnız geliştirme/demo amaçlı sahte veridir (bkz. görev
+ * onayı, madde 8). Production'da varsayılan KAPALI; açmak için .env'de
+ * ENABLE_SYNTHETIC_SCORES=1 gerekir (bkz. .env.example).
+ */
+export function isSyntheticScoresEnabled(): boolean {
+  if (process.env.NODE_ENV !== 'production') {
+    return true;
+  }
+
+  return process.env.ENABLE_SYNTHETIC_SCORES === '1' || process.env.ENABLE_SYNTHETIC_SCORES === 'true';
+}
+
 function attachHealthScore(
   result: PriceResult,
   query: PriceQuery,
@@ -387,7 +403,9 @@ function attachHealthScore(
   result.healthScore = calculateHealthScore(
     productFacts
       ? productFactsToHealthScoreInput(productFacts)
-      : inferBetaHealthInput(result.productName || query.productName),
+      : isSyntheticScoresEnabled()
+        ? inferBetaHealthInput(result.productName || query.productName)
+        : {},
   );
 }
 
@@ -399,7 +417,9 @@ function attachContentScore(
   result.contentScore = calculateContentScore(
     productFacts
       ? productFactsToContentScoreInput(productFacts)
-      : inferBetaContentInput(result.productName || query.productName),
+      : isSyntheticScoresEnabled()
+        ? inferBetaContentInput(result.productName || query.productName)
+        : {},
   );
 }
 
@@ -530,7 +550,7 @@ export class PriceProviderService {
     const onlineTestSeed = new OnlineTestPriceSeedProvider();
     const manual = opts.manualBeta ?? new ManualBetaPriceProvider();
     const lastKnown = opts.lastKnown ?? new LastKnownPriceProvider();
-    const betaRef = opts.betaReference ?? new BetaReferencePriceProvider();
+    const betaRef = opts.betaReference ?? new BetaReferencePriceProvider({ enabled: isSyntheticScoresEnabled() });
 
     this.manualBeta = manual;
     this.lastKnown = lastKnown;
