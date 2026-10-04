@@ -8,7 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "smoke:beta-wording": "node scripts/betaWordingGuard.mjs"
+    "smoke:beta-wording": "node scripts/betaWordingGuard.mjs",
+    "smoke:action-color-token": "node scripts/actionColorTokenGuard.mjs"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

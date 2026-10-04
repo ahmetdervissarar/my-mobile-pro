@@ -11,7 +11,7 @@ import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { AllergenProfileKeyBasis } from '../../riskEngine/catalogAllergenChip';
-import { radii, spacing, useTheme } from '../../ui/theme';
+import { radii, spacing, typography, useTheme } from '../../ui/theme';
 import { getDetailRowLabel } from './allergenDetailRow';
 import type { AllergenBannerData } from './helpers';
 
@@ -72,9 +72,9 @@ export function AllergenDetailSheet({ visible, onClose, data, sourceText, observ
             borderBottomColor: colors.line,
           }}
         >
-          <Text style={{ fontSize: 17, fontWeight: '800', color: colors.ink }}>Alerjen ayrıntısı</Text>
+          <Text style={{ ...typography.title, color: colors.ink }}>Alerjen ayrıntısı</Text>
           <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Kapat">
-            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.pine2 }}>Kapat</Text>
+            <Text style={{ ...typography.small, color: colors.accent }}>Kapat</Text>
           </Pressable>
         </View>
 

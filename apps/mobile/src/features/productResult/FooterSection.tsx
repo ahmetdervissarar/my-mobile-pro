@@ -5,7 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import { getBetaFeedbackLabel, type BetaFeedbackType } from '../../api/betaFeedbackClient';
 import { LegalNoticeModal } from '../../ui/LegalNoticeModal';
 import { PrimaryButton } from '../../ui/PrimaryButton';
-import { radii, spacing, useTheme } from '../../ui/theme';
+import { radii, spacing, typography, useTheme } from '../../ui/theme';
 
 const FEEDBACK_TYPES: BetaFeedbackType[] = [
   'wrong_product',
@@ -41,7 +41,7 @@ export function FooterSection({
         accessibilityRole="button"
         accessibilityLabel="Kapalı beta ve gizlilik bilgisi"
       >
-        <Text style={{ fontSize: 12.5, fontWeight: '700', color: colors.pine2 }}>
+        <Text style={{ ...typography.small, color: colors.accent }}>
           Kapalı beta ve gizlilik bilgisi
         </Text>
       </Pressable>

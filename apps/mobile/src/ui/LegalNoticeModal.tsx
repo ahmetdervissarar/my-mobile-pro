@@ -12,7 +12,7 @@ import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from './PrimaryButton';
-import { radii, spacing, useTheme } from './theme';
+import { radii, spacing, typography, useTheme } from './theme';
 
 export interface LegalNoticeModalProps {
   visible: boolean;
@@ -59,17 +59,17 @@ export function LegalNoticeModal({ visible, onClose, requireAcknowledgement = fa
             borderBottomColor: colors.line,
           }}
         >
-          <Text style={{ fontSize: 17, fontWeight: '800', color: colors.ink }}>
+          <Text style={{ ...typography.title, color: colors.ink }}>
             Kapalı beta ve gizlilik bilgisi
           </Text>
         </View>
 
         <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
-          <Text style={{ fontSize: 13, color: colors.ink, lineHeight: 19 }}>
+          <Text style={{ ...typography.body, color: colors.ink, lineHeight: 19 }}>
             Kapalı beta: fiyat ve skorlar yardımcı göstergedir; güncel market fiyatı ve ürün etiketi esas
             alınmalıdır.
           </Text>
-          <Text style={{ fontSize: 13, color: colors.ink, lineHeight: 19 }}>
+          <Text style={{ ...typography.body, color: colors.ink, lineHeight: 19 }}>
             Gizlilik: profil tercihleri cihazda tutulur; konum yalnızca yakın market ve fiyat sorgusu için
             kullanılır.
           </Text>

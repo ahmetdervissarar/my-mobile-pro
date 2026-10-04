@@ -27,9 +27,10 @@ function createUnsavedProfileGuardListeners(onProceed: () => void) {
   };
 }
 
+// İş 3 (görev onayı): "alt menü etkin sekme" — TEK eylem rengi (accent).
 function TabGlyph({ glyph, focused }: { glyph: string; focused: boolean }) {
   const { colors } = useTheme();
-  return <Text style={{ fontSize: 20, color: focused ? colors.pine : colors.muted }}>{glyph}</Text>;
+  return <Text style={{ fontSize: 20, color: focused ? colors.accent : colors.muted }}>{glyph}</Text>;
 }
 
 function CartBadge({ count }: { count: number }) {
@@ -47,12 +48,12 @@ function CartBadge({ count }: { count: number }) {
         height: 16,
         borderRadius: 8,
         paddingHorizontal: 3,
-        backgroundColor: colors.citrus,
+        backgroundColor: colors.accent,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Text style={{ fontSize: 10, fontWeight: '800', color: '#1B1B1B' }}>{count > 9 ? '9+' : count}</Text>
+      <Text style={{ fontSize: 10, fontWeight: '800', color: colors.onAccent }}>{count > 9 ? '9+' : count}</Text>
     </View>
   );
 }
@@ -65,7 +66,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.pine,
+        tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: {
           backgroundColor: colors.surface,
@@ -106,13 +107,13 @@ export default function TabsLayout() {
                 width: 46,
                 height: 46,
                 borderRadius: radii.pill,
-                backgroundColor: colors.pine,
+                backgroundColor: colors.accent,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 14,
               }}
             >
-              <Text style={{ fontSize: 20, color: colors.citrus }}>▣</Text>
+              <Text style={{ fontSize: 20, color: colors.onAccent }}>▣</Text>
             </View>
           ),
           tabBarLabel: () => null,

@@ -11,7 +11,7 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from './theme';
+import { MIN_TOUCH_TARGET, radii, spacing, typography, useTheme } from './theme';
 
 export interface CollapsibleSectionProps {
   title: string;
@@ -49,10 +49,10 @@ export function CollapsibleSection({ title, summary, defaultOpen = false, childr
           gap: spacing.sm,
         }}
       >
-        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>{title}</Text>
+        <Text style={{ ...typography.title, color: colors.ink }}>{title}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
           {summary ? (
-            <Text style={{ fontSize: 12, color: colors.muted }} numberOfLines={1}>
+            <Text style={{ ...typography.small, color: colors.muted }} numberOfLines={1}>
               {summary}
             </Text>
           ) : null}

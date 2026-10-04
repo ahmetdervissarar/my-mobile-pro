@@ -64,10 +64,11 @@ export default function HomeScreen() {
       contentContainerStyle={{ padding: spacing.xl, paddingTop: Math.max(insets.top, spacing.xl), gap: spacing.xl }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.citrus }} />
+        <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.accent }} />
         <Text style={{ fontSize: 20, fontWeight: '800', color: colors.ink }}>RafSkoru</Text>
       </View>
 
+      {/* İş 3 (görev onayı): "ana ekran barkod kartı" — TEK eylem rengi (accent). */}
       <Pressable
         onPress={() => router.push('/barcode-scan')}
         accessibilityRole="button"
@@ -75,7 +76,7 @@ export default function HomeScreen() {
         style={{
           minHeight: 96,
           borderRadius: radii.xxl,
-          backgroundColor: colors.pine,
+          backgroundColor: colors.accent,
           padding: spacing.xl,
           flexDirection: 'row',
           alignItems: 'center',
@@ -87,7 +88,7 @@ export default function HomeScreen() {
             width: 56,
             height: 56,
             borderRadius: radii.lg,
-            backgroundColor: colors.citrus,
+            backgroundColor: 'rgba(255,255,255,0.2)',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -95,8 +96,8 @@ export default function HomeScreen() {
           <Text style={{ fontSize: 24 }}>▣</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 19, fontWeight: '800', color: '#fff' }}>Barkod okut</Text>
-          <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>
+          <Text style={{ fontSize: 19, fontWeight: '800', color: colors.onAccent }}>Barkod okut</Text>
+          <Text style={{ fontSize: 13, color: colors.onAccent, opacity: 0.85, marginTop: 2 }}>
             Ürünü tara, RafSkoru'nu anında gör
           </Text>
         </View>

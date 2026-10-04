@@ -59,7 +59,7 @@ export function StickyAddBar({ cartInput, disabledReason }: StickyAddBarProps) {
 
       <PrimaryButton
         label="Sepete ekle"
-        variant="citrus"
+        variant="accent"
         disabled={!cartInput}
         onPress={() => void handleAdd()}
         accessibilityLabel="Ürünü sepete ekle"
