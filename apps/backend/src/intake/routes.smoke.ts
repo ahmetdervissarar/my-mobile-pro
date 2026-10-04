@@ -19,7 +19,7 @@ import { __resetVolunteersCacheForTesting } from './volunteers.js';
 
 const fixtureDir = mkdtempSync(join(tmpdir(), 'rafskoru-intake-routes-'));
 const volunteersPath = join(fixtureDir, 'volunteers.json');
-writeFileSync(volunteersPath, JSON.stringify({ 'MRS-01': 'key-1' }));
+writeFileSync(volunteersPath, JSON.stringify({ 'MRS-01': 'key-1', 'MRS-02': 'key-2' }));
 // Gerçek apps/backend/data/intake/photos/ yerine geçici bir dizine yazar —
 // testler ÜRETİM veri dizinini asla kirletmemeli.
 const testPhotosDir = join(fixtureDir, 'photos');
@@ -27,7 +27,7 @@ const testPhotosDir = join(fixtureDir, 'photos');
 // routes.ts kendi volunteersFilePath'ini config.ts'ten türetir; test burada
 // INTAKE_VOLUNTEERS_JSON ile o yolu bypass edip sabit bir fixture'a bağlar.
 __resetVolunteersCacheForTesting();
-process.env.INTAKE_VOLUNTEERS_JSON = JSON.stringify({ 'MRS-01': 'key-1' });
+process.env.INTAKE_VOLUNTEERS_JSON = JSON.stringify({ 'MRS-01': 'key-1', 'MRS-02': 'key-2' });
 __resetIntakeDbForTesting(':memory:');
 
 const BASE_PROVENANCE: OffImportRecord['provenance'] = {
@@ -315,6 +315,18 @@ async function withServer<T>(app: express.Express, run: (baseUrl: string) => Pro
     assert.equal(uploadFront.status, 200);
     assert.deepEqual(await uploadFront.json(), { ok: true, receivedSlots: ['front'] });
     frontPhotoSubmissionId = submissionId;
+
+    // BAŞKA BİR GÖNÜLLÜ bu kaydın sahibi değil — kimliği geçerli olsa da
+    // (MRS-02 gerçek bir gönüllü) fotoğraf yükleyemez (bkz. görev onayı,
+    // madde 4a).
+    const otherVolunteerHeaders = { [VOLUNTEER_CODE_HEADER]: 'MRS-02', [VOLUNTEER_KEY_HEADER]: 'key-2' };
+    const crossVolunteerUpload = await fetch(`${baseUrl}/api/intake/submissions/${submissionId}/photos/ingredients`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/jpeg', ...otherVolunteerHeaders },
+      body: REAL_JPEG,
+    });
+    assert.equal(crossVolunteerUpload.status, 403);
+    assert.equal(((await crossVolunteerUpload.json()) as { error: string }).error, 'not_submission_owner');
 
     // "YANLIŞ BAŞLIKLA GÖNDERİLEN DOSYA REDDEDİLİR" — Content-Type
     // image/jpeg İDDİA EDİYOR ama gerçek baytlar JPEG değil (bkz. görev

@@ -209,6 +209,14 @@ export function createIntakeRouter(options: CreateIntakeRouterOptions = {}): Rou
         return;
       }
 
+      // Bir gönüllü başka bir gönüllünün kaydına fotoğraf yükleyemez —
+      // volunteerAuth yalnız KİMLİĞİ doğrular, bu kaydın SAHİBİ olduğunu
+      // doğrulamaz (bkz. görev onayı, madde 4a).
+      if (submission.volunteerCode !== req.intakeVolunteerCode) {
+        res.status(403).json({ ok: false, error: 'not_submission_owner' });
+        return;
+      }
+
       if (!submission.requestedSlots.includes(slot)) {
         res.status(400).json({ ok: false, error: 'slot_not_requested' });
         return;
