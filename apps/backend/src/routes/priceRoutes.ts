@@ -1,5 +1,6 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
 
+import { getCatalog } from '../catalog/catalog.js';
 import { PriceProviderService } from '../price/priceProviderService.js';
 import type { PriceQuery } from '../price/types.js';
 import { loadSeedAlternativeCandidates, normalizeAlternativeProductShape, scoreAlternatives } from '../price/alternatives/index.js';
@@ -144,10 +145,19 @@ export function createPriceRouter(
         }),
       );
 
+      // Katalog boşsa (ör. temiz bir sunucuda products.jsonl hiç kopyalanmamış)
+      // uygulama sessizce canlı OFF yoluna düşüyor ve kullanıcı genel bir
+      // "ürün bulunamadı" görüyordu — gerçek durum (katalog hiç yüklenmedi)
+      // gizleniyordu (bkz. görev onayı, madde 5c). catalogStatus bunu
+      // istemciye açıkça taşır.
+      const catalog = getCatalog();
+      const catalogStatus = { empty: catalog.products.length === 0, productCount: catalog.products.length };
+
       return res.json({
         result: resultPublic,
         disclaimer: response.disclaimer,
         triedProviders: response.triedProviders,
+        catalogStatus,
       });
     } catch (err) {
       console.error('[priceRoutes] resolve failed:', err);

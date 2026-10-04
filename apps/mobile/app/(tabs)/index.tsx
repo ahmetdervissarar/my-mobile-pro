@@ -103,10 +103,15 @@ export default function HomeScreen() {
       </Pressable>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }}>
+        {/* Madde 9 (görev onayı): bu düğme "Fotoğrafla ara" adıyla ürün
+            TANIMA beklentisi yaratıyordu — öyle bir tanıma hiç yok. Artık
+            dürüstçe etiketlenmiş "paket bilgisini ekle" katkı akışına
+            yönlendiriyor (bkz. product-contribution.tsx — kullanıcı fotoğraf
+            çeker, ürün manuel olarak katkı/doğrulama kuyruğuna girer). */}
         <GridTile
-          title="Fotoğrafla ara"
-          subtitle="Barkod okunamıyorsa (beta)"
-          onPress={() => router.push('/photo-search')}
+          title="Paket bilgisi ekle"
+          subtitle="Fotoğraflarını katkı olarak gönder"
+          onPress={() => router.push('/product-contribution')}
         />
         <GridTile title="İsimle ara" subtitle="Ürün adını yaz" onPress={() => router.push('/search')} />
         <GridTile

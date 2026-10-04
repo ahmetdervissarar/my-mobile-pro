@@ -37,6 +37,10 @@ apps/mobile/.env
 
 .env
 .env.*
+# .env.* .env.example'ı da yakalıyordu — örnek dosyalar HER ZAMAN repoda
+# kalmalı; gerçek sırlar zaten yukarıdaki .env kurallarıyla dışlanıyor.
+!.env.example
+!**/.env.example
 
 # OFF Türkiye içe aktarma çıktısı (ODbL; repoya eklenmez)
 apps/backend/data/off-tr/

@@ -96,6 +96,24 @@ const babyFormulaProviderHint = resolveProductGroup({
 assert.equal(babyFormulaProviderHint.productGroupKey, 'baby_formula');
 assert.equal(babyFormulaProviderHint.groupSource, 'provider_hint');
 assert.equal(babyFormulaProviderHint.alternativesEligible, false);
+// Madde 11 (görev onayı): rawProductName verilmezse productName'e düşer —
+// bu, marka çıkarılmış adla çağıran bir tarafın (eski catalog.ts davranışı)
+// exclude'u asla tetikleyemediği HATALI durumu kasıtlı olarak yeniden
+// üretir — rawProductName'in NEDEN gerekli olduğunun kanıtı.
+const colaWithoutRawName = resolveProductGroup({ productName: 'Happy Cola' });
+assert.equal(colaWithoutRawName.productGroupKey, 'cola', 'rawProductName verilmezse marka bilgisi kaybolur');
+
+// rawProductName verilince exclude ('haribo') marka DAHİL ham ada karşı
+// çalışır — kola İÇECEĞİ değil, jöle şekerleme 'cola' grubuna düşmemeli.
+const colaWithRawName = resolveProductGroup({ productName: 'Happy Cola', rawProductName: 'Haribo Happy Cola' });
+assert.notEqual(colaWithRawName.productGroupKey, 'cola');
+assert.equal(colaWithRawName.productGroupKey, null, 'başka hiçbir grup eşleşmediği için unclassified kalmalı');
+
+// include kontrolü HÂLÂ marka çıkarılmış (productName) adda çalışır —
+// exclude'un rawProductName'e taşınması include eşleştirmesini bozmamalı.
+const milkWithRawBrandName = resolveProductGroup({ productName: 'Laktozsuz Süt 1 LT', rawProductName: 'Sütaş Laktozsuz Süt 1 LT' });
+assert.equal(milkWithRawBrandName.productGroupKey, 'milk');
+
 const unknown = resolveProductGroup({ productName: 'Bilinmeyen ithal sos' });
 assert.equal(unknown.productGroupKey, null);
 assert.equal(unknown.groupConfidence, 'unknown');

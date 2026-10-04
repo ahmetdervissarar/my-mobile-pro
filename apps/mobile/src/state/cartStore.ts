@@ -30,6 +30,13 @@ const STORAGE_KEY = 'rafskoru:cart';
 
 let items: CartItem[] = [];
 let isHydrated = false;
+/**
+ * P7 (görev onayı): hydrate() okuma/parse hatasında items=[] yapıyordu —
+ * kullanıcı bu durumu "sepetim zaten boş" olarak görüyordu, oysa veri
+ * OKUNAMADI. Bu bayrak iki durumu ayırt eder; UI (bkz. basket.tsx) boş
+ * sepet ile okuma hatasını farklı mesajlarla göstermeli.
+ */
+let hydrateError = false;
 const listeners = new Set<() => void>();
 
 function emit(): void {
@@ -55,10 +62,11 @@ export function __setCartStorageAdapterForTesting(adapter: CartStorageAdapter): 
   storageAdapter = adapter;
 }
 
-/** Yalnız testler için — modül durumunu (items, isHydrated) sıfırlar. */
+/** Yalnız testler için — modül durumunu (items, isHydrated, hydrateError) sıfırlar. */
 export function __resetCartForTesting(initialItems: CartItem[] = []): void {
   items = initialItems;
   isHydrated = true;
+  hydrateError = false;
 }
 
 /**
@@ -83,8 +91,13 @@ async function hydrate(): Promise<void> {
     if (raw) {
       items = JSON.parse(raw) as CartItem[];
     }
+    hydrateError = false;
   } catch {
+    // Okuma veya JSON.parse başarısız — items=[] YAPILIR (gösterecek
+    // başka veri yok) ama hydrateError=true ile bu durumun GERÇEKTEN boş
+    // bir sepetten FARKLI olduğu işaretlenir (bkz. görev onayı, madde 7).
     items = [];
+    hydrateError = true;
   } finally {
     isHydrated = true;
     emit();
@@ -93,12 +106,26 @@ async function hydrate(): Promise<void> {
 
 void hydrate();
 
+/** Okuma hatası sonrası kullanıcı "Tekrar dene"ye bastığında çağrılır. */
+export function retryCartHydration(): Promise<void> {
+  return hydrate();
+}
+
 export function getCartSnapshot(): CartItem[] {
   return items;
 }
 
 export function isCartHydrated(): boolean {
   return isHydrated;
+}
+
+/** true ise items=[] GERÇEK bir boş sepet değil, okunamamış bir sepettir. */
+export function getCartHydrateError(): boolean {
+  return hydrateError;
+}
+
+export function useCartHydrateError(): boolean {
+  return useSyncExternalStore(subscribeCart, getCartHydrateError, getCartHydrateError);
 }
 
 export function subscribeCart(listener: () => void): () => void {

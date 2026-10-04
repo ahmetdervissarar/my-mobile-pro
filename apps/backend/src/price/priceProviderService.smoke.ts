@@ -5,8 +5,32 @@ import type { IPriceProvider, PriceQuery, PriceResult } from './types.js';
 
 const originalFetch = globalThis.fetch;
 
-globalThis.fetch = (async () =>
-  new Response(
+// Madde 6 (görev onayı): içindekiler/alerjen verisi olan ama nutriScore/
+// NOVA eksik bir kaydın (kısmi OFF kaydı) canlı OFF yolunda SESSİZCE
+// atılmadığını kanıtlamak için bu barkoda özel bir yanıt tanımlanır —
+// geri kalan her barkod için eski "ürün bulunamadı" yanıtı değişmeden kalır.
+const PARTIAL_OFF_FACTS_BARCODE = '8690000000123';
+
+globalThis.fetch = (async (input: Parameters<typeof fetch>[0]) => {
+  const url = typeof input === 'string' ? input : input.toString();
+
+  if (url.includes(PARTIAL_OFF_FACTS_BARCODE)) {
+    return new Response(
+      JSON.stringify({
+        status: 1,
+        product: {
+          product_name: 'Kısmi OFF Test Ürünü',
+          ingredients_text: 'Süt, şeker.',
+          allergens_tags: ['en:milk'],
+          traces_tags: [],
+          // nutriscore_grade, nova_group, nutriments BİLEREK eksik — kısmi kayıt.
+        },
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    );
+  }
+
+  return new Response(
     JSON.stringify({
       status: 0,
       status_verbose: 'product not found',
@@ -17,7 +41,8 @@ globalThis.fetch = (async () =>
         'content-type': 'application/json',
       },
     },
-  )) as typeof fetch;
+  );
+}) as typeof fetch;
 
 class SyntheticLiveProvider implements IPriceProvider {
   readonly name = 'manual_beta' as const;
@@ -110,6 +135,24 @@ try {
     100,
     'grain fallback without explicit allergen evidence must not receive clear allergen score',
   );
+
+  // ── Madde 6: kısmi OFF kaydı (içindekiler+alerjen var, nutriScore yok)
+  // ürün KAYBOLMAZ, alerjen uyarısı üretilebilecek productFacts korunur ──
+  const partialFactsResponse = await service.resolve({ barcode: PARTIAL_OFF_FACTS_BARCODE });
+
+  assert.ok(partialFactsResponse.result.productFacts, 'kısmi OFF kaydı productFacts olarak KORUNMALI, atılmamalı');
+  assert.equal(
+    partialFactsResponse.result.productFacts?.isComplete,
+    false,
+    'nutriScore/NOVA eksik olduğu için isComplete false olmalı (ama bu artık kapı değil)',
+  );
+  assert.equal(partialFactsResponse.result.productFacts?.ingredientsText, 'Süt, şeker.');
+  assert.equal(
+    partialFactsResponse.result.productFacts?.catalogAllergenData?.dataStatus,
+    'present',
+    'milk etiketi tanınmalı — alerjen uyarısı üretilebilsin',
+  );
+  assert.deepEqual(partialFactsResponse.result.productFacts?.catalogAllergenData?.declared, ['milk']);
 
   console.log('PRICE_PROVIDER_SERVICE_SMOKE_OK');
 } finally {

@@ -4,6 +4,22 @@ import type { ProductGroupCatalogEntry, ProductGroupResolution } from './types.j
 
 export interface ProductGroupResolverInput {
   productName?: string | null;
+  /**
+   * Marka adı ÇIKARILMAMIŞ ham ürün adı — YALNIZ exclude kontrolü için
+   * kullanılır. Verilmezse productName kullanılır (geriye uyumlu).
+   *
+   * Kök neden (bkz. görev onayı, madde 11, "Haribo Happy Cola" ~3 ürün):
+   * çağıran taraf (catalog.ts) include eşleştirmesi marka adına
+   * takılmasın diye markayı adın içinden ÇIKARIR ("Haribo Happy Cola" →
+   * "Happy Cola") ve resolveProductGroup'u bu çıkarılmış adla çağırır.
+   * Ama catalog.ts'teki 'cola' grubunun exclude listesi tam da bu markayı
+   * ('haribo') hedefliyor — marka çıkarılmış metinde o kelime ASLA
+   * bulunamaz, exclude hiçbir zaman tetiklenmez, ürün yanlışlıkla 'cola'
+   * grubuna düşer. Exclude kontrolü bu yüzden marka dahil ham metne karşı
+   * çalışmalı; include kontrolü marka çıkarılmış metinde kalmalı (aksi
+   * halde "Eti Browni" gibi adlar marka kelimesine göre YANLIŞ dışlanır).
+   */
+  rawProductName?: string | null;
   barcode?: string | null;
   offCategories?: string[] | null;
   candidateGroupKey?: string | null;
@@ -125,8 +141,13 @@ export function resolveProductGroup(input: ProductGroupResolverInput): ProductGr
     return emptyResolution();
   }
 
+  // Exclude kontrolü marka DAHİL ham ada karşı çalışır — bkz. rawProductName
+  // alanının yorumu (görev onayı, madde 11). rawProductName verilmezse
+  // productName'e düşer (geriye uyumlu, mevcut davranış değişmez).
+  const normalizedRawName = normalizeText(input.rawProductName ?? input.productName ?? '');
+
   for (const entry of PRODUCT_GROUP_CATALOG) {
-    if (hasExcludedToken(normalizedName, entry)) {
+    if (hasExcludedToken(normalizedRawName, entry)) {
       continue;
     }
 
@@ -136,7 +157,7 @@ export function resolveProductGroup(input: ProductGroupResolverInput): ProductGr
   }
 
   for (const entry of PRODUCT_GROUP_CATALOG) {
-    if (hasExcludedToken(normalizedName, entry)) {
+    if (hasExcludedToken(normalizedRawName, entry)) {
       continue;
     }
 
