@@ -111,7 +111,19 @@ bugün topladığın ürün sayısı ve tüm ekibin toplamı.
   tamamlamak için kullanılır.
 - Katılımın tamamen gönüllüdür — istediğin zaman, sebep göstermeden
   bırakabilirsin.
-- Kişisel veri toplanmaz: isim, e-posta, konum veya cihaz bilgisi
-  istenmez; sistemde yalnızca gönüllü kodun kayıtlıdır.
+- **İsim, e-posta ve şifre hiç istenmez** — yalnızca gönüllü kodun ve
+  erişim anahtarın kullanılır. Ama tamamen "veri toplanmaz" demek doğru
+  değil; sistemde şunlar kayıt altına alınır:
+  - **Gönüllü kodun** ve her kaydın oluşturulma **zamanı**,
+  - **Seçtiğin market zinciri ve şehir** (GPS konumun DEĞİL — kendi
+    seçtiğin market/şehir listesi),
+  - Kötüye kullanmayı (ör. aşırı hızlı tekrarlanan istek) önlemek için
+    isteklerinin geldiği **IP adresi** kısa süreli işlenir; sunucunun
+    standart teknik günlüklerinde (log) bu tür ağ/cihaz izleri de
+    kısa süreli oluşabilir.
+  - Çektiğin fotoğraflar sunucuda saklanır (barkod okuma için çekilen
+    fotoğraf HARİÇ — o hiç yüklenmez, bkz. "3. Barkodu oku").
+  Bu bilgiler yalnızca koordinatör/yönetici panelinde görülür, üçüncü
+  taraflarla paylaşılmaz.
 
 Katkın için teşekkürler!
