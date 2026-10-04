@@ -1,7 +1,9 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { getBetaFeedbackLabel, type BetaFeedbackType } from '../../api/betaFeedbackClient';
+import { LegalNoticeModal } from '../../ui/LegalNoticeModal';
 import { PrimaryButton } from '../../ui/PrimaryButton';
 import { radii, spacing, useTheme } from '../../ui/theme';
 
@@ -27,19 +29,24 @@ export function FooterSection({
   onBetaFeedbackPress,
 }: FooterSectionProps) {
   const { colors } = useTheme();
+  const [isLegalNoticeVisible, setIsLegalNoticeVisible] = useState(false);
 
   return (
     <View style={{ gap: spacing.lg }}>
-      <View style={{ borderRadius: radii.md, backgroundColor: colors.soft, padding: spacing.md, gap: 4 }}>
-        <Text style={{ fontSize: 12, color: colors.muted }}>
-          Kapalı beta: fiyat ve skorlar yardımcı göstergedir; güncel market fiyatı ve ürün etiketi esas
-          alınmalıdır.
+      {/* İş 2 (görev onayı): iki paragraf yerine tek satırlık bağlantı —
+          metnin KENDİSİ ilk açılışta zaten gösterildi (bkz. app/_layout.tsx);
+          burada yalnız isteyen tekrar açabilsin diye LegalNoticeModal açılır. */}
+      <Pressable
+        onPress={() => setIsLegalNoticeVisible(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Kapalı beta ve gizlilik bilgisi"
+      >
+        <Text style={{ fontSize: 12.5, fontWeight: '700', color: colors.pine2 }}>
+          Kapalı beta ve gizlilik bilgisi
         </Text>
-        <Text style={{ fontSize: 12, color: colors.muted }}>
-          Gizlilik: profil tercihleri cihazda tutulur; konum yalnızca yakın market ve fiyat sorgusu için
-          kullanılır.
-        </Text>
-      </View>
+      </Pressable>
+
+      <LegalNoticeModal visible={isLegalNoticeVisible} onClose={() => setIsLegalNoticeVisible(false)} />
 
       <View
         style={{

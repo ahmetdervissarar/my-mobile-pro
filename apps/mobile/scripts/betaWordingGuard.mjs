@@ -59,7 +59,12 @@ function assertNotIncludes(fileName, content, forbiddenText) {
 }
 
 const productResult =
-  readMobileFile('app/(tabs)/product-result.tsx') + readMobileDirRecursive('src/features/productResult');
+  readMobileFile('app/(tabs)/product-result.tsx') +
+  readMobileDirRecursive('src/features/productResult') +
+  // İş 2 (feat/ui-clarity, görev onayı): kapalı beta + gizlilik metni artık
+  // product-result.tsx'in altında DEĞİL, tek seferlik LegalNoticeModal'da
+  // (src/ui/) — FooterSection'daki tek satırlık bağlantı buraya açılır.
+  readMobileFile('src/ui/LegalNoticeModal.tsx');
 const basketResult = readMobileFile('app/(tabs)/basket-result.tsx');
 const priceClient = readMobileFile('src/price/priceClient.ts');
 const rafScoreExplanation = readMobileFile('src/price/rafScoreExplanation.ts');
