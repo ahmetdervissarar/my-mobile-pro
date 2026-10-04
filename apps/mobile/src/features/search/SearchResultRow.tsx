@@ -14,6 +14,8 @@ import { Image, Pressable, Text, View } from 'react-native';
 import { getAllergenStatusLine } from '../productResult/allergenStatusLine';
 import type { AllergenBannerData } from '../productResult/helpers';
 import type { RafScoreResult } from '../../price/types';
+import { AllergenChip } from '../../ui/AllergenChip';
+import { cachedImageSource } from '../../ui/cachedImageSource';
 import { NovaBadge } from '../../ui/NovaBadge';
 import { NutriScoreBadge } from '../../ui/NutriScoreBadge';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../ui/theme';
@@ -79,7 +81,7 @@ export function SearchResultRow({
     >
       {imageUrl ? (
         <Image
-          source={{ uri: imageUrl }}
+          source={cachedImageSource(imageUrl)}
           style={{ width: 52, height: 52, borderRadius: radii.md, backgroundColor: colors.soft }}
           resizeMode="contain"
         />
@@ -98,7 +100,7 @@ export function SearchResultRow({
         </View>
       )}
 
-      <View style={{ flex: 1, gap: 3 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
         <Text style={{ fontSize: 15, fontWeight: '700', color: colors.ink }} numberOfLines={2}>
           {name}
         </Text>
@@ -118,10 +120,11 @@ export function SearchResultRow({
           </View>
         ) : null}
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs }}>
           <View
             style={{
               alignSelf: 'flex-start',
+              maxWidth: '100%',
               borderRadius: radii.sm,
               paddingVertical: 3,
               paddingHorizontal: spacing.sm,
@@ -132,6 +135,14 @@ export function SearchResultRow({
               {badge.text}
             </Text>
           </View>
+
+          {/* Cihaz testi (feat/catalog-alternatives): çakışma rozeti zaten
+              yukarıda ("Profilinle çakışıyor") alerjeni gösteriyor — çakışma
+              YOKSA (beyan/belirtilmemiş/veri yok) ayrı bir AllergenChip
+              eklenir; hiçbir kart rozetsiz kalmaz (fail-open'a karşı). */}
+          {!badge.isAllergenBadge ? (
+            <AllergenChip status={allergenData.status} displayInfo={allergenData.displayInfo} />
+          ) : null}
 
           {showNutriNova && nutriScoreGrade ? <NutriScoreBadge grade={nutriScoreGrade} compact /> : null}
           {showNutriNova && novaGroup ? <NovaBadge group={novaGroup} compact /> : null}

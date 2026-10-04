@@ -191,10 +191,6 @@ export function getTransitionSafeProductGroupKey(input: {
   return input.resolvedProductGroupKey ?? input.productGroupKey ?? null;
 }
 
-export function isExplicitlyAlternativesIneligible(input: { alternativesEligible?: boolean }): boolean {
-  return input.alternativesEligible === false;
-}
-
 export interface AllergenBannerData {
   status: AllergenBannerStatus;
   declaredList: string[];

@@ -6,6 +6,8 @@ import type {
   PriceResult,
   AlternativeRecommendationsQuery,
   AlternativeRecommendationsResponse,
+  CatalogAlternativesQuery,
+  CatalogAlternativesResponse,
 } from './types';
 
 export interface PriceClientOptions {
@@ -236,6 +238,56 @@ export class PriceClient {
       return data;
     } catch {
       return { recommendations: [] };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /**
+   * GET /api/price/alternatives/catalog — gerçek katalogdan, aynı grup
+   * içinden aday döner (ham veri; profille eleme BURADA değil, çağıran
+   * tarafta — bkz. buildAlternativeSections.ts).
+   */
+  async fetchCatalogAlternatives(
+    query: CatalogAlternativesQuery,
+  ): Promise<CatalogAlternativesResponse> {
+    if (!query.barcode) {
+      return { currentProduct: null, candidates: [] };
+    }
+
+    const params = new URLSearchParams();
+    params.set('barcode', query.barcode);
+    if (query.limit !== undefined) {
+      params.set('limit', String(query.limit));
+    }
+
+    const url = `${this.baseUrl}/api/price/alternatives/catalog?${params.toString()}`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const res = await this.fetchImpl(url, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        return { currentProduct: null, candidates: [] };
+      }
+
+      const data = (await res.json()) as CatalogAlternativesResponse;
+
+      if (!data || !Array.isArray(data.candidates)) {
+        return { currentProduct: null, candidates: [] };
+      }
+
+      return data;
+    } catch {
+      return { currentProduct: null, candidates: [] };
     } finally {
       clearTimeout(timer);
     }

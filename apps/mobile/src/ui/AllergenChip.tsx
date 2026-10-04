@@ -57,6 +57,8 @@ export function AllergenChip({ status, displayInfo }: AllergenChipProps) {
     <View
       style={{
         alignSelf: 'flex-start',
+        maxWidth: '100%',
+        flexShrink: 1,
         borderRadius: radii.sm,
         paddingVertical: 3,
         paddingHorizontal: spacing.sm,
@@ -64,7 +66,9 @@ export function AllergenChip({ status, displayInfo }: AllergenChipProps) {
       }}
       accessibilityLabel={`Alerjen: ${label}`}
     >
-      <Text style={{ fontSize: 12, fontWeight: '700', color: tone.fg }}>Alerjen: {label}</Text>
+      <Text style={{ fontSize: 12, fontWeight: '700', color: tone.fg }} numberOfLines={2}>
+        Alerjen: {label}
+      </Text>
     </View>
   );
 }

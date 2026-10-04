@@ -56,6 +56,8 @@ export function ScoreTab({ basketProfile, cartItems, userProfile, onQuantityChan
               item={item}
               quantityAmount={cartItem.quantity.amount}
               userProfile={userProfile}
+              productId={cartItem.productId}
+              packageSize={cartItem.packageSize}
               onQuantityChange={(nextAmount) => onQuantityChange(cartItem.key, nextAmount)}
               onRemove={() => onRemove(cartItem.key)}
               onPress={

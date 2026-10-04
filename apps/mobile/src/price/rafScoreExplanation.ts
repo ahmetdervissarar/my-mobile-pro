@@ -66,7 +66,12 @@ function getUnknownReasonFallback(reason: RafScoreReason): string | null {
 }
 
 function formatKnownReason(reason: RafScoreReason): string | null {
-  const label = getReasonParamText(reason, 'label');
+  // Cihaz testi: backend'in reason.params.label alanı ham/iç bir bileşen
+  // adı olabilir — kullanıcıya bu HİÇ gösterilmez. componentKey varsa her
+  // zaman YUKARIDAKİ (bu dosyadaki) insan-okur haritalamadan geçirilir;
+  // yoksa (bilinmeyen bileşen) ham etikete düşülür.
+  const componentKey = getReasonParamText(reason, 'componentKey');
+  const label = componentKey ? getRafScoreComponentLabel(componentKey) : getReasonParamText(reason, 'label');
 
   if (reason.code === 'price_missing') {
     return 'Fiyat verisi bulunamadı; fiyat bileşeni kısmi yorumlanır.';
@@ -133,6 +138,15 @@ function getRafScoreReasonItems(reasons: RafScoreReason[] | undefined): string[]
  */
 export function getRafScorePositiveItems(
   priceResult: PriceResolveResponse['result'],
+  options?: {
+    /**
+     * P2 invariant: profille çakışan alerjen varken "İçerik ve alerjen
+     * açısından ürün iyi durumda" gibi çelişkili bir olumlu-yön cümlesi
+     * HİÇ gösterilmez (bkz. cihaz testi — "Dikkat edilecekler" bölümünde
+     * çakışma varken bu cümle çıkıyordu).
+     */
+    hasAllergenConflict?: boolean;
+  },
 ): string[] {
   const reasons = priceResult.rafScore?.reasons;
 
@@ -142,6 +156,7 @@ export function getRafScorePositiveItems(
 
   return reasons
     .filter((reason) => reason.severity === 'positive')
+    .filter((reason) => !(options?.hasAllergenConflict && reason.category === 'content'))
     .map(formatKnownReason)
     .filter((item): item is string => Boolean(item))
     .slice(0, 5);

@@ -3,12 +3,18 @@
 //   npm run import:off-tr                          (API, sayfalı, ~15 dk)
 //   npm run import:off-tr -- --dump=/yol/openfoodfacts-products.jsonl.gz   (tam döküm, önerilen)
 // Çıktı: apps/backend/data/off-tr/products.jsonl + report.json (git'e eklenmez)
+// Üzerine yazma davranışı: ÜZERİNE YAZILIR ama atomik + yedekli — önce
+// products.jsonl.incoming'e yazılır, başarıyla tamamlanınca eski dosya
+// products.jsonl.bak-<zaman damgası>'na taşınır, yeni dosya onun YERİNE
+// geçer (bkz. finalizeImportOutput). Yan yana KALICI iki kopya tutulmaz;
+// yedek yalnız bir SONRAKİ re-import'a kadar geri dönüş içindir.
 import { createReadStream, createWriteStream, mkdirSync, writeFileSync } from 'node:fs';
 import { createGunzip } from 'node:zlib';
 import { createInterface } from 'node:readline';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildAllergenData } from '../../catalog/catalog.js';
+import { finalizeImportOutput } from './importFinalize.js';
 import { OFF_FIELDS, normalizeOffProduct, type OffImportRecord } from './normalize.js';
 
 const USER_AGENT = 'RafSkoru/0.2 (arastirma pilotu; iletisim: ahmetdervissarar@gmail.com)';
@@ -52,11 +58,14 @@ async function* fromDump(path: string): AsyncGenerator<Record<string, unknown>> 
   }
 }
 
+const STAGING_FILE_NAME = 'products.jsonl.incoming';
+const FINAL_FILE_NAME = 'products.jsonl';
+
 async function main() {
   const dumpArg = process.argv.find((a) => a.startsWith('--dump='))?.slice(7);
   const fetchedAt = new Date().toISOString();
   mkdirSync(OUT_DIR, { recursive: true });
-  const out = createWriteStream(resolve(OUT_DIR, 'products.jsonl'));
+  const out = createWriteStream(resolve(OUT_DIR, STAGING_FILE_NAME));
   const seen = new Set<string>();
   const stats = { source: dumpArg ? 'dump' : 'api', fetchedAt, raw: 0, invalidGtin: 0, duplicates: 0, written: 0,
     completeness: {} as Record<string, number>, allergenStatus: {} as Record<string, number>,
@@ -84,7 +93,23 @@ async function main() {
     if (rec.imageUrl) stats.withImage++;
     if (stats.written % 1000 === 0) console.log(`${stats.written} kayıt yazıldı`);
   }
-  out.end();
+  await new Promise<void>((done) => out.end(done));
+
+  const result = finalizeImportOutput({
+    outDir: OUT_DIR,
+    stagingFileName: STAGING_FILE_NAME,
+    finalFileName: FINAL_FILE_NAME,
+    writtenCount: stats.written,
+    backupSuffix: fetchedAt.replace(/[:.]/g, '-'),
+  });
+
+  if (result.skipped) {
+    console.error('Hiç kayıt yazılmadı — mevcut products.jsonl dokunulmadan bırakıldı.');
+    process.exitCode = 1;
+  } else if (result.backupPath) {
+    console.log(`Önceki dosya yedeklendi: ${result.backupPath}`);
+  }
+
   writeFileSync(resolve(OUT_DIR, 'report.json'), JSON.stringify(stats, null, 2));
   console.log(JSON.stringify(stats, null, 2));
 }

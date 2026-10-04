@@ -415,7 +415,10 @@ function textForDisplayLevel(level: AllergenDisplayLevel, labels: string[]): str
     case 'trace':
       return `Eser miktarda ${joinedLower} içerebilir`;
     case 'no_data':
-      return `Alerjen verisi yok (${joinedLower}) — etiketi kontrol edin`;
+      // Cihaz testi: AllergenChip bu metni "Alerjen: " önekiyle gösterir —
+      // burada "Alerjen" kelimesi TEKRAR geçerse "Alerjen: Alerjen verisi
+      // yok" gibi tekrarlı okunur. Önek zaten bağlamı veriyor, burada yok.
+      return `Veri yok (${joinedLower}) — etiketi kontrol edin`;
     case 'not_listed':
       return `Belirtilmemiş (${joinedLower})`;
   }

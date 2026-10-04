@@ -27,7 +27,15 @@ import {
   productFactsToSustainabilityInput,
   type ProductFacts,
 } from './productFacts/index.js';
-import { inferProductGroupKey, logAlternativeSuppression, resolveProductGroup } from './productGroups/index.js';
+import {
+  findProductGroupRegistryEntry,
+  inferProductGroupKey,
+  logAlternativeSuppression,
+  parsePackageSizeFromText,
+  resolveProductGroup,
+} from './productGroups/index.js';
+import { getCatalog } from '../catalog/catalog.js';
+import { UNCLASSIFIED_PRODUCT_GROUP_KEY } from '../catalog/productGroupMap.js';
 
 
 export interface PriceProviderServiceOptions {
@@ -102,11 +110,37 @@ function attachProductGroupKey(
     result.productGroupKey = legacyProductGroupKey;
   }
 
-  const resolution = resolveProductGroup({
-    productName,
-    barcode,
-    candidateGroupKey: providerProductGroupKey ?? legacyProductGroupKey,
-  });
+  // Cihaz testi: barkod yerel katalogda varsa, OFF categories_tags'ten
+  // türetilmiş sınıflandırma (CatalogProduct.productGroupKey — arama/
+  // kategori/alternatiflerin kullandığı AYNI, yetkili alan) ad-tabanlı
+  // sezgisel çıkarımdan (inferProductGroupKey/resolveProductGroup'un
+  // name_rule/off_assisted/candidateGroupKey yolları) ÖNCELİKLİDİR — 'unclassified'
+  // dahil, DOĞRUDAN kullanılır (arama da bu değeri olduğu gibi kullanıp sepete
+  // eklemeye izin veriyor). Aksi halde katalogda tanımlı ama adı sezgisel kural
+  // kümesiyle eşleşmeyen ürünlerde resolvedProductGroupKey null kalıyor ve
+  // "Sepete ekle" ürün sayfasında pasif kalıyordu — aynı ürün aramada "+" ile
+  // eklenebiliyordu (arama bu alanı doğrudan katalogdan okur, sezgisel
+  // çıkarıma hiç girmez).
+  const trustedCatalogGroupKey = barcode ? getCatalog().byId.get(barcode)?.productGroupKey : undefined;
+  const trustedRegistryEntry = trustedCatalogGroupKey
+    ? findProductGroupRegistryEntry(trustedCatalogGroupKey)
+    : undefined;
+
+  const resolution = trustedCatalogGroupKey
+    ? {
+        productGroupKey: trustedCatalogGroupKey,
+        coarseGroup: trustedRegistryEntry?.coarseGroup ?? null,
+        groupConfidence:
+          trustedCatalogGroupKey === UNCLASSIFIED_PRODUCT_GROUP_KEY ? ('unknown' as const) : ('exact' as const),
+        groupSource: 'barcode' as const,
+        packageSize: parsePackageSizeFromText(productName),
+        alternativesEligible: trustedRegistryEntry ? trustedRegistryEntry.alternativeEligibility !== 'disabled' : false,
+      }
+    : resolveProductGroup({
+        productName,
+        barcode,
+        candidateGroupKey: providerProductGroupKey ?? legacyProductGroupKey,
+      });
 
   result.resolvedProductGroupKey = resolution.productGroupKey;
   result.coarseGroup = resolution.coarseGroup;

@@ -1,6 +1,5 @@
-import { useNavigation, usePreventRemove } from '@react-navigation/native';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, router } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,13 +8,24 @@ import {
   loadUserSensitivityProfile,
   saveUserSensitivityProfile,
 } from '../../src/userProfile/userProfileStorage';
+import {
+  clearUnsavedProfileChanges,
+  interceptIfDirty,
+  setUnsavedProfileChanges,
+} from '../../src/userProfile/unsavedProfileChangesGuard';
 import { PrimaryButton } from '../../src/ui/PrimaryButton';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
+
+function confirmDiscardChanges(onDiscard: () => void): void {
+  Alert.alert('Değişiklikler kaydedilmedi', 'Kaydetmeden çıkmak istiyor musunuz?', [
+    { text: 'Vazgeç', style: 'cancel' },
+    { text: 'Kaydetmeden çık', style: 'destructive', onPress: onDiscard },
+  ]);
+}
 
 export default function ProfileAllergensScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
   const [selected, setSelected] = useState<AllergenKey[]>([]);
   const [isDirty, setIsDirty] = useState(false);
 
@@ -26,13 +36,21 @@ export default function ProfileAllergensScreen() {
   }, []);
 
   // Madde 5 (cihaz testi 1 Ekim): artık her dokunuşta otomatik kaydedilmez —
-  // yalnız "Kaydet" ile. Kaydedilmemiş değişiklikle çıkılırsa uyarı çıkar.
-  usePreventRemove(isDirty, ({ data }) => {
-    Alert.alert('Değişiklikler kaydedilmedi', 'Kaydetmeden çıkmak istiyor musunuz?', [
-      { text: 'Vazgeç', style: 'cancel' },
-      { text: 'Kaydetmeden çık', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
-    ]);
-  });
+  // yalnız "Kaydet" ile. Madde 3 (cihaz testi feat/catalog-alternatives):
+  // bu ekran (tabs) içinde href:null bir sekme olduğundan sekme değişimi
+  // 'beforeRemove' TETİKLEMEZ — uyarı artık paylaşılan guard üzerinden,
+  // hem "Profile dön" düğmesinde hem _layout.tsx'teki sekme dokunuşlarında
+  // çalışır. Guard her zaman yalnız ODAKTAKİ ekranın durumunu yansıtır.
+  useFocusEffect(
+    useCallback(() => {
+      setUnsavedProfileChanges(isDirty, confirmDiscardChanges);
+      return () => clearUnsavedProfileChanges();
+    }, [isDirty]),
+  );
+
+  const handleLeave = () => {
+    if (!interceptIfDirty(() => router.back())) router.back();
+  };
 
   const handleToggle = (key: AllergenKey) => {
     const next = selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key];
@@ -124,7 +142,7 @@ export default function ProfileAllergensScreen() {
         })}
       </View>
 
-      <PrimaryButton label="Profile dön" variant="secondary" onPress={() => router.back()} />
+      <PrimaryButton label="Profile dön" variant="secondary" onPress={handleLeave} />
     </ScrollView>
 
       <View

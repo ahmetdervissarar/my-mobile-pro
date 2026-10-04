@@ -1,4 +1,9 @@
-import type { CatalogAllergenData } from '../api/catalogTypes';
+import type {
+  CatalogAllergenData,
+  CatalogCompleteness,
+  CatalogNova,
+  CatalogNutriScore,
+} from '../api/catalogTypes';
 
 export type PriceSource =
   | 'manual_beta'
@@ -490,4 +495,37 @@ export interface AlternativeRecommendationsQuery {
   contentScore?: number | null;
   sustainabilityScore?: number | null;
   limit?: number;
+}
+
+/**
+ * GET /api/price/alternatives/catalog — gerçek katalogdan (11k+ ürün), aynı
+ * productGroupKey içinden alternatif önerisi. Yukarıdaki AlternativeRecommendation*
+ * (seed-candidates.json, fiyat odaklı) ile AYRI, bağımsız bir sözleşme —
+ * bkz. görev onayı: mevcut uç noktaya dokunulmadı.
+ */
+export interface CatalogAlternativesQuery {
+  barcode: string;
+  limit?: number;
+}
+
+export interface CatalogAlternativesResponse {
+  currentProduct: CatalogAlternativeCandidateDto | null;
+  candidates: CatalogAlternativeCandidateDto[];
+}
+
+export interface CatalogAlternativeCandidateDto {
+  productId: string;
+  name: string | null;
+  brand: string | null;
+  quantityText: string | null;
+  packageSize: { amount: number; unit: string } | null;
+  productGroupKey: string;
+  imageUrl: string | null;
+  nutriScore: CatalogNutriScore;
+  nova: CatalogNova;
+  allergenData: CatalogAllergenData;
+  completeness: CatalogCompleteness;
+  rafScore: RafScoreResult;
+  scoreCoverageKey: string;
+  scoreCoverageLabel: string;
 }

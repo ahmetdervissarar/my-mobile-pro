@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -9,7 +9,11 @@ import { getSearchCardMetaLine } from '../../src/features/search/searchCardPrese
 import { getDuplicateBarcodeSuffixes } from '../../src/features/search/suggestionDisambiguation';
 import { getAllergenBannerDataFromCatalog, type AllergenBannerData } from '../../src/features/productResult/helpers';
 import { addToCart, getCartItemKey, removeFromCart, suggestionToCartInput, useCart } from '../../src/state/cartStore';
-import { loadUserSensitivityProfile } from '../../src/userProfile/userProfileStorage';
+import { getProductDisplayName } from '../../src/ui/productDisplayName';
+import {
+  loadUserSensitivityProfile,
+  subscribeToUserSensitivityProfileChanges,
+} from '../../src/userProfile/userProfileStorage';
 import { emptyUserSensitivityProfile, type UserSensitivityProfile } from '../../src/userProfile/userProfileTypes';
 import { EmptyState } from '../../src/ui/EmptyState';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from '../../src/ui/theme';
@@ -54,6 +58,7 @@ export default function SearchScreen() {
   const initialQuery = Array.isArray(initialQueryParam) ? initialQueryParam[0] ?? '' : initialQueryParam ?? '';
 
   const [query, setQuery] = useState(initialQuery);
+  const searchInputRef = useRef<TextInput>(null);
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [searchErrorMessage, setSearchErrorMessage] = useState<string | null>(null);
@@ -62,11 +67,23 @@ export default function SearchScreen() {
   const cartItems = useCart();
   const duplicateBarcodeSuffixes = useMemo(() => getDuplicateBarcodeSuffixes(suggestions), [suggestions]);
 
-  useEffect(() => {
-    void loadUserSensitivityProfile()
-      .then(setUserProfile)
-      .catch(() => setUserProfile(emptyUserSensitivityProfile));
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      void loadUserSensitivityProfile()
+        .then((profile) => {
+          if (isActive) setUserProfile(profile);
+        })
+        .catch(() => {
+          if (isActive) setUserProfile(emptyUserSensitivityProfile);
+        });
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
+  useEffect(() => subscribeToUserSensitivityProfileChanges(setUserProfile), []);
 
   useEffect(() => {
     const trimmedQuery = query.trim();
@@ -148,23 +165,60 @@ export default function SearchScreen() {
       >
         <Text style={{ fontSize: 28, fontWeight: '800', color: colors.ink }}>Ürün Ara</Text>
 
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Ürün adı yazın"
-          placeholderTextColor={colors.muted}
-          accessibilityLabel="Ürün adı ara"
-          style={{
-            minHeight: MIN_TOUCH_TARGET,
-            borderWidth: 2,
-            borderColor: colors.pine2,
-            borderRadius: radii.lg,
-            paddingHorizontal: spacing.lg,
-            fontSize: 16,
-            color: colors.ink,
-            backgroundColor: colors.surface,
-          }}
-        />
+        <View style={{ position: 'relative', justifyContent: 'center' }}>
+          <TextInput
+            ref={searchInputRef}
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Ürün adı yazın"
+            placeholderTextColor={colors.muted}
+            accessibilityLabel="Ürün adı ara"
+            style={{
+              minHeight: MIN_TOUCH_TARGET,
+              borderWidth: 2,
+              borderColor: colors.pine2,
+              borderRadius: radii.lg,
+              paddingHorizontal: spacing.lg,
+              paddingRight: MIN_TOUCH_TARGET + spacing.sm,
+              fontSize: 16,
+              color: colors.ink,
+              backgroundColor: colors.surface,
+            }}
+          />
+
+          {query.length > 0 ? (
+            <Pressable
+              onPress={() => {
+                setQuery('');
+                searchInputRef.current?.focus();
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Aramayı temizle"
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: MIN_TOUCH_TARGET,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  backgroundColor: colors.soft,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.muted }}>✕</Text>
+              </View>
+            </Pressable>
+          ) : null}
+        </View>
 
         {isSuggesting ? <Text style={{ fontSize: 12.5, color: colors.muted }}>Öneriler aranıyor...</Text> : null}
 
@@ -193,21 +247,32 @@ export default function SearchScreen() {
             const key = getSuggestionKey(suggestion);
             const isAdded = cartItems.some((item) => item.key === getCartItemKey(suggestionToCartInput(suggestion)));
             const allergenBannerData = getSuggestionAllergenBannerData(suggestion, userProfile);
-            const metaLine =
+            const displayName =
               suggestion.type === 'product'
+                ? getProductDisplayName({
+                    label: suggestion.label,
+                    productId: suggestion.productId,
+                    packageSize: suggestion.packageSize,
+                  })
+                : { title: suggestion.label, unknownNameBarcode: null };
+            const metaLine = displayName.unknownNameBarcode
+              ? displayName.unknownNameBarcode
+              : suggestion.type === 'product'
                 ? getSearchCardMetaLine({
                     brand: suggestion.brand,
                     packageSize: suggestion.packageSize,
                   })
                 : 'Ürün grubu';
             const duplicateBarcodeSuffix =
-              suggestion.type === 'product' ? duplicateBarcodeSuffixes.get(suggestion.productId) : undefined;
+              suggestion.type === 'product' && !displayName.unknownNameBarcode
+                ? duplicateBarcodeSuffixes.get(suggestion.productId)
+                : undefined;
 
             return (
               <SearchResultRow
                 key={key}
                 imageUrl={suggestion.type === 'product' ? suggestion.imageUrl : undefined}
-                name={suggestion.label}
+                name={displayName.title}
                 metaLine={metaLine}
                 duplicateBarcodeSuffix={duplicateBarcodeSuffix}
                 allergenData={allergenBannerData}
