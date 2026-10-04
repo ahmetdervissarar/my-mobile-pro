@@ -343,7 +343,14 @@ function resolveCatalogProductGroup(record: OffImportRecord): {
   }
 
   const nameWithoutBrand = stripBrandFromName(record.name, record.brand);
-  const nameResolution = resolveProductGroup({ productName: nameWithoutBrand, barcode: record.gtin });
+  // rawProductName (marka DAHİL ham ad) exclude kontrolü için gerekli — bkz.
+  // resolveProductGroup.ts'teki alan yorumu (görev onayı, madde 11:
+  // "Haribo Happy Cola" marka çıkarılınca exclude:['haribo'] hiç tetiklenmiyordu).
+  const nameResolution = resolveProductGroup({
+    productName: nameWithoutBrand,
+    rawProductName: record.name,
+    barcode: record.gtin,
+  });
 
   if (nameResolution.productGroupKey && !RESTRICTED_PRODUCT_GROUP_KEYS.has(nameResolution.productGroupKey)) {
     return { productGroupKey: nameResolution.productGroupKey, productGroupSource: 'name' };

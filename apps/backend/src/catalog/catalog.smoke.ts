@@ -50,6 +50,24 @@ assert.equal(buildCatalogProduct(cheeseRecord).productGroupKey, 'cheese');
 const unknownCategoryRecord = makeRecord({ categories: ['en:some-unmapped-category'] });
 assert.equal(buildCatalogProduct(unknownCategoryRecord).productGroupKey, 'unclassified');
 
+// Madde 11 (görev onayı): "Haribo Happy Cola" gibi kola AROMALI jöle
+// şekerlemeler 'cola' (içecek) grubuna yanlışlıkla düşüyordu — marka adı
+// ("Haribo") ad-tabanlı eşleştirmeden önce isimden çıkarılıyor, bu yüzden
+// 'cola' grubunun exclude:['haribo'] kuralı hiçbir zaman tetiklenmiyordu.
+// Gerçek katalogdaki 3 bilinen hatalı ürün (data/off-tr/products.jsonl):
+for (const haribo of [
+  { gtin: '8691216022010', name: 'Haribo Happy Cola 80 G' },
+  { gtin: '8691216090446', name: 'Haribo happy cola' },
+  { gtin: '8691216106550', name: 'Haribo Dev Cola Yumuşak Şeker 18 G' },
+]) {
+  const record = makeRecord({ gtin: haribo.gtin, name: haribo.name, brand: 'Haribo', categories: [] });
+  assert.notEqual(
+    buildCatalogProduct(record).productGroupKey,
+    'cola',
+    `'${haribo.name}' kola İÇECEĞİ değil, 'cola' grubuna düşmemeli`,
+  );
+}
+
 // 2) Kendi Nutri-Score hesabımız (yeterli besin verisi var)
 const computedRecord = makeRecord({
   categories: [],
