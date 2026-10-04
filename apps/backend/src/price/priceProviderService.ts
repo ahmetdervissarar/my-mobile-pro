@@ -21,6 +21,7 @@ import {
 } from './contentScore/index.js';
 import {
   fetchOpenFoodFactsProductFactsByBarcode,
+  hasMeaningfulFoodFacts,
   productFactsFromCatalog,
   productFactsToContentScoreInput,
   productFactsToHealthScoreInput,
@@ -53,9 +54,18 @@ export interface PriceResolveResponse {
 
 /**
  * Önce yerel OFF-TR katalogda (bellekte, sunucu açılışında yüklenmiş) arar —
- * bulursa canlı OFF isteği HİÇ yapılmaz ve isComplete kapısı uygulanmaz
- * (katalogda ne varsa gösterilir; arama/sepetle tutarlılık, canlı-eksik-veri
- * filtresinden daha öncelikli). Katalogda yoksa eski canlı OFF yoluna düşer.
+ * bulursa canlı OFF isteği HİÇ yapılmaz ve bu kapı uygulanmaz (katalogda ne
+ * varsa gösterilir; arama/sepetle tutarlılık, canlı-eksik-veri filtresinden
+ * daha öncelikli). Katalogda yoksa eski canlı OFF yoluna düşer.
+ *
+ * Kapı: facts?.isComplete YERİNE hasMeaningfulFoodFacts kullanılır (bkz.
+ * görev onayı, madde 6). isComplete İKİLİ bir alan — nutriScore, novaGroup,
+ * trafficLight gibi TÜM alanlar doluysa true olur. Bu, alerjen/içindekiler
+ * verisi olan ama örneğin nutriScore'u eksik gerçek bir ürünü SESSİZCE
+ * atıyordu — kullanıcı o ürünün hiç bulunamadığını görüyordu, oysa en
+ * azından bir alerjen uyarısı üretilebilirdi. hasMeaningfulFoodFacts
+ * katmanlı tamlık kuralının eşiği: içindekiler/alerjen/katkı/nutriScore/
+ * novaGroup/trafficLight alanlarından EN AZ BİRİ varsa geçer.
  */
 async function tryFetchProductFacts(query: PriceQuery): Promise<ProductFacts | null> {
   const barcode = query.barcode?.trim();
@@ -72,7 +82,7 @@ async function tryFetchProductFacts(query: PriceQuery): Promise<ProductFacts | n
   try {
     const facts = await fetchOpenFoodFactsProductFactsByBarcode(barcode);
 
-    return facts?.isComplete ? facts : null;
+    return facts && hasMeaningfulFoodFacts(facts) ? facts : null;
   } catch {
     return null;
   }
