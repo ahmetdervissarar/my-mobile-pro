@@ -44,3 +44,6 @@ apps/mobile/.env
 
 # OFF Türkiye içe aktarma çıktısı (ODbL; repoya eklenmez)
 apps/backend/data/off-tr/
+
+# OCR dil verisi önbelleği (tesseract.js, çalışma zamanında yazılır — kaynak değil)
+apps/backend/data/ocr-cache/
