@@ -49,9 +49,11 @@ import {
   getAlternativesSummary,
   getAttentionSummary,
   getDataSourceSummary,
+  getEmptySectionsSummaryLine,
   getIngredientsSummary,
   getNutritionSummary,
   getPriceSummary,
+  isPriceSectionVisible,
 } from '../../src/features/productResult/sectionSummaries';
 import { StickyAddBar } from '../../src/features/productResult/StickyAddBar';
 import { UnknownProductNotice } from '../../src/features/productResult/UnknownProductNotice';
@@ -436,6 +438,14 @@ export default function ProductResultScreen() {
     ? getProductFactsConfidenceLabel(backendProductFacts.confidence)
     : null;
   const hasPrice = Boolean(priceResult?.price ?? null);
+  const hasIngredients = Boolean(displayIngredients?.trim());
+  const isPriceSectionVisibleNow = isPriceSectionVisible({ hasPrice, isPriceLoading });
+  const emptySectionsSummary = getEmptySectionsSummaryLine({
+    hasIngredients,
+    hasNutrition: hasAnyKnownTrafficLightLevel,
+    hasPrice,
+    isPriceLoading,
+  });
   // Fiyatsız değerlendirme (onaylı KARAR): fiyat bileşeni eksik ama puan
   // yine de hesaplandıysa (bkz. backend renormalizasyonu). Arama/kategori
   // listeleriyle AYNI paylaşılan kuralı kullanır (bkz. madde 4).
@@ -532,20 +542,30 @@ export default function ProductResultScreen() {
           }}
         />
 
-        {/* 4. Katlanmış bölümler — hepsi kapalı başlar. */}
+        {/* 4. Katlanmış bölümler — hepsi kapalı başlar. Verisi olmayan
+            bölüm (İçindekiler/Besin değerleri/Fiyat) hiç render edilmez —
+            Dikkat edilecekler/Veri kaynağı/Alerjen bu kuralın dışındadır
+            (bkz. görev onayı, İş 1). */}
+        {emptySectionsSummary ? (
+          <Text style={{ fontSize: 12, color: colors.muted }}>{emptySectionsSummary}</Text>
+        ) : null}
         <View style={{ gap: spacing.sm }}>
-          <CollapsibleSection title="İçindekiler" summary={getIngredientsSummary(displayIngredients)}>
-            <Text style={{ fontSize: 13, color: colors.ink, lineHeight: 18 }}>
-              {displayIngredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
-            </Text>
-          </CollapsibleSection>
+          {hasIngredients ? (
+            <CollapsibleSection title="İçindekiler" summary={getIngredientsSummary(displayIngredients)}>
+              <Text style={{ fontSize: 13, color: colors.ink, lineHeight: 18 }}>
+                {displayIngredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
+              </Text>
+            </CollapsibleSection>
+          ) : null}
 
-          <CollapsibleSection
-            title="Besin değerleri"
-            summary={getNutritionSummary(hasAnyKnownTrafficLightLevel)}
-          >
-            <NutritionSection trafficLight={trafficLight} />
-          </CollapsibleSection>
+          {hasAnyKnownTrafficLightLevel ? (
+            <CollapsibleSection
+              title="Besin değerleri"
+              summary={getNutritionSummary(hasAnyKnownTrafficLightLevel)}
+            >
+              <NutritionSection trafficLight={trafficLight} />
+            </CollapsibleSection>
+          ) : null}
 
           <CollapsibleSection
             title="Dikkat edilecekler"
@@ -574,15 +594,17 @@ export default function ProductResultScreen() {
             />
           </CollapsibleSection>
 
-          <CollapsibleSection title="Fiyat" summary={getPriceSummary(hasPrice, isPriceLoading)}>
-            <PriceSection
-              isPriceLoading={isPriceLoading}
-              priceResult={priceResult}
-              priceDisclaimer={priceDisclaimer}
-              priceError={priceError}
-              fallbackPriceText={result.priceText}
-            />
-          </CollapsibleSection>
+          {isPriceSectionVisibleNow ? (
+            <CollapsibleSection title="Fiyat" summary={getPriceSummary(hasPrice, isPriceLoading)}>
+              <PriceSection
+                isPriceLoading={isPriceLoading}
+                priceResult={priceResult}
+                priceDisclaimer={priceDisclaimer}
+                priceError={priceError}
+                fallbackPriceText={result.priceText}
+              />
+            </CollapsibleSection>
+          ) : null}
 
           {alternativeSections.totalCount > 0 ? (
             <CollapsibleSection title="Alternatifler" summary={getAlternativesSummary(alternativeSections.totalCount)}>

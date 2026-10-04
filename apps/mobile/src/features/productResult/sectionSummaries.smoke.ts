@@ -4,9 +4,11 @@ import {
   getAlternativesSummary,
   getAttentionSummary,
   getDataSourceSummary,
+  getEmptySectionsSummaryLine,
   getIngredientsSummary,
   getNutritionSummary,
   getPriceSummary,
+  isPriceSectionVisible,
 } from './sectionSummaries';
 
 assert.equal(getIngredientsSummary(null), 'Veri yok');
@@ -32,5 +34,30 @@ assert.equal(getPriceSummary(true, false), null);
 
 assert.equal(getAlternativesSummary(0), null);
 assert.equal(getAlternativesSummary(3), '3 seçenek');
+
+// ── İş 1 (feat/ui-clarity, görev onayı): fiyat yüklenirken henüz "veri
+// yok" sayılmaz — sonuç gelmeden bölüm yanlışlıkla gizlenmesin. ──────────
+assert.equal(isPriceSectionVisible({ hasPrice: false, isPriceLoading: true }), true);
+assert.equal(isPriceSectionVisible({ hasPrice: false, isPriceLoading: false }), false);
+assert.equal(isPriceSectionVisible({ hasPrice: true, isPriceLoading: false }), true);
+
+assert.equal(
+  getEmptySectionsSummaryLine({ hasIngredients: true, hasNutrition: true, hasPrice: true, isPriceLoading: false }),
+  null,
+  'hiçbir konu eksik değilse özet satırı hiç gösterilmemeli',
+);
+assert.equal(
+  getEmptySectionsSummaryLine({ hasIngredients: false, hasNutrition: false, hasPrice: false, isPriceLoading: false }),
+  '3 konuda veri yok: içindekiler, besin değerleri, fiyat',
+);
+assert.equal(
+  getEmptySectionsSummaryLine({ hasIngredients: true, hasNutrition: false, hasPrice: true, isPriceLoading: false }),
+  '1 konuda veri yok: besin değerleri',
+);
+assert.equal(
+  getEmptySectionsSummaryLine({ hasIngredients: true, hasNutrition: true, hasPrice: false, isPriceLoading: true }),
+  null,
+  'fiyat yükleniyorken eksik sayılmamalı',
+);
 
 console.log('SECTION_SUMMARIES_SMOKE_OK');
