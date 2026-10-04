@@ -25,8 +25,10 @@ import { spacing, useTheme } from '../../src/ui/theme';
 
 import { AllergenDetailSheet } from '../../src/features/productResult/AllergenDetailSheet';
 import { AllergenStatusRow } from '../../src/features/productResult/AllergenStatusRow';
+import { getAllergenStatusLine } from '../../src/features/productResult/allergenStatusLine';
 import { AlternativesSection } from '../../src/features/productResult/AlternativesSection';
 import { AttentionSection } from '../../src/features/productResult/AttentionSection';
+import { getDecisionSummaryLine } from '../../src/features/productResult/decisionSummary';
 import { DataSourceSection } from '../../src/features/productResult/DataSourceSection';
 import { FooterSection } from '../../src/features/productResult/FooterSection';
 import {
@@ -45,6 +47,7 @@ import { NutritionSection } from '../../src/features/productResult/NutritionSect
 import { PriceSection } from '../../src/features/productResult/PriceSection';
 import { ProductHero } from '../../src/features/productResult/ProductHero';
 import { FixedHeaderBar } from '../../src/ui/FixedHeaderBar';
+import { PrimaryButton } from '../../src/ui/PrimaryButton';
 import {
   getAlternativesSummary,
   getAttentionSummary,
@@ -107,6 +110,11 @@ export default function ProductResultScreen() {
   const [isSubmittingBetaFeedback, setIsSubmittingBetaFeedback] = useState(false);
   const [betaFeedbackError, setBetaFeedbackError] = useState<string | null>(null);
   const [isAllergenSheetVisible, setIsAllergenSheetVisible] = useState(false);
+  // İş 4 (feat/ui-clarity, görev onayı): ilk ekran (kaydırmadan önce) yalnız
+  // kimlik + alerjen satırı + tek cümlelik özet + puan + eylem düğmeleri
+  // gösterir; katlanır bölümler (ve footer) bu açılana kadar HİÇ render
+  // edilmez (bkz. productResultDetailsGateGuard.smoke.ts).
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Cihaz testi: profil A ile ürün açılıp sonra B'ye değiştirilip bu ürüne
   // dönüldüğünde uyarı B'ye göre olmalı — mount'ta BİR KEZ okumak yetmez.
@@ -387,6 +395,17 @@ export default function ProductResultScreen() {
     ? getRafScorePositiveItems(priceResult, { hasAllergenConflict: isAllergenConflict })
     : [];
 
+  // İş 4 (feat/ui-clarity, görev onayı + ek 3): tek cümlelik karar özeti —
+  // allergenStatusLine, AllergenStatusRow'un AYNI metni (çakışma varsa alt
+  // sabit çubuğun üstünde de TEKRARLANIR, bkz. StickyAddBar öncesi blok).
+  const allergenStatusLine = getAllergenStatusLine(allergenBannerData);
+  const decisionSummaryLine = getDecisionSummaryLine({
+    isAllergenConflict,
+    allergenConflictText: isAllergenConflict ? allergenStatusLine.text : null,
+    topWarningTitle: nonCriticalWarnings[0]?.title ?? null,
+    topPositiveItem: rafScorePositiveItems[0] ?? null,
+  });
+
   // Alternatifler: profil eleme BURADA yapılır (profil cihazdan çıkmaz) —
   // backend yalnız aynı grup içindeki, mevcut üründen düşük puanlı olmayan
   // ham adayları döner (bkz. price/alternatives/catalogAlternatives.ts).
@@ -527,6 +546,21 @@ export default function ProductResultScreen() {
         {/* 2. Alerjen durumu — tek satır, her zaman görünür, dokununca ayrıntı paneli açılır. */}
         <AllergenStatusRow data={allergenBannerData} onPress={() => setIsAllergenSheetVisible(true)} />
 
+        {/* 2.5 Tek cümlelik karar özeti — sinyal yoksa HİÇ render edilmez
+            (bkz. decisionSummary.ts, ek 3). Çakışma varsa bu AYNI metin alt
+            sabit çubuğun üstünde de tekrarlanır (kaydırma konumundan bağımsız). */}
+        {decisionSummaryLine ? (
+          <Text
+            style={{
+              fontSize: 13.5,
+              fontWeight: '600',
+              color: isAllergenConflict ? colors.danger : colors.ink,
+            }}
+          >
+            {decisionSummaryLine}
+          </Text>
+        ) : null}
+
         {/* 3. Üç küçük gösterge. */}
         <IndicatorRow
           rafScore={rafScore?.score ?? null}
@@ -542,84 +576,106 @@ export default function ProductResultScreen() {
           }}
         />
 
-        {/* 4. Katlanmış bölümler — hepsi kapalı başlar. Verisi olmayan
-            bölüm (İçindekiler/Besin değerleri/Fiyat) hiç render edilmez —
-            Dikkat edilecekler/Veri kaynağı/Alerjen bu kuralın dışındadır
-            (bkz. görev onayı, İş 1). */}
-        {emptySectionsSummary ? (
-          <Text style={{ fontSize: 12, color: colors.muted }}>{emptySectionsSummary}</Text>
-        ) : null}
-        <View style={{ gap: spacing.sm }}>
-          {hasIngredients ? (
-            <CollapsibleSection title="İçindekiler" summary={getIngredientsSummary(displayIngredients)}>
-              <Text style={{ fontSize: 13, color: colors.ink, lineHeight: 18 }}>
-                {displayIngredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
-              </Text>
-            </CollapsibleSection>
-          ) : null}
-
-          {hasAnyKnownTrafficLightLevel ? (
-            <CollapsibleSection
-              title="Besin değerleri"
-              summary={getNutritionSummary(hasAnyKnownTrafficLightLevel)}
-            >
-              <NutritionSection trafficLight={trafficLight} />
-            </CollapsibleSection>
-          ) : null}
-
-          <CollapsibleSection
-            title="Dikkat edilecekler"
-            summary={getAttentionSummary(nonCriticalWarnings.length)}
-          >
-            <AttentionSection
-              warnings={nonCriticalWarnings}
-              positiveItems={rafScorePositiveItems}
-              additives={displayAdditives}
-            />
-          </CollapsibleSection>
-
-          <CollapsibleSection
-            title="Veri kaynağı ve güven"
-            summary={getDataSourceSummary(dataSourceConfidenceLabel, Boolean(productFactsMissingText))}
-          >
-            <DataSourceSection
-              productFacts={backendProductFacts}
-              explanationItems={rafScoreExplanationItems}
-              rafScore={rafScore}
-              healthScore={healthScore}
-              sustainability={sustainability}
-              productName={displayProductName}
-              barcode={displayBarcode}
-              searchSourceLabel={sourceLabelMap[result.searchSource] ?? result.searchSource}
-            />
-          </CollapsibleSection>
-
-          {isPriceSectionVisibleNow ? (
-            <CollapsibleSection title="Fiyat" summary={getPriceSummary(hasPrice, isPriceLoading)}>
-              <PriceSection
-                isPriceLoading={isPriceLoading}
-                priceResult={priceResult}
-                priceDisclaimer={priceDisclaimer}
-                priceError={priceError}
-                fallbackPriceText={result.priceText}
-              />
-            </CollapsibleSection>
-          ) : null}
-
-          {alternativeSections.totalCount > 0 ? (
-            <CollapsibleSection title="Alternatifler" summary={getAlternativesSummary(alternativeSections.totalCount)}>
-              <AlternativesSection sections={alternativeSections.sections} userProfile={userProfile} />
-            </CollapsibleSection>
-          ) : null}
-        </View>
-
-        <FooterSection
-          submittedFeedbackType={submittedFeedbackType}
-          isSubmittingBetaFeedback={isSubmittingBetaFeedback}
-          betaFeedbackError={betaFeedbackError}
-          onBetaFeedbackPress={(type) => void handleBetaFeedbackPress(type)}
+        {/* İş 4 (görev onayı): "Ayrıntılar" — katlanır bölümler bu açılana
+            kadar HİÇ render edilmez (ilk ekran kaydırmadan sığsın diye). */}
+        <PrimaryButton
+          label={isDetailsOpen ? 'Ayrıntıları gizle' : 'Ayrıntılar'}
+          variant="secondary"
+          onPress={() => setIsDetailsOpen((current) => !current)}
+          accessibilityLabel={isDetailsOpen ? 'Ürün ayrıntılarını gizle' : 'Ürün ayrıntılarını göster'}
         />
+
+        {isDetailsOpen ? (
+          <>
+            {/* 4. Katlanmış bölümler — hepsi kapalı başlar. Verisi olmayan
+                bölüm (İçindekiler/Besin değerleri/Fiyat) hiç render edilmez —
+                Dikkat edilecekler/Veri kaynağı/Alerjen bu kuralın dışındadır
+                (bkz. görev onayı, İş 1). */}
+            {emptySectionsSummary ? (
+              <Text style={{ fontSize: 12, color: colors.muted }}>{emptySectionsSummary}</Text>
+            ) : null}
+            <View style={{ gap: spacing.sm }}>
+              {hasIngredients ? (
+                <CollapsibleSection title="İçindekiler" summary={getIngredientsSummary(displayIngredients)}>
+                  <Text style={{ fontSize: 13, color: colors.ink, lineHeight: 18 }}>
+                    {displayIngredients?.trim() || 'İçindekiler bilgisi bulunamadı.'}
+                  </Text>
+                </CollapsibleSection>
+              ) : null}
+
+              {hasAnyKnownTrafficLightLevel ? (
+                <CollapsibleSection
+                  title="Besin değerleri"
+                  summary={getNutritionSummary(hasAnyKnownTrafficLightLevel)}
+                >
+                  <NutritionSection trafficLight={trafficLight} />
+                </CollapsibleSection>
+              ) : null}
+
+              <CollapsibleSection
+                title="Dikkat edilecekler"
+                summary={getAttentionSummary(nonCriticalWarnings.length)}
+              >
+                <AttentionSection
+                  warnings={nonCriticalWarnings}
+                  positiveItems={rafScorePositiveItems}
+                  additives={displayAdditives}
+                />
+              </CollapsibleSection>
+
+              <CollapsibleSection
+                title="Veri kaynağı ve güven"
+                summary={getDataSourceSummary(dataSourceConfidenceLabel, Boolean(productFactsMissingText))}
+              >
+                <DataSourceSection
+                  productFacts={backendProductFacts}
+                  explanationItems={rafScoreExplanationItems}
+                  rafScore={rafScore}
+                  healthScore={healthScore}
+                  sustainability={sustainability}
+                  productName={displayProductName}
+                  barcode={displayBarcode}
+                  searchSourceLabel={sourceLabelMap[result.searchSource] ?? result.searchSource}
+                />
+              </CollapsibleSection>
+
+              {isPriceSectionVisibleNow ? (
+                <CollapsibleSection title="Fiyat" summary={getPriceSummary(hasPrice, isPriceLoading)}>
+                  <PriceSection
+                    isPriceLoading={isPriceLoading}
+                    priceResult={priceResult}
+                    priceDisclaimer={priceDisclaimer}
+                    priceError={priceError}
+                    fallbackPriceText={result.priceText}
+                  />
+                </CollapsibleSection>
+              ) : null}
+
+              {alternativeSections.totalCount > 0 ? (
+                <CollapsibleSection title="Alternatifler" summary={getAlternativesSummary(alternativeSections.totalCount)}>
+                  <AlternativesSection sections={alternativeSections.sections} userProfile={userProfile} />
+                </CollapsibleSection>
+              ) : null}
+            </View>
+
+            <FooterSection
+              submittedFeedbackType={submittedFeedbackType}
+              isSubmittingBetaFeedback={isSubmittingBetaFeedback}
+              betaFeedbackError={betaFeedbackError}
+              onBetaFeedbackPress={(type) => void handleBetaFeedbackPress(type)}
+            />
+          </>
+        ) : null}
       </ScrollView>
+
+      {/* İş 4 (görev onayı): profil çakışması varsa AllergenStatusRow ile
+          AYNI metin — kaydırma konumundan bağımsız, sabit çubuğun üstünde
+          tekrarlanır (bkz. allergenStatusLine, tek kaynak). */}
+      {isAllergenConflict ? (
+        <View style={{ paddingHorizontal: spacing.xl, paddingTop: spacing.sm, backgroundColor: colors.bg }}>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.danger }}>{allergenStatusLine.text}</Text>
+        </View>
+      ) : null}
 
       <StickyAddBar cartInput={cartInput} disabledReason={cartDisabledReason} />
 
