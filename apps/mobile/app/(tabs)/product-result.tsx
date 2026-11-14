@@ -18,6 +18,7 @@ import { PriceClient } from '../../src/price/priceClient';
 import type { CatalogAlternativesResponse, PriceResolveResponse } from '../../src/price/types';
 import { buildAlternativeSections } from '../../src/features/alternatives/buildAlternativeSections';
 import { getRafScoreComponentBreakdownText, getRafScoreExplanationItems, getRafScorePositiveItems } from '../../src/price/rafScoreExplanation';
+import { getProductFactsSourceLabel } from '../../src/price/productFactsSourceLabel';
 import { isRafScorePriceless as isPriceless } from '../../src/price/rafScorePriceless';
 import { recordRecentlyViewed } from '../../src/state/recentlyViewedStore';
 import { CollapsibleSection } from '../../src/ui/CollapsibleSection';
@@ -349,7 +350,7 @@ export default function ProductResultScreen() {
   const displayAdditives = backendProductFacts ? backendProductFacts.additives ?? [] : result.additives;
   const displayIngredients = backendProductFacts?.ingredientsText ?? result.ingredients;
   const productFactsSourceText = backendProductFacts
-    ? `Ürün analiz verisi: ${backendProductFacts.dataSource === 'off' ? 'Open Food Facts (ODbL)' : 'Beta çıkarım'}${backendProductFacts.isComplete ? '' : ' (kısmi veri)'}`
+    ? `Ürün analiz verisi: ${getProductFactsSourceLabel(backendProductFacts.dataSource)}${backendProductFacts.isComplete ? '' : ' (kısmi veri)'}`
     : null;
   const productFactsMissingText = formatProductFactsMissingFields(backendProductFacts);
 

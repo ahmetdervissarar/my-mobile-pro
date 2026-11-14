@@ -265,7 +265,12 @@ export interface EnrichedMarketOffer {
   note?: string;
 }
 
-export type ProductFactsSource = 'off' | 'beta_inference';
+/**
+ * Ürün verisinin kaynak sınıfı (ADR-009 §4). Backend kopyası:
+ * apps/backend/src/price/productFacts/types.ts — ikisi AYNI değişiklikte
+ * güncellenir. Kullanıcıya görünen ad: productFactsSourceLabel.ts.
+ */
+export type ProductFactsSource = 'off' | 'rafskoru_verified' | 'label_unverified' | 'beta_inference';
 
 export type ProductFactsNutriScoreGrade = 'A' | 'B' | 'C' | 'D' | 'E';
 

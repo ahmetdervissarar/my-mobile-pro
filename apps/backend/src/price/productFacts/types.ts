@@ -1,6 +1,16 @@
 import type { CatalogAllergenData } from '../../catalog/catalog.js';
 
-export type ProductFactsSource = 'off' | 'beta_inference';
+/**
+ * Ürün verisinin kaynak sınıfı (ADR-009 §4). Her kaynağın izinleri tek yerde
+ * tanımlıdır: sourcePolicy.ts. Mobil kopya: apps/mobile/src/price/types.ts —
+ * ikisi AYNI değişiklikte güncellenir.
+ *
+ *   off               Open Food Facts yapılandırılmış verisi
+ *   rafskoru_verified İnsan onaylı etiket kaydı (labelStore, güncel sürüm)
+ *   label_unverified  Etiket fotoğrafından okunmuş, henüz onaylanmamış aday
+ *   beta_inference    Ad/kategori tahmini (yalnız "tahmin" etiketiyle)
+ */
+export type ProductFactsSource = 'off' | 'rafskoru_verified' | 'label_unverified' | 'beta_inference';
 
 export type ProductFactsNutriScoreGrade = 'A' | 'B' | 'C' | 'D' | 'E';
 
