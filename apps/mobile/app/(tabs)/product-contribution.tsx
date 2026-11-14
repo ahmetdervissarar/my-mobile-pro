@@ -154,7 +154,7 @@ export default function ProductContributionScreen() {
             <PrimaryButton label="Vazgeç" variant="secondary" onPress={() => setActiveSlot(null)} />
           </View>
           <View style={{ flex: 1 }}>
-            <PrimaryButton label="Çek" variant="citrus" onPress={() => void handleCapture()} />
+            <PrimaryButton label="Çek" variant="accent" onPress={() => void handleCapture()} />
           </View>
         </View>
       </View>

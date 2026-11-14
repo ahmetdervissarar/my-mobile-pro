@@ -8,7 +8,7 @@ import { ActivityIndicator, Pressable, Text } from 'react-native';
 import { getPrimaryButtonDisabledState } from './primaryButtonDisabledState';
 import { MIN_TOUCH_TARGET, radii, spacing, useTheme } from './theme';
 
-export type PrimaryButtonVariant = 'primary' | 'secondary' | 'citrus' | 'ghost';
+export type PrimaryButtonVariant = 'primary' | 'secondary' | 'accent' | 'ghost';
 
 export interface PrimaryButtonProps {
   label: string;
@@ -32,8 +32,11 @@ export function PrimaryButton({
   const variantStyle = {
     primary: { backgroundColor: colors.pine, borderWidth: 0, textColor: '#fff' },
     secondary: { backgroundColor: colors.surface, borderWidth: 1, textColor: colors.ink },
-    citrus: { backgroundColor: colors.citrus, borderWidth: 0, textColor: '#1B1B1B' },
-    ghost: { backgroundColor: 'transparent', borderWidth: 0, textColor: colors.pine2 },
+    // İş 3 (görev onayı): TEK eylem rengi — "Sepete ekle" dahil bu varyantı
+    // kullanan her düğme accent/onAccent kullanır (eski 'citrus' sarı
+    // tondu, uyarı sarısıyla karışıyordu).
+    accent: { backgroundColor: colors.accent, borderWidth: 0, textColor: colors.onAccent },
+    ghost: { backgroundColor: 'transparent', borderWidth: 0, textColor: colors.accent },
   }[variant];
 
   const { isPressDisabled, showMutedStyle } = getPrimaryButtonDisabledState(disabled, loading);

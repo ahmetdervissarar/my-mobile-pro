@@ -1,7 +1,7 @@
 import { Image, Text, View } from 'react-native';
 
 import { cachedImageSource } from '../../ui/cachedImageSource';
-import { radii, spacing, useTheme } from '../../ui/theme';
+import { radii, spacing, typography, useTheme } from '../../ui/theme';
 
 export interface ProductHeroProps {
   name: string;
@@ -39,10 +39,10 @@ export function ProductHero({ name, barcode, imageUrl, isPhotoSearch }: ProductH
         )}
 
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.ink }} numberOfLines={3}>
+          <Text style={{ ...typography.productName, color: colors.ink }} numberOfLines={3}>
             {name}
           </Text>
-          <Text style={{ fontSize: 13, color: colors.muted }}>Barkod: {barcode || 'bilinmiyor'}</Text>
+          <Text style={{ ...typography.body, color: colors.muted }}>Barkod: {barcode || 'bilinmiyor'}</Text>
         </View>
       </View>
 

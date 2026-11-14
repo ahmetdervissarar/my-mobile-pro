@@ -234,7 +234,7 @@ export default function SearchScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Kayıtlı olmayan ürünü ekle"
               >
-                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.pine2 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.accent }}>
                   Kayıtlı olmayan ürünü ekle
                 </Text>
               </Pressable>
@@ -322,17 +322,17 @@ export default function SearchScreen() {
             bottom: spacing.xl,
             minHeight: MIN_TOUCH_TARGET,
             borderRadius: radii.lg,
-            backgroundColor: colors.citrus,
+            backgroundColor: colors.accent,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
             paddingHorizontal: spacing.lg,
           }}
         >
-          <Text style={{ fontSize: 15, fontWeight: '800', color: '#1B1B1B' }}>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.onAccent }}>
             Sepet · {cartItems.length} ürün
           </Text>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: '#1B1B1B' }}>Sepete git</Text>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.onAccent }}>Sepete git</Text>
         </Pressable>
       ) : null}
 

@@ -20,7 +20,21 @@ export interface ThemeColors {
   pine: string;
   pine2: string;
   leaf: string;
-  citrus: string;
+  /**
+   * İş 3 (feat/ui-clarity, görev onayı): TEK eylem/marka rengi — "Sepete
+   * ekle", alt menü etkin sekme, ana ekran barkod kartı ve bağlantı
+   * metinleri hepsi BU token'ı kullanır. Önceki `citrus` (sarı/gold) sarı
+   * uyarı rengiyle (`caution`) karışıyordu; bu yüzden tamamen kaldırıldı —
+   * hiçbir eylem öğesi artık uyarı renklerinden (kırmızı/turuncu/sarı/yeşil)
+   * birini kullanmıyor. Kontrast (WCAG AA, ≥4.5:1, doğrulandı):
+   *   light: accent-üzeri onAccent metni 5.22:1; accent metin/ikon olarak
+   *     bg üzerinde 4.79:1, surface üzerinde 5.22:1.
+   *   dark: accent-üzeri onAccent metni 7.55:1; accent metin/ikon olarak
+   *     bg üzerinde 7.55:1, surface üzerinde 6.83:1.
+   */
+  accent: string;
+  /** accent arka planı üzerindeki metin/ikon rengi — temaya göre değişir (bkz. accent). */
+  onAccent: string;
   danger: string;
   dangerBg: string;
   warn: string;
@@ -31,7 +45,7 @@ export interface ThemeColors {
   infoBg: string;
 }
 
-const lightColors: ThemeColors = {
+export const lightColors: ThemeColors = {
   bg: '#F2F6F3',
   surface: '#FFFFFF',
   ink: '#13241C',
@@ -41,7 +55,8 @@ const lightColors: ThemeColors = {
   pine: '#0F3D2E',
   pine2: '#18583F',
   leaf: '#2E9E5B',
-  citrus: '#F5B700',
+  accent: '#1D6FB8',
+  onAccent: '#FFFFFF',
   danger: '#B42318',
   dangerBg: '#FDECEA',
   warn: '#9A4D00',
@@ -62,7 +77,8 @@ const darkColors: ThemeColors = {
   pine: '#123F30',
   pine2: '#1C5A43',
   leaf: '#2E9E5B',
-  citrus: '#F5B700',
+  accent: '#5AA9FF',
+  onAccent: '#0D1512',
   danger: '#FF8A80',
   dangerBg: '#3A1714',
   warn: '#FFB74D',
@@ -92,13 +108,21 @@ export const radii = {
   pill: 999,
 } as const;
 
+/**
+ * İş 3 (feat/ui-clarity, görev onayı): 4 boyuta indirildi — başlık/ürün
+ * adı/gövde/küçük not. Önceki 7 token (h1/h2/title/body/label/caption/
+ * small) hiçbir yerde kullanılmıyordu (her bileşen kendi fontSize'ını
+ * elle yazıyordu) — bu yüzden saf bir "token sayısı azaltma" değil,
+ * gerçek kullanıma geçiş: ürün sayfası ve alt bileşenleri artık bu 4
+ * token'ı referans alır (bkz. ProductHero, CollapsibleSection,
+ * WarningsSection, PositivesSection, FooterSection, AllergenDetailSheet,
+ * LegalNoticeModal). Kapsam yalnız ürün sayfası — tüm uygulamanın her
+ * fontSize'ı bu görevde değiştirilmedi.
+ */
 export const typography = {
-  h1: { fontSize: 28, fontWeight: '800' as const, letterSpacing: -0.4 },
-  h2: { fontSize: 18, fontWeight: '700' as const },
-  title: { fontSize: 22, fontWeight: '800' as const },
-  body: { fontSize: 16, fontWeight: '400' as const },
-  label: { fontSize: 14, fontWeight: '600' as const },
-  caption: { fontSize: 13, fontWeight: '500' as const },
+  title: { fontSize: 17, fontWeight: '800' as const },
+  productName: { fontSize: 22, fontWeight: '800' as const },
+  body: { fontSize: 13, fontWeight: '400' as const },
   small: { fontSize: 11.5, fontWeight: '700' as const },
 };
 

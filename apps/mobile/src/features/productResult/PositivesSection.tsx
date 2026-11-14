@@ -1,6 +1,6 @@
 import { Text, View } from 'react-native';
 
-import { radii, spacing, useTheme } from '../../ui/theme';
+import { radii, spacing, typography, useTheme } from '../../ui/theme';
 
 export interface PositivesSectionProps {
   items: string[];
@@ -11,6 +11,10 @@ export interface PositivesSectionProps {
  * severity='positive' işaretlediği rafScore gerekçelerini gösterir (bkz.
  * rafScoreExplanation.ts). Skor mantığı üretmez. Boşsa HİÇBİR ŞEY döndürmez
  * (bkz. WarningsSection'daki aynı gerekçe).
+ *
+ * İş 3 (feat/ui-clarity, görev onayı): madde başındaki ✓ `leaf` (yeşil) —
+ * "yeşil yalnız doğrulanmış olumlu durum" kuralı; metin gövdesi okunabilirlik
+ * için `ink` kalır, yalnız işaretçi renklendirildi.
  */
 export function PositivesSection({ items }: PositivesSectionProps) {
   const { colors } = useTheme();
@@ -29,8 +33,9 @@ export function PositivesSection({ items }: PositivesSectionProps) {
       }}
     >
       {items.map((item) => (
-        <Text key={item} style={{ fontSize: 13.5, color: colors.ink, lineHeight: 19 }}>
-          • {item}
+        <Text key={item} style={{ ...typography.body, color: colors.ink, lineHeight: 19 }}>
+          <Text style={{ color: colors.leaf, fontWeight: '800' }}>✓ </Text>
+          {item}
         </Text>
       ))}
     </View>

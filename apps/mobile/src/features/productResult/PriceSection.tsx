@@ -119,7 +119,7 @@ export function PriceSection({
         accessibilityRole="button"
         accessibilityLabel={isDetailsOpen ? 'Fiyat detaylarını gizle' : 'Fiyat detaylarını göster'}
       >
-        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.pine2 }}>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.accent }}>
           {isDetailsOpen ? 'Detayları gizle' : 'Detayları göster'}
         </Text>
       </Pressable>

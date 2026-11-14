@@ -47,3 +47,40 @@ export function getPriceSummary(hasPrice: boolean, isLoading: boolean): string |
 export function getAlternativesSummary(totalCount: number): string | null {
   return totalCount > 0 ? `${totalCount} seçenek` : null;
 }
+
+/**
+ * İş 1 (feat/ui-clarity, görev onayı): verisi olmayan bir katlanır bölüm
+ * (İçindekiler/Besin değerleri/Fiyat) artık HİÇ render edilmiyor — ama
+ * kullanıcı "uygulama çalışmıyor" sanmasın diye kaç konunun atlandığı tek
+ * satırda özetlenir. Alerjen ve Veri kaynağı bölümleri bu mantığın DIŞINDA
+ * (çağıran taraf onları zaten her zaman render eder) — burada hiç geçmezler.
+ * Dikkat edilecekler de dışında: "Yok" riskin DEĞERLENDİRİLİP bulunmadığı
+ * anlamına gelir, "veri yok" değildir — bu yüzden hiç gizlenmez.
+ */
+export interface EmptySectionsSummaryInput {
+  hasIngredients: boolean;
+  hasNutrition: boolean;
+  /** Fiyat yükleniyorken henüz "veri yok" sayılmaz — sonuç gelmeden yanlış özet gösterilmesin. */
+  hasPrice: boolean;
+  isPriceLoading: boolean;
+}
+
+const EMPTY_SECTION_LABELS = {
+  ingredients: 'içindekiler',
+  nutrition: 'besin değerleri',
+  price: 'fiyat',
+} as const;
+
+export function isPriceSectionVisible(input: Pick<EmptySectionsSummaryInput, 'hasPrice' | 'isPriceLoading'>): boolean {
+  return input.hasPrice || input.isPriceLoading;
+}
+
+export function getEmptySectionsSummaryLine(input: EmptySectionsSummaryInput): string | null {
+  const missing: string[] = [];
+  if (!input.hasIngredients) missing.push(EMPTY_SECTION_LABELS.ingredients);
+  if (!input.hasNutrition) missing.push(EMPTY_SECTION_LABELS.nutrition);
+  if (!isPriceSectionVisible(input)) missing.push(EMPTY_SECTION_LABELS.price);
+
+  if (missing.length === 0) return null;
+  return `${missing.length} konuda veri yok: ${missing.join(', ')}`;
+}
