@@ -4,8 +4,9 @@
  *
  * Kanıtlamak istediği: gönüllü başına anahtar (ortak anahtar DEĞİL),
  * dosyayı değiştirip yeniden başlatmadan tek kişinin erişiminin
- * kapatılabilmesi (mtime önbelleği bunu engellemiyor), ve
- * INTAKE_VOLUNTEERS_JSON verildiğinde dosyanın yok sayılması.
+ * kapatılabilmesi (önbellek bunu engellemiyor — dosya aynı anda art arda
+ * değişse ve boyutu aynı kalsa bile), ve INTAKE_VOLUNTEERS_JSON
+ * verildiğinde dosyanın yok sayılması.
  */
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -32,14 +33,28 @@ function writeVolunteers(map: Record<string, string>): void {
   assert.equal(verifyVolunteer(volunteersPath, '', ''), false, 'boş kod/anahtar reddedilmeli');
 }
 
-// ── Dosyadan bir satır silinince (mtime değişir) o kişi HEMEN kapanmalı ──
+// ── Dosyadan bir satır silinince o kişi HEMEN kapanmalı ──────────────────
 // (süreç yeniden başlatılmadan — bkz. görev onayı, madde 3 "tek kişinin
-// erişimi kapatılabilsin").
+// erişimi kapatılabilsin"). Bu yazım bir öncekiyle aynı saat diliminde
+// gerçekleşebilir (aynı mtime); karar dosyanın içeriğine göre verilmelidir.
 {
   writeVolunteers({ 'MRS-01': 'key-1' }); // MRS-02 satırı silindi
 
   assert.equal(verifyVolunteer(volunteersPath, 'MRS-01', 'key-1'), true, 'kalan gönüllü çalışmaya devam etmeli');
   assert.equal(verifyVolunteer(volunteersPath, 'MRS-02', 'key-2'), false, 'silinen gönüllü hemen reddedilmeli');
+}
+
+// ── Anahtar aynı uzunlukta bir değerle değişince eski anahtar HEMEN kapanmalı
+// (dosya boyutu ve büyük olasılıkla mtime aynı kalır — yalnız içerik farklıdır).
+{
+  writeVolunteers({ 'MRS-01': 'key-9' });
+
+  assert.equal(verifyVolunteer(volunteersPath, 'MRS-01', 'key-1'), false, 'değiştirilen eski anahtar hemen reddedilmeli');
+  assert.equal(verifyVolunteer(volunteersPath, 'MRS-01', 'key-9'), true, 'yeni anahtar hemen kabul edilmeli');
+
+  // Sonraki blok dosyada MRS-01/key-1 bulunmasına dayanır; geri yazılır.
+  writeVolunteers({ 'MRS-01': 'key-1' });
+  assert.equal(verifyVolunteer(volunteersPath, 'MRS-01', 'key-1'), true, 'geri yazılan anahtar hemen kabul edilmeli');
 }
 
 // ── INTAKE_VOLUNTEERS_JSON ayarlıysa dosya tamamen yok sayılır ───────────

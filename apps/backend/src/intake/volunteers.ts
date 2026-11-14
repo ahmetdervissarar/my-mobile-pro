@@ -11,17 +11,21 @@
  *      dağıtımları için).
  *   2. apps/backend/data/intake/volunteers.json dosyası (repoya girmez,
  *      bkz. .gitignore). Format: {"MRS-01": "anahtar1", "MRS-02": "anahtar2"}.
- * Her istekte (mtime kontrolüyle ucuzlatılmış) yeniden okunur — bir satırı
- * silip kaydetmek, süreci yeniden başlatmadan erişimi hemen kapatır.
+ * Her istekte dosya yeniden okunur — bir satırı silip kaydetmek, süreci
+ * yeniden başlatmadan erişimi hemen kapatır. Önbellek yalnız JSON
+ * çözümlemesini atlar ve dosyanın İÇERİĞİNE göre karar verir; değişiklik
+ * saatine (mtime) göre DEĞİL. Aynı saat diliminde art arda yapılan iki
+ * kayıt aynı mtime'ı taşıyabildiği için mtime'a güvenmek, silinen bir
+ * gönüllünün kabul edilmeye devam etmesine yol açıyordu.
  *
  * Anahtarlar HİÇBİR ZAMAN loglanmaz (bkz. görev onayı, madde 3) — bu dosya
  * ve auth.ts, doğrulama başarısız olsa bile yalnızca kodu/yol bilgisini
  * loglar, asla denenen anahtarı.
  */
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 let cachedPath: string | null = null;
-let cachedMtimeMs = 0;
+let cachedRaw: string | null = null;
 let cachedVolunteers: Record<string, string> = {};
 let warnedEmpty = false;
 
@@ -44,19 +48,18 @@ function loadFromEnv(): Record<string, string> | null {
 function loadFromFile(path: string): Record<string, string> {
   if (!existsSync(path)) return {};
 
-  const stat = statSync(path);
-  if (path === cachedPath && stat.mtimeMs === cachedMtimeMs) {
-    return cachedVolunteers;
-  }
-
   try {
     const raw = readFileSync(path, 'utf8');
+    if (path === cachedPath && raw === cachedRaw) {
+      return cachedVolunteers;
+    }
+
     const parsed = JSON.parse(raw) as unknown;
     const volunteers =
       parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, string>) : {};
 
     cachedPath = path;
-    cachedMtimeMs = stat.mtimeMs;
+    cachedRaw = raw;
     cachedVolunteers = volunteers;
     return volunteers;
   } catch (err) {
@@ -91,10 +94,10 @@ export function verifyVolunteer(volunteersFilePath: string, code: string, key: s
   return volunteers[code] === key;
 }
 
-/** Yalnız testler için — mtime önbelleğini sıfırlar. */
+/** Yalnız testler için — içerik önbelleğini sıfırlar. */
 export function __resetVolunteersCacheForTesting(): void {
   cachedPath = null;
-  cachedMtimeMs = 0;
+  cachedRaw = null;
   cachedVolunteers = {};
   warnedEmpty = false;
 }
