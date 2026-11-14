@@ -85,6 +85,13 @@ Okunamayan fotoğraf için tahmin üretilmez; kullanıcıdan yeniden çekmesi is
 - Aynı barkod için farklı içerikli yeni fotoğraf yeni sürüm oluşturur; eski sürüm silinmez
   ve değişiklik insan onayına düşer.
 
+### 7a. Kaynak çelişkisi (2026-11-14 kararı)
+
+OFF verisi ile insan onaylı etiket kaydı aynı alanda farklı değer taşıyorsa, daha yeni
+tarihli (`observedAt`) insan onaylı etiket kaydı geçerlidir. Çelişki sessizce çözülmez:
+kayıt altına alınır ve proje sahibine ayrıca gösterilir. Onaylanmamış aday kayıt hiçbir
+zaman OFF verisinin önüne geçmez.
+
 ### 8. İzinli fotoğraf kaynakları
 
 | Kaynak | Durum |
@@ -125,7 +132,7 @@ profili ve kesin konumu bu kayıtlara, backend'e, log'a veya üçüncü tarafa g
 
 1. Profile dört zorunlu alerjenin (kereviz, hardal, sülfit, acı bakla) eklenmesi. Risk
    motoruna dokunur; ayrı onay ve `allergen-safety-reviewer` incelemesi ister.
-2. OFF verisi ile doğrulanmış etiket kaydı aynı alanda çelişirse hangisinin geçerli olacağı.
+2. (Karara bağlandı, bkz. 7a.)
 3. Kullanıcı fotoğraflarının saklama süresi, bilgilendirme/rıza metni ve fotoğrafın Anthropic
    API'ye iletilmesi — `legal-privacy-reviewer` incelemesi ister.
 4. OFF fotoğraflarından çıkarılan metnin kendi veritabanımızda saklanmasının lisans ve atıf
