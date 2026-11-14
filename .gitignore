@@ -50,3 +50,6 @@ apps/backend/data/off-tr/
 # Intake (gönüllü ürün toplama) — fotoğraflar, SQLite veritabanı, gönüllü
 # anahtar listesi. Kişisel/hassas veri içerebilir, repoya asla girmez.
 apps/backend/data/intake/
+
+# Etiket okuma deposu (ADR-009) — SQLite veritabanı, repoya girmez.
+apps/backend/data/label-store/
