@@ -102,6 +102,13 @@ export const LABEL_NUTRIENT_KEYS = [
 
 let db: DatabaseSync | null = null;
 
+/**
+ * Onaylı kayıt kümesi her değiştiğinde (açılış, onay) artar. Onaylı kayıtları
+ * önbelleğe alan katmanlar (catalog/effectiveCatalog.ts, liste puanları) bu
+ * sayı değişince önbelleklerini yeniler.
+ */
+let verifiedRevision = 0;
+
 // ── Doğrulama yardımcıları ───────────────────────────────────────────────
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -307,6 +314,7 @@ export function initLabelStoreDb(path: string): void {
   addColumnIfMissing(instance, 'verified_label_products', 'product_kind_source');
 
   db = instance;
+  verifiedRevision += 1;
 }
 
 function addColumnIfMissing(instance: DatabaseSync, table: string, column: string): void {
@@ -560,6 +568,7 @@ export function approveCandidate(id: string, input: ApproveCandidateInput): Veri
       )
       .run(approvedBy, now, now, id);
 
+    verifiedRevision += 1;
     return getCurrentVerified(candidate.barcode)!;
   });
 }
@@ -594,6 +603,19 @@ export function getCurrentVerified(barcode: string): VerifiedLabelProduct | null
     .prepare('SELECT * FROM verified_label_products WHERE barcode = ? AND superseded_at IS NULL')
     .get(barcode);
   return row ? rowToVerified(row as Record<string, unknown>) : null;
+}
+
+/** Bütün barkodların güncel insan onaylı kayıtları. Aday kayıtlar dönmez. */
+export function listCurrentVerified(): VerifiedLabelProduct[] {
+  const rows = requireDb()
+    .prepare('SELECT * FROM verified_label_products WHERE superseded_at IS NULL ORDER BY barcode ASC')
+    .all();
+  return rows.map((row) => rowToVerified(row as Record<string, unknown>));
+}
+
+/** Onaylı kayıt kümesinin sürüm sayacı (bkz. verifiedRevision). Depo hazır değilse 0. */
+export function getVerifiedRevision(): number {
+  return db ? verifiedRevision : 0;
 }
 
 /** Barkodun tüm sürümleri, eskiden yeniye. */

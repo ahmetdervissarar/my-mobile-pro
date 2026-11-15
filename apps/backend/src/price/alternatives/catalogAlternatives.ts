@@ -10,6 +10,7 @@
 // bölümlemesi mobil tarafta yapılır.
 import type { CatalogProduct } from '../../catalog/catalog.js';
 import { getCatalog } from '../../catalog/catalog.js';
+import { getEffectiveCatalogProduct, getEffectiveCatalogProducts } from '../../catalog/effectiveCatalog.js';
 import { UNCLASSIFIED_PRODUCT_GROUP_KEY } from '../../catalog/productGroupMap.js';
 import { findProductGroupRegistryEntry } from '../productGroups/registry.js';
 import { getCatalogRafScore } from '../rafScore/catalogRafScore.js';
@@ -78,7 +79,10 @@ export function getCatalogAlternatives(input: {
   limit?: number;
 }): CatalogAlternativesResult {
   const catalog = getCatalog();
-  const current = catalog.byId.get(input.barcode);
+  // Onaylı etiket kaydıyla tamamlanmış hâl (ADR-009 İş 1.3d) — puanlar ve
+  // satırlar ürün sayfasıyla aynı veriden gelir.
+  const rawCurrent = catalog.byId.get(input.barcode);
+  const current = rawCurrent ? getEffectiveCatalogProduct(rawCurrent) : undefined;
 
   if (!current) {
     return { currentProduct: null, candidates: [] };
@@ -106,7 +110,7 @@ export function getCatalogAlternatives(input: {
 
   const seenDedupeKeys = new Set<string>([dedupeKey(currentProduct)]);
   const candidates: CatalogAlternativeProduct[] = [];
-  for (const product of catalog.products) {
+  for (const product of getEffectiveCatalogProducts()) {
     if (product.productId === current.productId) continue;
     if (product.productGroupKey !== groupKey) continue;
 

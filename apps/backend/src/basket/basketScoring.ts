@@ -1,4 +1,5 @@
 ﻿import { getCatalog } from '../catalog/catalog.js';
+import { getEffectiveCatalogProduct } from '../catalog/effectiveCatalog.js';
 import type {
   BasketEvaluateRequest,
   BasketItem,
@@ -269,7 +270,10 @@ function toProfileItem(item: BasketEvaluateRequest['items'][number]): BasketProf
     scoreSource,
   };
 
-  const catalogProduct = item.type === 'product' ? getCatalog().byId.get(item.productId) : undefined;
+  // Onaylı etiket kaydıyla tamamlanmış hâl (ADR-009 İş 1.3d): sepet satırı
+  // ürün sayfasıyla aynı Nutri-Score ve alerjen kanıtını göstersin.
+  const rawCatalogProduct = item.type === 'product' ? getCatalog().byId.get(item.productId) : undefined;
+  const catalogProduct = rawCatalogProduct ? getEffectiveCatalogProduct(rawCatalogProduct) : undefined;
 
   if (!catalogProduct) {
     return { ...base, allergenDataStatus: 'unknown_or_unverified' };

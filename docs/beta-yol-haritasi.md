@@ -51,6 +51,30 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 - İçe aktarıcıda görsel adresinin dökümdeki `images` alanından üretilmesi.
 - Sözleşme değişiklikleri mobil ve backend'de aynı değişiklikte; sözleşme incelemesi şart.
 
+### Faz 1 durumu (2026-11-15)
+
+| İş | Durum |
+|---|---|
+| 1.1 Doğrulanmış etiket kayıt deposu | tamam |
+| 1.2 Sözleşmeye `rafskoru_verified` / `label_unverified` | tamam |
+| 1.3a Onaylı kayıttan ürün verisi + OFF ile birleştirme | tamam |
+| 1.3c Besin tablosundan Nutri-Score + ürün türü | tamam |
+| 1.3b Barkod sorgusuna bağlama (+ alerjen incelemesi, yumurta düzeltmesi) | tamam |
+| 1.3d Arama, kategori, sepet ve alternatiflerin onaylı kayıtları kullanması | tamam |
+| 1.4 Okuma adımı (fotoğraftan okunan sonuçların depoya alınması) | sırada |
+| 1.5 Onay ekranı (ürün türü seçimi dâhil) | bekliyor |
+| 1.6 Görsel adresi düzeltmesi | bekliyor |
+
+### Unutulmaması gerekenler
+
+- **OFF'ta hiç olmayan onaylı ürünler aramada çıkmıyor.** Arama ve kategori listeleri
+  yalnız OFF kataloğundaki ürünleri tarıyor; OFF'ta olmayan bir ürün onaylansa bile yalnız
+  barkod okutulunca bulunuyor. Onay ekranı (1.5) işinde, onaylı kayıtların listeye katalog
+  dışı ürün olarak eklenmesi ele alınacak. (Proje sahibi isteği, 2026-11-15.)
+- **Gönüllü aracı onaylı kayıtları henüz bilmiyor.** Barkodun hangi fotoğraflarının eksik
+  olduğunu yalnız OFF verisine göre söylüyor; onaylanmış bir ürün için yeniden fotoğraf
+  isteyebilir. 1.5 ile birlikte ele alınacak.
+
 ## Faz 2 — Veri doldurma (Faz 1 ile kısmen paralel, yaklaşık 1 hafta)
 
 - OFF'taki etiket fotoğrafları masaüstü oturumunda toplu okunur (API ücreti yok).

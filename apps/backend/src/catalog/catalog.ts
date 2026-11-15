@@ -23,7 +23,13 @@ export interface CatalogPackageSize {
   unit: CatalogPackageUnit;
 }
 
-export type CatalogNutriScoreSource = 'rafskoru_computed' | 'off' | null;
+/**
+ * 'rafskoru_label': not, insan onaylı etiketin besin tablosundan RafSkoru
+ * tarafından hesaplandı (ADR-009, İş 1.3c/1.3d). Katalogun kendisi bu değeri
+ * üretmez; yalnız onaylı kayıtlarla tamamlanmış liste görünümünde
+ * (effectiveCatalog.ts) görünür.
+ */
+export type CatalogNutriScoreSource = 'rafskoru_computed' | 'rafskoru_label' | 'off' | null;
 export type CatalogNutriScoreStatus = 'computed' | 'off' | 'insufficient_data' | 'not_applicable';
 
 export interface CatalogNutriScore {

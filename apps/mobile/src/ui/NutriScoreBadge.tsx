@@ -5,6 +5,8 @@
 
 import { Text, View } from 'react-native';
 
+import type { CatalogNutriScoreSource, CatalogNutriScoreStatus } from '../api/catalogTypes';
+import { getNutriScoreBadgeLabels } from './nutriScoreBadgeLabel';
 import { radii, spacing, useTheme } from './theme';
 
 const GRADES = ['A', 'B', 'C', 'D', 'E'] as const;
@@ -20,10 +22,14 @@ const GRADE_COLORS: Record<Grade, string> = {
 
 export interface NutriScoreBadgeProps {
   grade: Grade | null;
-  /** 'off' ise erişilebilirlik etiketine "Open Food Facts verisi", 'rafskoru_computed' ise "(hesaplanmış)" eklenir. */
-  source?: 'rafskoru_computed' | 'off' | null;
+  /**
+   * Notun kaynağı erişilebilirlik etiketinde söylenir: 'off' → "Open Food Facts
+   * verisi", 'rafskoru_computed' → "hesaplanmış", 'rafskoru_label' → "onaylı
+   * etiket değerlerinden hesaplanmış" (bkz. nutriScoreBadgeLabel.ts).
+   */
+  source?: CatalogNutriScoreSource;
   /** 'not_applicable' ise OFF bu ürün için Nutri-Score'un uygulanamaz olduğunu belirtmiştir. */
-  status?: 'computed' | 'off' | 'insufficient_data' | 'not_applicable' | null;
+  status?: CatalogNutriScoreStatus | null;
   /** true ise yalnız küçük harf simgesi gösterilir, metin etiketi YOK (ör. arama kartı satır 3). Erişilebilirlik etiketi hep tam metindir. */
   compact?: boolean;
 }
@@ -31,11 +37,7 @@ export interface NutriScoreBadgeProps {
 export function NutriScoreBadge({ grade, source, status, compact = false }: NutriScoreBadgeProps) {
   const { colors } = useTheme();
 
-  const baseLabel =
-    status === 'not_applicable' ? 'Nutri-Score: Uygulanamaz' : grade ? `Nutri-Score ${grade}` : 'Nutri-Score: veri yok';
-  const qualifier =
-    source === 'off' && grade ? ' (Open Food Facts verisi)' : source === 'rafskoru_computed' && grade ? ' (hesaplanmış)' : '';
-  const label = `${baseLabel}${qualifier}`;
+  const { baseLabel, label } = getNutriScoreBadgeLabels({ grade, source, status });
 
   if (compact) {
     return (

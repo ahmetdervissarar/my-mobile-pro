@@ -10,13 +10,12 @@
 // ürünün puanı aynı bileşen kümesinden hesaplanmış olmalı" karşılaştırması
 // BUNUNLA yapılır (bkz. apps/backend/src/price/alternatives/catalogAlternatives.ts).
 import type { CatalogProduct } from '../../catalog/catalog.js';
-import { getCatalog } from '../../catalog/catalog.js';
+import { getEffectiveCatalogCacheKey, getEffectiveProductFacts } from '../../catalog/effectiveCatalog.js';
 import {
   productFactsToContentScoreInput,
   productFactsToHealthScoreInput,
   productFactsToSustainabilityInput,
 } from '../productFacts/adapters.js';
-import { productFactsFromCatalog } from '../productFacts/catalogAdapter.js';
 import { calculateContentScore } from '../contentScore/contentScoreCalculator.js';
 import { calculateHealthScore } from '../healthScore/healthScoreCalculator.js';
 import { calculateSustainabilityScore } from '../sustainability/sustainabilityScorer.js';
@@ -58,21 +57,23 @@ let cachedCatalogLoadedAt: string | null = null;
 const cacheByProductId = new Map<string, CatalogRafScoreResult>();
 
 /**
- * Bellekte, katalog yüklendiği sürece tek seferlik hesaplanır (aynı önbellek
- * deseni: suggestions.ts'teki getRafScoreForProduct). Girdiler yalnızca
- * katalog verisine bağlıdır, çalışma anında değişmez.
+ * Bellekte tek seferlik hesaplanır (aynı önbellek deseni: suggestions.ts'teki
+ * getRafScoreForProduct). Girdi, ürün sayfasıyla AYNI birleştirmedir: OFF
+ * katalog verisi + varsa insan onaylı etiket kaydı (effectiveCatalog.ts,
+ * ADR-009 İş 1.3d). Önbellek, katalog yeniden yüklendiğinde VEYA onaylı kayıt
+ * kümesi değiştiğinde (yeni onay) temizlenir.
  */
 export function getCatalogRafScore(product: CatalogProduct): CatalogRafScoreResult | undefined {
-  const catalog = getCatalog();
-  if (cachedCatalogLoadedAt !== catalog.loadedAt) {
+  const cacheKey = getEffectiveCatalogCacheKey();
+  if (cachedCatalogLoadedAt !== cacheKey) {
     cacheByProductId.clear();
-    cachedCatalogLoadedAt = catalog.loadedAt;
+    cachedCatalogLoadedAt = cacheKey;
   }
 
   const cached = cacheByProductId.get(product.productId);
   if (cached) return cached;
 
-  const facts = productFactsFromCatalog(product.productId);
+  const facts = getEffectiveProductFacts(product);
   if (!facts) return undefined;
 
   const healthScore = calculateHealthScore(productFactsToHealthScoreInput(facts));

@@ -1,5 +1,5 @@
 import type { CatalogAllergenData, CatalogNova, CatalogNutriScore, CatalogProduct } from '../catalog/catalog.js';
-import { getCatalog } from '../catalog/catalog.js';
+import { getEffectiveCatalogProduct, getEffectiveCatalogProducts } from '../catalog/effectiveCatalog.js';
 import { PRODUCT_GROUP_REGISTRY } from '../price/productGroups/registry.js';
 import { getCatalogRafScore } from '../price/rafScore/index.js';
 import type { RafScoreResult } from '../price/rafScore/index.js';
@@ -147,7 +147,11 @@ const COMPLETENESS_RANK: Record<CatalogProduct['completeness'], number> = {
   insufficient: 2,
 };
 
-function catalogProductToSuggestion(product: CatalogProduct): ProductSearchSuggestion {
+function catalogProductToSuggestion(catalogProduct: CatalogProduct): ProductSearchSuggestion {
+  // Onaylı etiket kaydıyla tamamlanmış hâl (ADR-009 İş 1.3d); kaydı olmayan
+  // ürün için aynı nesne döner. Çağıranlar zaten tamamlanmış ürün verse de
+  // işlem idempotenttir.
+  const product = getEffectiveCatalogProduct(catalogProduct);
   return {
     type: 'product',
     productId: product.productId,
@@ -236,8 +240,8 @@ export function suggestByProductGroup(productGroupKey: string, options: SuggestS
     return { productGroupKey: trimmedGroupKey, suggestions: [] };
   }
 
-  const suggestions = getCatalog()
-    .products.filter((product) => product.productGroupKey === trimmedGroupKey)
+  const suggestions = getEffectiveCatalogProducts()
+    .filter((product) => product.productGroupKey === trimmedGroupKey)
     .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'tr-TR'))
     .slice(0, limit)
     .map(catalogProductToSuggestion);
@@ -278,8 +282,8 @@ export function suggestSearch(query: string, options: SuggestSearchOptions = {})
 
   const topGroupKey = groupSuggestions[0]?.productGroupKey ?? null;
 
-  const productSuggestions: ProductSearchSuggestion[] = getCatalog()
-    .products.filter((product) => product.searchText.includes(foldedQuery))
+  const productSuggestions: ProductSearchSuggestion[] = getEffectiveCatalogProducts()
+    .filter((product) => product.searchText.includes(foldedQuery))
     .sort((a, b) => compareCatalogProducts(a, b, topGroupKey))
     .slice(0, PRODUCT_SUGGESTION_LIMIT)
     .map(catalogProductToSuggestion);

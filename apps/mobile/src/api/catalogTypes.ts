@@ -11,7 +11,11 @@ import type { AllergenKey } from '../userProfile/userProfileTypes';
 
 export type CatalogNutriScoreGrade = 'A' | 'B' | 'C' | 'D' | 'E';
 export type CatalogNutriScoreStatus = 'computed' | 'off' | 'insufficient_data' | 'not_applicable';
-export type CatalogNutriScoreSource = 'rafskoru_computed' | 'off' | null;
+/**
+ * 'rafskoru_label': not, insan onaylı etiketin besin tablosundan RafSkoru
+ * tarafından hesaplandı (ADR-009, İş 1.3d). Backend ile aynı.
+ */
+export type CatalogNutriScoreSource = 'rafskoru_computed' | 'rafskoru_label' | 'off' | null;
 
 export interface CatalogNutriScore {
   grade: CatalogNutriScoreGrade | null;
