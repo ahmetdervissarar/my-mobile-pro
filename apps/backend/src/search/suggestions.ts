@@ -98,11 +98,25 @@ const PRODUCT_GROUP_ALIASES: Record<string, string[]> = {
   baby_food: ['bebek kavanoz maması', 'bebek püresi'],
 };
 
+/**
+ * Arama metnini ve sorguyu AYNI bi\u00e7ime getirir; iki taraf da her zaman bu
+ * fonksiyondan ge\u00e7er. Kullan\u0131c\u0131 T\u00fcrk\u00e7e harfle de ("i\u00e7im", "p\u0131nar") T\u00fcrk\u00e7e
+ * harfsiz de ("icim", "pinar") yazabilir; ikisi de bulunmal\u0131d\u0131r.
+ *
+ * S\u0131ra \u00f6nemlidir:
+ *   1. \u00d6nce T\u00fcrk\u00e7e k\u00fc\u00e7\u00fck harf: "\u0130" \u2192 "i", "I" \u2192 "\u0131". (Eskiden NFD \u00f6nce
+ *      uygulan\u0131yordu: "\u0130" noktas\u0131n\u0131 kaybedip "I" oluyor, sonra "\u0131"ya
+ *      d\u00f6n\u00fcyordu \u2014 "\u0130\u00e7im" "\u0131cim" olarak saklan\u0131yor, "i\u00e7im" ile bulunam\u0131yordu.)
+ *   2. NFD + birle\u015fik i\u015faretleri atma: \u00e7\u2192c, \u015f\u2192s, \u011f\u2192g, \u00f6\u2192o, \u00fc\u2192u.
+ *   3. Noktas\u0131z "\u0131" \u2192 "i" (ayr\u0131\u015ft\u0131r\u0131lamad\u0131\u011f\u0131 i\u00e7in ayr\u0131ca). B\u00f6ylece \u0130ngilizce
+ *      b\u00fcy\u00fck "I" de ("ICE TEA") do\u011fru katlan\u0131r.
+ */
 export function foldSearchText(value: string): string {
   return value
+    .toLocaleLowerCase('tr-TR')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .toLocaleLowerCase('tr-TR')
+    .replace(/\u0131/g, 'i')
     .trim();
 }
 
@@ -252,6 +266,7 @@ export function suggestByProductGroup(productGroupKey: string, options: SuggestS
 export function suggestSearch(query: string, options: SuggestSearchOptions = {}): SearchSuggestResponse {
   const rawQuery = query.trim();
   const foldedQuery = foldSearchText(rawQuery);
+  const queryTokens = foldedQuery.split(/\s+/).filter(Boolean);
   const limit = Math.min(Math.max(options.limit ?? 8, 1), 12);
 
   if (foldedQuery.length < 2) {
@@ -283,7 +298,11 @@ export function suggestSearch(query: string, options: SuggestSearchOptions = {})
   const topGroupKey = groupSuggestions[0]?.productGroupKey ?? null;
 
   const productSuggestions: ProductSearchSuggestion[] = getEffectiveCatalogProducts()
-    .filter((product) => product.searchText.includes(foldedQuery))
+    // Sorgudaki her kelime ürünün ad+marka metninde geçmeli; kelimelerin yan
+    // yana olması gerekmez ("içim süt" → "İçim Tam Yağlı Süt"). Tek kelimelik
+    // sorguda davranış eskisiyle aynıdır; çok kelimelide eski eşleşmelerin
+    // hepsi yine eşleşir.
+    .filter((product) => queryTokens.every((token) => product.searchText.includes(token)))
     .sort((a, b) => compareCatalogProducts(a, b, topGroupKey))
     .slice(0, PRODUCT_SUGGESTION_LIMIT)
     .map(catalogProductToSuggestion);

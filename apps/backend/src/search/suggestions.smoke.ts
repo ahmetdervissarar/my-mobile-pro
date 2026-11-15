@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import { foldSearchText, suggestByProductGroup, suggestSearch } from './suggestions.js';
 
 assert.equal(foldSearchText('SÜT'), 'sut');
-assert.equal(foldSearchText('İçecek'), 'ıcecek');
+// 2026-11-15: eski beklenti 'ıcecek' idi — bu, "İ" harfinin noktasını
+// kaybetmesi hatasının kendisiydi (kullanıcının yazdığı "içecek" → "icecek"
+// ile hiç eşleşmiyordu). Ayrıntı: searchFolding.smoke.ts.
+assert.equal(foldSearchText('İçecek'), 'icecek');
+assert.equal(foldSearchText('İçecek'), foldSearchText('içecek'));
 
 const riceSuggestions = suggestSearch('pir');
 assert.equal(riceSuggestions.query, 'pir');
