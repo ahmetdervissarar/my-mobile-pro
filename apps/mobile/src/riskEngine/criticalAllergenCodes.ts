@@ -18,4 +18,9 @@ export const CRITICAL_ALLERGEN_CODES = [
   'PROFILE_SESAME_ALLERGEN_MATCH',
   'PROFILE_FISH_ALLERGEN_MATCH',
   'PROFILE_SHELLFISH_ALLERGEN_MATCH',
+  // Eksikti (ADR-009 İş 1.3b alerjen incelemesi): risk motoru bu kodu
+  // üretiyordu ama liste taşımadığı için yumurta eşleşmesi ürün sayfasında
+  // kritik banda çıkmıyor, sıradan uyarılar arasında kalıyordu. Kategoriye
+  // dayalı PROFILE_EGG_PRECAUTION bilerek listede DEĞİLDİR (eşleşme değil).
+  'PROFILE_EGG_ALLERGEN_MATCH',
 ];
