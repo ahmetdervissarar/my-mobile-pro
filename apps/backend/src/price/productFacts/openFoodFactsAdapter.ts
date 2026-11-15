@@ -194,7 +194,8 @@ function getVerificationReason(missingFields: ProductFactsMissingField[]): strin
   return 'OFF ürünü bulundu ancak skorlamada kullanılan bazı alanlar eksik.';
 }
 
-function getConfidence(missingFields: ProductFactsMissingField[]): ProductFactsConfidence {
+/** Dışa açık: verifiedLabelFacts.ts aynı kuralı kullanır (ikinci bir kopya tutulmaz). */
+export function getConfidence(missingFields: ProductFactsMissingField[]): ProductFactsConfidence {
   if (missingFields.length === 0) return 'high';
   if (missingFields.includes('ingredientsText') || missingFields.includes('nutrition')) return 'low';
   return 'medium';

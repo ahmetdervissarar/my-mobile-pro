@@ -301,6 +301,21 @@ export interface ProductFactsAllergenInfo {
   source: ProductFactsAllergenInfoSource;
 }
 
+/** Kaynağı alan bazında izlenebilen alanlar (ADR-009 §4, §7a). Backend ile aynı. */
+export type ProductFactsFieldKey =
+  | 'productName'
+  | 'imageUrl'
+  | 'ingredientsText'
+  | 'allergens'
+  | 'nutriScoreGrade'
+  | 'novaGroup';
+
+export interface ProductFactsFieldSource {
+  source: ProductFactsSource;
+  /** O alanın kaynağının gözlem zamanı (ISO); bilinmiyorsa null. */
+  observedAt: string | null;
+}
+
 export interface ProductFactsTrafficLight {
   sugar?: ProductFactsTrafficLightValue | null;
   salt?: ProductFactsTrafficLightValue | null;
@@ -328,6 +343,11 @@ export interface ProductFacts {
    */
   catalogAllergenData?: CatalogAllergenData;
   dataSource: ProductFactsSource;
+  /**
+   * Yalnız kaynağı `dataSource`tan FARKLI olan alanlar için doludur (karışık
+   * kaynak). Yoksa bütün alanlar `dataSource`tan gelir.
+   */
+  fieldSources?: Partial<Record<ProductFactsFieldKey, ProductFactsFieldSource>>;
   isComplete: boolean;
   missingFields?: ProductFactsMissingField[];
   verificationNeeded?: boolean;
