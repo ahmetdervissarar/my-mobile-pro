@@ -235,7 +235,10 @@ export function productFactsFromVerifiedLabel(verified: VerifiedLabelProduct): V
  *   taban notu varsa korunur, fark çelişki olarak döndürülür.
  * - Ürün türü önceliği: onaylayanın belirlediği tür > OFF kategorisi >
  *   kullanıcı beyanı.
- * - Alerjen alanları, isComplete ve confidence tabandan aynen gelir.
+ * - Alerjen beyan/iz listeleri, dataStatus, isComplete ve confidence tabandan
+ *   aynen gelir. Tek istisna: içindekiler onaylı kayıttan alındıysa
+ *   catalogAllergenData.ingredientsEvidence aynı metni taşır (yalnız kanıt
+ *   metni; sınıflandırma değişmez).
  * - Girdi nesneleri değiştirilmez.
  */
 export function mergeVerifiedLabelIntoFacts(
@@ -314,11 +317,36 @@ export function mergeVerifiedLabelIntoFacts(
 
   const usedVerified = Object.values(fieldSources).some((entry) => entry?.source === 'rafskoru_verified');
 
+  // İçindekiler onaylı kayıttan geldiyse, mobil alerjen satırının baktığı
+  // kanıt metni de AYNI metin olmalıdır (İş 1.3b, inceleme bulgusu 1). Aksi
+  // hâlde risk motoru onaylı metinden uyarı üretirken alerjen satırı aynı
+  // alerjen için "belirtilmemiş" diyebilirdi. Beyan/iz listeleri ve
+  // dataStatus DEĞİŞMEZ: bu yalnız mevcut "daha az temkinli olamaz"
+  // yükseltmesinin girdisini tamamlar, sonucu asla daha az temkinli yapamaz.
+  const ingredientsFromVerified = fieldSources.ingredientsText?.source === 'rafskoru_verified';
+  const catalogAllergenData =
+    base.catalogAllergenData && ingredientsFromVerified && hasText(ingredientsText)
+      ? {
+          ...base.catalogAllergenData,
+          ingredientsEvidence: {
+            text: ingredientsText,
+            lang:
+              verified.fields.ingredientsLang === null
+                ? null
+                : verified.fields.ingredientsLang.toLowerCase().startsWith('tr')
+                  ? ('tr' as const)
+                  : ('other' as const),
+            source: 'rafskoru_verified' as const,
+          },
+        }
+      : base.catalogAllergenData;
+
   const facts: ProductFacts = {
     ...base,
     productName,
     ingredientsText,
     nutriScoreGrade,
+    ...(catalogAllergenData ? { catalogAllergenData } : {}),
     missingFields: base.missingFields?.filter((field) => !filled.has(field)),
     ...(Object.keys(fieldSources).length > 0 ? { fieldSources } : {}),
     ...(usedVerified ? { verifiedAt: verified.approvedAt } : {}),

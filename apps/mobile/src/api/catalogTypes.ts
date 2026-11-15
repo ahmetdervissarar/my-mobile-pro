@@ -36,7 +36,8 @@ export type CatalogAllergenDataStatus = 'present' | 'partial' | 'unknown_or_unve
 export interface CatalogIngredientsEvidence {
   text: string | null;
   lang: 'tr' | 'other' | null;
-  source: 'off';
+  /** 'rafskoru_verified': metin insan onaylı etiket kaydından geldi (ADR-009, İş 1.3b). */
+  source: 'off' | 'rafskoru_verified';
 }
 
 export interface CatalogAllergenData {

@@ -9,6 +9,8 @@ import { createHttpsEnforcementMiddleware } from './httpsEnforcement.js';
 import { getIntakeDbPath } from './intake/config.js';
 import { initIntakeDb } from './intake/db.js';
 import { createIntakeRouter, createIntakeUnavailableRouter } from './intake/routes.js';
+import { getLabelStoreDbPath } from './labelStore/config.js';
+import { initLabelStoreDb } from './labelStore/db.js';
 import { ManualBetaPriceProvider } from './price/providers/manualBetaPriceProvider.js';
 import { PriceProviderService } from './price/priceProviderService.js';
 import { createPriceRouter } from './routes/priceRoutes.js';
@@ -45,6 +47,16 @@ if (getCatalog().products.length === 0) {
 // Intake (gönüllü ürün toplama) modülü node:sqlite gerektirir — bu isteğe
 // bağlı bir alt sistemdir, başarısız olursa ANA backend (price/search/basket)
 // ayakta kalmaya devam eder; yalnızca /api/intake/* 503 döner.
+// Etiket okuma deposu (ADR-009): insan onaylı etiket kayıtları ürün
+// sorgusunda OFF verisini tamamlar (bkz. verifiedLabelResolver.ts). Depo
+// açılamazsa ürün sorguları yalnız OFF verisiyle çalışmaya devam eder.
+try {
+  initLabelStoreDb(getLabelStoreDbPath());
+  console.log('[label-store] veritabanı hazır.');
+} catch (err) {
+  console.error(`[label-store] devre dışı; ürün sorguları yalnız OFF verisini kullanacak: ${(err as Error).message}`);
+}
+
 let intakeRouter;
 try {
   initIntakeDb(getIntakeDbPath());

@@ -9,7 +9,7 @@
  * Tanınmayan bir değer (ör. daha yeni bir backend sürümünden) hiçbir bilinen
  * kaynağın adıyla gösterilmez; "Kaynak belirtilmemiş" yazılır.
  */
-import type { ProductFactsSource } from './types';
+import type { ProductFacts, ProductFactsFieldKey, ProductFactsSource } from './types';
 
 const PRODUCT_FACTS_SOURCE_LABELS: Record<ProductFactsSource, string> = {
   off: 'Open Food Facts (ODbL)',
@@ -19,6 +19,50 @@ const PRODUCT_FACTS_SOURCE_LABELS: Record<ProductFactsSource, string> = {
 };
 
 export const UNKNOWN_PRODUCT_FACTS_SOURCE_LABEL = 'Kaynak belirtilmemiş';
+
+const FIELD_LABELS: Record<ProductFactsFieldKey, string> = {
+  productName: 'ürün adı',
+  imageUrl: 'görsel',
+  ingredientsText: 'içindekiler',
+  allergens: 'alerjen beyanı',
+  nutriScoreGrade: 'Nutri-Score',
+  novaGroup: 'NOVA',
+};
+
+// Yanıtta bu sırayla anılır (nesne anahtar sırasına bağlı kalmamak için).
+const FIELD_ORDER: ProductFactsFieldKey[] = [
+  'productName',
+  'ingredientsText',
+  'allergens',
+  'nutriScoreGrade',
+  'novaGroup',
+  'imageUrl',
+];
+
+/**
+ * Kaynak satırının metni. Bütün alanlar tek kaynaktan geliyorsa yalnız o
+ * kaynağın adıdır; karışık kaynakta (fieldSources) farklı kaynaktan gelen her
+ * alan ayrıca anılır — ör. "Open Food Facts (ODbL) · içindekiler: RafSkoru
+ * etiket kaydı (insan onaylı)". Nutri-Score onaylı etiketten geliyorsa notun
+ * etikette yazmadığı, etiket değerlerinden HESAPLANDIĞI açıkça söylenir.
+ */
+export function getProductFactsSourceText(facts: Pick<ProductFacts, 'dataSource' | 'fieldSources'>): string {
+  const parts = [getProductFactsSourceLabel(facts.dataSource)];
+  const fieldSources = facts.fieldSources ?? {};
+
+  for (const field of FIELD_ORDER) {
+    const entry = fieldSources[field];
+    if (!entry || entry.source === facts.dataSource) continue;
+
+    parts.push(
+      field === 'nutriScoreGrade' && entry.source === 'rafskoru_verified'
+        ? `${FIELD_LABELS[field]}: onaylı etiket değerlerinden hesaplandı`
+        : `${FIELD_LABELS[field]}: ${getProductFactsSourceLabel(entry.source)}`,
+    );
+  }
+
+  return parts.join(' · ');
+}
 
 export function getProductFactsSourceLabel(source: ProductFactsSource | string | null | undefined): string {
   if (typeof source === 'string' && Object.prototype.hasOwnProperty.call(PRODUCT_FACTS_SOURCE_LABELS, source)) {

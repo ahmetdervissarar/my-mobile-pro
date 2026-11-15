@@ -101,6 +101,22 @@ const catalogAllergenData: CatalogAllergenData = {
   ingredientsEvidence: { text: null, lang: null, source: 'off' },
 };
 
+/**
+ * İçindekiler onaylı kayıttan alındığında alerjen SINIFLANDIRMASI (beyan, iz,
+ * durum) değişmemeli; yalnız kanıt metni onaylı içindekilerle aynı olmalı.
+ */
+function assertOnlyEvidenceTextChanged(facts: ProductFacts, base: ProductFacts, expectedText: string): void {
+  const before = base.catalogAllergenData!;
+  const after = facts.catalogAllergenData!;
+  assert.deepEqual(after.declared, before.declared, 'beyan listesi değişmemeli');
+  assert.deepEqual(after.traces, before.traces, 'iz listesi değişmemeli');
+  assert.deepEqual(after.recognizedUnmodeled, before.recognizedUnmodeled);
+  assert.deepEqual(after.rawUnmapped, before.rawUnmapped);
+  assert.equal(after.dataStatus, before.dataStatus, 'alerjen veri durumu değişmemeli');
+  assert.equal(after.ingredientsEvidence.text, expectedText, 'kanıt metni onaylı içindekilerle aynı olmalı');
+  assert.equal(after.ingredientsEvidence.source, 'rafskoru_verified');
+}
+
 function offFacts(overrides: Partial<ProductFacts> = {}): ProductFacts {
   return {
     barcode: BARCODE,
@@ -292,7 +308,8 @@ function offFacts(overrides: Partial<ProductFacts> = {}): ProductFacts {
   assert.deepEqual(facts.allergenInfo, base.allergenInfo, 'allergenInfo değişmemeli');
   assert.deepEqual(facts.allergens, base.allergens);
   assert.deepEqual(facts.traceAllergens, base.traceAllergens);
-  assert.deepEqual(facts.catalogAllergenData, base.catalogAllergenData, 'catalogAllergenData değişmemeli');
+  assertOnlyEvidenceTextChanged(facts, base, 'Pastörize inek sütü');
+  assert.equal(facts.catalogAllergenData!.ingredientsEvidence.lang, null, 'dili okunmayan metnin dili uydurulmamalı');
   assert.equal(facts.nutriScoreGrade, 'B');
   assert.equal(facts.novaGroup, 1);
   assert.equal(facts.confidence, 'medium', 'güven birleştirmeyle yükseltilmemeli');
@@ -322,6 +339,28 @@ function offFacts(overrides: Partial<ProductFacts> = {}): ProductFacts {
   assert.deepEqual(conflicts, []);
 }
 
+// ── Kanıt metni: dil taşınır; içindekiler tabandan geldiyse dokunulmaz ───
+{
+  const tr = mergeVerifiedLabelIntoFacts(offFacts(), verified({ ingredientsText: 'Süt', ingredientsLang: 'tr' }));
+  assert.equal(tr.facts.catalogAllergenData!.ingredientsEvidence.lang, 'tr');
+
+  const other = mergeVerifiedLabelIntoFacts(offFacts(), verified({ ingredientsText: 'Milk', ingredientsLang: 'en' }));
+  assert.equal(other.facts.catalogAllergenData!.ingredientsEvidence.lang, 'other');
+
+  const baseHasIngredients = offFacts({ ingredientsText: 'Süt', missingFields: ['imageUrl'] });
+  const untouched = mergeVerifiedLabelIntoFacts(baseHasIngredients, verified({ productName: 'Başka Ad' }));
+  assert.deepEqual(
+    untouched.facts.catalogAllergenData,
+    baseHasIngredients.catalogAllergenData,
+    'içindekiler tabandan geldiyse kanıt metni değişmemeli',
+  );
+
+  const noCatalogData = offFacts({ catalogAllergenData: undefined });
+  const withoutCatalog = mergeVerifiedLabelIntoFacts(noCatalogData, verified({ ingredientsText: 'Süt' }));
+  assert.equal(withoutCatalog.facts.catalogAllergenData, undefined, 'tabanda yoksa alerjen verisi üretilmemeli');
+  assert.equal(withoutCatalog.facts.ingredientsText, 'Süt');
+}
+
 // ── Aynı içerik (yazım/boşluk farkı) çelişki sayılmaz ────────────────────
 {
   const base = offFacts({ ingredientsText: 'pastörize  İNEK sütü.', missingFields: ['imageUrl'] });
@@ -349,7 +388,7 @@ function offFacts(overrides: Partial<ProductFacts> = {}): ProductFacts {
       winner: 'verified',
     },
   ]);
-  assert.deepEqual(facts.catalogAllergenData, base.catalogAllergenData, 'çelişkide de alerjen verisi değişmemeli');
+  assertOnlyEvidenceTextChanged(facts, base, 'Süt, D vitamini');
 }
 
 // ── Çelişki: taban daha yeni → taban geçerli, çelişki yine döner ─────────
@@ -361,6 +400,7 @@ function offFacts(overrides: Partial<ProductFacts> = {}): ProductFacts {
   assert.equal(facts.verifiedAt, undefined);
   assert.equal(conflicts.length, 1, 'kaybeden taraf onaylı kayıt olsa da çelişki sessiz kalmamalı');
   assert.equal(conflicts[0]!.winner, 'base');
+  assert.deepEqual(facts.catalogAllergenData, base.catalogAllergenData, 'taban geçerliyken alerjen verisi aynen kalmalı');
 }
 
 // ── Çelişki: tabanın tarihi yok → tarihli onaylı kayıt geçerli ───────────
@@ -393,7 +433,7 @@ function offFacts(overrides: Partial<ProductFacts> = {}): ProductFacts {
     nutriScoreGrade: { source: 'rafskoru_verified', observedAt: '2026-11-10T09:30:00.000Z' },
   });
   assert.deepEqual(facts.missingFields, ['imageUrl']);
-  assert.deepEqual(facts.catalogAllergenData, base.catalogAllergenData);
+  assertOnlyEvidenceTextChanged(facts, base, 'Buğday unu, şeker');
   assert.equal(facts.confidence, 'medium', 'güven birleştirmeyle yükseltilmemeli');
 }
 

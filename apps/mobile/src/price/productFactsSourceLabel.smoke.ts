@@ -9,7 +9,11 @@
  */
 import assert from 'node:assert/strict';
 
-import { getProductFactsSourceLabel, UNKNOWN_PRODUCT_FACTS_SOURCE_LABEL } from './productFactsSourceLabel';
+import {
+  getProductFactsSourceLabel,
+  getProductFactsSourceText,
+  UNKNOWN_PRODUCT_FACTS_SOURCE_LABEL,
+} from './productFactsSourceLabel';
 import type { ProductFactsSource } from './types';
 
 const ALL_SOURCES: ProductFactsSource[] = ['off', 'rafskoru_verified', 'label_unverified', 'beta_inference'];
@@ -42,5 +46,43 @@ for (const label of [...labels, UNKNOWN_PRODUCT_FACTS_SOURCE_LABEL]) {
 for (const unknown of ['manufacturer', 'toString', '', null, undefined]) {
   assert.equal(getProductFactsSourceLabel(unknown), UNKNOWN_PRODUCT_FACTS_SOURCE_LABEL);
 }
+
+// ── Karışık kaynak (İş 1.3b): farklı kaynaktan gelen her alan anılır ─────
+assert.equal(getProductFactsSourceText({ dataSource: 'off' }), 'Open Food Facts (ODbL)');
+assert.equal(getProductFactsSourceText({ dataSource: 'off', fieldSources: {} }), 'Open Food Facts (ODbL)');
+assert.equal(
+  getProductFactsSourceText({ dataSource: 'rafskoru_verified' }),
+  'RafSkoru etiket kaydı (insan onaylı)',
+);
+
+const verifiedAt = { source: 'rafskoru_verified' as const, observedAt: '2026-11-10T09:30:00.000Z' };
+
+assert.equal(
+  getProductFactsSourceText({ dataSource: 'off', fieldSources: { ingredientsText: verifiedAt } }),
+  'Open Food Facts (ODbL) · içindekiler: RafSkoru etiket kaydı (insan onaylı)',
+);
+assert.equal(
+  getProductFactsSourceText({
+    dataSource: 'off',
+    // Nesne anahtar sırası bilerek ters: çıktı sırası buna bağlı olmamalı.
+    fieldSources: { nutriScoreGrade: verifiedAt, ingredientsText: verifiedAt, productName: verifiedAt },
+  }),
+  'Open Food Facts (ODbL) · ürün adı: RafSkoru etiket kaydı (insan onaylı) · ' +
+    'içindekiler: RafSkoru etiket kaydı (insan onaylı) · Nutri-Score: onaylı etiket değerlerinden hesaplandı',
+  'etiketten hesaplanan not "hesaplandı" diye anılmalı; etikette yazıyormuş gibi görünmemeli',
+);
+assert.equal(
+  getProductFactsSourceText({ dataSource: 'off', fieldSources: { ingredientsText: { source: 'off', observedAt: null } } }),
+  'Open Food Facts (ODbL)',
+  'ana kaynakla aynı kaynaktan gelen alan ayrıca anılmamalı',
+);
+assert.equal(
+  getProductFactsSourceText({
+    dataSource: 'off',
+    fieldSources: { ingredientsText: { source: 'label_unverified', observedAt: null } },
+  }),
+  'Open Food Facts (ODbL) · içindekiler: Etiketten okundu, doğrulanmadı',
+  'doğrulanmamış alan onaylı gibi görünmemeli',
+);
 
 console.log('PRODUCT_FACTS_SOURCE_LABEL_SMOKE_OK');

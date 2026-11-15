@@ -36,6 +36,7 @@ import {
   resolveProductGroup,
 } from './productGroups/index.js';
 import { getCatalog } from '../catalog/catalog.js';
+import { applyVerifiedLabel } from './productFacts/verifiedLabelResolver.js';
 import { UNCLASSIFIED_PRODUCT_GROUP_KEY } from '../catalog/productGroupMap.js';
 
 
@@ -74,18 +75,26 @@ async function tryFetchProductFacts(query: PriceQuery): Promise<ProductFacts | n
     return null;
   }
 
+  // ADR-009 §1 (İş 1.3b): OFF verisi insan onaylı etiket kaydıyla alan alan
+  // tamamlanır; OFF'ta hiç yoksa yalnız onaylı kayıt kullanılır. Onaylı kayıt
+  // yoksa (veya depo hazır değilse) applyVerifiedLabel tabanı AYNEN döndürür.
   const catalogFacts = productFactsFromCatalog(barcode);
   if (catalogFacts) {
-    return catalogFacts;
+    return applyVerifiedLabel(barcode, catalogFacts, getCatalog().byId.get(barcode)?.nutriScoreCategory ?? null);
   }
 
+  let liveFacts: ProductFacts | null = null;
   try {
-    const facts = await fetchOpenFoodFactsProductFactsByBarcode(barcode);
-
-    return facts && hasMeaningfulFoodFacts(facts) ? facts : null;
+    liveFacts = await fetchOpenFoodFactsProductFactsByBarcode(barcode);
   } catch {
-    return null;
+    liveFacts = null;
   }
+
+  // Anlamlılık kapısı birleştirmeden SONRA uygulanır: canlı OFF kaydı tek
+  // başına boş olsa bile onaylı etiket onu kullanılabilir kılabilir. Canlı
+  // OFF isteği başarısız olduysa da onaylı kayıt varsa onunla devam edilir.
+  const resolved = applyVerifiedLabel(barcode, liveFacts);
+  return resolved && hasMeaningfulFoodFacts(resolved) ? resolved : null;
 }
 
 function normalizeTurkish(value: string): string {
