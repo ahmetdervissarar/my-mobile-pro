@@ -20,6 +20,23 @@ export type LabelReaderKind = 'desktop_session' | 'api';
 export type LabelPhotoSlot = 'front' | 'ingredients' | 'nutrition';
 
 /**
+ * Nutri-Score hesabının gerektirdiği ürün türü (İş 1.3c). Etiketten OKUNAN bir
+ * alan değildir: kullanıcı fotoğraf çekerken beyan eder veya onaylayan belirler.
+ * Tür bilinmiyorsa null kalır; ürün adından veya görselden tahmin edilmez.
+ */
+export type LabelProductKind =
+  | 'general'
+  | 'beverage'
+  | 'water'
+  | 'cheese'
+  | 'fat_oil_nuts_seeds'
+  | 'red_meat'
+  | 'not_applicable';
+
+/** Türü kimin belirlediği: fotoğrafı çeken kullanıcı mı, onaylayan mı. */
+export type LabelProductKindSource = 'user_declared' | 'approver';
+
+/**
  * Aday kaydın yaşam döngüsü (ADR-009 §3):
  *   awaiting_read → read → agreed | disagreed → approved | rejected
  * approved ve rejected son durumlardır.
@@ -79,6 +96,8 @@ export interface LabelCandidate {
   photos: LabelPhotoRef[];
   /** Etiketin görüldüğü/fotoğraflandığı an (ISO). Kayıt yazım zamanı DEĞİL. */
   observedAt: string;
+  /** Fotoğrafı gönderenin beyan ettiği ürün türü; beyan edilmediyse null. */
+  declaredProductKind: LabelProductKind | null;
   status: LabelCandidateStatus;
   extractRead: LabelRead | null;
   verifyRead: LabelRead | null;
@@ -104,6 +123,9 @@ export interface VerifiedLabelProduct {
   photos: LabelPhotoRef[];
   photoSource: LabelPhotoSource;
   candidateId: string;
+  /** Nutri-Score için ürün türü; bilinmiyorsa null (o zaman not hesaplanmaz). */
+  productKind: LabelProductKind | null;
+  productKindSource: LabelProductKindSource | null;
   approvedBy: string;
   approvedAt: string;
   /** Yerine yeni sürüm geldiyse o an; güncel sürümde null. Eski sürüm silinmez. */
@@ -115,6 +137,8 @@ export interface CreateCandidateInput {
   photoSource: LabelPhotoSource;
   photos: LabelPhotoRef[];
   observedAt: string;
+  /** Fotoğrafı gönderenin beyan ettiği ürün türü (isteğe bağlı). */
+  declaredProductKind?: LabelProductKind | null;
 }
 
 export interface ApproveCandidateInput {
@@ -124,6 +148,12 @@ export interface ApproveCandidateInput {
    * kullanılır. Çıkarım okuması aday kayıtta değişmeden kalır.
    */
   fields?: LabelFields;
+  /**
+   * Onaylayanın belirlediği ürün türü. Verilirse kaynağı 'approver' olur
+   * (null vermek "bilinmiyor" demektir). Hiç verilmezse adayın beyan ettiği
+   * tür 'user_declared' kaynağıyla taşınır.
+   */
+  productKind?: LabelProductKind | null;
 }
 
 export interface RejectCandidateInput {

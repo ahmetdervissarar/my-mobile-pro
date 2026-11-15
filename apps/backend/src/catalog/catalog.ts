@@ -7,12 +7,12 @@
 // dış servis kullanılmaz.
 import { existsSync, readFileSync } from 'node:fs';
 
-import { computeNutriScore2023 } from '../nutriScore/nutriScore2023.js';
+import { computeNutriScore2023, type NutriScoreCategory } from '../nutriScore/nutriScore2023.js';
 import { foldSearchText } from '../search/suggestions.js';
 import { computeCompletenessAndMissingFields } from '../tools/offTurkey/normalize.js';
 import type { AllergenKey, OffImportRecord } from '../tools/offTurkey/normalize.js';
 import { classifyAllergenTags } from '../tools/offTurkey/offAllergenMap.js';
-import { categoryFromOffTags, hasNonNutritiveSweetenerTag } from './nutriScoreCategory.js';
+import { categoryFromOffTags, hasNonNutritiveSweetenerTag, knownCategoryFromOffTags } from './nutriScoreCategory.js';
 import { mapOffCategoriesToProductGroupKey, UNCLASSIFIED_PRODUCT_GROUP_KEY } from './productGroupMap.js';
 import { resolveProductGroup } from '../price/productGroups/resolveProductGroup.js';
 
@@ -90,6 +90,14 @@ export interface CatalogProduct {
   productGroupSource: 'off' | 'name';
   imageUrl: string | null;
   nutriScore: CatalogNutriScore;
+  /**
+   * OFF kategori etiketlerinden türetilen Nutri-Score ürün türü. OFF hiç
+   * kategori etiketi taşımıyorsa null (tür bilinmiyor — 'general' VARSAYILMAZ);
+   * OFF notu 'not-applicable' ise 'not_applicable'. Onaylı etiket kaydının
+   * besin tablosundan Nutri-Score hesaplarken kullanılır (ADR-009, İş 1.3c).
+   * Backend-içi alandır; arama/sepet yanıtlarına taşınmaz.
+   */
+  nutriScoreCategory: NutriScoreCategory | null;
   nova: CatalogNova;
   allergenData: CatalogAllergenData;
   provenance: OffImportRecord['provenance'];
@@ -395,6 +403,8 @@ export function buildCatalogProduct(record: OffImportRecord): CatalogProduct {
     productGroupSource,
     imageUrl: record.imageUrl,
     nutriScore,
+    nutriScoreCategory:
+      record.offGradeRaw === 'not-applicable' ? 'not_applicable' : knownCategoryFromOffTags(record.categories ?? []),
     nova: buildNova(record),
     allergenData,
     provenance: record.provenance,

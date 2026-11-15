@@ -298,4 +298,18 @@ const emptyCatalog = loadCatalog('/tmp/rafskoru-catalog-smoke-does-not-exist.jso
 assert.equal(emptyCatalog.products.length, 0);
 assert.equal(emptyCatalog.byId.size, 0);
 
+// 8) Nutri-Score ürün türü (İş 1.3c): OFF kategori etiketi yoksa tür
+// BİLİNMİYOR (null) — 'general' varsayılmaz. Etiket var ama özel sınıfa
+// düşmüyorsa 'general'. OFF 'not-applicable' dediyse 'not_applicable'.
+assert.equal(buildCatalogProduct(makeRecord({ categories: [] })).nutriScoreCategory, null, 'kategori etiketi yoksa tür null olmalı');
+assert.equal(buildCatalogProduct(cheeseRecord).nutriScoreCategory, 'cheese');
+assert.equal(buildCatalogProduct(unknownCategoryRecord).nutriScoreCategory, 'general');
+assert.equal(buildCatalogProduct(makeRecord({ categories: ['en:beverages', 'en:sodas'] })).nutriScoreCategory, 'beverage');
+assert.equal(
+  buildCatalogProduct(makeRecord({ categories: ['en:beverages'], offGradeRaw: 'not-applicable' })).nutriScoreCategory,
+  'not_applicable',
+  'OFF "uygulanamaz" dediyse kategori etiketi olsa bile tür not_applicable olmalı',
+);
+assert.equal(notApplicableProduct.nutriScoreCategory, 'not_applicable');
+
 console.log('CATALOG_SMOKE_OK');

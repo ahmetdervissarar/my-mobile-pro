@@ -36,6 +36,8 @@ import type {
   LabelPhotoRef,
   LabelPhotoSlot,
   LabelPhotoSource,
+  LabelProductKind,
+  LabelProductKindSource,
   LabelRead,
   LabelReaderKind,
   RejectCandidateInput,
@@ -67,6 +69,15 @@ export class LabelCandidateNotFoundError extends Error {
 const PHOTO_SOURCES: readonly LabelPhotoSource[] = ['off_photo', 'intake', 'user_app'];
 const PHOTO_SLOTS: readonly LabelPhotoSlot[] = ['front', 'ingredients', 'nutrition'];
 const READER_KINDS: readonly LabelReaderKind[] = ['desktop_session', 'api'];
+const PRODUCT_KINDS: readonly LabelProductKind[] = [
+  'general',
+  'beverage',
+  'water',
+  'cheese',
+  'fat_oil_nuts_seeds',
+  'red_meat',
+  'not_applicable',
+];
 
 export const LABEL_TEXT_FIELD_KEYS = [
   'productName',
@@ -109,6 +120,14 @@ function assertNonEmptyText(value: unknown, fieldName: string): string {
     throw new LabelStoreValidationError(`${fieldName} boş olamaz.`);
   }
   return value.trim();
+}
+
+function sanitizeProductKind(input: unknown, fieldName: string): LabelProductKind | null {
+  if (input === null || input === undefined) return null;
+  if (!PRODUCT_KINDS.includes(input as LabelProductKind)) {
+    throw new LabelStoreValidationError(`${fieldName} geçersiz.`);
+  }
+  return input as LabelProductKind;
 }
 
 function sanitizePhotos(input: unknown): LabelPhotoRef[] {
@@ -280,7 +299,21 @@ export function initLabelStoreDb(path: string): void {
       ON verified_label_products(barcode) WHERE superseded_at IS NULL;
   `);
 
+  // Hafif şema göçü (İş 1.3c): ürün türü sütunları sonradan eklendi. CREATE
+  // TABLE IF NOT EXISTS mevcut tabloya sütun eklemez; eksikse ALTER TABLE ile
+  // eklenir. Eski satırlarda değer NULL kalır (tür bilinmiyor).
+  addColumnIfMissing(instance, 'label_candidates', 'declared_product_kind');
+  addColumnIfMissing(instance, 'verified_label_products', 'product_kind');
+  addColumnIfMissing(instance, 'verified_label_products', 'product_kind_source');
+
   db = instance;
+}
+
+function addColumnIfMissing(instance: DatabaseSync, table: string, column: string): void {
+  const columns = instance.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!columns.some((existing) => existing.name === column)) {
+    instance.exec(`ALTER TABLE ${table} ADD COLUMN ${column} TEXT`);
+  }
 }
 
 /** Yalnız testler için — depoyu kapatıp verilen yoldan yeniden başlatır. */
@@ -326,6 +359,7 @@ function rowToCandidate(row: Record<string, unknown>): LabelCandidate {
     photoSource: row.photo_source as LabelPhotoSource,
     photos: JSON.parse(row.photos as string) as LabelPhotoRef[],
     observedAt: row.observed_at as string,
+    declaredProductKind: (row.declared_product_kind as LabelProductKind | null) ?? null,
     status: row.status as LabelCandidateStatus,
     extractRead: parseJsonOrNull<LabelRead>(row.extract_read),
     verifyRead: parseJsonOrNull<LabelRead>(row.verify_read),
@@ -347,6 +381,8 @@ function rowToVerified(row: Record<string, unknown>): VerifiedLabelProduct {
     photos: JSON.parse(row.photos as string) as LabelPhotoRef[],
     photoSource: row.photo_source as LabelPhotoSource,
     candidateId: row.candidate_id as string,
+    productKind: (row.product_kind as LabelProductKind | null) ?? null,
+    productKindSource: (row.product_kind_source as LabelProductKindSource | null) ?? null,
     approvedBy: row.approved_by as string,
     approvedAt: row.approved_at as string,
     supersededAt: (row.superseded_at as string | null) ?? null,
@@ -365,16 +401,18 @@ export function createCandidate(input: CreateCandidateInput): LabelCandidate {
   }
   const photos = sanitizePhotos(input.photos);
   const observedAt = assertIsoTimestamp(input.observedAt, 'observedAt');
+  const declaredProductKind = sanitizeProductKind(input.declaredProductKind, 'declaredProductKind');
 
   const id = randomUUID();
   const now = new Date().toISOString();
 
   requireDb()
     .prepare(
-      `INSERT INTO label_candidates (id, barcode, photo_source, photos, observed_at, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, 'awaiting_read', ?, ?)`,
+      `INSERT INTO label_candidates
+         (id, barcode, photo_source, photos, observed_at, declared_product_kind, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'awaiting_read', ?, ?)`,
     )
-    .run(id, input.barcode, input.photoSource, JSON.stringify(photos), observedAt, now, now);
+    .run(id, input.barcode, input.photoSource, JSON.stringify(photos), observedAt, declaredProductKind, now, now);
 
   return getCandidate(id)!;
 }
@@ -474,6 +512,15 @@ export function approveCandidate(id: string, input: ApproveCandidateInput): Veri
     throw new LabelStoreValidationError('Hiçbir alanı dolu olmayan kayıt onaylanamaz.');
   }
 
+  // Onaylayan tür verdiyse (null dâhil) o geçerlidir; hiç vermediyse adayın
+  // beyanı kaynağı belirtilerek taşınır. Tür bilinmiyorsa kaynak da null kalır.
+  const approverSetKind = input.productKind !== undefined;
+  const productKind = approverSetKind
+    ? sanitizeProductKind(input.productKind, 'productKind')
+    : candidate.declaredProductKind;
+  const productKindSource: LabelProductKindSource | null =
+    productKind === null ? null : approverSetKind ? 'approver' : 'user_declared';
+
   const database = requireDb();
   const now = new Date().toISOString();
 
@@ -489,8 +536,9 @@ export function approveCandidate(id: string, input: ApproveCandidateInput): Veri
     database
       .prepare(
         `INSERT INTO verified_label_products
-           (barcode, version, fields, observed_at, photos, photo_source, candidate_id, approved_by, approved_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           (barcode, version, fields, observed_at, photos, photo_source, candidate_id,
+            product_kind, product_kind_source, approved_by, approved_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         candidate.barcode,
@@ -500,6 +548,8 @@ export function approveCandidate(id: string, input: ApproveCandidateInput): Veri
         JSON.stringify(candidate.photos),
         candidate.photoSource,
         candidate.id,
+        productKind,
+        productKindSource,
         approvedBy,
         now,
       );

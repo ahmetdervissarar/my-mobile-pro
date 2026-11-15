@@ -10,6 +10,10 @@
  *   - eski sürüm silinmez; aday kayıt doğrulanmış kayıt gibi dönmez
  */
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 
 import {
   __resetLabelStoreDbForTesting,
@@ -287,5 +291,96 @@ assert.equal(
   false,
   'bütün değerleri boş bir besin tablosu içerik sayılmamalı',
 );
+
+// ── Ürün türü (İş 1.3c): beyan, onaylayan önceliği, bilinmiyor ───────────
+const KIND_BARCODE = '8690000000029';
+
+assert.equal(first.declaredProductKind, null, 'beyan edilmeyen tür null kalmalı');
+assert.equal(v1.productKind, null, 'tür bilinmiyorsa onaylı kayıtta da null kalmalı');
+assert.equal(v1.productKindSource, null);
+
+assert.throws(
+  () => createCandidate({ ...baseCandidate, barcode: KIND_BARCODE, declaredProductKind: 'atistirmalik' as never }),
+  LabelStoreValidationError,
+  'tanımsız ürün türü reddedilmeli',
+);
+
+function approvedWithKind(declared: CreateCandidateInput['declaredProductKind'], approve: { productKind?: never | null | 'general' }) {
+  const candidate = createCandidate({ ...baseCandidate, barcode: KIND_BARCODE, declaredProductKind: declared });
+  assert.equal(candidate.declaredProductKind, declared ?? null);
+  recordExtraction(candidate.id, read(milkFields));
+  recordVerification(candidate.id, read(milkFields), []);
+  return approveCandidate(candidate.id, { approvedBy: 'proje-sahibi', ...approve });
+}
+
+{
+  const inherited = approvedWithKind('beverage', {});
+  assert.equal(inherited.productKind, 'beverage', 'onaylayan tür vermediyse beyan taşınmalı');
+  assert.equal(inherited.productKindSource, 'user_declared', 'beyanın kaynağı onaylayan gibi gösterilmemeli');
+
+  const overridden = approvedWithKind('beverage', { productKind: 'general' });
+  assert.equal(overridden.productKind, 'general', 'onaylayanın belirlediği tür beyanın önüne geçmeli');
+  assert.equal(overridden.productKindSource, 'approver');
+
+  const cleared = approvedWithKind('beverage', { productKind: null });
+  assert.equal(cleared.productKind, null, 'onaylayan "bilinmiyor" diyebilmeli');
+  assert.equal(cleared.productKindSource, null);
+
+  const undeclared = approvedWithKind(undefined, {});
+  assert.equal(undeclared.productKind, null);
+  assert.equal(undeclared.productKindSource, null);
+
+  assert.deepEqual(
+    getVerifiedHistory(KIND_BARCODE).map((v) => [v.version, v.productKind, v.productKindSource]),
+    [
+      [1, 'beverage', 'user_declared'],
+      [2, 'general', 'approver'],
+      [3, null, null],
+      [4, null, null],
+    ],
+  );
+}
+
+// ── Şema göçü: ürün türü sütunları olmayan eski veritabanı açılabilmeli ──
+{
+  const dir = mkdtempSync(join(tmpdir(), 'rafskoru-label-store-'));
+  const dbPath = join(dir, 'eski.db');
+
+  const legacy = new DatabaseSync(dbPath);
+  legacy.exec(`
+    CREATE TABLE label_candidates (
+      id TEXT PRIMARY KEY, barcode TEXT NOT NULL, photo_source TEXT NOT NULL, photos TEXT NOT NULL,
+      observed_at TEXT NOT NULL, status TEXT NOT NULL, extract_read TEXT, verify_read TEXT,
+      differing_fields TEXT, decided_by TEXT, decided_at TEXT, rejection_reason TEXT,
+      created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    );
+    CREATE TABLE verified_label_products (
+      barcode TEXT NOT NULL, version INTEGER NOT NULL, fields TEXT NOT NULL, observed_at TEXT NOT NULL,
+      photos TEXT NOT NULL, photo_source TEXT NOT NULL, candidate_id TEXT NOT NULL UNIQUE,
+      approved_by TEXT NOT NULL, approved_at TEXT NOT NULL, superseded_at TEXT,
+      PRIMARY KEY (barcode, version)
+    );
+    INSERT INTO label_candidates (id, barcode, photo_source, photos, observed_at, status, created_at, updated_at)
+      VALUES ('eski-aday', '${BARCODE}', 'intake', '[{"slot":"ingredients","ref":"p.jpg","attribution":null}]',
+              '2026-10-01T00:00:00.000Z', 'awaiting_read', '2026-10-01T00:00:00.000Z', '2026-10-01T00:00:00.000Z');
+  `);
+  legacy.close();
+
+  __resetLabelStoreDbForTesting(dbPath);
+
+  const migrated = getCandidate('eski-aday')!;
+  assert.equal(migrated.barcode, BARCODE, 'göç mevcut satırı korumalı');
+  assert.equal(migrated.declaredProductKind, null, 'eski satırda tür bilinmiyor olmalı');
+
+  const afterMigration = createCandidate({ ...baseCandidate, declaredProductKind: 'cheese' });
+  assert.equal(afterMigration.declaredProductKind, 'cheese', 'göçten sonra yeni sütun yazılabilmeli');
+
+  // İkinci açılış sütunları yeniden eklemeye çalışıp hata vermemeli.
+  __resetLabelStoreDbForTesting(dbPath);
+  assert.equal(getCandidate(afterMigration.id)!.declaredProductKind, 'cheese');
+
+  __resetLabelStoreDbForTesting(':memory:');
+  rmSync(dir, { recursive: true, force: true });
+}
 
 console.log('LABEL_STORE_DB_SMOKE_OK');

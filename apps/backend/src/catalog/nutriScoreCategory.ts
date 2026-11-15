@@ -21,6 +21,17 @@ export function hasNonNutritiveSweetenerTag(additives: string[]): boolean {
   return additives.some((tag) => SWEETENER_ADDITIVE_TAGS.includes(tag));
 }
 
+/**
+ * categoryFromOffTags hiç etiket yokken de 'general' döndürür; bu, türü
+ * BİLİNMEYEN bir ürünü genel gıda saymak demektir. Etiket fotoğrafından
+ * okunan besin değerleriyle hesap yapılırken (verifiedLabelFacts.ts) bu
+ * varsayım kullanılmaz: hiç OFF kategori etiketi yoksa tür bilinmiyordur
+ * (null). Etiket var ama özel bir sınıfa düşmüyorsa 'general' kabul edilir.
+ */
+export function knownCategoryFromOffTags(tags: string[]): NutriScoreCategory | null {
+  return tags.length === 0 ? null : categoryFromOffTags(tags);
+}
+
 export function categoryFromOffTags(tags: string[]): NutriScoreCategory {
   const has = (t: string) => tags.includes(t);
   if (has('en:waters') && !has('en:flavored-waters')) return 'water';
