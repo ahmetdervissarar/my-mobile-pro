@@ -205,11 +205,19 @@ function hasGenericGroupName(product: CatalogProduct): boolean {
 /**
  * Sıralama: (1) en üstteki grup önerisiyle aynı ürün grubu önce, (2) adı
  * yalnızca ürün grubunun jenerik adıyla aynı olan kayıtlar sona (D4), (3)
- * veri tamlığı (complete > usable_for_risk > diğerleri), (4) Nutri-Score
- * (A→E; notu olmayan en sonda), (5) ad. Ürün grubu ürün adından ÇIKARILMAZ —
+ * aramada adla eşleşme gücü (verilirse; bkz. compareSearchMatches — tam ad
+ * eşleşmesi bundan da önce gelir), (4) veri tamlığı (complete >
+ * usable_for_risk > diğerleri), (5) Nutri-Score (A→E; notu olmayan en sonda),
+ * (6) ad. Ürün grubu ürün adından ÇIKARILMAZ —
  * yalnız katalogda zaten hesaplanmış productGroupKey kullanılır.
  */
-function compareCatalogProducts(a: CatalogProduct, b: CatalogProduct, topGroupKey: string | null): number {
+function compareCatalogProducts(
+  a: CatalogProduct,
+  b: CatalogProduct,
+  topGroupKey: string | null,
+  aNameTier = 0,
+  bNameTier = 0,
+): number {
   if (topGroupKey) {
     const aInTopGroup = a.productGroupKey === topGroupKey ? 0 : 1;
     const bInTopGroup = b.productGroupKey === topGroupKey ? 0 : 1;
@@ -220,6 +228,9 @@ function compareCatalogProducts(a: CatalogProduct, b: CatalogProduct, topGroupKe
   const bGeneric = hasGenericGroupName(b) ? 1 : 0;
   if (aGeneric !== bGeneric) return aGeneric - bGeneric;
 
+  // Adla eşleşme gücü (yalnız arama; bkz. compareSearchMatches).
+  if (aNameTier !== bNameTier) return aNameTier - bNameTier;
+
   const aCompleteness = COMPLETENESS_RANK[a.completeness];
   const bCompleteness = COMPLETENESS_RANK[b.completeness];
   if (aCompleteness !== bCompleteness) return aCompleteness - bCompleteness;
@@ -229,6 +240,60 @@ function compareCatalogProducts(a: CatalogProduct, b: CatalogProduct, topGroupKe
   if (aGradeRank !== bGradeRank) return aGradeRank - bGradeRank;
 
   return (a.name ?? '').localeCompare(b.name ?? '', 'tr-TR');
+}
+
+/** Katlanmış, noktalama ve boşluktan arındırılmış kelimeler. */
+function toNameWords(value: string): string[] {
+  return foldSearchText(value)
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean);
+}
+
+interface NameRelevance {
+  /**
+   * Ürün adı sorguyla birebir aynı (büyük/küçük harf, Türkçe harf ve
+   * noktalama farkı gözetilmez). Proje sahibi kararı (2026-11-15): tam ad
+   * eşleşmesi listenin en üstünde yer alır.
+   *
+   * İstisna — D4: adı yalnızca ürün grubunun jenerik adı olan kayıt ("Süt")
+   * tam eşleşme sayılmaz. Kullanıcı "süt" yazdığında tam eşleşme listenin en
+   * üstündeki "Süt" GRUP satırıdır; jenerik adlı tekil kayıt yine açıklayıcı
+   * adlı kayıtların arkasında kalır (bkz. suggestionsGenericNameOrdering.smoke.ts).
+   */
+  exact: boolean;
+  /** 0: sorgu adda tam kelimeler hâlinde, sırasıyla geçiyor; 1: bütün kelimeler adda var; 2: diğer (ör. yalnız markada). */
+  tier: 0 | 1 | 2;
+}
+
+function getNameRelevance(product: CatalogProduct, queryWords: string[]): NameRelevance {
+  if (queryWords.length === 0) return { exact: false, tier: 2 };
+
+  const words = toNameWords(product.name ?? '');
+  const name = words.join(' ');
+  const query = queryWords.join(' ');
+  const exact = name === query && !hasGenericGroupName(product);
+
+  if (` ${name} `.includes(` ${query} `)) return { exact, tier: 0 };
+  const nameWordSet = new Set(words);
+  if (queryWords.every((word) => nameWordSet.has(word))) return { exact, tier: 1 };
+  return { exact, tier: 2 };
+}
+
+/**
+ * Arama sonuçlarının sırası:
+ *   1. tam ad eşleşmesi (bkz. NameRelevance.exact)
+ *   2. compareCatalogProducts'ın grup ve jenerik ad (D4) kuralları
+ *   3. adla eşleşme gücü (NameRelevance.tier): adında geçen ürün, yalnız
+ *      markasıyla eşleşen üründen önce
+ *   4. compareCatalogProducts'ın kalan kuralları (veri tamlığı, Nutri-Score, ad)
+ */
+function compareSearchMatches(
+  a: { product: CatalogProduct; relevance: NameRelevance },
+  b: { product: CatalogProduct; relevance: NameRelevance },
+  topGroupKey: string | null,
+): number {
+  if (a.relevance.exact !== b.relevance.exact) return a.relevance.exact ? -1 : 1;
+  return compareCatalogProducts(a.product, b.product, topGroupKey, a.relevance.tier, b.relevance.tier);
 }
 
 export interface ProductGroupBrowseResponse {
@@ -266,7 +331,13 @@ export function suggestByProductGroup(productGroupKey: string, options: SuggestS
 export function suggestSearch(query: string, options: SuggestSearchOptions = {}): SearchSuggestResponse {
   const rawQuery = query.trim();
   const foldedQuery = foldSearchText(rawQuery);
-  const queryTokens = foldedQuery.split(/\s+/).filter(Boolean);
+  // Kelimelerin başındaki/sonundaki noktalama atılır ("çikolata." → "çikolata");
+  // içteki korunur ("%3.1" → "3.1" hâlâ "%3.1" içinde bulunur).
+  const queryTokens = foldedQuery
+    .split(/\s+/)
+    .map((token) => token.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''))
+    .filter(Boolean);
+  const queryWords = toNameWords(rawQuery);
   const limit = Math.min(Math.max(options.limit ?? 8, 1), 12);
 
   if (foldedQuery.length < 2) {
@@ -303,9 +374,10 @@ export function suggestSearch(query: string, options: SuggestSearchOptions = {})
     // sorguda davranış eskisiyle aynıdır; çok kelimelide eski eşleşmelerin
     // hepsi yine eşleşir.
     .filter((product) => queryTokens.every((token) => product.searchText.includes(token)))
-    .sort((a, b) => compareCatalogProducts(a, b, topGroupKey))
+    .map((product) => ({ product, relevance: getNameRelevance(product, queryWords) }))
+    .sort((a, b) => compareSearchMatches(a, b, topGroupKey))
     .slice(0, PRODUCT_SUGGESTION_LIMIT)
-    .map(catalogProductToSuggestion);
+    .map(({ product }) => catalogProductToSuggestion(product));
 
   return {
     query: rawQuery,
