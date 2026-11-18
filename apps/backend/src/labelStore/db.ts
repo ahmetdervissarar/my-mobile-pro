@@ -354,6 +354,24 @@ function inTransaction<T>(database: DatabaseSync, work: () => T): T {
   }
 }
 
+/**
+ * Birden çok depo işlemini tek işlem (transaction) içinde çalıştırır; biri
+ * hata verirse hepsi geri alınır. İçe aktarma (importReads.ts) yarım kalmış
+ * aday bırakmamak için kullanır. İç içe çağrılmamalıdır (approveCandidate
+ * gibi kendi işlemini açan fonksiyonlarla birlikte kullanılmaz).
+ */
+/**
+ * Bir okumayı depoya yazmadan aynı kurallarla denetler ve temizlenmiş hâlini
+ * döndürür (bilinmeyen anahtarlar atılır; boş metin reddedilir).
+ */
+export function validateLabelRead(read: unknown): LabelRead {
+  return sanitizeRead(read);
+}
+
+export function runInLabelStoreTransaction<T>(work: () => T): T {
+  return inTransaction(requireDb(), work);
+}
+
 // ── Satır dönüşümleri ────────────────────────────────────────────────────
 
 function parseJsonOrNull<T>(value: unknown): T | null {
