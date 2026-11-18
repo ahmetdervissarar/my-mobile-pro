@@ -20,6 +20,14 @@ Kapalı betaya çıkış için hepsi yeşil olmalı:
 - [ ] Fiyatın beta/referans olduğu kullanıcıya açıkça anlaşılıyor.
 - [ ] Eksik sağlık/içerik verisi "hata/bozuk" değil, "kısmi sonuç/veri eksik" olarak gösteriliyor.
 - [ ] KVKK/gizlilik mini-checklist tamamlandı.
+- [ ] **Etiket verisi lisans ve hukuk incelemesi tamamlandı** (ADR-009 açık kararlar 3 ve 4;
+      proje sahibi isteği, 2026-11-18). `legal-privacy-reviewer` incelemesi ve gerekirse uzman görüşüyle:
+  - [ ] OFF fotoğraflarından (CC BY-SA) okunan metnin RafSkoru veritabanında saklanması ve
+        kullanıcıya gösterilmesinin lisans koşulları; gereken atıf metni ekranda var.
+  - [ ] OFF verisiyle birleştirilen veritabanının ODbL paylaşım yükümlülüğü değerlendirildi.
+  - [ ] Kullanıcının uygulamadan gönderdiği etiket fotoğrafları için bilgilendirme/rıza metni,
+        saklama süresi ve fotoğrafın okuma için yapay zekâ hizmetine iletilmesi değerlendirildi.
+  - [ ] OFF isteklerinde kullanılan iletişim adresi projeye ait bir adres (kişisel e-posta değil).
 
 ---
 
