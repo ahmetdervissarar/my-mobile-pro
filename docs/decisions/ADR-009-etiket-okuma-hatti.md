@@ -128,6 +128,22 @@ profili ve kesin konumu bu kayıtlara, backend'e, log'a veya üçüncü tarafa g
 - OFF'a herhangi bir dış çağrı (fotoğraf sayımı dâhil) ve OFF'a geri yazma.
 - Commit, push, dal birleştirme.
 
+## Alınan ek kararlar
+
+### 11. Alkollü içecekler betada puanlanmaz (2026-11-18)
+
+Proje sahibi kararı. Pilotta gönüllünün "içecek" diye işaretlediği ürün bir bira çıktı
+(Tuborg Gold, alkol %5). Nutri-Score alkollü içeceklere uygulanmaz ve RafSkoru'nun bu
+ürünler için anlamlı bir sağlık değerlendirmesi yoktur.
+
+- Alkollü içeceklere RafSkoru puanı verilmez; ekranda ürün türünün puan kapsamında
+  olmadığı açıkça söylenir. Puan "veri yok" gibi gösterilmez.
+- Alerjen uyarıları (ör. arpa maltından gluten) yine üretilir ve gösterilir.
+- Alkollü olduğu yalnız yapılandırılmış veriden anlaşılır: OFF kategori etiketi veya
+  onaylayanın seçtiği ürün türü. Ürün adından ("bira", "rakı") çıkarım yapılmaz.
+- Gönüllü aracındaki kaba "içecek" kategorisi ürün türü olarak otomatik taşınmaz.
+- Uygulama ayrı bir iştir (sözleşme ve skor zincirine dokunur; plan + onay gerekir).
+
 ## Açık kararlar
 
 1. Profile dört zorunlu alerjenin (kereviz, hardal, sülfit, acı bakla) eklenmesi. Risk

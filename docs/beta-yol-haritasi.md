@@ -61,11 +61,21 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 | 1.3c Besin tablosundan Nutri-Score + ürün türü | tamam |
 | 1.3b Barkod sorgusuna bağlama (+ alerjen incelemesi, yumurta düzeltmesi) | tamam |
 | 1.3d Arama, kategori, sepet ve alternatiflerin onaylı kayıtları kullanması | tamam |
-| 1.4 Okuma adımı (fotoğraftan okunan sonuçların depoya alınması) | sırada |
+| 1.4a Okuma ajanı, karşılaştırma, içe aktarma + 2 ürünlük pilot | tamam |
+| 1.4b Alkollü içeceklerin puan kapsamı dışında tutulması (ADR-009 §11) | tamam |
+| 1.4c OFF etiket fotoğraflarının toplu okunması (yaklaşık 950 ürün) | sırada |
 | 1.5 Onay ekranı (ürün türü seçimi dâhil) | bekliyor |
 | 1.6 Görsel adresi düzeltmesi | bekliyor |
 
 ### Unutulmaması gerekenler
+
+- **Elma suyu pilot kaydı barkod bekliyor.** İki okuması yerelde
+  (`apps/backend/data/label-store/pilot/elma-suyu-okuma-*.json`); barkod gelince
+  `npm run label:import` ile alınacak. Fotoğraflarda barkod rakamları görünmüyor.
+- **Onaylı etiketteki alerjen ve eser ifadeleri henüz uyarıya dönüşmüyor.** Örn. elma suyundaki
+  "eser miktarda süt içerebilir". Alerjen kapısına dokunduğu için ayrı inceleme ve onay ister.
+- **Okuma kullanımı (2026-11-18 ölçümü):** gerçek `label-reader` ajanıyla okuma başına yaklaşık
+  18,6 bin token, yaklaşık 22 saniye (3 fotoğraflı ürün). Toplu okuma günlük partilerle yapılacak.
 
 - **OFF'ta hiç olmayan onaylı ürünler aramada çıkmıyor.** Arama ve kategori listeleri
   yalnız OFF kataloğundaki ürünleri tarıyor; OFF'ta olmayan bir ürün onaylansa bile yalnız
