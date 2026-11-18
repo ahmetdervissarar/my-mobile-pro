@@ -71,8 +71,11 @@ function overlayProduct(product: CatalogProduct, resolution: VerifiedLabelResolu
     sources.productName?.source === 'rafskoru_verified' ? (facts.productName ?? product.name) : product.name;
 
   const derived = resolution.nutriScore?.status === 'derived' ? resolution.nutriScore.derivation : null;
-  const nutriScore: CatalogNutriScore =
-    sources.nutriScoreGrade?.source === 'rafskoru_verified' && derived
+  const nutriScore: CatalogNutriScore = facts.scoreScopeExclusion
+    ? product.nutriScore.status === 'not_applicable'
+      ? product.nutriScore
+      : { grade: null, status: 'not_applicable', source: null, algorithmVersion: null, assumptions: [] }
+    : sources.nutriScoreGrade?.source === 'rafskoru_verified' && derived
       ? {
           grade: derived.grade,
           status: 'computed',

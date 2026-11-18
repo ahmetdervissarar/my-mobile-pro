@@ -20,6 +20,7 @@ import { calculateContentScore } from '../contentScore/contentScoreCalculator.js
 import { calculateHealthScore } from '../healthScore/healthScoreCalculator.js';
 import { calculateSustainabilityScore } from '../sustainability/sustainabilityScorer.js';
 import { calculateRafScore } from './rafScoreCalculator.js';
+import { buildOutOfScopeRafScore } from './scoreScope.js';
 import type { RafScoreResult } from './types.js';
 
 export interface CatalogRafScoreResult {
@@ -75,6 +76,18 @@ export function getCatalogRafScore(product: CatalogProduct): CatalogRafScoreResu
 
   const facts = getEffectiveProductFacts(product);
   if (!facts) return undefined;
+
+  // Puan kapsamı (ADR-009 §11): ürün sayfasıyla AYNI "kapsam dışı" sonucu.
+  const exclusion = facts.scoreScopeExclusion ?? product.scoreScopeExclusion ?? null;
+  if (exclusion) {
+    const outOfScope: CatalogRafScoreResult = {
+      rafScore: buildOutOfScopeRafScore(exclusion),
+      scoreCoverageKey: '',
+      scoreCoverageLabel: 'kapsam dışı',
+    };
+    cacheByProductId.set(product.productId, outOfScope);
+    return outOfScope;
+  }
 
   const healthScore = calculateHealthScore(productFactsToHealthScoreInput(facts));
   const contentScore = calculateContentScore(productFactsToContentScoreInput(facts));

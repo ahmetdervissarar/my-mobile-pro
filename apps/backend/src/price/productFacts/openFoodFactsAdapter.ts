@@ -1,5 +1,6 @@
 import type { CatalogAllergenData, CatalogAllergenDataStatus } from '../../catalog/catalog.js';
 import { classifyAllergenTags } from '../../tools/offTurkey/offAllergenMap.js';
+import { scoreScopeExclusionFromOffCategories } from '../rafScore/scoreScope.js';
 import type {
   ProductFacts,
   ProductFactsConfidence,
@@ -28,6 +29,8 @@ export interface OpenFoodFactsProductInfoLike {
   nutriScore?: string | null;
   novaGroup?: number | null;
   additives?: string[] | null;
+  /** Ham, önekli OFF kategori etiketleri (ör. "en:beers"); yalnız puan kapsamı için. */
+  categoryTags?: string[] | null;
   nutritionValues?: {
     fat?: number | null;
     saturatedFat?: number | null;
@@ -287,6 +290,9 @@ export function openFoodFactsInfoToProductFacts(
     novaGroup: normalizeNovaGroup(input.novaGroup),
     trafficLight: mapNutritionValuesToTrafficLight(input.nutritionValues),
     dataSource: 'off',
+    ...(scoreScopeExclusionFromOffCategories(input.categoryTags)
+      ? { scoreScopeExclusion: scoreScopeExclusionFromOffCategories(input.categoryTags) }
+      : {}),
     isComplete: false,
     sourceUrl: normalizeText(input.sourceUrl),
     observedAt: new Date().toISOString(),

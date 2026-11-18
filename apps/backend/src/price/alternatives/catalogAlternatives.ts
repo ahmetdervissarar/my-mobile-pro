@@ -14,6 +14,7 @@ import { getEffectiveCatalogProduct, getEffectiveCatalogProducts } from '../../c
 import { UNCLASSIFIED_PRODUCT_GROUP_KEY } from '../../catalog/productGroupMap.js';
 import { findProductGroupRegistryEntry } from '../productGroups/registry.js';
 import { getCatalogRafScore } from '../rafScore/catalogRafScore.js';
+import { isOutOfScopeRafScore } from '../rafScore/scoreScope.js';
 import type { CatalogRafScoreResult } from '../rafScore/catalogRafScore.js';
 
 export interface CatalogAlternativeProduct {
@@ -97,8 +98,11 @@ export function getCatalogAlternatives(input: {
   // Grup bilinmiyorsa veya grup için alternatif önerisi açıkça kapalıysa
   // (ör. bebek maması — "Restricted in beta unless human-curated allowlist
   // is introduced", bkz. registry.ts notu) bölüm hiç gösterilmez.
+  // Puan kapsamı dışındaki ürün (ADR-009 §11) "daha yüksek puanlı" bölümü açmaz;
+  // kapsam dışı adaylar puansız oldukları için aşağıda zaten elenir.
   if (
     !currentProduct ||
+    isOutOfScopeRafScore(currentProduct.rafScore) ||
     groupKey === UNCLASSIFIED_PRODUCT_GROUP_KEY ||
     registryEntry?.alternativeEligibility === 'disabled'
   ) {

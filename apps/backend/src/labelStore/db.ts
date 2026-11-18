@@ -77,6 +77,7 @@ const PRODUCT_KINDS: readonly LabelProductKind[] = [
   'fat_oil_nuts_seeds',
   'red_meat',
   'not_applicable',
+  'alcoholic_beverage',
 ];
 
 export const LABEL_TEXT_FIELD_KEYS = [

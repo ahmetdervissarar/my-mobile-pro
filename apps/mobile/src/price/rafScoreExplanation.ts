@@ -1,3 +1,4 @@
+import { RAF_SCORE_OUT_OF_SCOPE_EXPLANATION, RAF_SCORE_OUT_OF_SCOPE_REASON_CODE } from './rafScoreScope';
 import type { PriceResolveResponse, RafScoreReason, RafScoreResult } from './types';
 
 function getRafScoreComponentLabel(key: string): string {
@@ -111,6 +112,10 @@ function formatKnownReason(reason: RafScoreReason): string | null {
 
   if (reason.code.endsWith('_high_score')) {
     return `${label ?? 'Bu bölüm'} açısından ürün iyi durumda; genel puanı destekliyor.`;
+  }
+
+  if (reason.code === RAF_SCORE_OUT_OF_SCOPE_REASON_CODE) {
+    return RAF_SCORE_OUT_OF_SCOPE_EXPLANATION;
   }
 
   if (reason.code === 'raf_score_unavailable') {

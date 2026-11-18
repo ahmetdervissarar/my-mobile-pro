@@ -11,7 +11,7 @@ import { ManualBetaPriceProvider } from './providers/manualBetaPriceProvider.js'
 import { OnlineTestPriceSeedProvider } from './providers/onlineTestPriceSeedProvider.js';
 import { enrichOffers, pickBestOffer } from './enrich/index.js';
 import { calculateSustainabilityScore } from './sustainability/index.js';
-import { buildRafScoreReasons, calculateRafScore } from './rafScore/index.js';
+import { buildOutOfScopeRafScore, buildRafScoreReasons, calculateRafScore, isOutOfScopeRafScore } from './rafScore/index.js';
 import { resolveDataConfidence } from './confidence/index.js';
 import { calculatePriceScore } from './priceScore/index.js';
 import { calculateHealthScore, type HealthScoreInput } from './healthScore/index.js';
@@ -537,8 +537,25 @@ function attachRafScore(result: PriceResult): void {
   });
 }
 
+/**
+ * Puan kapsamı (ADR-009 §11): ürün kapsam dışındaysa (alkollü içecek) hiçbir
+ * puan gösterilmez; RafSkoru "kapsam dışı" sonucuyla değiştirilir. Ürün
+ * verisi (içindekiler, alerjen) olduğu gibi kalır — alerjen uyarıları
+ * mobilde bu veriden üretilmeye devam eder.
+ */
+function applyScoreScope(result: PriceResult, productFacts: ProductFacts | null): void {
+  const exclusion = productFacts?.scoreScopeExclusion;
+  if (!exclusion) return;
+
+  result.rafScore = buildOutOfScopeRafScore(exclusion);
+  result.priceScore = undefined;
+  result.healthScore = undefined;
+  result.contentScore = undefined;
+  result.sustainability = undefined;
+}
+
 function attachRafScoreReasons(result: PriceResult): void {
-  if (!result.rafScore) {
+  if (!result.rafScore || isOutOfScopeRafScore(result.rafScore)) {
     return;
   }
 
@@ -661,6 +678,7 @@ export class PriceProviderService {
           attachContentScore(result, query, productFacts);
           attachSustainabilityScore(result, query, productFacts);
           attachRafScore(result);
+          applyScoreScope(result, productFacts);
 
           attachPriceConfidence(result);
 
@@ -692,6 +710,7 @@ export class PriceProviderService {
     attachContentScore(unavailableResult, query, productFacts);
     attachSustainabilityScore(unavailableResult, query, productFacts);
     attachRafScore(unavailableResult);
+    applyScoreScope(unavailableResult, productFacts);
 
     attachPriceConfidence(unavailableResult);
 

@@ -16,6 +16,7 @@ interface OpenFoodFactsApiResponse {
     allergens_tags?: string[];
     traces_tags?: string[];
     additives_tags?: string[];
+    categories_tags?: string[];
     nutriments?: {
       fat_100g?: unknown;
       'saturated-fat_100g'?: unknown;
@@ -105,6 +106,7 @@ function buildOpenFoodFactsEndpoint(barcode: string): string {
     'allergens_tags',
     'traces_tags',
     'additives_tags',
+    'categories_tags',
     'nutriments',
   ].join(',');
 
@@ -139,6 +141,8 @@ function mapApiResponseToInfoLike(
     nutriScore: data.product.nutriscore_grade ?? null,
     novaGroup: data.product.nova_group ?? null,
     additives: Array.isArray(data.product.additives_tags) ? parseTagList(data.product.additives_tags) : null,
+    // Ham, önekli OFF kategori etiketleri — yalnız puan kapsamı (ADR-009 §11) için.
+    categoryTags: Array.isArray(data.product.categories_tags) ? data.product.categories_tags : null,
     nutritionValues: {
       fat: parseNutrientNumber(nutriments?.fat_100g),
       saturatedFat: parseNutrientNumber(nutriments?.['saturated-fat_100g']),

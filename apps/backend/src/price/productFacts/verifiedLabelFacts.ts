@@ -181,9 +181,11 @@ export function deriveNutriScoreFromLabel(
 function verifiedKind(
   verified: VerifiedLabelProduct,
 ): { category: NutriScoreCategory; source: LabelNutriScoreCategorySource } | null {
-  return verified.productKind && verified.productKindSource
-    ? { category: verified.productKind, source: verified.productKindSource }
-    : null;
+  if (!verified.productKind || !verified.productKindSource) return null;
+  // Alkollü içeceğe Nutri-Score uygulanmaz (ADR-009 §11).
+  const category: NutriScoreCategory =
+    verified.productKind === 'alcoholic_beverage' ? 'not_applicable' : verified.productKind;
+  return { category, source: verified.productKindSource };
 }
 
 /** Barkod için yalnız onaylı etiket kaydı varken (OFF'ta hiç yokken) kullanılır. */
@@ -212,6 +214,7 @@ export function productFactsFromVerifiedLabel(verified: VerifiedLabelProduct): V
     // additives bilerek yok: boş dizi "katkısız" anlamına gelirdi (bkz. catalogAdapter.ts).
     allergenInfo: { dataStatus: 'unknown', declaredAllergens: [], traceAllergens: [], source: 'none' },
     dataSource: 'rafskoru_verified',
+    ...(verified.productKind === 'alcoholic_beverage' ? { scoreScopeExclusion: 'alcoholic_beverage' as const } : {}),
     isComplete: false,
     missingFields,
     confidence: clampConfidenceToSource('rafskoru_verified', getConfidence(missingFields)),
@@ -315,6 +318,17 @@ export function mergeVerifiedLabelIntoFacts(
     }
   }
 
+  // Kapsam dışı bırakma yalnız daraltır: OFF veya onaylı kayıttan biri
+  // alkollü diyorsa ürün puan kapsamı dışındadır ve Nutri-Score uygulanmaz
+  // (ADR-009 §11) — katalogun daha önce hesapladığı not da gösterilmez.
+  const outOfScope = Boolean(base.scoreScopeExclusion) || verified.productKind === 'alcoholic_beverage';
+  if (outOfScope) {
+    nutriScoreGrade = null;
+    delete fieldSources.nutriScoreGrade;
+    filled.delete('nutriScoreGrade');
+    filled.delete('nutrition');
+  }
+
   const usedVerified = Object.values(fieldSources).some((entry) => entry?.source === 'rafskoru_verified');
 
   // İçindekiler onaylı kayıttan geldiyse, mobil alerjen satırının baktığı
@@ -350,6 +364,7 @@ export function mergeVerifiedLabelIntoFacts(
     missingFields: base.missingFields?.filter((field) => !filled.has(field)),
     ...(Object.keys(fieldSources).length > 0 ? { fieldSources } : {}),
     ...(usedVerified ? { verifiedAt: verified.approvedAt } : {}),
+    ...(outOfScope ? { scoreScopeExclusion: 'alcoholic_beverage' as const } : {}),
   };
 
   return { facts, conflicts, nutriScore };

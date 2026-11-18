@@ -8,6 +8,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 
 import { computeNutriScore2023, type NutriScoreCategory } from '../nutriScore/nutriScore2023.js';
+import { scoreScopeExclusionFromOffCategories, type ScoreScopeExclusion } from '../price/rafScore/scoreScope.js';
 import { foldSearchText } from '../search/suggestions.js';
 import { computeCompletenessAndMissingFields } from '../tools/offTurkey/normalize.js';
 import type { AllergenKey, OffImportRecord } from '../tools/offTurkey/normalize.js';
@@ -108,6 +109,12 @@ export interface CatalogProduct {
    * Backend-içi alandır; arama/sepet yanıtlarına taşınmaz.
    */
   nutriScoreCategory: NutriScoreCategory | null;
+  /**
+   * OFF kategori etiketlerine göre ürün puan kapsamı dışındaysa nedeni
+   * (ADR-009 §11 — alkollü içecekler); yoksa null. Ürün adından çıkarılmaz.
+   * Backend-içi alandır; arama/sepet yanıtlarına taşınmaz.
+   */
+  scoreScopeExclusion: ScoreScopeExclusion | null;
   nova: CatalogNova;
   allergenData: CatalogAllergenData;
   provenance: OffImportRecord['provenance'];
@@ -221,6 +228,12 @@ export function parsePackageSize(quantityText: string | null): CatalogPackageSiz
  * ve OFF değeri gösterilir; computed yalnızca OFF yoksa."
  */
 function buildNutriScore(record: OffImportRecord): CatalogNutriScore {
+  // ADR-009 §11: alkollü içeceğe Nutri-Score uygulanmaz; OFF'ta kategori
+  // alkollü diyorsa ne OFF notu ne kendi hesabımız gösterilir.
+  if (scoreScopeExclusionFromOffCategories(record.categories ?? [])) {
+    return { grade: null, status: 'not_applicable', source: null, algorithmVersion: null, assumptions: [] };
+  }
+
   if (record.nutriscoreGrade) {
     return {
       grade: record.nutriscoreGrade.toUpperCase() as 'A' | 'B' | 'C' | 'D' | 'E',
@@ -414,7 +427,10 @@ export function buildCatalogProduct(record: OffImportRecord): CatalogProduct {
     imageUrl: record.imageUrl,
     nutriScore,
     nutriScoreCategory:
-      record.offGradeRaw === 'not-applicable' ? 'not_applicable' : knownCategoryFromOffTags(record.categories ?? []),
+      record.offGradeRaw === 'not-applicable' || scoreScopeExclusionFromOffCategories(record.categories ?? [])
+        ? 'not_applicable'
+        : knownCategoryFromOffTags(record.categories ?? []),
+    scoreScopeExclusion: scoreScopeExclusionFromOffCategories(record.categories ?? []),
     nova: buildNova(record),
     allergenData,
     provenance: record.provenance,

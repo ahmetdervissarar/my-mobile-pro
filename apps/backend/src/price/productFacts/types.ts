@@ -93,6 +93,13 @@ export interface ProductFacts {
    * kaynaktan geldiği hâlde burada anılmaması sözleşme ihlalidir.
    */
   fieldSources?: Partial<Record<ProductFactsFieldKey, ProductFactsFieldSource>>;
+  /**
+   * Ürün puan kapsamı dışındaysa nedeni (ADR-009 §11); yoksa kapsam içi.
+   * Yalnız yapılandırılmış veriden gelir (OFF kategorisi veya onaylayanın
+   * seçtiği ürün türü); ürün adından çıkarılmaz. Alerjen değerlendirmesini
+   * ETKİLEMEZ.
+   */
+  scoreScopeExclusion?: 'alcoholic_beverage' | null;
   isComplete: boolean;
   missingFields?: ProductFactsMissingField[];
   verificationNeeded?: boolean;

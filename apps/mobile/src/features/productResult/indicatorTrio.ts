@@ -8,6 +8,7 @@
  * scoreBand.ts gibi RN'siz tutulur (src/ui/theme.ts react-native içe aktarır)
  * — böylece plain Node/tsx altında test edilebilir.
  */
+import { RAF_SCORE_OUT_OF_SCOPE_LABEL } from '../../price/rafScoreScope';
 import { getScoreBand } from '../../ui/scoreBand';
 
 export type IndicatorColorToken = 'leaf' | 'pine2' | 'warn' | 'danger' | 'muted';
@@ -28,9 +29,14 @@ export function getRafScoreIndicator(
   score: number | null,
   allergenPriority: boolean,
   isPriceless = false,
+  isOutOfScope = false,
 ): IndicatorConfig {
   if (allergenPriority) {
     return { label: 'RafSkoru', value: '—', colorToken: 'muted', statusText: 'Alerjen uyarısı öncelikli' };
+  }
+  // ADR-009 §11: kapsam dışı ürün "veri yetersiz" değildir; ayrı söylenir.
+  if (isOutOfScope) {
+    return { label: 'RafSkoru', value: '—', colorToken: 'muted', statusText: RAF_SCORE_OUT_OF_SCOPE_LABEL };
   }
   if (score === null) {
     return { label: 'RafSkoru', value: '—', colorToken: 'muted', statusText: 'Veri yetersiz' };

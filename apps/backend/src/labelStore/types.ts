@@ -31,7 +31,9 @@ export type LabelProductKind =
   | 'cheese'
   | 'fat_oil_nuts_seeds'
   | 'red_meat'
-  | 'not_applicable';
+  | 'not_applicable'
+  /** Alkollü içecek: Nutri-Score uygulanmaz ve RafSkoru puanı verilmez (ADR-009 §11). */
+  | 'alcoholic_beverage';
 
 /** Türü kimin belirlediği: fotoğrafı çeken kullanıcı mı, onaylayan mı. */
 export type LabelProductKindSource = 'user_declared' | 'approver';

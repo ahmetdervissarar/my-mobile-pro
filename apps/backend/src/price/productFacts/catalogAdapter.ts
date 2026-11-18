@@ -79,6 +79,7 @@ export function productFactsFromCatalog(gtin: string): ProductFacts | null {
     allergenInfo,
     catalogAllergenData: product.allergenData,
     dataSource: 'off',
+    ...(product.scoreScopeExclusion ? { scoreScopeExclusion: product.scoreScopeExclusion } : {}),
     isComplete: product.completeness === 'complete',
     missingFields: mapMissingFields(product.missingFields),
     confidence: mapConfidence(product.completeness),

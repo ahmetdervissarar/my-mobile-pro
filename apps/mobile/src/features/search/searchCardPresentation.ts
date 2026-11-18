@@ -18,6 +18,7 @@
  */
 import { getScorePillLabel } from '../../ui/scoreVerdict';
 import { isRafScorePriceless } from '../../price/rafScorePriceless';
+import { isRafScoreOutOfScope, RAF_SCORE_OUT_OF_SCOPE_LABEL } from '../../price/rafScoreScope';
 import type { RafScoreResult } from '../../price/types';
 import type { AllergenStatusLine } from '../productResult/allergenStatusLine';
 
@@ -47,6 +48,11 @@ export interface SearchCardBadge {
 export function getSearchCardBadge(allergenLine: AllergenStatusLine, rafScore?: RafScoreResult): SearchCardBadge {
   if (allergenLine.tone === 'danger') {
     return { isAllergenBadge: true, text: allergenLine.text };
+  }
+
+  // ADR-009 §11: kapsam dışı ürün "Puan: Veri yok" değil, ayrı metinle gösterilir.
+  if (isRafScoreOutOfScope(rafScore)) {
+    return { isAllergenBadge: false, text: `Puan: ${RAF_SCORE_OUT_OF_SCOPE_LABEL}` };
   }
 
   return {

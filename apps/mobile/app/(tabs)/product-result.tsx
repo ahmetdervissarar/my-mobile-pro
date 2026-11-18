@@ -20,6 +20,7 @@ import { buildAlternativeSections } from '../../src/features/alternatives/buildA
 import { getRafScoreComponentBreakdownText, getRafScoreExplanationItems, getRafScorePositiveItems } from '../../src/price/rafScoreExplanation';
 import { getProductFactsSourceText } from '../../src/price/productFactsSourceLabel';
 import { isRafScorePriceless as isPriceless } from '../../src/price/rafScorePriceless';
+import { isRafScoreOutOfScope } from '../../src/price/rafScoreScope';
 import { recordRecentlyViewed } from '../../src/state/recentlyViewedStore';
 import { CollapsibleSection } from '../../src/ui/CollapsibleSection';
 import { spacing, useTheme } from '../../src/ui/theme';
@@ -569,6 +570,7 @@ export default function ProductResultScreen() {
           novaGroup={novaGroup}
           allergenPriority={isAllergenConflict}
           isPriceless={isRafScorePriceless}
+          isOutOfScope={isRafScoreOutOfScope(rafScore)}
           onRafScorePress={() => {
             const breakdownText = getRafScoreComponentBreakdownText(rafScore);
             if (breakdownText) {
