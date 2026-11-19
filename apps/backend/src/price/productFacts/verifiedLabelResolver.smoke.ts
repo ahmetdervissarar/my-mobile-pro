@@ -180,6 +180,7 @@ const OFF_FETCH_FAILS = ean13('869000000300');
 const OFF_PARTIAL = ean13('869000000400');
 const NOWHERE = ean13('869000000500');
 const NAME_ONLY = ean13('869000000600');
+const OFF_CONFLICT = ean13('869000000700');
 
 const originalFetch = globalThis.fetch;
 globalThis.fetch = (async (input: Parameters<typeof fetch>[0]) => {
@@ -192,6 +193,16 @@ globalThis.fetch = (async (input: Parameters<typeof fetch>[0]) => {
       JSON.stringify({
         status: 1,
         product: { product_name: 'Canlı OFF Bisküvi', allergens_tags: ['en:milk'], traces_tags: [] },
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    );
+  }
+
+  if (url.includes(OFF_CONFLICT)) {
+    return new Response(
+      JSON.stringify({
+        status: 1,
+        product: { product_name: 'Canlı OFF Kraker', ingredients_text: 'Buğday unu, şeker', allergens_tags: [], traces_tags: [] },
       }),
       { status: 200, headers: { 'content-type': 'application/json' } },
     );
@@ -242,6 +253,19 @@ try {
     assert.equal(facts.catalogAllergenData?.dataStatus, 'present');
     assert.equal(facts.catalogAllergenData?.ingredientsEvidence.source, 'rafskoru_verified');
     assert.equal(facts.catalogAllergenData?.ingredientsEvidence.text, 'Buğday unu, şeker, süt tozu');
+  }
+
+  // ADR-009 §12, uçtan uca: canlı OFF metni daha yeni ve süt içermiyor, onaylı
+  // metin süt içeriyor → ekranda OFF metni, alerjen kontrolünde İKİ metin; alan
+  // JSON yanıtından (API serileştirmesi) da düşmemeli.
+  {
+    addCandidate(OFF_CONFLICT, { ingredientsText: 'Buğday unu, şeker, süt tozu' }, true);
+    const resolution = JSON.parse(JSON.stringify(await service.resolve({ barcode: OFF_CONFLICT })));
+    const facts = resolution.result.productFacts;
+    assert.equal(facts.ingredientsText, 'Buğday unu, şeker', 'daha yeni OFF metni ekranda kalmalı');
+    assert.ok(facts.allergenCheckIngredientsText.includes('süt tozu'), 'onaylı metindeki süt alerjen kontrolünden düşmemeli');
+    assert.ok(facts.allergenCheckIngredientsText.includes('Buğday unu, şeker'));
+    assert.equal(facts.catalogAllergenData.ingredientsEvidence.source, 'off_and_rafskoru_verified');
   }
 
   // Hiçbir yerde yok → eskisi gibi productFacts yok.

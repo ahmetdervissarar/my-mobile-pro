@@ -331,6 +331,13 @@ export interface ProductFacts {
   novaGroup?: ProductFactsNovaGroup | null;
   trafficLight?: ProductFactsTrafficLight | null;
   ingredientsText?: string | null;
+  /**
+   * Alerjen kontrolünün taraması gereken içindekiler metni (ADR-009 §12).
+   * Yalnız OFF ile insan onaylı etiketin içindekiler metinleri farklıysa
+   * doludur ve ikisini birlikte taşır; EKRANDA GÖSTERİLMEZ (ekran
+   * ingredientsText'i gösterir). Doluysa risk motoruna bu verilir.
+   */
+  allergenCheckIngredientsText?: string | null;
   additives?: string[];
   allergens?: string[];
   traceAllergens?: string[];

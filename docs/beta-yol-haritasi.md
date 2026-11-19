@@ -51,7 +51,7 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 - İçe aktarıcıda görsel adresinin dökümdeki `images` alanından üretilmesi.
 - Sözleşme değişiklikleri mobil ve backend'de aynı değişiklikte; sözleşme incelemesi şart.
 
-### Faz 1 durumu (2026-11-15)
+### Faz 1 durumu (2026-11-19)
 
 | İş | Durum |
 |---|---|
@@ -63,8 +63,10 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 | 1.3d Arama, kategori, sepet ve alternatiflerin onaylı kayıtları kullanması | tamam |
 | 1.4a Okuma ajanı, karşılaştırma, içe aktarma + 2 ürünlük pilot | tamam |
 | 1.4b Alkollü içeceklerin puan kapsamı dışında tutulması (ADR-009 §11) | tamam |
-| 1.4c OFF etiket fotoğraflarının toplu okunması (yaklaşık 950 ürün) | sırada |
-| 1.5 Onay ekranı (ürün türü seçimi dâhil) | bekliyor |
+| 1.4c OFF etiket fotoğraflarının toplu okunması (yaklaşık 950 ürün) | ilk parti tamam: 49 üründen 42'si okundu (okunmayan 7: 5 su, 2 hijyen ürünü); depoda pilot dâhil 43 aday onay bekliyor; kalan parti sırada |
+| 1.5a–d Onay ekranı: uçlar, yönetici sayfasında "Etiket onayı" sekmesi, karşılaştırma düzeltmesi, gönüllü aracının onaylı kayda bakması | tamam |
+| 1.5 ek: içindekiler metinleri farklıysa alerjen kontrolünün ikisine bakması (ADR-009 §12) | tamam |
+| 1.5e OFF'ta olmayan onaylı ürünlerin aramada çıkması (sözleşme değişikliği; mobil+backend) | bekliyor (plan + onay) |
 | 1.6 Görsel adresi düzeltmesi | bekliyor |
 
 ### Unutulmaması gerekenler

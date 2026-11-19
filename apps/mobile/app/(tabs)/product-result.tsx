@@ -152,7 +152,9 @@ export default function ProductResultScreen() {
     if (backendProductFacts) {
       return evaluateProductRisks({
         name: backendProductFacts.productName ?? priceResolution?.result.productName ?? result.name ?? null,
-        ingredients: backendProductFacts.ingredientsText ?? null,
+        // OFF ile onaylı etiketin içindekiler metni farklıysa alerjen kontrolü
+        // ikisine birden bakar (ADR-009 §12); ekran yine ingredientsText'i gösterir.
+        ingredients: backendProductFacts.allergenCheckIngredientsText ?? backendProductFacts.ingredientsText ?? null,
         allergens: backendProductFacts.allergens ?? [],
         additives: backendProductFacts.additives ?? [],
         novaGroup: backendProductFacts.novaGroup ?? null,

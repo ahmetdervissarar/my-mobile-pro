@@ -242,6 +242,10 @@ export function productFactsFromVerifiedLabel(verified: VerifiedLabelProduct): V
  *   aynen gelir. Tek istisna: içindekiler onaylı kayıttan alındıysa
  *   catalogAllergenData.ingredientsEvidence aynı metni taşır (yalnız kanıt
  *   metni; sınıflandırma değişmez).
+ * - İki içindekiler metni farklıysa (hangisi kazanırsa kazansın) alerjen
+ *   kontrolü İKİSİNE bakar: allergenCheckIngredientsText ve kanıt metni iki
+ *   metni birlikte taşır (ADR-009 §12). Ekranda gösterilen ingredientsText
+ *   tek metindir.
  * - Girdi nesneleri değiştirilmez.
  */
 export function mergeVerifiedLabelIntoFacts(
@@ -270,6 +274,11 @@ export function mergeVerifiedLabelIntoFacts(
 
   let ingredientsText = base.ingredientsText ?? null;
   const verifiedIngredients = verified.fields.ingredientsText;
+  // İki kaynağın içindekiler metni farklıysa alerjen kontrolü İKİSİNE birden
+  // bakar (ADR-009 §12). Hangisi ekranda gösterilirse gösterilsin diğeri
+  // kanıttan düşmez: onaylı metin eksik okunmuş/kısaltılmışsa OFF metnindeki
+  // alerjen, OFF metni eskiyse onaylı metindeki yeni alerjen yine uyarı üretir.
+  let otherIngredientsForAllergenCheck: string | null = null;
   if (hasText(verifiedIngredients)) {
     if (!hasText(ingredientsText)) {
       ingredientsText = verifiedIngredients;
@@ -286,11 +295,18 @@ export function mergeVerifiedLabelIntoFacts(
         winner: verifiedWins ? 'verified' : 'base',
       });
       if (verifiedWins) {
+        otherIngredientsForAllergenCheck = ingredientsText;
         ingredientsText = verifiedIngredients;
         fieldSources.ingredientsText = verifiedSource;
+      } else {
+        otherIngredientsForAllergenCheck = verifiedIngredients;
       }
     }
   }
+  const allergenCheckIngredientsText =
+    hasText(ingredientsText) && hasText(otherIngredientsForAllergenCheck)
+      ? `${ingredientsText}\n${otherIngredientsForAllergenCheck}`
+      : null;
 
   const approverKind = verified.productKindSource === 'approver' ? verifiedKind(verified) : null;
   const offKind = options.baseNutriScoreCategory
@@ -338,27 +354,36 @@ export function mergeVerifiedLabelIntoFacts(
   // dataStatus DEĞİŞMEZ: bu yalnız mevcut "daha az temkinli olamaz"
   // yükseltmesinin girdisini tamamlar, sonucu asla daha az temkinli yapamaz.
   const ingredientsFromVerified = fieldSources.ingredientsText?.source === 'rafskoru_verified';
-  const catalogAllergenData =
-    base.catalogAllergenData && ingredientsFromVerified && hasText(ingredientsText)
+  const verifiedLang =
+    verified.fields.ingredientsLang === null
+      ? null
+      : verified.fields.ingredientsLang.toLowerCase().startsWith('tr')
+        ? ('tr' as const)
+        : ('other' as const);
+  const catalogAllergenData = !base.catalogAllergenData
+    ? base.catalogAllergenData
+    : allergenCheckIngredientsText
       ? {
+          // İki metin farklı: kanıt metni ikisini birlikte taşır (ADR-009 §12).
           ...base.catalogAllergenData,
           ingredientsEvidence: {
-            text: ingredientsText,
-            lang:
-              verified.fields.ingredientsLang === null
-                ? null
-                : verified.fields.ingredientsLang.toLowerCase().startsWith('tr')
-                  ? ('tr' as const)
-                  : ('other' as const),
-            source: 'rafskoru_verified' as const,
+            text: allergenCheckIngredientsText,
+            lang: ingredientsFromVerified ? verifiedLang : base.catalogAllergenData.ingredientsEvidence.lang,
+            source: 'off_and_rafskoru_verified' as const,
           },
         }
-      : base.catalogAllergenData;
+      : ingredientsFromVerified && hasText(ingredientsText)
+        ? {
+            ...base.catalogAllergenData,
+            ingredientsEvidence: { text: ingredientsText, lang: verifiedLang, source: 'rafskoru_verified' as const },
+          }
+        : base.catalogAllergenData;
 
   const facts: ProductFacts = {
     ...base,
     productName,
     ingredientsText,
+    ...(allergenCheckIngredientsText ? { allergenCheckIngredientsText } : {}),
     nutriScoreGrade,
     ...(catalogAllergenData ? { catalogAllergenData } : {}),
     missingFields: base.missingFields?.filter((field) => !filled.has(field)),

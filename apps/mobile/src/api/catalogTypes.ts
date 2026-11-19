@@ -40,8 +40,12 @@ export type CatalogAllergenDataStatus = 'present' | 'partial' | 'unknown_or_unve
 export interface CatalogIngredientsEvidence {
   text: string | null;
   lang: 'tr' | 'other' | null;
-  /** 'rafskoru_verified': metin insan onaylı etiket kaydından geldi (ADR-009, İş 1.3b). */
-  source: 'off' | 'rafskoru_verified';
+  /**
+   * 'rafskoru_verified': metin insan onaylı etiket kaydından geldi (ADR-009, İş 1.3b).
+   * 'off_and_rafskoru_verified': OFF ile onaylı kaydın metinleri farklı; metin
+   * ikisini birlikte taşır (ADR-009 §12). Yalnız alerjen kanıtıdır, gösterilmez.
+   */
+  source: 'off' | 'rafskoru_verified' | 'off_and_rafskoru_verified';
 }
 
 export interface CatalogAllergenData {

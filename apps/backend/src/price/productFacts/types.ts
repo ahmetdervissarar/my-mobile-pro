@@ -73,6 +73,15 @@ export interface ProductFacts {
   trafficLight?: ProductFactsTrafficLight | null;
 
   ingredientsText?: string | null;
+  /**
+   * Alerjen kontrolünün taraması gereken içindekiler metni (ADR-009 §12,
+   * 2026-11-19). Yalnız OFF ile insan onaylı etiket kaydının içindekiler
+   * metinleri FARKLIYSA doludur ve İKİSİNİ birlikte taşır: ekranda hangisi
+   * gösterilirse gösterilsin, alerjen iki metinden birinde geçiyorsa uyarı
+   * verilir ("daha az temkinli olamaz"). Ekranda gösterilmez. Yoksa alerjen
+   * kontrolü ingredientsText'i kullanır.
+   */
+  allergenCheckIngredientsText?: string | null;
   additives?: string[];
   allergens?: string[];
   traceAllergens?: string[];

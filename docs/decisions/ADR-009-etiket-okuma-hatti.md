@@ -144,6 +144,63 @@ Proje sahibi kararı. Pilotta gönüllünün "içecek" diye işaretlediği ürü
 - Gönüllü aracındaki kaba "içecek" kategorisi ürün türü olarak otomatik taşınmaz.
 - Uygulama ayrı bir iştir (sözleşme ve skor zincirine dokunur; plan + onay gerekir).
 
+### 12. İçindekiler metinleri farklıysa alerjen kontrolü ikisine bakar (2026-11-19)
+
+Proje sahibi kararı; `allergen-safety-reviewer` bulgusu üzerine (İş 1.5). §7a'ya göre
+ekranda daha yeni tarihli metin gösterilir, ama alerjen kontrolü yalnız o metne
+bakarsa onaylı metin eksik okunduğunda veya kısaltıldığında OFF metnindeki bir alerjen
+uyarısı kaybolabilir (onay, sonucu daha az temkinli yapmamalıdır).
+
+- OFF ile insan onaylı etiket kaydının içindekiler metinleri farklıysa, hangisi
+  ekranda gösterilirse gösterilsin alerjen kontrolü **ikisine birden** bakar: alerjen
+  iki metinden birinde geçiyorsa uyarı verilir.
+- Uygulama: `ProductFacts.allergenCheckIngredientsText` (ürün sayfası risk motoru
+  girdisi) ve `ingredientsEvidence.source = 'off_and_rafskoru_verified'` (liste
+  çipleri) iki metni birlikte taşır. Ekranda gösterilen `ingredientsText` değişmez.
+  Risk motoru ve alerjen kapısı değişmedi. Kabul senaryosu: risk senaryosu 32.
+
+### 13. Etiketteki alerjen ve eser ifadelerinin kuralları (2026-11-19, henüz uygulanmadı)
+
+Etiketten okunan `allergenStatementText` ("… içerir") ve `traceStatementText` ("eser
+miktarda … içerebilir") alanları bugün kaydediliyor ama hiçbir değerlendirmeye
+girmiyor. Bunları kullanacak iş başlamadan önce kurallar şunlardır (proje sahibi:
+"eser miktarda bile olsa alerjen için sıkıntı olabilir"):
+
+1. **İçindekiler yoksa alerjen bilgisi yok.** Onaylı kayıtta içindekiler metni yoksa
+   bu ifadelerden alerjen bilgisi üretilmez; kullanıcıya "Alerjen değerlendirmesi
+   yapılamadı, ambalaj etiketini kontrol edin" denir (§5 ile aynı). OFF'ta içindekiler
+   olsa bile, onaylı kaydın kendi içindekiler metni yoksa onaylı kaydın ifadeleri
+   kullanılmaz (ifade ile içindekiler aynı etiketten, aynı onaydan gelmelidir); OFF
+   verisi kendi kurallarıyla değerlendirilmeye devam eder.
+2. **Eser miktar ciddi bir uyarıdır.** Eser/çapraz bulaşma ifadesi ("içerebilir", "eser
+   miktarda", "aynı tesiste üretilmektedir") profildeki bir alerjenle eşleşirse
+   kullanıcıya açıkça uyarı verilir. "Düşük risk" diye küçültülmez, puanla
+   dengelenmez, "uygun" sonucuyla birlikte gösterilmez (alerjen bir kapıdır).
+3. **İfadeler yalnız daha temkinli yönde etki eder.** Beyan veya iz listesine alerjen
+   EKLEYEBİLİR, hiçbir zaman ÇIKARAMAZ. "… içermez", "glutensiz", "laktozsuz" gibi
+   üretici beyanları hiçbir uyarıyı kaldırmaz ve RafSkoru'nun iddiası olarak
+   gösterilmez; gösterilecekse "üretici beyanı" diye etiketlenir. İfadeler alerjen
+   **veri durumunu** (`dataStatus`) değiştirmez: "bilinmiyor" durumundaki bir ürün,
+   ifade yüzünden "veri var" durumuna geçmez; aksi hâlde listede adı geçmeyen diğer
+   alerjenler yanlışlıkla "belirtilmemiş" görünürdü.
+4. **İfadenin yokluğu güvenli demek değildir.** Etikette eser ifadesi bulunmaması
+   "eser yok" anlamına gelmez; hiçbir ekranda öyle yorumlanmaz.
+5. **Belirsizlik temkinli tarafa yazılır.** İfadedeki alerjen tanınamıyor veya
+   profildeki bir anahtara güvenle eşlenemiyorsa "etiketi kontrol edin" uyarısı
+   verilir; tahminle eşleştirme veya eşleşmeme kararı verilmez.
+6. **Modellenmemiş alerjenler.** İfadede geçen ama profilde henüz olmayan alerjenler
+   (kereviz, hardal, sülfit, acı bakla — açık karar 1) bilgi olarak gösterilir; profil
+   eşleşmesi açık karar 1 çözülünce yapılır.
+7. **Onayda ayrı karşılaştırma.** İfadeler kullanılmaya başlamadan önce onay ekranında
+   alerjen ve eser ifadeleri için de içindekilerdeki gibi ayrı bir "fotoğrafla
+   karşılaştırdım" işareti zorunlu olur ve bu işaret (içindekiler işaretiyle birlikte)
+   onaylı kayıtta saklanır; onay anındaki uyarılar onaylanan alanlar üzerinden yeniden
+   hesaplanır. (Bugün işaret yalnız içindekiler için var ve saklanmıyor — açık iş.)
+8. **Uygulama koşulu.** Risk motoruna veya alerjen kapısına dokunacağı için ayrı plan,
+   `allergen-safety-reviewer` incelemesi, yeni risk senaryoları (eser eşleşmesi;
+   içindekiler yokken ifade; "içermez" beyanının uyarı kaldırmaması; ifade yokken
+   "eser yok" denmemesi) ve proje sahibi onayı gerekir.
+
 ## Açık kararlar
 
 1. Profile dört zorunlu alerjenin (kereviz, hardal, sülfit, acı bakla) eklenmesi. Risk

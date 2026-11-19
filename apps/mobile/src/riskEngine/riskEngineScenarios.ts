@@ -1021,4 +1021,35 @@ export const riskEngineScenarios: RiskEngineScenario[] = [
     ],
   },
 
+  // ── Senaryo 32 ───────────────────────────────────────────────────────────────
+  {
+    id: "scenario-32",
+    title: "Süt alerjisi + iki farklı içindekiler metni — süt yalnız eski metinde geçse de uyarı verilmeli",
+    description:
+      "ADR-009 §12 (2026-11-19): OFF ile insan onaylı etiketin içindekiler metinleri " +
+      "farklıysa backend allergenCheckIngredientsText'te ikisini birlikte gönderir ve " +
+      "ürün sayfası risk motoruna bunu verir. Ekranda gösterilen (onaylı) metin sütü " +
+      "içermese de OFF metnindeki 'süt tozu' PROFILE_MILK_ALLERGEN_MATCH üretmeli — " +
+      "onay asla daha az temkinli sonuç doğurmamalı. Yalnız onaylı metin verilseydi " +
+      "bu uyarı kaybolurdu.",
+    input: {
+      name: "kakaolu krema",
+      ingredients: "Şeker, kakao\nŞeker, süt tozu, kakao",
+      allergenInfo: null,
+      allergens: [],
+      additives: [],
+      novaGroup: null,
+      userProfile: {
+        allergens: ["milk"],
+        chronicSensitivities: [],
+        healthPreferences: [],
+      },
+    },
+    expectedWarningCodes: [
+      "PROFILE_MILK_ALLERGEN_MATCH",
+      "MISSING_ALLERGEN_INFO",
+      "SWEET_SNACK_ALLERGEN_PRECAUTION",
+    ],
+  },
+
 ];

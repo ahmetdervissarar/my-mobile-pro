@@ -105,7 +105,12 @@ const catalogAllergenData: CatalogAllergenData = {
  * İçindekiler onaylı kayıttan alındığında alerjen SINIFLANDIRMASI (beyan, iz,
  * durum) değişmemeli; yalnız kanıt metni onaylı içindekilerle aynı olmalı.
  */
-function assertOnlyEvidenceTextChanged(facts: ProductFacts, base: ProductFacts, expectedText: string): void {
+function assertOnlyEvidenceTextChanged(
+  facts: ProductFacts,
+  base: ProductFacts,
+  expectedText: string,
+  expectedSource: 'rafskoru_verified' | 'off_and_rafskoru_verified' = 'rafskoru_verified',
+): void {
   const before = base.catalogAllergenData!;
   const after = facts.catalogAllergenData!;
   assert.deepEqual(after.declared, before.declared, 'beyan listesi değişmemeli');
@@ -113,8 +118,8 @@ function assertOnlyEvidenceTextChanged(facts: ProductFacts, base: ProductFacts, 
   assert.deepEqual(after.recognizedUnmodeled, before.recognizedUnmodeled);
   assert.deepEqual(after.rawUnmapped, before.rawUnmapped);
   assert.equal(after.dataStatus, before.dataStatus, 'alerjen veri durumu değişmemeli');
-  assert.equal(after.ingredientsEvidence.text, expectedText, 'kanıt metni onaylı içindekilerle aynı olmalı');
-  assert.equal(after.ingredientsEvidence.source, 'rafskoru_verified');
+  assert.equal(after.ingredientsEvidence.text, expectedText, 'kanıt metni beklenen metin olmalı');
+  assert.equal(after.ingredientsEvidence.source, expectedSource);
 }
 
 function offFacts(overrides: Partial<ProductFacts> = {}): ProductFacts {
@@ -388,7 +393,9 @@ function offFacts(overrides: Partial<ProductFacts> = {}): ProductFacts {
       winner: 'verified',
     },
   ]);
-  assertOnlyEvidenceTextChanged(facts, base, 'Süt, D vitamini');
+  // ADR-009 §12: ekranda onaylı metin, alerjen kontrolünde İKİ metin.
+  assert.equal(facts.allergenCheckIngredientsText, 'Süt, D vitamini\nSüt');
+  assertOnlyEvidenceTextChanged(facts, base, 'Süt, D vitamini\nSüt', 'off_and_rafskoru_verified');
 }
 
 // ── Çelişki: taban daha yeni → taban geçerli, çelişki yine döner ─────────
@@ -400,7 +407,33 @@ function offFacts(overrides: Partial<ProductFacts> = {}): ProductFacts {
   assert.equal(facts.verifiedAt, undefined);
   assert.equal(conflicts.length, 1, 'kaybeden taraf onaylı kayıt olsa da çelişki sessiz kalmamalı');
   assert.equal(conflicts[0]!.winner, 'base');
-  assert.deepEqual(facts.catalogAllergenData, base.catalogAllergenData, 'taban geçerliyken alerjen verisi aynen kalmalı');
+  // Kaybeden onaylı metin de alerjen kontrolünden düşmez (ADR-009 §12).
+  assert.equal(facts.allergenCheckIngredientsText, 'Süt\nSüt, D vitamini');
+  assertOnlyEvidenceTextChanged(facts, base, 'Süt\nSüt, D vitamini', 'off_and_rafskoru_verified');
+}
+
+// ── ADR-009 §12: onaylı metin eksik okunsa bile OFF'taki alerjen kanıttan düşmez ──
+{
+  const base = offFacts({ ingredientsText: 'Şeker, süt tozu, kakao', missingFields: ['imageUrl'] });
+  const { facts } = mergeVerifiedLabelIntoFacts(base, verified({ ingredientsText: 'Şeker, kakao' }));
+  assert.equal(facts.ingredientsText, 'Şeker, kakao', 'ekranda daha yeni onaylı metin gösterilmeli');
+  assert.ok(facts.allergenCheckIngredientsText!.includes('süt tozu'), 'OFF metnindeki süt alerjen kontrolünde kalmalı');
+  assert.ok(facts.catalogAllergenData!.ingredientsEvidence.text!.includes('süt tozu'), 'liste kanıtında da kalmalı');
+  assert.deepEqual(facts.catalogAllergenData!.declared, base.catalogAllergenData!.declared, 'sınıflandırma değişmemeli');
+  assert.equal(facts.catalogAllergenData!.dataStatus, base.catalogAllergenData!.dataStatus);
+}
+
+// ── ADR-009 §12: metinler eşdeğerse veya tek kaynak varsa ek alan üretilmez ──
+{
+  const same = mergeVerifiedLabelIntoFacts(
+    offFacts({ ingredientsText: 'Süt.', missingFields: ['imageUrl'] }),
+    verified({ ingredientsText: 'süt' }),
+  );
+  assert.equal(same.facts.allergenCheckIngredientsText, undefined);
+  const fillOnly = mergeVerifiedLabelIntoFacts(offFacts(), verified({ ingredientsText: 'Süt' }));
+  assert.equal(fillOnly.facts.allergenCheckIngredientsText, undefined, 'yalnız onaylı metin varsa ek alan gerekmez');
+  const verifiedEmpty = mergeVerifiedLabelIntoFacts(offFacts({ ingredientsText: 'Süt', missingFields: ['imageUrl'] }), verified({}));
+  assert.equal(verifiedEmpty.facts.allergenCheckIngredientsText, undefined);
 }
 
 // ── Çelişki: tabanın tarihi yok → tarihli onaylı kayıt geçerli ───────────
