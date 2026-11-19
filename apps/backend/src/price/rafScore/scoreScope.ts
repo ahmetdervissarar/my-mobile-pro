@@ -17,7 +17,12 @@
 import { calculateRafScore } from './rafScoreCalculator.js';
 import type { RafScoreResult } from './types.js';
 
-export type ScoreScopeExclusion = 'alcoholic_beverage';
+/**
+ * 'alcoholic_beverage': alkollü içecek (ADR-009 §11).
+ * 'non_food': gıda dışı ürün — kozmetik, temizlik vb. (ADR-009 §14). Yalnız
+ * onaylayanın seçtiği ürün türünden gelir; OFF kategorisinden çıkarılmaz.
+ */
+export type ScoreScopeExclusion = 'alcoholic_beverage' | 'non_food';
 
 /** OFF taksonomisindeki alkollü içecek kategorileri. */
 export const ALCOHOLIC_OFF_CATEGORY_TAGS: readonly string[] = [

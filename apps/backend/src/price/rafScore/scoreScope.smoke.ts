@@ -232,6 +232,33 @@ try {
   assert.equal(isOutOfScopeRafScore(livePage.rafScore), true);
   assert.deepEqual(livePage.productFacts?.catalogAllergenData?.declared, ['gluten_wheat']);
 
+  // ── Gıda dışı ürün (ADR-009 §14): onaylayan seçer; puan ve not gösterilmez ──
+  {
+    const fields: LabelFields = {
+      productName: null, brand: 'Örnek Kozmetik', quantityText: null,
+      ingredientsText: null, ingredientsLang: null,
+      allergenStatementText: null, traceStatementText: null, nutritionPer100: null,
+    };
+    const read: LabelRead = { reader: 'desktop_session', model: null, readAt: '2026-11-19T10:00:00.000Z', fields, unreadableFields: [] };
+    const candidate = createCandidate({
+      barcode: NAMED_LIKE_BEER,
+      photoSource: 'intake',
+      photos: [{ slot: 'ingredients', ref: 'photos/y.jpg', attribution: null }],
+      observedAt: '2026-11-19T09:30:00.000Z',
+    });
+    recordExtraction(candidate.id, read);
+    recordVerification(candidate.id, read, []);
+    approveCandidate(candidate.id, { approvedBy: 'proje-sahibi', productKind: 'non_food' });
+  }
+  const nonFoodPage = (await service.resolve({ barcode: NAMED_LIKE_BEER })).result;
+  assert.equal(nonFoodPage.productFacts?.scoreScopeExclusion, 'non_food');
+  assert.equal(isOutOfScopeRafScore(nonFoodPage.rafScore), true);
+  assert.equal(nonFoodPage.rafScore?.reasons?.[0]?.params?.scope, 'non_food');
+  assert.equal(nonFoodPage.productFacts?.nutriScoreGrade ?? null, null, 'gıda dışı ürüne Nutri-Score gösterilmemeli');
+  const nonFoodRow = searchRow('bira tadında', NAMED_LIKE_BEER);
+  assert.deepEqual(nonFoodRow?.rafScore, nonFoodPage.rafScore, 'liste ve ürün sayfası aynı sonucu vermeli');
+  assert.equal(nonFoodRow?.nutriScore?.status, 'not_applicable');
+
   console.log('SCORE_SCOPE_SMOKE_OK');
 } finally {
   globalThis.fetch = originalFetch;

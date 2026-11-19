@@ -33,7 +33,9 @@ export type LabelProductKind =
   | 'red_meat'
   | 'not_applicable'
   /** Alkollü içecek: Nutri-Score uygulanmaz ve RafSkoru puanı verilmez (ADR-009 §11). */
-  | 'alcoholic_beverage';
+  | 'alcoholic_beverage'
+  /** Gıda dışı ürün (kozmetik, temizlik vb.): puan ve Nutri-Score verilmez (ADR-009 §14). */
+  | 'non_food';
 
 /** Türü kimin belirlediği: fotoğrafı çeken kullanıcı mı, onaylayan mı. */
 export type LabelProductKindSource = 'user_declared' | 'approver';

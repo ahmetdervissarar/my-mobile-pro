@@ -201,6 +201,26 @@ girmiyor. Bunları kullanacak iş başlamadan önce kurallar şunlardır (proje 
    içindekiler yokken ifade; "içermez" beyanının uyarı kaldırmaması; ifade yokken
    "eser yok" denmemesi) ve proje sahibi onayı gerekir.
 
+### 14. Gıda dışı ürünler kabul edilir ama puanlanmaz (2026-11-19)
+
+Proje sahibi kararı: OFF fotoğraflarından gelen kozmetik, temizlik ve hijyen ürünleri
+(ör. yüz jeli, ıslak havlu) reddedilmez; tanınır ama gıda puanı almaz.
+
+- Onaylayan ürün türü olarak "Gıda dışı ürün" (`non_food`) seçer. Tür yalnız bu
+  seçimden gelir; OFF kategorisinden veya ürün adından çıkarılmaz. Fotoğrafı gönderenin
+  onaylanmamış tür beyanı ürünü puan kapsamı dışına çıkaramaz (aynı kural §11'deki
+  alkollü içecek için de geçerlidir).
+- Bu ürünlere RafSkoru ve Nutri-Score verilmez; ekranda §11'deki gibi "Puan kapsamında
+  değil" yazar ve açıklama gıda dışı ürüne özgüdür. Durum "veri yok" gibi gösterilmez.
+- Alerjen kuralları değişmez: alerjen bilgisi yoksa "değerlendirilemedi, etiketi
+  kontrol edin" denir; hiçbir gıda dışı ürün "alerjen içermez" veya "güvenli" diye
+  gösterilmez.
+- Kapsam nedeni olarak onaylayanın seçimi OFF'tan gelen nedenin önüne geçer; kapsam
+  içi bir tür seçimi OFF'un kapsam dışı bırakmasını kaldırmaz (yalnız daraltır).
+- **Beta sonrası, ayrı iş:** kozmetik/temizlik ürünleri için içerik skoru. Lisansı
+  uygun bir içerik maddesi kaynağı (ör. AB CosIng), ayrı ADR ve `legal-privacy-reviewer`
+  incelemesi gerektirir; bir içerik maddesine "zararlı" demek ayrıca hassas bir iddiadır.
+
 ## Açık kararlar
 
 1. Profile dört zorunlu alerjenin (kereviz, hardal, sülfit, acı bakla) eklenmesi. Risk

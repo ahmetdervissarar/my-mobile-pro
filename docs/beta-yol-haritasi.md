@@ -67,9 +67,13 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 | 1.5a–d Onay ekranı: uçlar, yönetici sayfasında "Etiket onayı" sekmesi, karşılaştırma düzeltmesi, gönüllü aracının onaylı kayda bakması | tamam |
 | 1.5 ek: içindekiler metinleri farklıysa alerjen kontrolünün ikisine bakması (ADR-009 §12) | tamam |
 | 1.5e OFF'ta olmayan onaylı ürünlerin aramada çıkması (sözleşme değişikliği; mobil+backend) | bekliyor (plan + onay) |
+| 1.5f "Gıda dışı ürün" türü: kabul edilir, puanlanmaz (ADR-009 §14) | tamam |
 | 1.6 Görsel adresi düzeltmesi | bekliyor |
 
 ### Unutulmaması gerekenler
+
+- **Kozmetik/temizlik ürünleri için içerik skoru beta sonrasına bırakıldı** (ADR-009 §14):
+  lisansı uygun içerik maddesi kaynağı, ayrı ADR ve hukuki inceleme gerekir.
 
 - **Elma suyu pilot kaydı barkod bekliyor.** İki okuması yerelde
   (`apps/backend/data/label-store/pilot/elma-suyu-okuma-*.json`); barkod gelince

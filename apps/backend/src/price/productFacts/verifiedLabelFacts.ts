@@ -27,6 +27,7 @@ import {
   type NutriScoreGrade,
 } from '../../nutriScore/nutriScore2023.js';
 import { getConfidence } from './openFoodFactsAdapter.js';
+import type { ScoreScopeExclusion } from '../rafScore/scoreScope.js';
 import { clampConfidenceToSource } from './sourcePolicy.js';
 import type { ProductFacts, ProductFactsFieldKey, ProductFactsFieldSource, ProductFactsMissingField } from './types.js';
 
@@ -182,10 +183,32 @@ function verifiedKind(
   verified: VerifiedLabelProduct,
 ): { category: NutriScoreCategory; source: LabelNutriScoreCategorySource } | null {
   if (!verified.productKind || !verified.productKindSource) return null;
-  // Alkollü içeceğe Nutri-Score uygulanmaz (ADR-009 §11).
-  const category: NutriScoreCategory =
-    verified.productKind === 'alcoholic_beverage' ? 'not_applicable' : verified.productKind;
+  // Alkollü içeceğe (ADR-009 §11) ve gıda dışı ürüne (§14) Nutri-Score uygulanmaz.
+  const category: NutriScoreCategory = scoreScopeExclusionForKind(verified.productKind)
+    ? 'not_applicable'
+    : (verified.productKind as NutriScoreCategory);
   return { category, source: verified.productKindSource };
+}
+
+/**
+ * Ürün türünden puan kapsamı dışı bırakma nedeni. Yalnız yapılandırılmış türe
+ * bakar; ürün adından çıkarım yoktur. Kayıt için scoreScopeExclusionForVerified
+ * kullanılır (yalnız onaylayanın seçimi geçerlidir).
+ */
+export function scoreScopeExclusionForKind(kind: VerifiedLabelProduct['productKind']): ScoreScopeExclusion | null {
+  if (kind === 'alcoholic_beverage') return 'alcoholic_beverage';
+  if (kind === 'non_food') return 'non_food';
+  return null;
+}
+
+/**
+ * Onaylı kayıttan kapsam dışı bırakma: YALNIZ onaylayanın seçtiği tür
+ * (productKindSource 'approver') ürünü puan kapsamı dışına çıkarır (ADR-009
+ * §11, §14). Fotoğrafı gönderenin onaylanmamış beyanı ('user_declared')
+ * bunu yapamaz; o beyan yalnız Nutri-Score hesaplamamaya yol açabilir.
+ */
+export function scoreScopeExclusionForVerified(verified: VerifiedLabelProduct): ScoreScopeExclusion | null {
+  return verified.productKindSource === 'approver' ? scoreScopeExclusionForKind(verified.productKind) : null;
 }
 
 /** Barkod için yalnız onaylı etiket kaydı varken (OFF'ta hiç yokken) kullanılır. */
@@ -214,7 +237,7 @@ export function productFactsFromVerifiedLabel(verified: VerifiedLabelProduct): V
     // additives bilerek yok: boş dizi "katkısız" anlamına gelirdi (bkz. catalogAdapter.ts).
     allergenInfo: { dataStatus: 'unknown', declaredAllergens: [], traceAllergens: [], source: 'none' },
     dataSource: 'rafskoru_verified',
-    ...(verified.productKind === 'alcoholic_beverage' ? { scoreScopeExclusion: 'alcoholic_beverage' as const } : {}),
+    ...(scoreScopeExclusionForVerified(verified) ? { scoreScopeExclusion: scoreScopeExclusionForVerified(verified) } : {}),
     isComplete: false,
     missingFields,
     confidence: clampConfidenceToSource('rafskoru_verified', getConfidence(missingFields)),
@@ -334,10 +357,13 @@ export function mergeVerifiedLabelIntoFacts(
     }
   }
 
-  // Kapsam dışı bırakma yalnız daraltır: OFF veya onaylı kayıttan biri
-  // alkollü diyorsa ürün puan kapsamı dışındadır ve Nutri-Score uygulanmaz
-  // (ADR-009 §11) — katalogun daha önce hesapladığı not da gösterilmez.
-  const outOfScope = Boolean(base.scoreScopeExclusion) || verified.productKind === 'alcoholic_beverage';
+  // Kapsam dışı bırakma yalnız daraltır: OFF veya onaylı kayıttan biri ürünü
+  // kapsam dışı sayıyorsa (alkollü içecek §11, gıda dışı ürün §14) Nutri-Score
+  // uygulanmaz — katalogun daha önce hesapladığı not da gösterilmez. Neden
+  // olarak onaylayanın seçtiği tür önceliklidir (insan kararı).
+  const scopeExclusion: ScoreScopeExclusion | null =
+    scoreScopeExclusionForVerified(verified) ?? base.scoreScopeExclusion ?? null;
+  const outOfScope = scopeExclusion !== null;
   if (outOfScope) {
     nutriScoreGrade = null;
     delete fieldSources.nutriScoreGrade;
@@ -389,7 +415,7 @@ export function mergeVerifiedLabelIntoFacts(
     missingFields: base.missingFields?.filter((field) => !filled.has(field)),
     ...(Object.keys(fieldSources).length > 0 ? { fieldSources } : {}),
     ...(usedVerified ? { verifiedAt: verified.approvedAt } : {}),
-    ...(outOfScope ? { scoreScopeExclusion: 'alcoholic_beverage' as const } : {}),
+    ...(scopeExclusion ? { scoreScopeExclusion: scopeExclusion } : {}),
   };
 
   return { facts, conflicts, nutriScore };

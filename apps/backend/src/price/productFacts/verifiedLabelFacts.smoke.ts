@@ -553,4 +553,45 @@ for (const dataSource of ['beta_inference', 'label_unverified', 'rafskoru_verifi
   );
 }
 
+// ── Gıda dışı ürün (ADR-009 §14): puan kapsamı dışı, Nutri-Score yok ─────
+{
+  const only = productFactsFromVerifiedLabel(
+    verified({ productName: 'El Kremi', nutritionPer100: biscuitPer100g }, { kind: 'non_food' }),
+  );
+  assert.equal(only.facts.scoreScopeExclusion, 'non_food');
+  assert.equal(only.facts.nutriScoreGrade, null);
+  assert.deepEqual(only.nutriScore, { status: 'skipped', reason: 'not_applicable' });
+  assert.equal(only.facts.allergenInfo?.dataStatus, 'unknown', 'alerjen durumu "bilinmiyor" kalmalı');
+
+  const base = offFacts({ nutriScoreGrade: 'B', missingFields: ['imageUrl'] });
+  const merged = mergeVerifiedLabelIntoFacts(base, verified({ productName: 'El Kremi' }, { kind: 'non_food' }));
+  assert.equal(merged.facts.scoreScopeExclusion, 'non_food');
+  assert.equal(merged.facts.nutriScoreGrade, null, 'katalogun önceki notu da gösterilmemeli');
+  assert.deepEqual(merged.facts.catalogAllergenData, base.catalogAllergenData, 'alerjen verisi aynen kalmalı');
+
+  // Onaylayanın seçimi (insan kararı) OFF'tan gelen kapsam nedeninin önüne geçer.
+  const alcoholicBase = offFacts({ scoreScopeExclusion: 'alcoholic_beverage', missingFields: ['imageUrl'] });
+  assert.equal(
+    mergeVerifiedLabelIntoFacts(alcoholicBase, verified({ productName: 'Kolonya' }, { kind: 'non_food' })).facts.scoreScopeExclusion,
+    'non_food',
+  );
+  assert.equal(
+    mergeVerifiedLabelIntoFacts(alcoholicBase, verified({ productName: 'Bira' }, { kind: 'general' })).facts.scoreScopeExclusion,
+    'alcoholic_beverage',
+    'kapsam içi tür seçimi OFF kapsam dışı bırakmasını kaldırmamalı (yalnız daraltır)',
+  );
+
+  // Yalnız onaylayanın seçimi kapsam dışı bırakır; kullanıcı beyanı bırakamaz
+  // (sözleşme incelemesi bulgusu, ADR-009 §11/§14).
+  for (const kind of ['non_food', 'alcoholic_beverage'] as const) {
+    const declared = verified({ productName: 'Beyan' }, { kind, kindSource: 'user_declared' });
+    assert.equal(productFactsFromVerifiedLabel(declared).facts.scoreScopeExclusion, undefined, `${kind}: beyan tek başına yetmemeli`);
+    assert.equal(
+      mergeVerifiedLabelIntoFacts(offFacts({ missingFields: ['imageUrl'] }), declared).facts.scoreScopeExclusion,
+      undefined,
+      `${kind}: birleştirmede de beyan yetmemeli`,
+    );
+  }
+}
+
 console.log('VERIFIED_LABEL_FACTS_SMOKE_OK');

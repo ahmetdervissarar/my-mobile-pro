@@ -538,7 +538,8 @@ function attachRafScore(result: PriceResult): void {
 }
 
 /**
- * Puan kapsamı (ADR-009 §11): ürün kapsam dışındaysa (alkollü içecek) hiçbir
+ * Puan kapsamı (ADR-009 §11, §14): ürün kapsam dışındaysa (alkollü içecek,
+ * gıda dışı ürün) hiçbir
  * puan gösterilmez; RafSkoru "kapsam dışı" sonucuyla değiştirilir. Ürün
  * verisi (içindekiler, alerjen) olduğu gibi kalır — alerjen uyarıları
  * mobilde bu veriden üretilmeye devam eder.

@@ -144,6 +144,7 @@ await withServer(async (base) => {
   // ── Liste ve ayrıntı ───────────────────────────────────────────────────
   const meta = await (await fetch(`${base}/meta`, { headers: auth })).json();
   assert.ok(meta.productKinds.some((kind: { key: string | null }) => kind.key === 'alcoholic_beverage'));
+  assert.ok(meta.productKinds.some((kind: { key: string | null }) => kind.key === 'non_food'), 'gıda dışı ürün seçeneği olmalı');
   assert.ok(meta.productKinds.some((kind: { key: string | null }) => kind.key === null), '"Bilinmiyor" seçeneği olmalı');
 
   const list = await (await fetch(`${base}/candidates`, { headers: auth })).json();

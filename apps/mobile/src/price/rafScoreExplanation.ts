@@ -1,4 +1,4 @@
-import { RAF_SCORE_OUT_OF_SCOPE_EXPLANATION, RAF_SCORE_OUT_OF_SCOPE_REASON_CODE } from './rafScoreScope';
+import { RAF_SCORE_OUT_OF_SCOPE_REASON_CODE, rafScoreOutOfScopeExplanation } from './rafScoreScope';
 import type { PriceResolveResponse, RafScoreReason, RafScoreResult } from './types';
 
 function getRafScoreComponentLabel(key: string): string {
@@ -115,7 +115,7 @@ function formatKnownReason(reason: RafScoreReason): string | null {
   }
 
   if (reason.code === RAF_SCORE_OUT_OF_SCOPE_REASON_CODE) {
-    return RAF_SCORE_OUT_OF_SCOPE_EXPLANATION;
+    return rafScoreOutOfScopeExplanation(reason.params?.scope);
   }
 
   if (reason.code === 'raf_score_unavailable') {

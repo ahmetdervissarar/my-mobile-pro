@@ -37,6 +37,7 @@ export const LABEL_REVIEW_PRODUCT_KINDS: readonly { key: LabelProductKind | null
   { key: 'red_meat', label: 'Kırmızı et ürünü' },
   { key: 'not_applicable', label: 'Nutri-Score uygulanmaz (ör. baharat, çay, kahve)' },
   { key: 'alcoholic_beverage', label: 'Alkollü içecek (puanlanmaz)' },
+  { key: 'non_food', label: 'Gıda dışı ürün (kozmetik, temizlik vb.; puanlanmaz)' },
   { key: null, label: 'Bilinmiyor' },
 ];
 

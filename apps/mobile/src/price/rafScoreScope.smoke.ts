@@ -16,7 +16,9 @@ import { evaluateProductRisks } from '../riskEngine/riskEngine';
 import { getRafScoreExplanationItems } from './rafScoreExplanation';
 import {
   isRafScoreOutOfScope,
+  RAF_SCORE_NON_FOOD_EXPLANATION,
   RAF_SCORE_OUT_OF_SCOPE_EXPLANATION,
+  rafScoreOutOfScopeExplanation,
   RAF_SCORE_OUT_OF_SCOPE_LABEL,
   RAF_SCORE_OUT_OF_SCOPE_REASON_CODE,
 } from './rafScoreScope';
@@ -70,6 +72,28 @@ assert.notEqual(getSearchCardBadge({ tone: 'neutral', text: '' }, noData).text, 
   assert.ok(items.includes(RAF_SCORE_OUT_OF_SCOPE_EXPLANATION), 'kapsam dışı açıklaması gösterilmeli');
   for (const banned of ['güvenli', 'içermez', 'garanti']) {
     assert.ok(!RAF_SCORE_OUT_OF_SCOPE_EXPLANATION.toLocaleLowerCase('tr-TR').includes(banned));
+  }
+}
+
+// ── Gıda dışı ürün (ADR-009 §14): aynı "kapsam dışı" gösterimi, kendi açıklaması ─
+{
+  const nonFood: RafScoreResult = {
+    ...outOfScope,
+    reasons: [{ code: RAF_SCORE_OUT_OF_SCOPE_REASON_CODE, category: 'data_quality', severity: 'neutral', params: { scope: 'non_food' } }],
+  };
+  assert.equal(isRafScoreOutOfScope(nonFood), true);
+  assert.deepEqual(getSearchCardBadge({ tone: 'neutral', text: '' }, nonFood), {
+    isAllergenBadge: false,
+    text: `Puan: ${RAF_SCORE_OUT_OF_SCOPE_LABEL}`,
+  });
+  const items = getRafScoreExplanationItems({ rafScore: nonFood } as unknown as PriceResolveResponse['result']);
+  assert.ok(items.includes(RAF_SCORE_NON_FOOD_EXPLANATION), 'gıda dışı açıklaması gösterilmeli');
+  assert.ok(!items.includes(RAF_SCORE_OUT_OF_SCOPE_EXPLANATION), 'alkol açıklaması gösterilmemeli');
+  assert.equal(rafScoreOutOfScopeExplanation(undefined).includes('Alkollü'), false, 'neden bilinmiyorsa alkol denmemeli');
+  for (const text of [RAF_SCORE_NON_FOOD_EXPLANATION, rafScoreOutOfScopeExplanation(undefined)]) {
+    for (const banned of ['güvenli', 'içermez', 'garanti', 'zararsız']) {
+      assert.ok(!text.toLocaleLowerCase('tr-TR').includes(banned));
+    }
   }
 }
 
