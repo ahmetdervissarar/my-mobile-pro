@@ -11,6 +11,7 @@ import { initIntakeDb } from './intake/db.js';
 import { createIntakeRouter, createIntakeUnavailableRouter } from './intake/routes.js';
 import { getLabelStoreDbPath } from './labelStore/config.js';
 import { initLabelStoreDb } from './labelStore/db.js';
+import { createLabelReviewRouter } from './labelStore/reviewRoutes.js';
 import { ManualBetaPriceProvider } from './price/providers/manualBetaPriceProvider.js';
 import { PriceProviderService } from './price/priceProviderService.js';
 import { createPriceRouter } from './routes/priceRoutes.js';
@@ -106,6 +107,8 @@ app.use('/api/search', createSearchRouter());
 app.use('/api/basket', createBasketRouter());
 app.use('/api/beta', createBetaRouter());
 app.use('/api/intake', intakeRouter);
+// Etiket onay ekranı (ADR-009, İş 1.5): yalnız yönetici anahtarıyla.
+app.use('/api/label-review', createLabelReviewRouter());
 
 // Gönüllü ürün toplama sayfası (apps/intake/) — sade HTML+vanilla JS,
 // backend tarafından statik olarak sunulur (bkz. görev planı, YERLEŞİM).

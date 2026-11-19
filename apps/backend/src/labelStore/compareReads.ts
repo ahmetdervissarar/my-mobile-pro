@@ -37,18 +37,28 @@ const NUTRIENT_KEYS = [
 ] as const satisfies readonly (keyof LabelNutritionPer100)[];
 
 /** Yalnız yazım biçimi farklarını giderir; içerik farkına dokunmaz. */
-export function normalizeLabelText(value: string): string {
+export function normalizeLabelText(value: string, locale: 'tr-TR' | 'en-US' = 'tr-TR'): string {
   return value
-    .toLocaleLowerCase('tr-TR')
+    .toLocaleLowerCase(locale)
     .replace(/\s+/g, ' ')
     .replace(/\s*([,;:()\[\].%])\s*/g, '$1')
     .trim()
     .replace(/[.,;:]+$/, '');
 }
 
+/**
+ * Büyük/küçük harf farkı iki kurala göre denenir (İş 1.5c): Türkçe kuralda
+ * "I" → "ı" olduğu için Latin yazılı "PEPSI" ile "Pepsi" ayrışıyordu;
+ * uluslararası kuralda ise "FINDIK" ile "Fındık" ayrışır. İkisinden biri
+ * eşitse fark yalnız harf büyüklüğüdür. Küçük "ı" ile "i" farkı her iki
+ * kuralda da içerik farkı olarak kalır.
+ */
 function sameText(a: string | null, b: string | null): boolean {
   if (a === null || b === null) return a === b;
-  return normalizeLabelText(a) === normalizeLabelText(b);
+  return (
+    normalizeLabelText(a) === normalizeLabelText(b) ||
+    normalizeLabelText(a, 'en-US') === normalizeLabelText(b, 'en-US')
+  );
 }
 
 /** İki okumanın ayrıştığı alan adları; besin değerleri "nutritionPer100.<alan>" biçiminde. */

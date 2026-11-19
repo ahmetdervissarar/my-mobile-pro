@@ -11,6 +11,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { loadCatalog } from '../catalog/catalog.js';
+import {
+  __resetLabelStoreDbForTesting,
+  approveCandidate,
+  createCandidate,
+  recordExtraction,
+  recordVerification,
+} from '../labelStore/db.js';
+import type { LabelFields, LabelRead } from '../labelStore/types.js';
 import type { OffImportRecord } from '../tools/offTurkey/normalize.js';
 
 import { createSubmission, markSlotReceived, __resetIntakeDbForTesting } from './db.js';
@@ -223,4 +231,69 @@ const STALE_GTIN = '8690504000082';
 }
 
 rmSync(fixtureDir, { recursive: true, force: true });
+// ── Onaylı etiket kaydı karşıladığı fotoğrafları istemez (İş 1.5d) ───────
+{
+  __resetLabelStoreDbForTesting(':memory:');
+  const VERIFIED_ONLY_GTIN = '8690504000099';
+  const CANDIDATE_ONLY_GTIN = '8690504000105';
+
+  const emptyFields: LabelFields = {
+    productName: null,
+    brand: null,
+    quantityText: null,
+    ingredientsText: null,
+    ingredientsLang: null,
+    allergenStatementText: null,
+    traceStatementText: null,
+    nutritionPer100: null,
+  };
+  const approveWith = (barcode: string, fields: LabelFields, approve = true, withFront = false) => {
+    const candidate = createCandidate({
+      barcode,
+      photoSource: 'intake',
+      photos: [
+        { slot: 'ingredients', ref: `intake/photos/${barcode}-ingredients.jpg`, attribution: null },
+        ...(withFront ? [{ slot: 'front' as const, ref: `intake/photos/${barcode}-front.jpg`, attribution: null }] : []),
+      ],
+      observedAt: '2026-11-10T09:30:00.000Z',
+    });
+    const read: LabelRead = { reader: 'desktop_session', model: null, readAt: '2026-11-14T12:00:00.000Z', fields, unreadableFields: [] };
+    recordExtraction(candidate.id, read);
+    recordVerification(candidate.id, read, []);
+    if (approve) approveCandidate(candidate.id, { approvedBy: 'proje-sahibi', productKind: null });
+  };
+
+  // Katalogda eksik ürün: onaylı içindekiler var, besin tablosu yok → yalnız besin tablosu istenir.
+  approveWith(MISSING_FIELDS_GTIN, { ...emptyFields, ingredientsText: 'Süt, şeker.' });
+  const partial = evaluateBarcodeLookup(MISSING_FIELDS_GTIN, 'MRS-01');
+  assert.equal(partial.status, 'missing_fields');
+  assert.deepEqual(partial.neededSlots, ['nutrition']);
+
+  // Katalogda yok, onaylı kayıt tam ama ön yüz fotoğrafı yok → yalnız ön yüz istenir
+  // (ürün adı fotoğraf kanıtının yerine geçmez).
+  const fullFields: LabelFields = {
+    ...emptyFields,
+    productName: 'Fıstık Ezmesi',
+    ingredientsText: 'Yer fıstığı',
+    nutritionPer100: { basis: '100g', energyKcal: 638, fat: 54, saturatedFat: 7.6, carbohydrates: 7.6, sugars: 4, fiber: null, protein: 25, salt: 0 },
+  };
+  approveWith(VERIFIED_ONLY_GTIN, fullFields);
+  const noFront = evaluateBarcodeLookup(VERIFIED_ONLY_GTIN, 'MRS-01');
+  assert.equal(noFront.status, 'missing_fields');
+  assert.deepEqual(noFront.neededSlots, ['front']);
+  assert.equal(noFront.productName, 'Fıstık Ezmesi');
+
+  // Ön yüz fotoğrafıyla onaylanmış yeni sürüm → fotoğraf istenmez.
+  approveWith(VERIFIED_ONLY_GTIN, fullFields, true, true);
+  const full = evaluateBarcodeLookup(VERIFIED_ONLY_GTIN, 'MRS-01');
+  assert.equal(full.status, 'complete');
+  assert.deepEqual(full.neededSlots, []);
+
+  // Yalnız ADAY kayıt fotoğrafı gereksiz yapmaz.
+  approveWith(CANDIDATE_ONLY_GTIN, { ...emptyFields, productName: 'Aday', ingredientsText: 'Un' }, false);
+  const candidateOnly = evaluateBarcodeLookup(CANDIDATE_ONLY_GTIN, 'MRS-01');
+  assert.equal(candidateOnly.status, 'new');
+  assert.deepEqual(candidateOnly.neededSlots, ['front', 'ingredients', 'nutrition']);
+}
+
 console.log('INTAKE_LOOKUP_SMOKE_OK');

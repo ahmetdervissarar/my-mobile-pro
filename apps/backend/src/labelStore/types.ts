@@ -89,6 +89,12 @@ export interface LabelRead {
   fields: LabelFields;
   /** Fotoğrafta bulunup okunamayan alanların adları. */
   unreadableFields: string[];
+  /**
+   * Okuyucunun onaylayana notu (ör. "değerler bir satır kaymış", "fotoğraf bir
+   * web sayfası"). Yalnız onay ekranında gösterilir; hiçbir alana, puana veya
+   * alerjen değerlendirmesine girmez. Not yoksa null.
+   */
+  notes?: string | null;
 }
 
 export interface LabelCandidate {

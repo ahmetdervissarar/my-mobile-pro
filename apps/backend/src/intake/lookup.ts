@@ -10,6 +10,8 @@
  *   - findSubmissionByBarcode: ./db.ts (bu araçla zaten toplanmış mı)
  */
 import { getCatalog } from '../catalog/catalog.js';
+import { getCurrentVerified, isLabelStoreDbReady } from '../labelStore/db.js';
+import type { VerifiedLabelProduct } from '../labelStore/types.js';
 import { isValidGtin } from '../tools/offTurkey/normalize.js';
 
 import { abandonSubmission, findSubmissionByBarcode, INTAKE_REOPEN_AFTER_MS } from './db.js';
@@ -80,8 +82,10 @@ export function evaluateBarcodeLookup(barcode: string, volunteerCode: string): I
   }
 
   const catalogProduct = getCatalog().byId.get(barcode);
+  const verified = currentVerifiedOrNull(barcode);
+
   if (catalogProduct) {
-    const neededSlots = neededSlotsFromMissingFields(catalogProduct.missingFields);
+    const neededSlots = withoutSlotsCoveredByVerified(neededSlotsFromMissingFields(catalogProduct.missingFields), verified);
     return {
       status: neededSlots.length === 0 ? 'complete' : 'missing_fields',
       neededSlots,
@@ -89,5 +93,61 @@ export function evaluateBarcodeLookup(barcode: string, volunteerCode: string): I
     };
   }
 
+  // OFF'ta yok ama insan onaylı etiket kaydı var (İş 1.5d): yalnız kaydın
+  // karşılamadığı fotoğraflar istenir.
+  if (verified) {
+    const neededSlots = withoutSlotsCoveredByVerified(['front', 'ingredients', 'nutrition'], verified);
+    return {
+      status: neededSlots.length === 0 ? 'complete' : 'missing_fields',
+      neededSlots,
+      productName: verified.fields.productName,
+    };
+  }
+
   return { status: 'new', neededSlots: ['front', 'ingredients', 'nutrition'] };
+}
+
+/** Güncel insan onaylı kayıt; depo hazır değilse veya okunamazsa null (lookup düşmez). */
+function currentVerifiedOrNull(barcode: string): VerifiedLabelProduct | null {
+  if (!isLabelStoreDbReady()) return null;
+  try {
+    return getCurrentVerified(barcode);
+  } catch {
+    return null;
+  }
+}
+
+function hasText(value: string | null | undefined): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+/**
+ * Onaylı kaydın zaten karşıladığı fotoğraf bölümlerini listeden çıkarır.
+ * Yalnız ONAYLI kayda bakılır; aday kayıtlar hiçbir fotoğrafı "gereksiz" yapmaz.
+ *   - içindekiler: onaylı içindekiler metni varsa
+ *   - besin tablosu: birimi ve Nutri-Score'un zorunlu değerleri (enerji,
+ *     şeker, doymuş yağ, tuz) okunmuşsa
+ *   - ön yüz: onaylı kayıtta ön yüz FOTOĞRAFI varsa (ürün adı tek başına
+ *     fotoğraf kanıtının yerine geçmez — sözleşme incelemesi bulgusu A4)
+ */
+function withoutSlotsCoveredByVerified(
+  slots: IntakePhotoSlot[],
+  verified: VerifiedLabelProduct | null,
+): IntakePhotoSlot[] {
+  if (!verified) return slots;
+  const { fields } = verified;
+  const nutrition = fields.nutritionPer100;
+  const covered = new Set<IntakePhotoSlot>();
+
+  if (hasText(fields.ingredientsText)) covered.add('ingredients');
+  if (
+    nutrition &&
+    nutrition.basis !== null &&
+    [nutrition.energyKcal, nutrition.sugars, nutrition.saturatedFat, nutrition.salt].every((value) => value !== null)
+  ) {
+    covered.add('nutrition');
+  }
+  if (verified.photos.some((photo) => photo.slot === 'front')) covered.add('front');
+
+  return slots.filter((slot) => !covered.has(slot));
 }

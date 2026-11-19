@@ -7,7 +7,11 @@
  * işi DEĞİLDİR; aday, insan onaylayana kadar hiçbir ekrana ulaşmaz.
  *
  * Ek korumalar (okuyucu kurallarının kodla denetlenmesi):
- *   - besin tablosu fotoğrafı yoksa besin değeri kabul edilmez
+ *   - besin değeri yalnız besin tablosu VEYA içindekiler fotoğrafı varsa kabul
+ *     edilir (İş 1.5a, proje sahibi kararı 2026-11-19: tablo çoğu ambalajda
+ *     içindekilerle aynı yüzde; onay ekranı bu durumu ayrıca işaretler ve
+ *     onaylayan fotoğrafla karşılaştırır). Yalnız ön yüz fotoğrafıyla besin
+ *     değeri kabul edilmez.
  *   - içindekiler fotoğrafı yoksa içindekiler, alerjen ve eser ifadesi kabul edilmez
  *   - aynı barkod için aynı fotoğraf kümesi ikinci kez içe aktarılmaz
  *   - bütün yazımlar tek işlemdedir; hata olursa yarım aday kalmaz
@@ -57,11 +61,24 @@ function photoSetKey(photos: { slot: string; ref: string }[]): string {
 
 /** Bir okuma, fotoğrafı çekilmemiş bir bölümden değer taşıyorsa reddeder. */
 function assertReadBackedByPhotos(read: LabelRead, slots: Set<LabelPhotoSlot>, label: string): void {
-  const fields: Partial<LabelFields> | undefined = read?.fields;
+  assertFieldsBackedByPhotos(read?.fields, slots, label);
+}
+
+/**
+ * Alanlar, fotoğrafı çekilmemiş bir bölümden değer taşıyorsa reddeder.
+ * İçe aktarma ve onay (onaylayanın düzelttiği alanlar) aynı kuralı kullanır.
+ */
+export function assertFieldsBackedByPhotos(
+  fields: Partial<LabelFields> | undefined,
+  slots: Set<LabelPhotoSlot>,
+  label: string,
+): void {
   if (!fields || typeof fields !== 'object') return; // biçim denetimi depoda yapılır
 
-  if (!slots.has('nutrition') && fields.nutritionPer100 != null) {
-    throw new LabelStoreValidationError(`${label}: besin tablosu fotoğrafı yokken besin değeri var.`);
+  if (!slots.has('nutrition') && !slots.has('ingredients') && fields.nutritionPer100 != null) {
+    throw new LabelStoreValidationError(
+      `${label}: besin tablosu veya içindekiler fotoğrafı yokken besin değeri var.`,
+    );
   }
   if (!slots.has('ingredients')) {
     for (const key of INGREDIENT_SLOT_FIELDS) {

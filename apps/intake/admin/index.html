@@ -28,6 +28,37 @@
 
     <!-- 2) Panel -->
     <section id="screen-panel" class="screen" hidden>
+      <nav class="tabs" role="tablist">
+        <button id="tabBtnIntake" class="tab active" role="tab" aria-selected="true">Gönüllü kayıtları</button>
+        <button id="tabBtnLabels" class="tab" role="tab" aria-selected="false">Etiket onayı</button>
+      </nav>
+
+      <!-- 2b) Etiket onayı (labels.js) -->
+      <div id="tab-labels" hidden>
+        <div id="labelListView">
+          <div class="label-toolbar">
+            <label for="labelStatusFilter">Göster</label>
+            <select id="labelStatusFilter">
+              <option value="pending">Onay bekleyenler</option>
+              <option value="approved">Onaylananlar</option>
+              <option value="rejected">Reddedilenler</option>
+            </select>
+          </div>
+          <p class="hint">Bir satıra tıklayın. Fotoğraflar solda, iki okuyucunun okuduğu metin sağda görünür. Fotoğrafa bakmadan hiçbir şeyi onaylamayın.</p>
+          <p id="labelListError" class="error" hidden></p>
+          <div class="table-scroll">
+            <table id="labelTable">
+              <thead>
+                <tr><th>Barkod</th><th>Ürün</th><th>Durum</th><th>Uyarı</th><th>OFF'ta</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="labelDetailView" hidden></div>
+      </div>
+
+      <div id="tab-intake">
       <div class="totals-row" id="totalsRow"></div>
 
       <button id="exportBtn" class="primary">CSV indir</button>
@@ -86,6 +117,7 @@
           <tbody></tbody>
         </table>
       </div>
+      </div>
     </section>
   </main>
 
@@ -98,5 +130,6 @@
   </div>
 
   <script src="app.js"></script>
+  <script src="labels.js"></script>
 </body>
 </html>

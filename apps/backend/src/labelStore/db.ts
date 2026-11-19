@@ -225,7 +225,23 @@ function sanitizeRead(input: unknown): LabelRead {
     readAt: assertIsoTimestamp(input.readAt, 'Okuma: readAt'),
     fields: sanitizeFields(input.fields),
     unreadableFields: sanitizeStringList(input.unreadableFields, 'Okuma: unreadableFields'),
+    notes: sanitizeReadNotes(input.notes),
   };
+}
+
+/** Okuyucu notu üst sınırı; not yalnız gösterim içindir. */
+export const LABEL_READ_NOTES_MAX_LENGTH = 4000;
+
+/** Okuyucu notu: boş veya yoksa null; çok uzunsa reddedilir (kesilmez). */
+function sanitizeReadNotes(input: unknown): string | null {
+  if (input === null || input === undefined) return null;
+  if (typeof input !== 'string') throw new LabelStoreValidationError('Okuma: notes metin veya null olmalı.');
+  const trimmed = input.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length > LABEL_READ_NOTES_MAX_LENGTH) {
+    throw new LabelStoreValidationError(`Okuma: notes en fazla ${LABEL_READ_NOTES_MAX_LENGTH} karakter olabilir.`);
+  }
+  return trimmed;
 }
 
 function sanitizeStringList(input: unknown, fieldName: string): string[] {
@@ -510,6 +526,41 @@ export function recordVerification(id: string, read: LabelRead, differingFields:
     );
 
   return getCandidate(id)!;
+}
+
+/**
+ * Notu olmayan okumalara okuyucu notunu sonradan ekler (İş 1.5a: notlar
+ * içe aktarmada önce saklanmıyordu). Yalnız notu boş olan okumaya yazar;
+ * okunan alanlara, duruma ve ayrışan alanlara DOKUNMAZ. Son durumdaki
+ * (onaylı/reddedilmiş) adaylar değiştirilmez. Yazılan okuma sayısını döndürür.
+ */
+export function attachReadNotes(
+  id: string,
+  notes: { extract?: string | null; verify?: string | null },
+): number {
+  const candidate = requireCandidate(id);
+  if (candidate.status === 'approved' || candidate.status === 'rejected') {
+    throw new LabelStoreStateError(id, candidate.status, 'attachReadNotes');
+  }
+
+  const next = (read: LabelRead | null, note: string | null | undefined): LabelRead | null => {
+    const clean = sanitizeReadNotes(note);
+    if (!read || clean === null || (read.notes ?? null) !== null) return null;
+    return { ...read, notes: clean };
+  };
+  const extract = next(candidate.extractRead, notes.extract);
+  const verify = next(candidate.verifyRead, notes.verify);
+  if (!extract && !verify) return 0;
+
+  requireDb()
+    .prepare('UPDATE label_candidates SET extract_read = ?, verify_read = ?, updated_at = ? WHERE id = ?')
+    .run(
+      JSON.stringify(extract ?? candidate.extractRead),
+      JSON.stringify(verify ?? candidate.verifyRead),
+      new Date().toISOString(),
+      id,
+    );
+  return (extract ? 1 : 0) + (verify ? 1 : 0);
 }
 
 /**

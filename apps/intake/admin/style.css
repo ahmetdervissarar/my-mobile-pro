@@ -159,3 +159,66 @@ tbody tr[data-clickable]:active { background: var(--surface-alt); }
 
 .modal-content .photo-label { font-size: 12px; color: var(--muted); margin-top: 16px; }
 .modal-content .photo-label:first-of-type { margin-top: 12px; }
+
+/* ── Etiket onayı sekmesi (labels.js, İş 1.5b) ─────────────────────────── */
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.tabs .tab {
+  background: none;
+  color: var(--muted);
+  border-radius: 10px 10px 0 0;
+  min-height: 40px;
+  border-bottom: 3px solid transparent;
+}
+.tabs .tab.active { color: var(--ink); border-bottom-color: var(--pine); }
+
+.label-toolbar { max-width: 320px; }
+
+.status { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--surface-alt); }
+.status-disagreed { background: var(--warn-bg); color: var(--warn); }
+.status-approved { color: var(--pine); }
+.status-rejected { color: var(--danger); }
+.flag-count { color: var(--warn); font-weight: 800; }
+
+#labelDetailView h2 { margin-top: 16px; }
+#labelDetailView h3 { font-size: 14px; margin: 20px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+
+.review-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 900px) {
+  main:has(#tab-labels:not([hidden])) { max-width: 1400px; }
+  .review-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .review-photos { position: sticky; top: 72px; max-height: calc(100vh - 88px); overflow-y: auto; }
+}
+.review-photos figure { margin: 0 0 16px; }
+.review-photos figcaption { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.review-photos img { width: 100%; border-radius: 10px; border: 1px solid var(--line); background: #000; }
+.review-photos .attribution { margin: 4px 0 0; font-size: 11px; }
+
+.flag { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; line-height: 1.4; }
+.reader-note { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; font-size: 14px; line-height: 1.4; }
+
+.field { margin-bottom: 4px; }
+.field.differing > label:first-child { color: var(--warn); }
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 15px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  resize: vertical;
+}
+.choice { background: var(--warn-bg); border-radius: 10px; padding: 8px 12px; margin-bottom: 6px; font-size: 14px; }
+.choice-title { display: block; color: var(--warn); font-weight: 700; margin-bottom: 4px; }
+.choice code { white-space: pre-wrap; word-break: break-word; }
+label.inline { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; color: var(--ink); font-size: 14px; margin: 6px 0; }
+label.inline input { width: auto; min-height: 0; margin-top: 3px; }
+
+.nutrient-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0 12px; }
+.check-row { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-top: 16px; }
+
+button.danger { background: var(--danger); color: #0a0a0a; margin-top: 12px; }
+.reject-box { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 12px; }
+.reject-box summary { cursor: pointer; color: var(--danger); font-weight: 700; }
+.decision { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-top: 16px; }

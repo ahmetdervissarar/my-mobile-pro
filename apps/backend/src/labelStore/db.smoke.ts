@@ -18,6 +18,7 @@ import { DatabaseSync } from 'node:sqlite';
 import {
   __resetLabelStoreDbForTesting,
   approveCandidate,
+  attachReadNotes,
   createCandidate,
   getCandidate,
   getCurrentVerified,
@@ -274,6 +275,27 @@ assert.throws(
   LabelStoreStateError,
   'reddedilmiş aday üzerinde işlem yapılmamalı',
 );
+
+// ── Okuyucu notunun sonradan eklenmesi (İş 1.5a) ─────────────────────────
+{
+  const NOTES_BARCODE = '8690000000036';
+  const noted = createCandidate({ ...baseCandidate, barcode: NOTES_BARCODE });
+  recordExtraction(noted.id, read(milkFields));
+  const verified = recordVerification(noted.id, { ...read(milkFields), notes: 'zaten var' }, []);
+  assert.equal(verified.extractRead!.notes, null, 'notu olmayan okumada not null olmalı');
+
+  assert.equal(attachReadNotes(noted.id, { extract: '  değerler kaymış ', verify: 'üzerine yazılmamalı' }), 1);
+  const after = getCandidate(noted.id)!;
+  assert.equal(after.extractRead!.notes, 'değerler kaymış');
+  assert.equal(after.verifyRead!.notes, 'zaten var', 'var olan not değiştirilmemeli');
+  assert.deepEqual(after.extractRead!.fields, verified.extractRead!.fields, 'okunan alanlar değişmemeli');
+  assert.equal(after.status, 'agreed', 'durum değişmemeli');
+  assert.equal(attachReadNotes(noted.id, { extract: 'ikinci kez' }), 0, 'not ikinci kez yazılmamalı');
+  assert.equal(attachReadNotes(noted.id, { extract: '   ', verify: null }), 0);
+
+  rejectCandidate(noted.id, { rejectedBy: 'proje-sahibi', reason: 'deneme' });
+  assert.throws(() => attachReadNotes(noted.id, { extract: 'x' }), LabelStoreStateError, 'son durumdaki aday değişmemeli');
+}
 
 // ── Listeleme ve yardımcılar ─────────────────────────────────────────────
 assert.deepEqual(

@@ -93,6 +93,10 @@ assert.deepEqual(
 assert.deepEqual(compareLabelReads(read(), read({ ingredientsText: 'Elma suyu konsantresi, su.' })), ['ingredientsText']);
 assert.deepEqual(compareLabelReads(read(), read({ ingredientsText: null }, ['ingredientsText'])), ['ingredientsText'], 'okundu/okunamadı farkı ayrışmadır');
 assert.deepEqual(compareLabelReads(read(), read({ traceStatementText: 'Eser miktarda süt içerebilir.' })), ['traceStatementText']);
+// İş 1.5c: büyük "I" Türkçe ve Latin yazımda farklı küçülür; yalnız harf büyüklüğü farkıdır.
+assert.deepEqual(compareLabelReads(read({ brand: 'PEPSI' }), read({ brand: 'Pepsi' })), [], 'Latin marka: PEPSI = Pepsi');
+assert.deepEqual(compareLabelReads(read({ brand: 'FINDIK' }), read({ brand: 'Fındık' })), [], 'Türkçe: FINDIK = Fındık');
+assert.deepEqual(compareLabelReads(read({ brand: 'fındık' }), read({ brand: 'findik' })), ['brand'], 'ı/i farkı içerik farkı kalmalı');
 assert.deepEqual(
   compareLabelReads(read(), read({ nutritionPer100: { ...fields.nutritionPer100!, sugars: 10.6, salt: null } })),
   ['nutritionPer100.sugars', 'nutritionPer100.salt'],
@@ -168,14 +172,34 @@ assert.deepEqual(compareLabelReads(read(), read({ nutritionPer100: null })), ['n
   assert.equal(countBeforeBroken, before + 1);
 }
 
-// ── Okuyucunun fazladan alanları (not, barkod) depoya girmez ─────────────
+// ── Besin tablosu içindekiler fotoğrafındaysa kabul edilir (İş 1.5a) ──────
 {
-  const withExtras = { ...read(), barcodeDigits: '8691004000022', notes: 'kenar kesik' } as unknown as LabelRead;
+  const ingredientsOnly = [{ slot: 'ingredients' as const, ref: 'photos/f-ingredients.jpg', attribution: null }];
+  const result = importLabelReads(input({ photos: ingredientsOnly }));
+  assert.equal(result.status, 'imported', 'içindekiler fotoğrafındaki besin tablosu kabul edilmeli');
+  assert.deepEqual(result.candidate.extractRead!.fields.nutritionPer100, fields.nutritionPer100);
+}
+
+// ── Okuyucu notu saklanır; barkod gibi fazladan alanlar atılır ──────────
+{
+  const withExtras = { ...read(), barcodeDigits: '8691004000022', notes: '  kenar kesik  ' } as unknown as LabelRead;
+  const noNotes = { ...read(), notes: '   ' } as LabelRead;
   const result = importLabelReads(
-    input({ photos: allPhotos.map((photo) => ({ ...photo, ref: photo.ref.replace('a-', 'e-') })), extractRead: withExtras, verifyRead: withExtras }),
+    input({ photos: allPhotos.map((photo) => ({ ...photo, ref: photo.ref.replace('a-', 'e-') })), extractRead: withExtras, verifyRead: noNotes }),
   );
-  assert.equal('notes' in result.candidate.extractRead!, false);
+  assert.equal(result.candidate.extractRead!.notes, 'kenar kesik');
+  assert.equal(result.candidate.verifyRead!.notes, null, 'boş not null olmalı');
   assert.equal('barcodeDigits' in result.candidate.extractRead!, false);
+  assert.deepEqual(result.candidate.differingFields, [], 'not farkı ayrışma sayılmamalı');
+
+  const tooLong = { ...read(), notes: 'x'.repeat(4001) } as LabelRead;
+  assert.throws(
+    () =>
+      importLabelReads(
+        input({ photos: allPhotos.map((photo) => ({ ...photo, ref: photo.ref.replace('a-', 'g-') })), extractRead: tooLong }),
+      ),
+    LabelStoreValidationError,
+  );
 }
 
 console.log('LABEL_IMPORT_READS_SMOKE_OK');
