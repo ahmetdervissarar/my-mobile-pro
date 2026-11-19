@@ -3,14 +3,17 @@
  * apps/backend/src/labelStore/offPhotos/fetchOffLabelPhotosCli.ts
  *
  * Kullanım:
- *   npm run label:fetch-off -- --contact=<proje e-postası> [--limit=50]
+ *   npm run label:fetch-off -- --contact=<proje e-postası> [--limit=50] [--page=1]
  *
  * Ne yapar:
  *   1. OFF aramasına TEK istek: Türkiye'de içindekiler fotoğrafı seçili ama
- *      içindekiler metni tamamlanmamış ürünler (en fazla --limit kadar).
+ *      içindekiler metni tamamlanmamış ürünler (en fazla --limit kadar; OFF
+ *      listesi barkoda göre sıralı, --page ile sonraki partiye geçilir).
+ *   1b. Atlananlar: depoda zaten adayı olan barkodlar ve OFF kategorisine göre
+ *      düz su (isOffPlainWater; ad kullanılmaz).
  *   2. Her ürünün seçili içindekiler ve besin tablosu fotoğraflarını tam boy
  *      olarak BİRER BİRER, aralarında bekleyerek indirir.
- *   3. data/label-store/off/<tarih>/ altına fotoğrafları ve manifest.json'u
+ *   3. data/label-store/off/<tarih>-p<sayfa>/ altına fotoğrafları ve manifest.json'u
  *      yazar (git dışında). Depoya hiçbir şey yazmaz, okuma yapmaz.
  *
  * Durma kuralı: OFF'tan herhangi bir hata (4xx/5xx, beklenmeyen içerik) gelirse
@@ -22,10 +25,13 @@ import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { isValidGtin } from '../../tools/offTurkey/normalize.js';
+import { getLabelStoreDbPath } from '../config.js';
+import { initLabelStoreDb, listCandidatesForBarcode } from '../db.js';
 import {
   buildOffLabelSearchUrl,
   buildOffUserAgent,
   extractSelectedPhotos,
+  isOffPlainWater,
   localPhotoFileName,
   observedAtFor,
   offPhotoAttribution,
@@ -55,20 +61,22 @@ interface ManifestEntry {
 async function main(): Promise<void> {
   const contact = argValue('contact');
   if (!contact) {
-    console.error('Kullanım: npm run label:fetch-off -- --contact=<proje e-postası> [--limit=50]');
+    console.error('Kullanım: npm run label:fetch-off -- --contact=<proje e-postası> [--limit=50] [--page=1]');
     process.exit(2);
   }
   const userAgent = buildOffUserAgent(contact);
   const limit = Math.min(Math.max(Number(argValue('limit') ?? 50) || 50, 1), 100);
+  const page = Math.max(Math.floor(Number(argValue('page') ?? 1)) || 1, 1);
+  initLabelStoreDb(getLabelStoreDbPath());
 
-  const batchDir = join(DATA_DIR, 'label-store', 'off', new Date().toISOString().slice(0, 10));
+  const batchDir = join(DATA_DIR, 'label-store', 'off', `${new Date().toISOString().slice(0, 10)}-p${page}`);
   mkdirSync(batchDir, { recursive: true });
   const manifestPath = join(batchDir, 'manifest.json');
   const manifest: ManifestEntry[] = [];
   const writeManifest = () => writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
 
   // 1) Tek arama isteği.
-  const searchUrl = buildOffLabelSearchUrl(limit);
+  const searchUrl = buildOffLabelSearchUrl(limit, page);
   const searchResponse = await fetch(searchUrl, { headers: { 'User-Agent': userAgent } });
   if (!searchResponse.ok) {
     console.error(`DUR: OFF araması HTTP ${searchResponse.status} döndürdü.`);
@@ -76,15 +84,25 @@ async function main(): Promise<void> {
   }
   const body = (await searchResponse.json()) as { count?: number; products?: OffSearchProduct[] };
   const products = Array.isArray(body.products) ? body.products : [];
-  console.log(`Arama: OFF toplam ${body.count ?? '?'} ürün bildirdi; bu partide ${products.length} ürün.`);
+  console.log(`Arama: OFF toplam ${body.count ?? '?'} ürün bildirdi; sayfa ${page}, bu partide ${products.length} ürün.`);
 
   // 2) Fotoğraflar birer birer.
   let downloaded = 0;
   let skipped = 0;
+  let skippedWater = 0;
+  let skippedKnown = 0;
   for (const product of products) {
     const barcode = typeof product.code === 'string' ? product.code : '';
     if (!isValidGtin(barcode)) {
       skipped += 1;
+      continue;
+    }
+    if (listCandidatesForBarcode(barcode).length > 0) {
+      skippedKnown += 1;
+      continue;
+    }
+    if (isOffPlainWater(product)) {
+      skippedWater += 1;
       continue;
     }
     const photos = extractSelectedPhotos(product);
@@ -139,7 +157,7 @@ async function main(): Promise<void> {
   }
 
   writeManifest();
-  console.log(`Bitti: ${manifest.length} ürün, ${downloaded} fotoğraf indirildi, ${skipped} ürün atlandı. Manifest: ${manifestPath}`);
+  console.log(`Bitti: ${manifest.length} ürün, ${downloaded} fotoğraf indirildi, ${skipped} ürün fotoğrafsız/geçersiz, ${skippedKnown} ürünün zaten adayı var, ${skippedWater} düz su atlandı. Manifest: ${manifestPath}`);
 }
 
 void main().catch((err) => {

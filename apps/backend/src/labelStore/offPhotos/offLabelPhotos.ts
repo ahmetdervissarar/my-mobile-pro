@@ -40,6 +40,7 @@ export interface OffSearchProduct {
   last_modified_t?: unknown;
   selected_images?: unknown;
   images?: unknown;
+  categories_tags?: unknown;
 }
 
 /** Türkiye'de içindekiler fotoğrafı seçili ama içindekiler metni tamamlanmamış ürünler. */
@@ -47,12 +48,27 @@ export function buildOffLabelSearchUrl(pageSize: number, page = 1): string {
   const params = new URLSearchParams({
     countries_tags_en: 'turkey',
     states_tags: 'en:ingredients-to-be-completed,en:ingredients-photo-selected',
-    fields: 'code,product_name,brands,last_modified_t,selected_images,images',
+    fields: 'code,product_name,brands,last_modified_t,selected_images,images,categories_tags',
     page_size: String(pageSize),
     page: String(page),
     sort_by: 'code',
   });
   return `${OFF_SEARCH_ENDPOINT}?${params.toString()}`;
+}
+
+/**
+ * OFF kategori etiketlerine göre düz (aromasız) su mu? İlk partide suların
+ * hiçbirinde içindekiler listesi yoktu (yalnız mineral tablosu); okumaya
+ * değmez. Yalnız OFF'un YAPILANDIRILMIŞ kategorisine bakılır, ürün adından
+ * çıkarım yapılmaz. Aromalı sular (içindekiler listesi olabilir) atlanmaz.
+ * Kategori yoksa veya tanınmıyorsa false (ürün okunur).
+ */
+export function isOffPlainWater(product: OffSearchProduct): boolean {
+  const tags = Array.isArray(product.categories_tags)
+    ? product.categories_tags.filter((tag): tag is string => typeof tag === 'string')
+    : [];
+  if (!tags.includes('en:waters')) return false;
+  return !tags.some((tag) => /flavou?red|aromal/.test(tag));
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

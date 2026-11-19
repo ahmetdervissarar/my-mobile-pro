@@ -13,6 +13,7 @@ import {
   buildOffLabelSearchUrl,
   buildOffUserAgent,
   extractSelectedPhotos,
+  isOffPlainWater,
   localPhotoFileName,
   observedAtFor,
   offImageFolder,
@@ -29,8 +30,17 @@ const BASE = 'https://images.openfoodfacts.org/images/products/869/123/456/7890'
   assert.equal(url.searchParams.get('countries_tags_en'), 'turkey');
   assert.equal(url.searchParams.get('states_tags'), 'en:ingredients-to-be-completed,en:ingredients-photo-selected');
   assert.equal(url.searchParams.get('page_size'), '50');
+  assert.equal(url.searchParams.get('page'), '1');
   assert.ok(url.searchParams.get('fields')!.includes('selected_images'));
+  assert.ok(url.searchParams.get('fields')!.includes('categories_tags'));
+  assert.equal(new URL(buildOffLabelSearchUrl(50, 3)).searchParams.get('page'), '3');
 }
+
+// ── Düz su yalnız OFF kategorisinden anlaşılır (ad değil) ────────────────
+assert.equal(isOffPlainWater({ categories_tags: ['en:beverages', 'en:waters', 'en:spring-waters'] }), true);
+assert.equal(isOffPlainWater({ categories_tags: ['en:beverages', 'en:waters', 'en:flavoured-waters'] }), false, 'aromalı su okunmalı');
+assert.equal(isOffPlainWater({ product_name: 'Doğal Kaynak Suyu', categories_tags: [] }), false, 'addan çıkarım yok');
+assert.equal(isOffPlainWater({ product_name: 'Su' }), false, 'kategori yoksa okunur');
 
 // ── Tam boy adres ────────────────────────────────────────────────────────
 assert.equal(toFullSizeUrl(`${BASE}/ingredients_tr.12.400.jpg`), `${BASE}/ingredients_tr.12.full.jpg`);
