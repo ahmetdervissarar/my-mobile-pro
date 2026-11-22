@@ -221,6 +221,20 @@ Proje sahibi kararı: OFF fotoğraflarından gelen kozmetik, temizlik ve hijyen 
   uygun bir içerik maddesi kaynağı (ör. AB CosIng), ayrı ADR ve `legal-privacy-reviewer`
   incelemesi gerektirir; bir içerik maddesine "zararlı" demek ayrıca hassas bir iddiadır.
 
+### 15. İki okuma iki farklı modelle yapılır (2026-11-22)
+
+Proje sahibi kararı (maliyet): Okuma 1 daha hafif bir modelle (Sonnet), Okuma 2
+okuyucu dosyasındaki modelle (Opus) yapılır.
+
+- Gerekçe: 8 ürünlük denemede hafif model 7 üründe içindekiler ve besin değerlerini
+  Opus okumalarıyla aynı okudu; 1 üründe uzun bir listede iki harf hatası yaptı
+  ("tokeferil"). İki okuma farklı modellerden gelince aynı hatayı yapma olasılıkları
+  düşer ve karşılaştırma böyle bir hatayı "ayrışan alan" olarak onaylayana gösterir.
+- Her okumanın hangi modelle yapıldığı alt ajan dökümünden okunur ve adaya
+  `model` alanında kaydedilir; okunamazsa "bilinmiyor" yazılır.
+- Okuyucu talimatı ve kuralları iki model için de aynıdır. İki okumayı da hafif
+  modele indirmek ayrı karar gerektirir.
+
 ## Açık kararlar
 
 1. Profile dört zorunlu alerjenin (kereviz, hardal, sülfit, acı bakla) eklenmesi. Risk
