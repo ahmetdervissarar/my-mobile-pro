@@ -12,8 +12,9 @@ fotoğrafları okuyor; onun sonucunu görmeyeceksin, arama.
 
 `node scripts/label-pipeline/next-batch.mjs`
 
-- Çıktıda `DUR:` satırı varsa **dur**. Tekrar deneme, başka komut çalıştırma.
-  Yalnız "OFF şu an yanıt vermiyor, bugün iş yok" diye raporla.
+- Çıktıda `DUR:` satırı varsa **dur**. Bu çalıştırmada tekrar deneme, başka komut
+  çalıştırma. "OFF şu an yanıt vermiyor" diye raporla. Proje sahibi izin verdiyse
+  en erken **1 saat sonra** bu talimatı baştan uygulayabilirsin; daha sık deneme.
 - Çıktıda `HAZIR:` satırı varsa Adım 2'ye geç. (Bu komut gerekirse Open Food
   Facts'ten bir sayfa fotoğraf indirir; bu iş için ağ erişimi gerekir.)
 

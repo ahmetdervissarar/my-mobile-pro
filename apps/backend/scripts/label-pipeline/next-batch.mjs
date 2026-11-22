@@ -68,7 +68,7 @@ const stop = out.split('\n').find((l) => l.startsWith('DUR:'));
 const done = out.split('\n').find((l) => l.startsWith('Bitti:'));
 if (stop || !done || r.status !== 0) {
   console.log(stop ?? `DUR: indirme tamamlanmadı (çıkış kodu ${r.status}).`);
-  console.log('Bugün tekrar deneme; ana oturuma haber ver.');
+  console.log('Bu çalıştırmada tekrar deneme; en erken 1 saat sonra yeniden başlatılabilir.');
   process.exit(1);
 }
 const manifestPath = done.split('Manifest: ')[1]?.trim();
