@@ -251,6 +251,10 @@ okuyucu dosyasındaki modelle (Opus) yapılır.
   fotoğrafları gider; kişisel veya sağlık verisi gitmez. Kullanıcıların kendi
   çektiği fotoğraflar (intake) bu yoldan okunmaz; o ayrı karar gerektirir.
 - Araçlar: `apps/backend/scripts/label-pipeline/` (iş listesi, toplama, karşılaştırma).
+- İndirmeyi de Codex başlatır: `next-batch.mjs` OFF'tan sıradaki sayfayı bir kez indirir
+  (503 gibi bir hatada durur, tekrar denemez) ve Codex iş listesini yazar. Önceki parti
+  bitmeden yeni sayfa indirilmez. Sayfa sırası `data/label-store/off/ilerleme.json`
+  içindedir. Codex yalnız talimattaki iki komutu çalıştırabilir.
 
 ## Açık kararlar
 
