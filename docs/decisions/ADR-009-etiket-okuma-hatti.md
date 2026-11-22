@@ -235,6 +235,23 @@ okuyucu dosyasındaki modelle (Opus) yapılır.
 - Okuyucu talimatı ve kuralları iki model için de aynıdır. İki okumayı da hafif
   modele indirmek ayrı karar gerektirir.
 
+**Güncelleme (2026-11-22, proje sahibi kararı): Okuma 2 Codex'e geçti.**
+
+- Codex (OpenAI), proje sahibinin kendi aboneliğiyle, bilgisayarında çalışır. Önce
+  partideki bütün ürünleri okur; Claude (Sonnet) yalnız Codex'in içerik bulduğu
+  ürünleri okur. İki okuma iki ayrı şirketin modelinden gelir.
+- Gerekçe: 8 ürünlük denemede Codex besin değerlerini ve alerjen/eser cümlelerini
+  önceki iki okumayla aynı okudu; Sonnet'in hata yaptığı uzun listeyi doğru okudu;
+  emin olmadığı içindekiler listesini boş bıraktı.
+- Codex'e verilen talimat Claude okuyucusunun kurallarının aynısıdır
+  (`apps/backend/scripts/label-pipeline/OKUMA-TALIMATI.md`). Codex yalnız
+  `<parti>/reads-codex/<barkod>-2.json` dosyalarını yazar; biçimi bozuk dosya içe
+  aktarılmaz. Kayıtta model `codex (<model>)` olarak geçer.
+- Veri akışı: OpenAI'ye yalnız Open Food Facts'in herkese açık (CC BY-SA) etiket
+  fotoğrafları gider; kişisel veya sağlık verisi gitmez. Kullanıcıların kendi
+  çektiği fotoğraflar (intake) bu yoldan okunmaz; o ayrı karar gerektirir.
+- Araçlar: `apps/backend/scripts/label-pipeline/` (iş listesi, toplama, karşılaştırma).
+
 ## Açık kararlar
 
 1. Profile dört zorunlu alerjenin (kereviz, hardal, sülfit, acı bakla) eklenmesi. Risk
