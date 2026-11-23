@@ -5,9 +5,12 @@
 // 1. Son indirilen parti Codex tarafından henüz bitmediyse yeni sayfa İNDİRMEZ;
 //    eksik ürünler için iş listesini (data/label-store/codex-is.json) yeniden yazar.
 //    Aynı ürünler 2 denemede de okunamadıysa onları bırakır ve yeni sayfaya geçer.
-// 2. Bitti ise OFF'tan sıradaki sayfayı BİR KEZ indirir (tekrar deneme yok) ve
+// 2. Bitti ise OFF'tan sıradaki partiyi BİR KEZ indirir (tekrar deneme yok) ve
 //    bütün ürünler için Codex iş listesini yazar.
-// Sayfa sırası data/label-store/off/ilerleme.json dosyasında tutulur.
+//    data/label-store/off/kuyruk.json varsa (ADR-009 §16) ürün listesi OFF arama
+//    servisinden değil kuyruktan alınır; yalnız fotoğraflar indirilir.
+// Sayfa sırası data/label-store/off/ilerleme.json dosyasında tutulur
+// (arama: sonSayfa, kuyruk: kuyrukSayfa).
 //
 // Çıkış: "HAZIR: ..." (Codex okumaya başlayabilir) veya "DUR: ..." (bugün iş yok).
 import { spawnSync } from 'node:child_process';
@@ -57,10 +60,12 @@ if (progress.acikParti) {
   if (missing.length > 0) console.log(`Not: ${missing.length} ürün ${MAX_ATTEMPTS} denemede okunamadı, bırakıldı: ${missing.join(' ')}`);
 }
 
-// 2. Sıradaki sayfayı indir.
-const page = (progress.sonSayfa ?? 0) + 1;
+// 2. Sıradaki partiyi indir.
+const queueMode = existsSync(join(offDir, 'kuyruk.json'));
+const page = ((queueMode ? progress.kuyrukSayfa : progress.sonSayfa) ?? 0) + 1;
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const r = spawnSync(npm, ['run', '-s', 'label:fetch-off', '--', `--contact=${CONTACT}`, '--limit=50', `--page=${page}`], {
+const fetchArgs = ['run', '-s', 'label:fetch-off', '--', `--contact=${CONTACT}`, '--limit=50', `--page=${page}`, ...(queueMode ? ['--queue'] : [])];
+const r = spawnSync(npm, fetchArgs, {
   cwd: backendDir, encoding: 'utf8', shell: process.platform === 'win32',
 });
 const out = `${r.stdout ?? ''}\n${r.stderr ?? ''}`;
@@ -68,16 +73,20 @@ const stop = out.split('\n').find((l) => l.startsWith('DUR:'));
 const done = out.split('\n').find((l) => l.startsWith('Bitti:'));
 if (stop || !done || r.status !== 0) {
   console.log(stop ?? `DUR: indirme tamamlanmadı (çıkış kodu ${r.status}).`);
-  console.log('Bu çalıştırmada tekrar deneme; en erken 1 saat sonra yeniden başlatılabilir.');
+  if (stop?.includes('kuyrukta indirilecek ürün kalmadı')) {
+    console.log('Saatlik denemeyi bırak; ana oturuma haber ver.');
+  } else {
+    console.log('Bu çalıştırmada tekrar deneme; en erken 1 saat sonra yeniden başlatılabilir.');
+  }
   process.exit(1);
 }
 const manifestPath = done.split('Manifest: ')[1]?.trim();
 const batchDir = dirname(manifestPath);
 const batchName = batchDir.split(/[\\/]/).pop();
-writeJson(join(batchDir, 'durum.json'), { sayfa: page, indirildi: new Date().toISOString(), codexDeneme: 1 });
-progress.sonSayfa = page;
+writeJson(join(batchDir, 'durum.json'), { sayfa: page, kaynak: queueMode ? 'kuyruk' : 'arama', indirildi: new Date().toISOString(), codexDeneme: 1 });
+if (queueMode) progress.kuyrukSayfa = page; else progress.sonSayfa = page;
 progress.acikParti = batchName;
 writeJson(progressPath, progress);
 console.log(done);
 console.log(runJobs(batchDir));
-console.log(`HAZIR: ${batchName} (sayfa ${page}) indirildi; Codex okumaya başlayabilir.`);
+console.log(`HAZIR: ${batchName} (${queueMode ? 'kuyruk' : 'arama'} sayfası ${page}) indirildi; Codex okumaya başlayabilir.`);

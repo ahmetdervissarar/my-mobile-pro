@@ -31,6 +31,7 @@
     "smoke:label-review-routes": "tsx src/labelStore/reviewRoutes.smoke.ts",
     "label:import": "tsx src/labelStore/importReadsCli.ts",
     "label:fetch-off": "tsx src/labelStore/offPhotos/fetchOffLabelPhotosCli.ts",
+    "label:queue-from-dump": "tsx src/labelStore/offPhotos/buildLabelQueueCli.ts",
     "smoke:off-label-photos": "tsx src/labelStore/offPhotos/offLabelPhotos.smoke.ts",
     "validate:nutriscore-off": "tsx src/nutriScore/validateAgainstOff.ts",
     "import:off-tr": "tsx src/tools/offTurkey/importOffTurkey.ts",

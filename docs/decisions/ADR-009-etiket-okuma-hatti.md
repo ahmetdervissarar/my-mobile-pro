@@ -256,6 +256,28 @@ okuyucu dosyasındaki modelle (Opus) yapılır.
   bitmeden yeni sayfa indirilmez. Sayfa sırası `data/label-store/off/ilerleme.json`
   içindedir. Codex yalnız talimattaki iki komutu çalıştırabilir.
 
+### 16. Etiket adayları OFF dökümünden kuyruğa alınır (2026-11-23)
+
+OFF arama servisi sık sık hata veriyordu (HTTP 503) ve sayfa sayfa ilerleme saatlerce
+bekletiyordu. Aynı aday listesi OFF'un resmî toplu dökümünde de var.
+
+- `npm run label:queue-from-dump -- --dump=<yol>` dökümü bir kez okur; arama servisiyle aynı
+  süzgeçten (Türkiye, içindekiler fotoğrafı seçili, metni tamamlanmamış) geçen ürünleri
+  `data/label-store/off/kuyruk.json`'a yazar. Ağ çağrısı yapmaz. 2026-11-23 dökümünde geçerli
+  barkodlu 942 aday vardı: 185'i daha önce indirilmişti, 34'ü düz su; 723 ürün indirilecek.
+- `label:fetch-off -- --queue` arama isteği yapmaz; kuyruktan, daha önce hiçbir partide
+  indirilmemiş ve depoda adayı olmayan sıradaki 50 ürünü seçer. Fotoğraflar eskisi gibi
+  OFF görsel sunucusundan, kırpılmış seçili hâlleriyle, tek tek ve aralarında bekleyerek iner.
+  Klasör adı `<tarih>-k<sayfa>`.
+- `next-batch.mjs`, `kuyruk.json` varsa kuyruğu kullanır (`ilerleme.json` → `kuyrukSayfa`).
+  Codex talimatı aynı kalır. Kuyruk bitince "Saatlik denemeyi bırak" der.
+- 2026 dökümlerinde `images` alanı yeni biçimdedir (`images.selected.<bölüm>.<dil>`,
+  `images.uploaded`); fotoğraf seçimi iki biçimi de okur.
+- OFF çok sayıda görsel için AWS veri setini önerir; ancak orada fotoğraflar kırpılmamış ve
+  döndürülmemiş ham hâlleriyledir. Okuma doğruluğu için seçili fotoğraflar görsel sunucusundan
+  yavaş tempoda indirilir. OFF itiraz ederse AWS'ye geçilir.
+- Kuyruk, döküm tarihindeki durumu yansıtır; yeni döküm indirildiğinde yeniden üretilir.
+
 ## Açık kararlar
 
 1. Profile dört zorunlu alerjenin (kereviz, hardal, sülfit, acı bakla) eklenmesi. Risk

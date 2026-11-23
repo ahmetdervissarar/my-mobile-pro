@@ -111,8 +111,10 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 
 İşleyiş (sayfa başına):
 
-1. Codex, proje sahibinin talimatıyla sıradaki sayfayı indirir ve bütün ürünleri okur
-   (`OKUMA-TALIMATI.md`; OFF hata verirse saat başı yeniden dener).
+1. Codex, proje sahibinin talimatıyla sıradaki 50 ürünü indirir ve bütün ürünleri okur
+   (`OKUMA-TALIMATI.md`; OFF hata verirse saat başı yeniden dener). 2026-11-23'ten beri ürün
+   listesi OFF dökümünden üretilen kuyruktan gelir (ADR-009 §16); arama servisi beklenmez.
+   Kuyrukta indirilecek 723 ürün var (yaklaşık 15 parti, 1.164 fotoğraf).
 2. Claude yalnız Codex'in içerik bulduğu ürünleri okur, iki okumayı karşılaştırır,
    depoya aktarır ve emin olunmayan ürünleri teyit listesine yazar
    (`apps/backend/data/label-store/teyit-listesi.md`, yerel).

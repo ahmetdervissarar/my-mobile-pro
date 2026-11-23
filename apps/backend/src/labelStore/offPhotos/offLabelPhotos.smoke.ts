@@ -13,6 +13,7 @@ import {
   buildOffLabelSearchUrl,
   buildOffUserAgent,
   extractSelectedPhotos,
+  flattenOffImages,
   isOffPlainWater,
   localPhotoFileName,
   observedAtFor,
@@ -139,5 +140,34 @@ assert.equal(
 assert.equal(buildOffUserAgent('iletisim@rafskoru.com.tr'), 'RafSkoru/0.3 (etiket okuma pilotu; iletisim@rafskoru.com.tr)');
 assert.throws(() => buildOffUserAgent(''), /iletişim/);
 assert.throws(() => buildOffUserAgent('adres-yok'), /iletişim/);
+
+// ── Yeni images biçimi (2026 dökümleri: images.selected / images.uploaded) ──
+{
+  const photos = extractSelectedPhotos({
+    code: '8691234567890',
+    images: {
+      uploaded: { '1': { uploaded_t: '1700000000', sizes: { full: {} } }, '3': { uploaded_t: 1710000000, sizes: { full: {} } } },
+      selected: {
+        ingredients: {
+          ru: { rev: '8', imgid: '1', sizes: { full: {} } },
+          tr: { rev: '7', imgid: '1', sizes: { '400': {}, full: {} } },
+        },
+        nutrition: { en: { rev: 12, imgid: 3, sizes: { full: {} } } },
+        front: { tr: { rev: 2, imgid: 1, sizes: { full: {} } } },
+      },
+    },
+  });
+  assert.deepEqual(photos.map((x) => [x.slot, x.lang, x.url]), [
+    ['ingredients', 'tr', `${BASE}/ingredients_tr.7.full.jpg`],
+    ['nutrition', 'en', `${BASE}/nutrition_en.12.full.jpg`],
+  ]);
+  assert.equal(photos[0]!.uploadedAt, new Date(1700000000 * 1000).toISOString());
+  assert.equal(photos[1]!.uploadedAt, new Date(1710000000 * 1000).toISOString());
+  // Tam boyu olmayan yeni biçim kaydı atlanır (tahmin yok).
+  assert.deepEqual(extractSelectedPhotos({ code: '8691234567890', images: { selected: { ingredients: { tr: { rev: 4, imgid: 1, sizes: { '400': {} } } } } } }), []);
+  // Biçimsiz alanlar hata vermez.
+  assert.deepEqual(flattenOffImages({ selected: 'x', uploaded: null }), {});
+  assert.deepEqual(flattenOffImages(null), {});
+}
 
 console.log('OFF_LABEL_PHOTOS_SMOKE_OK');

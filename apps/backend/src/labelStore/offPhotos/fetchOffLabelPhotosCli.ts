@@ -4,6 +4,13 @@
  *
  * Kullanım:
  *   npm run label:fetch-off -- --contact=<proje e-postası> [--limit=50] [--page=1]
+ *   npm run label:fetch-off -- --contact=<proje e-postası> --queue [--limit=50] [--page=1]
+ *
+ * --queue (ADR-009 §16): ürün listesi OFF arama servisinden DEĞİL, dökümden üretilmiş
+ *   data/label-store/off/kuyruk.json dosyasından alınır (label:queue-from-dump). Daha önce
+ *   herhangi bir partide indirilmiş veya depoda adayı olan barkodlar atlanır; sıradaki
+ *   --limit kadar fotoğraflı ürün seçilir. Klasör adı <tarih>-k<sayfa> olur. Arama isteği yoktur;
+ *   yalnız fotoğraflar indirilir.
  *
  * Ne yapar:
  *   1. OFF aramasına TEK istek: Türkiye'de içindekiler fotoğrafı seçili ama
@@ -20,7 +27,7 @@
  * durur, o ana kadar indirileni manifest'e yazar ve hata koduyla çıkar;
  * yeniden denemeyi zorlamaz.
  */
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmdirSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -58,6 +65,48 @@ interface ManifestEntry {
   photos: { slot: string; ref: string; attribution: string; sourceUrl: string; localPath: string }[];
 }
 
+/** Daha önceki partilerin manifest'lerinde geçen barkodlar. */
+function downloadedBarcodes(offDir: string): Set<string> {
+  const done = new Set<string>();
+  if (!existsSync(offDir)) return done;
+  for (const entry of readdirSync(offDir, { withFileTypes: true })) {
+    const manifestPath = join(offDir, entry.name, 'manifest.json');
+    if (!entry.isDirectory() || !existsSync(manifestPath)) continue;
+    try {
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { barcode?: unknown }[];
+      for (const item of manifest) if (typeof item.barcode === 'string') done.add(item.barcode);
+    } catch {
+      console.error(`DUR: ${manifestPath} okunamadı; aynı ürünleri yeniden indirmemek için durduruldu.`);
+      process.exit(1);
+    }
+  }
+  return done;
+}
+
+/**
+ * Kuyruktan sıradaki ürünler: indirilmemiş, depoda adayı olmayan, düz su olmayan ve
+ * içindekiler fotoğrafı adresi kurulabilen ilk `limit` ürün (barkod sırasıyla).
+ */
+function selectFromQueue(offDir: string, limit: number): OffSearchProduct[] {
+  const queuePath = join(offDir, 'kuyruk.json');
+  if (!existsSync(queuePath)) {
+    console.error(`DUR: ${queuePath} yok; önce label:queue-from-dump çalıştırılmalı.`);
+    process.exit(1);
+  }
+  const queue = JSON.parse(readFileSync(queuePath, 'utf8')) as { products?: OffSearchProduct[] };
+  const done = downloadedBarcodes(offDir);
+  const picked: OffSearchProduct[] = [];
+  for (const product of queue.products ?? []) {
+    const barcode = typeof product.code === 'string' ? product.code : '';
+    if (!isValidGtin(barcode) || done.has(barcode)) continue;
+    if (listCandidatesForBarcode(barcode).length > 0 || isOffPlainWater(product)) continue;
+    if (!extractSelectedPhotos(product).some((photo) => photo.slot === 'ingredients')) continue;
+    picked.push(product);
+    if (picked.length >= limit) break;
+  }
+  return picked;
+}
+
 async function main(): Promise<void> {
   const contact = argValue('contact');
   if (!contact) {
@@ -69,22 +118,35 @@ async function main(): Promise<void> {
   const page = Math.max(Math.floor(Number(argValue('page') ?? 1)) || 1, 1);
   initLabelStoreDb(getLabelStoreDbPath());
 
-  const batchDir = join(DATA_DIR, 'label-store', 'off', `${new Date().toISOString().slice(0, 10)}-p${page}`);
+  const queueMode = process.argv.includes('--queue');
+  const offDir = join(DATA_DIR, 'label-store', 'off');
+  const batchDir = join(offDir, `${new Date().toISOString().slice(0, 10)}-${queueMode ? 'k' : 'p'}${page}`);
   mkdirSync(batchDir, { recursive: true });
   const manifestPath = join(batchDir, 'manifest.json');
   const manifest: ManifestEntry[] = [];
   const writeManifest = () => writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
 
-  // 1) Tek arama isteği.
-  const searchUrl = buildOffLabelSearchUrl(limit, page);
-  const searchResponse = await fetch(searchUrl, { headers: { 'User-Agent': userAgent } });
-  if (!searchResponse.ok) {
-    console.error(`DUR: OFF araması HTTP ${searchResponse.status} döndürdü.`);
-    process.exit(1);
+  // 1) Ürün listesi: kuyruk dosyası ya da tek arama isteği.
+  let products: OffSearchProduct[];
+  if (queueMode) {
+    products = selectFromQueue(offDir, limit);
+    console.log(`Kuyruk: bu partide ${products.length} ürün (sayfa ${page}).`);
+    if (products.length === 0) {
+      if (readdirSync(batchDir).length === 0) rmdirSync(batchDir); // yalnız boş klasör; dolu klasöre dokunulmaz
+      console.error('DUR: kuyrukta indirilecek ürün kalmadı. Yeni döküm gelince kuyruk yeniden üretilmeli.');
+      process.exit(1);
+    }
+  } else {
+    const searchUrl = buildOffLabelSearchUrl(limit, page);
+    const searchResponse = await fetch(searchUrl, { headers: { 'User-Agent': userAgent } });
+    if (!searchResponse.ok) {
+      console.error(`DUR: OFF araması HTTP ${searchResponse.status} döndürdü.`);
+      process.exit(1);
+    }
+    const body = (await searchResponse.json()) as { count?: number; products?: OffSearchProduct[] };
+    products = Array.isArray(body.products) ? body.products : [];
+    console.log(`Arama: OFF toplam ${body.count ?? '?'} ürün bildirdi; sayfa ${page}, bu partide ${products.length} ürün.`);
   }
-  const body = (await searchResponse.json()) as { count?: number; products?: OffSearchProduct[] };
-  const products = Array.isArray(body.products) ? body.products : [];
-  console.log(`Arama: OFF toplam ${body.count ?? '?'} ürün bildirdi; sayfa ${page}, bu partide ${products.length} ürün.`);
 
   // 2) Fotoğraflar birer birer.
   let downloaded = 0;

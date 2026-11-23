@@ -57,6 +57,30 @@ export function buildOffLabelSearchUrl(pageSize: number, page = 1): string {
 }
 
 /**
+ * Dökümden kuyruk (ADR-009 §16): arama servisiyle AYNI süzgeç — Türkiye ürünü,
+ * içindekiler fotoğrafı seçili, içindekiler metni tamamlanmamış.
+ */
+export function isOffLabelQueueCandidate(raw: Record<string, unknown>): boolean {
+  const countries = Array.isArray(raw.countries_tags) ? raw.countries_tags : [];
+  const states = Array.isArray(raw.states_tags) ? raw.states_tags : [];
+  return countries.includes('en:turkey')
+    && states.includes('en:ingredients-to-be-completed')
+    && states.includes('en:ingredients-photo-selected');
+}
+
+/** Kuyrukta saklanan alanlar: arama yanıtındaki alanların aynısı (selected_images dökümde yok). */
+export function toOffQueueProduct(raw: Record<string, unknown>): OffSearchProduct {
+  return {
+    code: raw.code,
+    product_name: raw.product_name,
+    brands: raw.brands,
+    last_modified_t: raw.last_modified_t,
+    categories_tags: raw.categories_tags,
+    images: raw.images,
+  };
+}
+
+/**
  * OFF kategori etiketlerine göre düz (aromasız) su mu? İlk partide suların
  * hiçbirinde içindekiler listesi yoktu (yalnız mineral tablosu); okumaya
  * değmez. Yalnız OFF'un YAPILANDIRILMIŞ kategorisine bakılır, ürün adından
@@ -93,15 +117,38 @@ export function offImageFolder(barcode: string): string | null {
   return match ? `${match[1]}/${match[2]}/${match[3]}/${match[4]}` : null;
 }
 
-function uploadedAtFor(images: unknown, slot: LabelPhotoSlot, lang: string): string | null {
-  if (!isPlainObject(images)) return null;
+/**
+ * OFF `images` alanının iki biçimini tek düz görünüme çevirir:
+ *   - eski: `images["<bölüm>_<dil>"] = {rev, imgid, sizes}`, ham yüklemeler `images["<imgid>"]`
+ *   - yeni (2026 dökümleri): `images.selected.<bölüm>.<dil>`, ham yüklemeler `images.uploaded.<imgid>`
+ * Eski biçimdeki kayıt varsa öncelik onundur.
+ */
+export function flattenOffImages(images: unknown): Record<string, unknown> {
+  if (!isPlainObject(images)) return {};
+  const flat: Record<string, unknown> = {};
+  if (isPlainObject(images.uploaded)) Object.assign(flat, images.uploaded);
+  if (isPlainObject(images.selected)) {
+    for (const [slot, byLang] of Object.entries(images.selected)) {
+      if (!isPlainObject(byLang)) continue;
+      for (const [lang, record] of Object.entries(byLang)) flat[`${slot}_${lang}`] = record;
+    }
+  }
+  for (const [key, value] of Object.entries(images)) {
+    if (key !== 'uploaded' && key !== 'selected') flat[key] = value;
+  }
+  return flat;
+}
+
+function uploadedAtFor(images: Record<string, unknown>, slot: LabelPhotoSlot, lang: string): string | null {
   const selected = images[`${slot}_${lang}`];
   if (!isPlainObject(selected)) return null;
   const imgid = selected.imgid;
   if (typeof imgid !== 'string' && typeof imgid !== 'number') return null;
   const raw = images[String(imgid)];
-  if (!isPlainObject(raw) || typeof raw.uploaded_t !== 'number' || raw.uploaded_t <= 0) return null;
-  return new Date(raw.uploaded_t * 1000).toISOString();
+  if (!isPlainObject(raw)) return null;
+  const t = typeof raw.uploaded_t === 'string' && /^[0-9]+$/.test(raw.uploaded_t) ? Number(raw.uploaded_t) : raw.uploaded_t;
+  if (typeof t !== 'number' || !Number.isFinite(t) || t <= 0) return null;
+  return new Date(t * 1000).toISOString();
 }
 
 /**
@@ -113,7 +160,7 @@ function uploadedAtFor(images: unknown, slot: LabelPhotoSlot, lang: string): str
 export function extractSelectedPhotos(product: OffSearchProduct): OffSelectedPhoto[] {
   const barcode = typeof product.code === 'string' ? product.code : '';
   const folder = offImageFolder(barcode);
-  const images = isPlainObject(product.images) ? product.images : {};
+  const images = flattenOffImages(product.images);
   const selected = isPlainObject(product.selected_images) ? product.selected_images : {};
 
   const photos: OffSelectedPhoto[] = [];
