@@ -72,7 +72,17 @@ const out = `${r.stdout ?? ''}\n${r.stderr ?? ''}`;
 const stop = out.split('\n').find((l) => l.startsWith('DUR:'));
 const done = out.split('\n').find((l) => l.startsWith('Bitti:'));
 if (stop || !done || r.status !== 0) {
-  console.log(stop ?? `DUR: indirme tamamlanmadı (çıkış kodu ${r.status}).`);
+  // Asıl hata metni ana oturum için dosyaya yazılır (Codex yalnız DUR satırını aktarır).
+  const tail = out.trim().split(/\r?\n/).slice(-30);
+  writeFileSync(join(offDir, 'son-hata.txt'), [
+    new Date().toISOString(),
+    `komut: ${npm} ${fetchArgs.join(' ')}`,
+    `çıkış: ${r.status}`,
+    `spawn hatası: ${r.error?.message ?? '-'}`,
+    '---',
+    ...tail,
+  ].join('\n') + '\n', 'utf8');
+  console.log(stop ?? `DUR: indirme tamamlanmadı (çıkış kodu ${r.status}). Ayrıntı: data/label-store/off/son-hata.txt`);
   if (stop?.includes('kuyrukta indirilecek ürün kalmadı')) {
     console.log('Saatlik denemeyi bırak; ana oturuma haber ver.');
   } else {
