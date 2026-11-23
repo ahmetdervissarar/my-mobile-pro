@@ -27,12 +27,12 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 
 | İş | Durum |
 |---|---|
-| ADR-009 yazıldı | tamam (commit bekliyor) |
+| ADR-009 yazıldı | tamam |
 | `feat/ui-clarity` kalite kapıları | yeşil: backend check, smoke (52 `_OK`), kodlama denetimi, mobil tsc, ifade denetimi, risk senaryoları 31/31 |
-| `feat/ui-clarity` → `main` birleştirme | proje sahibi onayı bekliyor |
-| OFF'ta etiket fotoğrafı sayımı | dış çağrı onayı bekliyor |
+| `feat/ui-clarity` → `main` birleştirme | tamam |
+| OFF'ta etiket fotoğrafı sayımı | tamam: OFF Türkiye'de etiket fotoğrafı olup metni olmayan yaklaşık 955 ürün |
 | Raf başı isabet ölçümü | proje sahibinin barkod listesi bekleniyor (aşağıya bakın) |
-| Etiket okuma denemesi (≤ 1 ABD doları) | API anahtarı ve paket onayı bekliyor |
+| Etiket okuma denemesi (≤ 1 ABD doları) | gerek kalmadı: okuma API'siz yapılıyor (masaüstü oturumu + Codex, ADR-009 §15) |
 
 ### Raf başı isabet ölçümü nasıl yapılır
 
@@ -51,7 +51,7 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 - İçe aktarıcıda görsel adresinin dökümdeki `images` alanından üretilmesi.
 - Sözleşme değişiklikleri mobil ve backend'de aynı değişiklikte; sözleşme incelemesi şart.
 
-### Faz 1 durumu (2026-11-19)
+### Faz 1 durumu (2026-11-22)
 
 | İş | Durum |
 |---|---|
@@ -63,7 +63,8 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 | 1.3d Arama, kategori, sepet ve alternatiflerin onaylı kayıtları kullanması | tamam |
 | 1.4a Okuma ajanı, karşılaştırma, içe aktarma + 2 ürünlük pilot | tamam |
 | 1.4b Alkollü içeceklerin puan kapsamı dışında tutulması (ADR-009 §11) | tamam |
-| 1.4c OFF etiket fotoğraflarının toplu okunması (yaklaşık 950 ürün) | ilk parti tamam: 49 üründen 42'si okundu (okunmayan 7: 5 su, 2 hijyen ürünü); depoda pilot dâhil 43 aday onay bekliyor; kalan parti sırada |
+| 1.4c OFF etiket fotoğraflarının toplu okunması (yaklaşık 950 ürün) | sürüyor: 4 sayfa (yaklaşık 180 ürün) okundu, depoda 154 aday onay bekliyor; 5. sayfadan itibaren Codex düzeniyle (aşağıda Faz 2) |
+| 1.4d Okuma maliyeti: Okuma 1 hafif model, Okuma 2 Codex; köken kaydı (ADR-009 §15) | tamam: araçlar `apps/backend/scripts/label-pipeline/` |
 | 1.5a–d Onay ekranı: uçlar, yönetici sayfasında "Etiket onayı" sekmesi, karşılaştırma düzeltmesi, gönüllü aracının onaylı kayda bakması | tamam |
 | 1.5 ek: içindekiler metinleri farklıysa alerjen kontrolünün ikisine bakması (ADR-009 §12) | tamam |
 | 1.5e OFF'ta olmayan onaylı ürünlerin aramada çıkması (sözleşme değişikliği; mobil+backend) | bekliyor (plan + onay) |
@@ -81,7 +82,8 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 - **Onaylı etiketteki alerjen ve eser ifadeleri henüz uyarıya dönüşmüyor.** Örn. elma suyundaki
   "eser miktarda süt içerebilir". Alerjen kapısına dokunduğu için ayrı inceleme ve onay ister.
 - **Okuma kullanımı (2026-11-18 ölçümü):** gerçek `label-reader` ajanıyla okuma başına yaklaşık
-  18,6 bin token, yaklaşık 22 saniye (3 fotoğraflı ürün). Toplu okuma günlük partilerle yapılacak.
+  18,6 bin token, yaklaşık 22 saniye (3 fotoğraflı ürün). Parti başına yaklaşık 85 okuma
+  aboneliği hızlı tükettiği için 2026-11-22'de Okuma 2 Codex'e taşındı (ADR-009 §15).
 
 - **OFF'ta hiç olmayan onaylı ürünler aramada çıkmıyor.** Arama ve kategori listeleri
   yalnız OFF kataloğundaki ürünleri tarıyor; OFF'ta olmayan bir ürün onaylansa bile yalnız
@@ -96,6 +98,32 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 - OFF'taki etiket fotoğrafları masaüstü oturumunda toplu okunur (API ücreti yok).
 - Proje sahibinin ve varsa gönüllülerin fotoğrafları aynı kuyruğa girer.
 - Onay kuyruğu eritilir; onaylanan kayıtlarda alerjen değerlendirmesi açılır.
+
+### Faz 2 durumu (2026-11-22)
+
+| Gösterge | Değer |
+|---|---|
+| Okunan OFF sayfası | 4 / yaklaşık 20 (sayfa başı 50 ürün) |
+| Onay bekleyen aday | 154 (olduğu gibi onaylanabilir görünen: yaklaşık 57) |
+| Onaylanmış (doğrulanmış) kayıt | 0 |
+| Teyit listesi (elle fotoğraflanacak) | yaklaşık 110 ürün: emin olunmayan değer, okunamayan içindekiler, yanlış fotoğraf |
+| Okunabilir içerik oranı | sayfa başına %82–85 |
+
+İşleyiş (sayfa başına):
+
+1. Codex, proje sahibinin talimatıyla sıradaki sayfayı indirir ve bütün ürünleri okur
+   (`OKUMA-TALIMATI.md`; OFF hata verirse saat başı yeniden dener).
+2. Claude yalnız Codex'in içerik bulduğu ürünleri okur, iki okumayı karşılaştırır,
+   depoya aktarır ve emin olunmayan ürünleri teyit listesine yazar
+   (`apps/backend/data/label-store/teyit-listesi.md`, yerel).
+3. Proje sahibi onay ekranında onaylar; teyit listesindekileri marketten fotoğraflar.
+
+**Darboğaz onay.** Uygulamada "doğrulanmış" görünmek için kayıt onaylı olmalı. Günde
+15–20 onayla bekleyen kuyruk birkaç günde erir. Teyit listesindekiler onaylanmaz; yeni
+fotoğraf gelince yeniden okunur.
+
+**Yerelde kalanlar:** onay deposu, fotoğraflar ve teyit listesi yalnız proje sahibinin
+bilgisayarında (git'e girmez). Düzenli yedek henüz kurulmadı.
 
 ## Faz 3 — Beta sertleştirme (yaklaşık 1 hafta)
 
