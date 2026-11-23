@@ -34,6 +34,11 @@ Her ürün için:
    `<outputDir>/<barcode>-2.json`
 3. Sonraki ürüne geç.
 
+**Listedeki bütün ürünleri bitirmeden durma.** Birkaç ürün okuyup ara rapor verme; her
+ürünün dosyasını yazdıktan sonra hemen sıradakine geç. Yalnız gerçekten devam edemiyorsan
+(ör. süre veya bağlam sınırı) dur ve kaç ürünün kaldığını raporla; kalanlar bir sonraki
+çalıştırmada iş listesine yeniden girer.
+
 ## Kesin kurallar
 
 1. **Yalnız görüneni yaz.** Etikette yazmayan hiçbir şeyi ekleme. Ürün adından,

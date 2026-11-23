@@ -50,7 +50,12 @@ if (progress.acikParti) {
   const state = existsSync(statePath) ? readJson(statePath) : { codexDeneme: 0 };
   const manifest = readJson(join(batchDir, 'manifest.json'));
   const missing = manifest.map((e) => e.barcode).filter((bc) => !existsSync(join(batchDir, 'reads-codex', `${bc}-2.json`)));
-  if (onlyDownload && missing.length > 0 && state.codexDeneme < MAX_ATTEMPTS) {
+  // Deneme sayacı yalnız İLERLEMESİZ çalıştırmaları sayar: Codex önceki iş listesinden beri
+  // yeni ürün okuduysa sayaç sıfırlanır (Codex bir çalıştırmada partinin bir kısmını okuyabiliyor).
+  const readCount = manifest.length - missing.length;
+  if (readCount > (state.codexOkunanSon ?? 0)) state.codexDeneme = 0;
+  state.codexOkunanSon = readCount;
+  if (onlyDownload && missing.length > 0) {
     console.log(`DUR: ${progress.acikParti} partisinde Codex okuması eksik ${missing.length} ürün var; önce Codex bitirmeli. Yeni parti indirilmedi.`);
     process.exit(1);
   }
