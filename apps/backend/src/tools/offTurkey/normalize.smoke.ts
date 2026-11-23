@@ -77,3 +77,55 @@ console.log('offTurkey normalize smoke: 5 senaryo geçti');
   }
 }
 console.log('off-turkey-normalize image_url_OK');
+
+// 7) Yeni besin şeması (nutrition.aggregated_set): eski nutriments boşsa okunur, fail-closed.
+{
+  const set = (over: Record<string, unknown> = {}, nutrients: Record<string, unknown> = {}) => ({
+    aggregated_set: {
+      preparation: 'as_sold', per: '100g',
+      nutrients: {
+        'energy-kcal': { value: 405, source: 'packaging', source_per: '100g', unit: 'kcal' },
+        sugars: { value: 0.7, source: 'packaging', source_per: '100g', unit: 'g' },
+        'saturated-fat': { value: 2.1, source: 'manufacturer', source_per: '100g', unit: 'g' },
+        salt: { value: 1.2, source: 'packaging', source_per: '100g', unit: 'g' },
+        fiber: { value: 0, source: 'estimate', modifier: '~', source_per: '100g', unit: 'g' },
+        proteins: { value: 0.5, source: 'packaging', modifier: '<', source_per: '100g', unit: 'g' },
+        fat: { value: 9.5, source: 'database', source_per: '100g', unit: 'g' },
+        ...nutrients,
+      },
+      ...over,
+    },
+  });
+  const v2 = normalizeOffProduct({ code: '8690504000013', nutriments: {}, nutrition: set() }, at)!;
+  assert.equal(v2.nutrition100g.energyKcal, 405);
+  assert.equal(v2.nutrition100g.sugars, 0.7);
+  assert.equal(v2.nutrition100g.saturatedFat, 2.1);
+  assert.equal(v2.nutrition100g.salt, 1.2);
+  assert.equal(v2.nutrition100g.fiber, null); // OFF tahmini alınmaz
+  assert.equal(v2.nutrition100g.proteins, null); // "<" işaretli değer alınmaz
+  assert.equal(v2.nutrition100g.fat, null); // etiket beyanı olmayan kaynak alınmaz
+  assert.equal(v2.nutrition100g.carbohydrates, null); // yok → null
+  assert.ok(!v2.missingFields.some((f) => f.startsWith('nutrition.')));
+
+  // Eski alan doluysa o kullanılır (0 da geçerli bir değerdir).
+  const both = normalizeOffProduct({ code: '8690504000013', nutriments: { 'sugars_100g': 0 }, nutrition: set() }, at)!;
+  assert.equal(both.nutrition100g.sugars, 0);
+  assert.equal(both.nutrition100g.salt, 1.2);
+
+  // Hazırlanmış ürün, porsiyon başı veya sütunu farklı değer → hiçbiri alınmaz.
+  for (const bad of [set({ preparation: 'prepared' }), set({ per: 'serving' }), set({}, { salt: { value: 1.2, source: 'packaging', source_per: 'serving' } })]) {
+    const r = normalizeOffProduct({ code: '8690504000013', nutrition: bad }, at)!;
+    const salt = r.nutrition100g.salt;
+    if ((bad as any).aggregated_set.preparation !== 'as_sold' || (bad as any).aggregated_set.per !== '100g') {
+      assert.deepEqual(Object.values(r.nutrition100g), Array(8).fill(null));
+    } else {
+      assert.equal(salt, null);
+    }
+  }
+  // Biçimsiz veri → null, hata yok.
+  for (const junk of [null, 'x', { aggregated_set: null }, { aggregated_set: { preparation: 'as_sold', per: '100g', nutrients: [] } }]) {
+    const r = normalizeOffProduct({ code: '8690504000013', nutrition: junk }, at)!;
+    assert.equal(r.nutrition100g.energyKcal, null);
+  }
+}
+console.log('off-turkey-normalize new_nutrition_schema_OK');

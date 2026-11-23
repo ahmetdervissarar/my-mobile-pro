@@ -71,6 +71,39 @@ const mapAllergens = (tags: string[]): AllergenKey[] =>
   [...new Set(tags.map((t) => OFF_ALLERGEN_TO_PROFILE_KEY[t]).filter((k): k is AllergenKey => Boolean(k)))];
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
+/** Yeni şemadaki besin adları (nutrition.aggregated_set.nutrients). */
+const NEW_SCHEMA_NUTRIENTS: Record<NutrientKey, string> = {
+  energyKcal: 'energy-kcal', fat: 'fat', saturatedFat: 'saturated-fat',
+  carbohydrates: 'carbohydrates', sugars: 'sugars', fiber: 'fiber',
+  proteins: 'proteins', salt: 'salt',
+};
+/** Yalnız etiket beyanı sayılan kaynaklar; OFF tahmini ("estimate") ve diğerleri alınmaz. */
+const DECLARED_SOURCES = new Set(['packaging', 'manufacturer']);
+
+/**
+ * OFF'un yeni besin şeması (2026 dökümleri, schema_version 1004): eski `nutriments`
+ * boş kalabilir; değerler `nutrition.aggregated_set.nutrients` altındadır. Fail-closed:
+ * yalnız satıldığı hâliyle (as_sold), 100 g / 100 ml başına, ambalaj veya üretici
+ * kaynaklı ve "~" / "<" gibi işaret taşımayan değerler alınır; gerisi null kalır.
+ */
+export function nutrientsFromAggregatedSet(nutrition: unknown): Record<NutrientKey, number | null> {
+  const empty = Object.fromEntries((Object.keys(NUTRIENTS) as NutrientKey[]).map((k) => [k, null])) as Record<NutrientKey, number | null>;
+  if (!isRecord(nutrition) || !isRecord(nutrition.aggregated_set)) return empty;
+  const set = nutrition.aggregated_set;
+  if (set.preparation !== 'as_sold' || (set.per !== '100g' && set.per !== '100ml') || !isRecord(set.nutrients)) return empty;
+  const nutrients = set.nutrients;
+  const out = { ...empty };
+  for (const k of Object.keys(NEW_SCHEMA_NUTRIENTS) as NutrientKey[]) {
+    const entry = nutrients[NEW_SCHEMA_NUTRIENTS[k]];
+    if (!isRecord(entry)) continue;
+    if (typeof entry.source !== 'string' || !DECLARED_SOURCES.has(entry.source)) continue;
+    if (entry.modifier !== undefined && entry.modifier !== null && entry.modifier !== '') continue;
+    if (entry.source_per !== undefined && entry.source_per !== set.per) continue;
+    out[k] = num(entry.value);
+  }
+  return out;
+}
+
 /**
  * Ön yüz fotoğrafının adresi. API `image_front_url` verir; toplu dökümde bu alan
  * YOKTUR, adres `images["front_<dil>"]` kaydından (rev + boyut) OFF'un görsel adresi
@@ -190,8 +223,9 @@ export function normalizeOffProduct(raw: Record<string, unknown>, fetchedAt: str
   const novaGroup = nova && [1, 2, 3, 4].includes(nova) ? (nova as 1 | 2 | 3 | 4) : null;
 
   const n = (raw.nutriments ?? {}) as Record<string, unknown>;
+  const fromNewSchema = nutrientsFromAggregatedSet(raw.nutrition);
   const nutrition100g = Object.fromEntries(
-    (Object.keys(NUTRIENTS) as NutrientKey[]).map((k) => [k, num(n[NUTRIENTS[k]])]),
+    (Object.keys(NUTRIENTS) as NutrientKey[]).map((k) => [k, num(n[NUTRIENTS[k]]) ?? fromNewSchema[k]]),
   ) as Record<NutrientKey, number | null>;
 
   const lm = num(raw.last_modified_t);

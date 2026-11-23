@@ -69,7 +69,7 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 | 1.5 ek: içindekiler metinleri farklıysa alerjen kontrolünün ikisine bakması (ADR-009 §12) | tamam |
 | 1.5e OFF'ta olmayan onaylı ürünlerin aramada çıkması (sözleşme değişikliği; mobil+backend) | bekliyor (plan + onay) |
 | 1.5f "Gıda dışı ürün" türü: kabul edilir, puanlanmaz (ADR-009 §14) | tamam |
-| 1.6 Görsel adresi düzeltmesi | kod tamam: aktarıcı adresi dökümdeki `images` kaydından üretiyor; ürün kartında OFF görsel atfı. Katalog, yeni OFF dökümü (13,8 GB) indirilince yeniden üretilecek |
+| 1.6 Görsel adresi düzeltmesi | tamam (2026-11-23): katalog yeni OFF dökümünden üretildi; 12.027 ürün, 9.748'inde görsel; ürün kartında OFF görsel atfı. Aktarıcı OFF'un yeni besin şemasını da okuyor (kalori bilgili ürün 2.546 → 5.536) |
 
 ### Unutulmaması gerekenler
 
