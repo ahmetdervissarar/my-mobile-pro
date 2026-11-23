@@ -46,9 +46,15 @@ for (const entry of manifest) {
   try { c = JSON.parse(readFileSync(cPath, 'utf8')); } catch { skipped.push(`${bc}: Codex dosyası okunamadı`); continue; }
   const f = c.fields ?? {};
   if (!f.ingredientsText && !hasNumber(f.nutritionPer100)) { skipped.push(`${bc}: okunacak içerik yok`); continue; }
-  if (c.barcodeDigits && c.barcodeDigits !== bc) { skipped.push(`${bc}: fotoğraftaki barkod farklı (${c.barcodeDigits})`); continue; }
+  if (c.barcodeDigits && !sameBarcode(c.barcodeDigits, bc)) { skipped.push(`${bc}: fotoğraftaki barkod farklı (${c.barcodeDigits})`); continue; }
   if (existsSync(join(batchDir, 'reads', `${bc}-1.json`))) { skipped.push(`${bc}: Okuma 1 zaten var`); continue; }
   products.push({ barcode: bc, photos });
+}
+
+// Baştaki sıfırlar yok sayılır: UPC-A (12 hane) ile aynı barkodun EAN-13 yazımı (başta 0) aynı üründür.
+function sameBarcode(a, b) {
+  const norm = (v) => String(v).replace(/D/g, '').replace(/^0+/, '');
+  return norm(a) !== '' && norm(a) === norm(b);
 }
 
 const jobPath = join(storeDir, mode === 'codex' ? 'codex-is.json' : 'claude-is.json');
