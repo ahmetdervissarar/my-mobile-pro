@@ -48,13 +48,30 @@ async function* fromApi(): AsyncGenerator<Record<string, unknown>> {
 }
 
 async function* fromDump(path: string): AsyncGenerator<Record<string, unknown>> {
-  const rl = createInterface({ input: createReadStream(path).pipe(createGunzip()), crlfDelay: Infinity });
-  for await (const line of rl) {
-    if (!line.includes('en:turkey')) continue; // hızlı ön eleme
-    try {
-      const p = JSON.parse(line) as Record<string, unknown>;
-      if (Array.isArray(p.countries_tags) && p.countries_tags.includes('en:turkey')) yield p;
-    } catch { /* bozuk satır atlanır */ }
+  // Yarım inmiş/bozuk döküm: gunzip hatası pipe() ile readline'a geçmez ve döngü sessizce
+  // biterdi (eksik katalog eskisinin yerine geçerdi). Hata yakalanır, döngü sonunda fırlatılır;
+  // böylece finalizeImportOutput'a hiç varılmaz ve mevcut products.jsonl dokunulmaz.
+  const failure: { error: Error | null } = { error: null };
+  const source = createReadStream(path);
+  const gunzip = createGunzip();
+  const rl = createInterface({ input: source.pipe(gunzip), crlfDelay: Infinity });
+  const onError = (e: Error) => { failure.error ??= e; rl.close(); };
+  source.on('error', onError);
+  gunzip.on('error', onError);
+  try {
+    for await (const line of rl) {
+      if (failure.error) break;
+      if (!line.includes('en:turkey')) continue; // hızlı ön eleme
+      try {
+        const p = JSON.parse(line) as Record<string, unknown>;
+        if (Array.isArray(p.countries_tags) && p.countries_tags.includes('en:turkey')) yield p;
+      } catch { /* bozuk satır atlanır */ }
+    }
+  } catch (e) {
+    failure.error ??= e as Error;
+  }
+  if (failure.error) {
+    throw new Error(`Döküm dosyası sonuna kadar okunamadı (yarım inmiş veya bozuk olabilir): ${failure.error.message}`);
   }
 }
 
