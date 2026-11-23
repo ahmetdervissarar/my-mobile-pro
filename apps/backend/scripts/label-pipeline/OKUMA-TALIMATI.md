@@ -50,7 +50,10 @@ Her ürün için:
    `ingredientsText` tamamen `null` olur. Eksik bir liste, alerjen içeren bir
    bileşenin gözden kaçmasına yol açabilir.
 4. **Düzeltme yok.** Yazım hatalarını, büyük/küçük harfi, Türkçe karakterleri,
-   parantezleri ve yüzdeleri etikette olduğu gibi bırak.
+   parantezleri ve yüzdeleri etikette olduğu gibi bırak. **Noktalama ekleme:** etikette
+   olmayan virgül, nokta veya ayraç koyma. Liste satır satır ya da madde işaretiyle
+   yazılmışsa maddeleri etiketteki ayraçla (ör. "•", "/") veya ayraç yoksa tek boşlukla
+   ayır ve bunu `notes`'ta belirt.
 5. **Fotoğrafta hiç bulunmayan alan** (ör. besin tablosu çekilmemişse) `null` olur
    ama `unreadableFields`'e GİRMEZ.
 6. **Fotoğrafı açamıyorsan veya göremiyorsan o ürün için dosya YAZMA.** Bunu en

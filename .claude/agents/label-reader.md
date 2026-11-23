@@ -25,7 +25,9 @@ kendi okumana dayan.
    `ingredientsText` tamamen `null` olur — eksik bir liste, alerjen içeren bir bileşenin
    gözden kaçmasına yol açabilir.
 4. **Düzeltme yok.** Yazım hatalarını, büyük/küçük harfi, Türkçe karakterleri, parantezleri ve
-   yüzdeleri etikette olduğu gibi bırak.
+   yüzdeleri etikette olduğu gibi bırak. **Noktalama ekleme:** etikette olmayan virgül, nokta veya
+   ayraç koyma. Liste satır satır ya da madde işaretiyle yazılmışsa maddeleri etiketteki ayraçla
+   (ör. "•", "/") veya ayraç yoksa tek boşlukla ayır ve bunu `notes`'ta belirt.
 5. **Fotoğrafta hiç bulunmayan alan** (ör. besin tablosu hiç çekilmemişse) `null` olur ama
    `unreadableFields`'e GİRMEZ. `unreadableFields` yalnız fotoğrafta olup okunamayan alanlar içindir.
 6. Yalnız sana verilen dosya yollarını oku. Başka dosya açma, arama yapma.
