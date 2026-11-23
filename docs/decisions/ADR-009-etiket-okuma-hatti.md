@@ -277,6 +277,10 @@ bekletiyordu. Aynı aday listesi OFF'un resmî toplu dökümünde de var.
   döndürülmemiş ham hâlleriyledir. Okuma doğruluğu için seçili fotoğraflar görsel sunucusundan
   yavaş tempoda indirilir. OFF itiraz ederse AWS'ye geçilir.
 - Kuyruk, döküm tarihindeki durumu yansıtır; yeni döküm indirildiğinde yeniden üretilir.
+- İndirmeyi ana oturum yapar: `node scripts/label-pipeline/next-batch.mjs --yalniz-indir`.
+  Codex'in Windows korumalı ortamında tsx açılışta kullanıcı bilgisini (os.userInfo) alamıyor ve
+  çöküyor (2026-11-23, `son-hata.txt`). Codex yalnız okur; talimatındaki Adım 1 açık partiyi
+  bulup iş listesini yazar, indirmez.
 
 ## Açık kararlar
 

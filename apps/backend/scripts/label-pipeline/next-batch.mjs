@@ -1,6 +1,10 @@
 // RafSkoru — Codex için sıradaki etiket partisi (ADR-009 §15).
 //
-// Kullanım (apps/backend içinden):  node scripts/label-pipeline/next-batch.mjs
+// Kullanım (apps/backend içinden):  node scripts/label-pipeline/next-batch.mjs [--yalniz-indir]
+//
+// --yalniz-indir: ana oturum indirir, Codex sonra okur (Codex'in ortamında tsx çalışmıyor,
+//   2026-11-23). Açık partide Codex okuması eksikse indirmez ve deneme sayacına dokunmaz;
+//   yeni partinin deneme sayacını 0'dan başlatır (ilk Codex çalıştırması 1 olur).
 //
 // 1. Son indirilen parti Codex tarafından henüz bitmediyse yeni sayfa İNDİRMEZ;
 //    eksik ürünler için iş listesini (data/label-store/codex-is.json) yeniden yazar.
@@ -23,6 +27,7 @@ const offDir = join(backendDir, 'data', 'label-store', 'off');
 const progressPath = join(offDir, 'ilerleme.json');
 const CONTACT = 'rafskoru.iletisim@gmail.com';
 const MAX_ATTEMPTS = 2;
+const onlyDownload = process.argv.includes('--yalniz-indir');
 
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const writeJson = (p, v) => writeFileSync(p, JSON.stringify(v, null, 2) + '\n', 'utf8');
@@ -45,6 +50,10 @@ if (progress.acikParti) {
   const state = existsSync(statePath) ? readJson(statePath) : { codexDeneme: 0 };
   const manifest = readJson(join(batchDir, 'manifest.json'));
   const missing = manifest.map((e) => e.barcode).filter((bc) => !existsSync(join(batchDir, 'reads-codex', `${bc}-2.json`)));
+  if (onlyDownload && missing.length > 0 && state.codexDeneme < MAX_ATTEMPTS) {
+    console.log(`DUR: ${progress.acikParti} partisinde Codex okuması eksik ${missing.length} ürün var; önce Codex bitirmeli. Yeni parti indirilmedi.`);
+    process.exit(1);
+  }
   if (missing.length > 0 && state.codexDeneme < MAX_ATTEMPTS) {
     state.codexDeneme += 1;
     writeJson(statePath, state);
@@ -93,7 +102,7 @@ if (stop || !done || r.status !== 0) {
 const manifestPath = done.split('Manifest: ')[1]?.trim();
 const batchDir = dirname(manifestPath);
 const batchName = batchDir.split(/[\\/]/).pop();
-writeJson(join(batchDir, 'durum.json'), { sayfa: page, kaynak: queueMode ? 'kuyruk' : 'arama', indirildi: new Date().toISOString(), codexDeneme: 1 });
+writeJson(join(batchDir, 'durum.json'), { sayfa: page, kaynak: queueMode ? 'kuyruk' : 'arama', indiren: onlyDownload ? 'ana-oturum' : 'codex', indirildi: new Date().toISOString(), codexDeneme: onlyDownload ? 0 : 1 });
 if (queueMode) progress.kuyrukSayfa = page; else progress.sonSayfa = page;
 progress.acikParti = batchName;
 writeJson(progressPath, progress);
