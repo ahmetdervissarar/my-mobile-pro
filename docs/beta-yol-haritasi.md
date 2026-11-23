@@ -69,7 +69,7 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 | 1.5 ek: içindekiler metinleri farklıysa alerjen kontrolünün ikisine bakması (ADR-009 §12) | tamam |
 | 1.5e OFF'ta olmayan onaylı ürünlerin aramada çıkması (sözleşme değişikliği; mobil+backend) | bekliyor (plan + onay) |
 | 1.5f "Gıda dışı ürün" türü: kabul edilir, puanlanmaz (ADR-009 §14) | tamam |
-| 1.6 Görsel adresi düzeltmesi | bekliyor |
+| 1.6 Görsel adresi düzeltmesi | kod tamam: aktarıcı adresi dökümdeki `images` kaydından üretiyor; ürün kartında OFF görsel atfı. Katalog, yeni OFF dökümü (13,8 GB) indirilince yeniden üretilecek |
 
 ### Unutulmaması gerekenler
 
@@ -123,7 +123,9 @@ sınırlanmaz. Fiyat beta kapsamında değildir (ADR-008; konu ertelendi).
 fotoğraf gelince yeniden okunur.
 
 **Yerelde kalanlar:** onay deposu, fotoğraflar ve teyit listesi yalnız proje sahibinin
-bilgisayarında (git'e girmez). Düzenli yedek henüz kurulmadı.
+bilgisayarında (git'e girmez). Yedek: `node scripts/label-pipeline/backup.mjs` (apps/backend
+içinden) proje dışındaki `RafSkoru-yedek` klasörüne tarihli kopya alır; her parti aktarımından
+sonra çalıştırılır. Aynı diskte durduğu için bulut veya harici kopya ayrıca gerekir.
 
 ## Faz 3 — Beta sertleştirme (yaklaşık 1 hafta)
 
@@ -136,7 +138,11 @@ bilgisayarında (git'e girmez). Düzenli yedek henüz kurulmadı.
 - Tasarım geçişi: ana ekran, ürün sonucu, "kayıtlı değil / eksik" akışı
   (`docs/design/prototip-v3.html` referans). Fiyat arayüzü betada gizlenir.
 - Profilde eksik dört zorunlu alerjen (ADR-009 açık karar 1).
-- Bilgilendirme/rıza metinleri (`legal-privacy-reviewer` incelemesi).
+- Bilgilendirme/rıza metinleri (`legal-privacy-reviewer` incelemesi). 2026-11-23 görsel incelemesinden
+  kalanlar: ürün görselleri telefona doğrudan OFF sunucusundan (yurt dışı) yüklenir ve IP adresi
+  oraya iletilir; aydınlatma metnine bir cümle eklenmeli ve KVKK uzmanına teyit ettirilmeli.
+  Hakkında ekranına toplu atıf (OFF verisi ODbL, görseller CC BY-SA 3.0). Görseller kırpılmaz,
+  üstüne yazı bindirilmez. OFF'a görsel sunucusu kullanımı (doğrudan bağlantı, önbellek) için yazılı soru.
 
 ## Faz 4 — Kapalı beta
 

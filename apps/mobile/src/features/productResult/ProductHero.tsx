@@ -1,6 +1,7 @@
-import { Image, Text, View } from 'react-native';
+import { Image, Linking, Text, View } from 'react-native';
 
 import { cachedImageSource } from '../../ui/cachedImageSource';
+import { offImageAttribution } from '../../ui/offImageAttribution';
 import { radii, spacing, typography, useTheme } from '../../ui/theme';
 
 export interface ProductHeroProps {
@@ -12,6 +13,7 @@ export interface ProductHeroProps {
 
 export function ProductHero({ name, barcode, imageUrl, isPhotoSearch }: ProductHeroProps) {
   const { colors } = useTheme();
+  const attribution = offImageAttribution(imageUrl, barcode);
 
   return (
     <View style={{ gap: spacing.md }}>
@@ -45,6 +47,18 @@ export function ProductHero({ name, barcode, imageUrl, isPhotoSearch }: ProductH
           <Text style={{ ...typography.body, color: colors.muted }}>Barkod: {barcode || 'bilinmiyor'}</Text>
         </View>
       </View>
+
+      {attribution ? (
+        <Text
+          accessibilityRole="link"
+          onPress={() => {
+            Linking.openURL(attribution.url).catch(() => undefined);
+          }}
+          style={{ fontSize: 11, color: colors.muted, textDecorationLine: 'underline' }}
+        >
+          {attribution.text}
+        </Text>
+      ) : null}
 
       {isPhotoSearch ? (
         <View

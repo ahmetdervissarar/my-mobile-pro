@@ -3,6 +3,7 @@
 // Kişisel alerji profili burada YOKTUR; profil-ürün eşleşmesi cihazda yapılır.
 
 import { OFF_ALLERGEN_TO_PROFILE_KEY } from './offAllergenMap.js';
+import { offImageFolder } from '../../labelStore/offPhotos/offLabelPhotos.js';
 import type { AllergenKey } from './allergenKey.js';
 
 export type { AllergenKey } from './allergenKey.js';
@@ -68,6 +69,45 @@ const num = (v: unknown): number | null => {
 };
 const mapAllergens = (tags: string[]): AllergenKey[] =>
   [...new Set(tags.map((t) => OFF_ALLERGEN_TO_PROFILE_KEY[t]).filter((k): k is AllergenKey => Boolean(k)))];
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/**
+ * Ön yüz fotoğrafının adresi. API `image_front_url` verir; toplu dökümde bu alan
+ * YOKTUR, adres `images["front_<dil>"]` kaydından (rev + boyut) OFF'un görsel adresi
+ * kuralıyla üretilir. Dil sırası: Türkçe, ürünün ana dili, sonra alfabetik ilk
+ * front_* kaydı. Beklenen biçime uymayan kayıtta null döner (tahmin yok).
+ */
+export function frontImageUrl(raw: Record<string, unknown>, gtin: string): string | null {
+  const direct = str(raw.image_front_url);
+  if (direct) return direct;
+  const images = raw.images;
+  const folder = offImageFolder(gtin);
+  if (!isRecord(images) || !folder) return null;
+  const lang = str(raw.lang);
+  // İki kayıt biçimi: eski `images.front_tr = {rev, sizes}`, yeni `images.selected.front.tr = {rev, sizes}`.
+  const nested = isRecord(images.selected) && isRecord(images.selected.front) ? images.selected.front : {};
+  const entries: Record<string, unknown> = {};
+  for (const [l, v] of Object.entries(nested)) entries[`front_${l}`] = v;
+  for (const [k, v] of Object.entries(images)) if (!(k in entries)) entries[k] = v;
+  const keys = Object.keys(entries).filter((k) => /^front_[a-z]{2,3}$/.test(k));
+  const ordered = [
+    'front_tr',
+    ...(lang ? [`front_${lang}`] : []),
+    ...keys.sort(),
+  ];
+  for (const key of ordered) {
+    if (!keys.includes(key)) continue;
+    const entry = entries[key];
+    if (!isRecord(entry)) continue;
+    const rev = typeof entry.rev === 'number' || typeof entry.rev === 'string' ? String(entry.rev) : '';
+    if (!/^[0-9]+$/.test(rev)) continue;
+    const sizes = isRecord(entry.sizes) ? entry.sizes : {};
+    const size = ['400', '200'].find((s) => isRecord(sizes[s]));
+    if (!size) continue;
+    return `https://images.openfoodfacts.org/images/products/${folder}/${key}.${rev}.${size}.jpg`;
+  }
+  return null;
+}
 
 export interface CompletenessInput {
   name: string | null;
@@ -161,7 +201,7 @@ export function normalizeOffProduct(raw: Record<string, unknown>, fetchedAt: str
     brand: str(raw.brands)?.split(',')[0].trim() || null,
     quantity: str(raw.quantity),
     categories: arr(raw.categories_tags),
-    imageUrl: str(raw.image_front_url),
+    imageUrl: frontImageUrl(raw, gtin),
     ingredientsText: ingAny,
     ingredientsLang: ingTr ? 'tr' : ingAny ? 'other' : null,
     allergens: { declared: mapAllergens(rawDeclared), traces: mapAllergens(rawTraces), rawDeclared, rawTraces, dataStatus },

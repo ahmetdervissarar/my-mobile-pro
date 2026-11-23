@@ -17,7 +17,7 @@ import { buildAllergenData } from '../../catalog/catalog.js';
 import { finalizeImportOutput } from './importFinalize.js';
 import { OFF_FIELDS, normalizeOffProduct, type OffImportRecord } from './normalize.js';
 
-const USER_AGENT = 'RafSkoru/0.2 (arastirma pilotu; iletisim: ahmetdervissarar@gmail.com)';
+const USER_AGENT = 'RafSkoru/0.2 (arastirma pilotu; iletisim: rafskoru.iletisim@gmail.com)';
 const SEARCH_DELAY_MS = 6500; // OFF arama uç noktası: dakikada en fazla 10 istek
 const PAGE_SIZE = 100;
 const OUT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../../data/off-tr');

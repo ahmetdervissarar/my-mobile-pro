@@ -54,3 +54,26 @@ assert.ok(partialHealth.missingFields.includes('nova'));
 assert.ok(partialHealth.missingFields.some((f) => f.startsWith('nutrition.')));
 
 console.log('offTurkey normalize smoke: 5 senaryo geçti');
+
+// 6) Görsel adresi (yol haritası 1.6): API alanı varsa o; dökümde images kaydından üretilir.
+{
+  const fromApi = normalizeOffProduct({ code: '8690504000013', image_front_url: 'https://x/img.jpg' }, at)!;
+  assert.equal(fromApi.imageUrl, 'https://x/img.jpg');
+  const fromDump = normalizeOffProduct({
+    code: '8690504000013', lang: 'en',
+    images: { '1': { sizes: {} }, front_en: { rev: 7, sizes: { '400': {}, full: {} } }, front_tr: { rev: '12', sizes: { '400': {}, full: {} } } },
+  }, at)!;
+  assert.equal(fromDump.imageUrl, 'https://images.openfoodfacts.org/images/products/869/050/400/0013/front_tr.12.400.jpg');
+  assert.ok(!fromDump.missingFields.includes('image'));
+  const otherLang = normalizeOffProduct({ code: '8690504000013', lang: 'de', images: { front_de: { rev: 3, sizes: { '200': {} } } } }, at)!;
+  assert.equal(otherLang.imageUrl, 'https://images.openfoodfacts.org/images/products/869/050/400/0013/front_de.3.200.jpg');
+  const nestedFmt = normalizeOffProduct({ code: '86949705', images: { selected: { front: { tr: { rev: 5, sizes: { '400': {} } } } } } }, at)!;
+  assert.equal(nestedFmt.imageUrl, 'https://images.openfoodfacts.org/images/products/86949705/front_tr.5.400.jpg');
+  // Biçime uymayan kayıt: tahmin yok, adres üretilmez.
+  for (const images of [{ front_tr: { rev: 'x', sizes: { '400': {} } } }, { front_tr: { rev: 4, sizes: { full: {} } } }, { front_tr: 'abc' }, null]) {
+    const r = normalizeOffProduct({ code: '8690504000013', images }, at)!;
+    assert.equal(r.imageUrl, null);
+    assert.ok(r.missingFields.includes('image'));
+  }
+}
+console.log('off-turkey-normalize image_url_OK');
