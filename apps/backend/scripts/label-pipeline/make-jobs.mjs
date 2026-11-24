@@ -14,7 +14,7 @@
 //         çelişmeyen ve henüz Okuma 1'i olmayan ürünler alınır.
 // Codex sonuçları <parti>/reads-codex/<barkod>-2.json dosyalarına yazılır.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const [mode, batchArg, ...only] = process.argv.slice(2);
@@ -35,6 +35,12 @@ for (const entry of manifest) {
   const bc = entry.barcode;
   const photos = entry.photos.map((p) => p.localPath);
   if (mode === 'codex') {
+    // Codex'e varsa küçültülmüş kopya verilir (<barkod>/codex/<ad>, shrink-photos.ps1; ADR-009 §16).
+    // Claude asıl fotoğrafı okur.
+    for (let i = 0; i < photos.length; i += 1) {
+      const small = join(dirname(photos[i]), 'codex', basename(photos[i]));
+      if (existsSync(small)) photos[i] = small;
+    }
     if (only.length > 0 && !only.includes(bc)) continue;
     if (existsSync(join(codexDir, `${bc}-2.json`))) { skipped.push(`${bc}: Codex okuması zaten var`); continue; }
     products.push({ barcode: bc, photos });

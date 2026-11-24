@@ -281,6 +281,13 @@ bekletiyordu. Aynı aday listesi OFF'un resmî toplu dökümünde de var.
   Codex'in Windows korumalı ortamında tsx açılışta kullanıcı bilgisini (os.userInfo) alamıyor ve
   çöküyor (2026-11-23, `son-hata.txt`). Codex yalnız okur; talimatındaki Adım 1 açık partiyi
   bulup iş listesini yazar, indirmez.
+- Codex'in bir konuşmadaki görüntü kapasitesi tam boy fotoğraflarla birkaç ürüne yetiyordu
+  (2026-11-24). Ana oturum her indirmeden sonra `shrink-photos.ps1` ile küçültülmüş kopyalar
+  üretir (`<barkod>/codex/<ad>.jpg`, uzun kenar en fazla 2000 piksel, JPEG kalite 90; Windows'un
+  kendi kütüphanesi, paket yok). `make-jobs.mjs codex` kopya varsa onu verir; Claude asıl
+  fotoğrafı okur. Betik `-ExecutionPolicy Bypass` ile yalnız bu komut için çalıştırılır; proje
+  sahibi 2026-11-24'te izin verdi. Sıra: `next-batch.mjs --yalniz-indir` → `shrink-photos.ps1`
+  → `make-jobs.mjs codex <parti>`.
 
 ## Açık kararlar
 
