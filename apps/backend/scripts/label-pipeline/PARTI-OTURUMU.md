@@ -13,8 +13,11 @@ Komutlar `apps/backend` klasöründen çalışır. `<B>` = açık parti klasör�
 - `node scripts/label-pipeline/make-jobs.mjs claude "<B>"` → `data/label-store/claude-is.json`.
 
 ## 2. Okuma 1 (Claude Sonnet)
-- `claude-is.json`daki her ürün için **ayrı** `label-reader` alt-ajanı, `model: "sonnet"`,
-  arka planda. Aynı anda en fazla 20; biri bitince sıradakini başlat.
+- `claude-is.json`daki her ürün için **ayrı** `label-reader` alt-ajanı, `model: "sonnet"`.
+  **Arka planda başlatma** (`run_in_background` kullanma): tek bir mesajda en fazla 20 alt-ajanı
+  birlikte çağır; hepsi paralel çalışır ve sonuçlar birlikte döner. Kalanlar için aynısını
+  tekrarla. (Arka plan alt-ajanları her bitişte oturumun turunu bitirir ve ana oturumu boşuna
+  uyandırır; bu token israfıdır.)
 - İstem birebir şu biçimde (toplama aracı bu başlığı arar):
   `[OKUMA 1 <barkod>] Aşağıdaki fotoğraf dosyalarını Read aracıyla aç ve talimatındaki JSON biçiminde yanıt ver. Yalnız bu dosyaları oku.`
   ardından her fotoğraf için `- <tam yol>` satırı (claude-is.json'daki asıl fotoğraflar).
