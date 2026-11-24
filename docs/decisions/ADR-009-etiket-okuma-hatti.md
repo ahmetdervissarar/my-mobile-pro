@@ -288,6 +288,10 @@ bekletiyordu. Aynı aday listesi OFF'un resmî toplu dökümünde de var.
   fotoğrafı okur. Betik `-ExecutionPolicy Bypass` ile yalnız bu komut için çalıştırılır; proje
   sahibi 2026-11-24'te izin verdi. Sıra: `next-batch.mjs --yalniz-indir` → `shrink-photos.ps1`
   → `make-jobs.mjs codex <parti>`.
+- Token tasarrufu (2026-11-24): parti işleri (`PARTI-OTURUMU.md`) kısa ömürlü ayrı Claude oturumunda
+  yürür; Okuma 1'de bir `label-reader` alt-ajanı 5 ürünü sırayla ve bağımsız okur ("[OKUMA 1 GRUP]",
+  `claude-prompts.mjs`); `collect-reads.mjs` yanıtı ürün başlıklarından ayırır ve yalnız istemde adı
+  geçen barkodları alır. İki farklı model ilkesi (Okuma 1 Claude, Okuma 2 Codex) değişmez.
 
 ## Açık kararlar
 

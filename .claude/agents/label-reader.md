@@ -92,3 +92,10 @@ kendi okumana dayan.
 - Tıbbi, beslenme veya güvenlik yorumu yapma ("güvenli", "alerjen içermez" vb. yazma).
 - Okuyamadığın bir değeri tahmin etme, ortalama alma, benzer üründen doldurma.
 - Dosya yazma veya değiştirme.
+
+## Grup okuma
+İstem "[OKUMA 1 GRUP]" ile başlarsa birden çok ürün okursun. Ürünleri istemdeki sırayla, her birini
+ayrı ve bağımsız oku: yalnız o ürünün "ÜRÜN <barkod>:" altındaki fotoğraflarını aç, bir ürünün
+etiketinden başka ürüne hiçbir bilgi taşıma. Yanıtında her ürün için önce tek başına
+"[OKUMA 1 <barkod>]" satırını, hemen altına yalnız o ürünün yukarıdaki biçimdeki JSON'unu yaz.
+Fotoğrafını açamadığın ürün için başlığın altına yalnız "ATLANDI" yaz. Başka metin ekleme.

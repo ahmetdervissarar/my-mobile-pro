@@ -12,16 +12,14 @@ Komutlar `apps/backend` klasöründen çalışır. `<B>` = açık parti klasör�
 - `<B>/reads-codex/` dosya sayısını ve `<B>/codex-ozet.md`yi oku (Codex'in sınıflandırması).
 - `node scripts/label-pipeline/make-jobs.mjs claude "<B>"` → `data/label-store/claude-is.json`.
 
-## 2. Okuma 1 (Claude Sonnet)
-- `claude-is.json`daki her ürün için **ayrı** `label-reader` alt-ajanı, `model: "sonnet"`.
-  **Arka planda başlatma** (`run_in_background` kullanma): tek bir mesajda en fazla 20 alt-ajanı
-  birlikte çağır; hepsi paralel çalışır ve sonuçlar birlikte döner. Kalanlar için aynısını
-  tekrarla. (Arka plan alt-ajanları her bitişte oturumun turunu bitirir ve ana oturumu boşuna
-  uyandırır; bu token israfıdır.)
-- İstem birebir şu biçimde (toplama aracı bu başlığı arar):
-  `[OKUMA 1 <barkod>] Aşağıdaki fotoğraf dosyalarını Read aracıyla aç ve talimatındaki JSON biçiminde yanıt ver. Yalnız bu dosyaları oku.`
-  ardından her fotoğraf için `- <tam yol>` satırı (claude-is.json'daki asıl fotoğraflar).
-- Bildirimlere tek tek uzun yanıt yazma; hepsi bitince devam et.
+## 2. Okuma 1 (Claude Sonnet, 5'li gruplar)
+- `node scripts/label-pipeline/claude-prompts.mjs` → `claude-is.json`daki ürünleri 5'li gruplara bölüp
+  her grup için hazır bir istem yazdırır ("=== İSTEM n/N ===" ayırıcısı istemin parçası değildir).
+- Her istem için bir `label-reader` alt-ajanı, `model: "sonnet"`, istemi **olduğu gibi** ver.
+  **Arka planda başlatma** (`run_in_background` kullanma): bütün grupları tek mesajda birlikte çağır
+  (en fazla 20); hepsi paralel çalışır ve sonuçlar birlikte döner. (Arka plan alt-ajanları her bitişte
+  turu bitirip başka oturumları boşuna uyandırır; grup okuma sabit yükü 5'te birine indirir.)
+- Bir grupta "ATLANDI" ya da eksik kalan ürün olursa yalnız onları yeni bir grupla tekrar okut.
 
 ## 3. Topla, yedekle, aktar
 - `node scripts/label-pipeline/collect-reads.mjs "C:/Users/Derviş/.claude/projects/C--Users-Dervi--Desktop-my-mobile-pro" "<B>"`

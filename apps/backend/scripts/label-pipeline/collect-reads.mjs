@@ -44,26 +44,41 @@ for (const file of files) {
     const content = entry.message?.content;
     if (!tag && entry.type === 'user') {
       const text = typeof content === 'string' ? content : Array.isArray(content) ? content.map((p) => p.text ?? '').join('\n') : '';
+      // Grup okuma: "[OKUMA 1 GRUP]" + "ÜRÜN <barkod>:" satırları (bir alt-ajan birkaç ürün okur).
+      const group = /\[OKUMA ([12]) GRUP\]/.exec(text);
       const match = /\[OKUMA ([12]) (\d{8,14})\]/.exec(text);
-      if (match) tag = { n: match[1], barcode: match[2] };
+      if (group) tag = { n: group[1], barcodes: [...text.matchAll(/ÜRÜN (\d{8,14}):/g)].map((m) => m[1]) };
+      else if (match) tag = { n: match[1], barcodes: [match[2]], single: true };
     }
     if (entry.type === 'assistant' && typeof entry.message?.model === 'string') model = entry.message.model;
     if (Array.isArray(content)) {
       for (const part of content) if (part.type === 'tool_use' && part.name === 'SubagentHandback') report = part.input?.message ?? null;
     }
   }
-  if (!tag || !byBarcode.has(tag.barcode) || !report) continue;
-  let parsed;
-  try {
-    parsed = JSON.parse(report.slice(report.indexOf('{'), report.lastIndexOf('}') + 1));
-    if (!parsed.fields) throw new Error('fields yok');
-  } catch {
-    unparsable.push(`${tag.barcode}-${tag.n}`);
-    continue;
+  if (!tag || !report || !tag.barcodes.some((bc) => byBarcode.has(bc))) continue;
+  // Yanıtı ürünlere böl: tek okumada bütün yanıt; grupta her "[OKUMA n <barkod>]" başlığının altı.
+  // Yalnız istemde adı geçen barkodlar alınır (başka ürünün okuması karışmasın).
+  const segments = [];
+  if (tag.single) segments.push([tag.barcodes[0], report]);
+  else {
+    const heads = [...report.matchAll(/\[OKUMA [12] (\d{8,14})\]/g)];
+    heads.forEach((h, i) => segments.push([h[1], report.slice(h.index + h[0].length, i + 1 < heads.length ? heads[i + 1].index : report.length)]));
   }
-  parsed._model = model ?? 'bilinmiyor';
-  writeFileSync(join(readsDir, `${tag.barcode}-${tag.n}.json`), JSON.stringify(parsed, null, 2) + '\n', 'utf8');
-  found += 1;
+  for (const [barcode, text] of segments) {
+    if (!tag.barcodes.includes(barcode) || !byBarcode.has(barcode)) continue;
+    if (!tag.single && /^\s*ATLANDI\b/.test(text)) continue;
+    let parsed;
+    try {
+      parsed = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1));
+      if (!parsed.fields) throw new Error('fields yok');
+    } catch {
+      unparsable.push(`${barcode}-${tag.n}`);
+      continue;
+    }
+    parsed._model = model ?? 'bilinmiyor';
+    writeFileSync(join(readsDir, `${barcode}-${tag.n}.json`), JSON.stringify(parsed, null, 2) + '\n', 'utf8');
+    found += 1;
+  }
 }
 
 // Codex okumaları (ADR-009 §15): <parti>/reads-codex/<barkod>-2.json. Yalnız
