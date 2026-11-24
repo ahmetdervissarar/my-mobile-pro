@@ -59,8 +59,8 @@ Her ürün için:
 6. **Fotoğrafı açamıyorsan veya göremiyorsan o ürün için dosya YAZMA.** Bunu en
    sonda raporla. Görmediğin bir fotoğraf için asla tahminle dosya üretme.
 7. **Başka hiçbir dosyayı elle oluşturma, değiştirme veya silme.** Elle yazdığın
-   tek dosyalar `<outputDir>/<barcode>-2.json` dosyalarıdır. Var olan bir
-   `-2.json` dosyasının üzerine yazma.
+   tek dosyalar `<outputDir>/<barcode>-2.json` dosyaları ve Adım 3'teki
+   `codex-ozet.md` dosyasıdır. Var olan bir `-2.json` dosyasının üzerine yazma.
    **Çalıştırabileceğin komutlar yalnız bu talimattaki iki komuttur**
    (`next-batch.mjs` ve `make-jobs.mjs claude`). Paket kurma, git kullanma,
    başka komut veya betik çalıştırma, internette arama yapma.
@@ -135,10 +135,32 @@ Her ürün için:
 `unreadableFields` alan adlarını kullanır; besin değerleri için `"nutritionPer100.salt"`
 gibi yazılır. Dosya geçerli JSON olmalı (yorum satırı yok).
 
-## Adım 3 — Claude'un okuma listesini hazırla
+## Adım 3 — Parti özetini yaz
 
-Bütün ürünleri bitirince `apps/backend` klasöründe şu komutu **bir kez** çalıştır
-(`<parti>` yerine `codex-is.json` içindeki `batch` değerini yaz):
+Bütün ürünleri bitirince, okuduğun ürünler için tek bir özet dosyası yaz:
+`<outputDir>/../codex-ozet.md` (yani parti klasöründe, `reads-codex` klasörünün yanında).
+Var olan bir özet dosyası varsa ona **yalnız yeni satır ekle**, eski satırları silme.
+
+Biçim: bir Markdown tablosu, her ürün bir satır:
+
+`| barkod | durum | ürün adı | not |`
+
+`durum` şu değerlerden biri olur (yalnız kendi okumana bakarak):
+- `okundu` — içindekiler okundu.
+- `icindekiler-yok` — içindekiler okunamadı veya fotoğrafta yok, ama besin tablosu var.
+- `icerik-yok` — ne içindekiler ne besin tablosu okunabildi.
+- `barkod-farkli` — fotoğraftaki barkod rakamları iş listesindeki barkoddan farklı.
+- `gida-disi-gorunuyor` — etiket kozmetik, temizlik, mama dışı hayvan ürünü gibi görünüyor
+  (bu yalnız bir gözlemdir; karar insanındır).
+- `dosya-yok` — fotoğrafı açamadığın veya etiket görünmediği için dosya yazmadığın ürün.
+
+`ürün adı` okuduğun ad (yoksa `-`), `not` en fazla bir kısa cümle. Tahmin yok; emin değilsen
+`not` alanına yaz.
+
+## Adım 4 — Claude'un okuma listesini hazırla
+
+Sonra `apps/backend` klasöründe şu komutu **bir kez** çalıştır. `<parti>` yerine
+`codex-is.json` içindeki `batch` değerini (tam klasör yolu) **olduğu gibi** yaz:
 
 `node scripts/label-pipeline/make-jobs.mjs claude "<parti>"`
 
